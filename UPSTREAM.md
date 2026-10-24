@@ -1,6 +1,6 @@
 # Upstream snapshot / 上游快照
 
-- soloAS version / soloAS 版本：**0.1.0+ue5.8.3**。
+- soloAS version / soloAS 版本：**0.1.1+ue5.8.3**。
 - These are the original snapshots used for this adaptation. / 以下为本次适配所基于的原版快照。
 
 ## Epic Unreal Engine / Epic 虚幻引擎

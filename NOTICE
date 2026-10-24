@@ -1,49 +1,50 @@
-soloAS (pronounced Solo A-S) / soloAS（读作 Solo A-S）
+soloAS (pronounced Solo A-S)
 https://soloas.cuviss.com
 
-Licensing follows each plugin directory, including Cuviss modifications: / 许可按各插件目录划分，包含 Cuviss 的修改：
-AngelscriptRuntime: MIT; its embedded AngelScript library: zlib. / AngelscriptRuntime：MIT；内嵌 AngelScript 库：zlib。
-AngelscriptGAS: Apache-2.0 OR MIT. AngelscriptEnhancedInput: MIT. / AngelscriptGAS：Apache-2.0 或 MIT；AngelscriptEnhancedInput：MIT。
-All other Cuviss code: MPL-2.0 (see LICENSE). / 其他 Cuviss 代码：MPL-2.0（参见 LICENSE）。
-These grants also cover historical Cuviss All Rights Reserved headers. / 这些授权也适用于历史上标有 Cuviss 保留所有权利的代码。
-This does not relicense inherited code. Original copyright and license notices embedded in source files remain in force and are retained. / 此说明不改变继承代码的许可；源码中的原版权和许可声明仍然有效并予以保留。
-Unreal Engine and its plugins are required separately and are not distributed here. / Unreal Engine 及其插件需另行获取，不在此分发。
+Licensing follows each plugin directory, including Cuviss modifications:
+AngelscriptRuntime: MIT; its embedded AngelScript library: zlib.
+AngelscriptGAS: Apache-2.0 OR MIT. AngelscriptEnhancedInput: MIT.
+All other Cuviss code: MPL-2.0 (see LICENSE).
+These grants also cover historical Cuviss All Rights Reserved headers.
+This does not relicense inherited code. Original copyright and license
+notices embedded in source files remain in force and are retained.
+Unreal Engine and its plugins are required separately and are not
+distributed here.
 
-Source identities and original standalone license-file hashes are recorded below. Hashes identify the original files before bilingual documentation edits. JSON keys and identifiers are retained for machine use: category groups the components, license_scope describes their licenses, and commit/tree/path identify their sources. / 下方记录来源标识及原独立许可文件的哈希。哈希对应双语文档修订前的原文件。JSON 键和标识符保留供机器读取：category 表示组件分类，license_scope 说明许可范围，commit、tree、path 标识来源。
-The license_scope values repeat the licensing summary above; “core” groups Runtime and Bridge, and “Haze fork bindings” groups the GAS and Enhanced Input bindings from the Hazelight fork. / license_scope 的值与上述许可摘要一致；“core”指 Runtime 和 Bridge，“Haze fork bindings”指来自 Hazelight 分支的 GAS 和 Enhanced Input 绑定。
+Source identities and retained standalone license hashes:
 {
   "products": [
     {
       "category": "Haze fork bindings",
-      "commit": "137d40088aaadbf7a8ca5bd9bca428818c70ae47",
+      "commit": "9467c358adc5a85993a37d6bd5e893e1060a8b09",
       "license_scope": "Plugin source and Cuviss contributions: MIT.",
       "name": "AngelscriptEnhancedInput",
       "path": "AngelscriptManualBindPlugins/AngelscriptEnhancedInput",
-      "tree": "c85fa3d98768e1d88632f25db628841d30cea277"
+      "tree": "4502523ad139911bc0b84c624a64a7c409df2a40"
     },
     {
       "category": "Haze fork bindings",
-      "commit": "f94975126103d592d7e4e8bcd553b2aaa75de51b",
+      "commit": "8af8162aa67f96a13f7aa96d59c92b9abf15c34f",
       "license_scope": "Plugin source and Cuviss contributions: Apache-2.0 OR MIT.",
       "name": "AngelscriptGAS",
       "path": "AngelscriptManualBindPlugins/AngelscriptGAS",
-      "tree": "38330a6d572c9a4e2694cbc013041265ddef5bc8"
+      "tree": "55eda0f41293bd0399c1ee65667ba317ed914feb"
     },
     {
       "category": "core",
-      "commit": "5d7ad3c80c5daba300888dc1e3099a4a8be44091",
+      "commit": "9b3ca80c50e7bd3e649db7a8c0f29b2c9ac5018e",
       "license_scope": "Plugin source and Cuviss contributions: MIT. Embedded AngelScript library and its modifications: zlib.",
       "name": "AngelscriptRuntime",
       "path": "AngelscriptRuntime",
-      "tree": "41f6d4406dd2ce35b1ddbbe99ef5ed6cd9f71a3e"
+      "tree": "b60af68f32f373aa59d2afdb490c025c7ae8254f"
     },
     {
       "category": "core",
-      "commit": "74e835550a3f11f134461339655258928daa723a",
+      "commit": "582b09a513daede6e25a2eb72845f05c42c676e3",
       "license_scope": "Cuviss original code and modifications are under MPL-2.0.",
       "name": "SoloASBridge",
       "path": "SoloASBridge",
-      "tree": "0eab226b54df7469963cc409dda4d0e86dc604c0"
+      "tree": "f9a9cfacf62ebfa0b0939f8f77f75631eb717bf1"
     }
   ],
   "retained_license_files": [
@@ -53,7 +54,7 @@ The license_scope values repeat the licensing summary above; “core” groups R
     },
     {
       "path": "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/NOTICE",
-      "sha256": "b905afdcffebc90ea73f0299f22706a32fece513159e153ce5c66806803421e4"
+      "sha256": "1d26ef69a20885822b9c599b7569f19774b53d33ac856b88eef268c21929a57b"
     },
     {
       "path": "AngelscriptManualBindPlugins/AngelscriptGAS/LICENSE-APACHE",
@@ -65,7 +66,7 @@ The license_scope values repeat the licensing summary above; “core” groups R
     },
     {
       "path": "AngelscriptManualBindPlugins/AngelscriptGAS/NOTICE",
-      "sha256": "960a5f05830c0eb207b2d24b5a9bb25b7b4a457f2c7844b3c25ea1ddca3634bc"
+      "sha256": "94767048b316e326254a5b7b714613cfed1ec92fbce3356bcc80dd4650bb4f59"
     },
     {
       "path": "AngelscriptRuntime/LICENSE-MIT",
@@ -77,7 +78,7 @@ The license_scope values repeat the licensing summary above; “core” groups R
     },
     {
       "path": "AngelscriptRuntime/NOTICE",
-      "sha256": "4b49f7e65e404947a52679210b00aedcb48f2b2472896899a15f0ff863b49dde"
+      "sha256": "a5fb079d23781753ba4858b0d6ba1612a97beeeadb43cde807575a46a51ffa87"
     },
     {
       "path": "SoloASBridge/LICENSE",

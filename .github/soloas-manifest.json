@@ -1,28 +1,28 @@
 {
   "files": {
     ".github/license-headers.json": {
-      "mode": "0o664",
+      "mode": "0o644",
       "sha256": "00411cb5fb70370f4baf5ee752795e74804c00d9c6397056e622bc056f58e1f1",
       "size": 71690
     },
     ".github/scripts/check_public.py": {
-      "mode": "0o664",
+      "mode": "0o644",
       "sha256": "e688b117e2ad28387c4c97809d67f0b4909846daa7de5ac4366d6a420a78d751",
       "size": 5873
     },
     ".github/upstream.json": {
-      "mode": "0o664",
-      "sha256": "db4b80f5178d706b844380085f4001c7fa838dccadab63e16f9aa7580606850d",
+      "mode": "0o644",
+      "sha256": "67bcb5a9c257be47485a96f3d48aa8d9a26863185fc5c167f2d5827e1c99a57b",
       "size": 1259
     },
     ".github/workflows/checks.yml": {
-      "mode": "0o664",
+      "mode": "0o644",
       "sha256": "f9041620054f3c5c0a747b8cf421f40d1c979818c9ccee41be3928dac972a542",
       "size": 732
     },
     "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/AngelscriptEnhancedInput.uplugin": {
       "mode": "0o644",
-      "sha256": "dd066f3cf10ea6ff354962e3778b2ecc2c1b46267bdec42b698209033ec0054a",
+      "sha256": "3f3e1d95ac01aa524d7be89acfc44171ed0d76de99e820ec04d5d5801f5c232f",
       "size": 650
     },
     "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/LICENSE-MIT": {
@@ -77,7 +77,7 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/AngelscriptGAS.uplugin": {
       "mode": "0o644",
-      "sha256": "5492f2e2e169d771dacadd5c2bdcac3ee1cb00171d1c6249308f3f7a816b2136",
+      "sha256": "85f0b5435be253dfa832dddc73bf7ebe0c3a7f46dee6822d064c24b83524b52a",
       "size": 727
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/LICENSE-APACHE": {
@@ -327,7 +327,7 @@
     },
     "AngelscriptRuntime/Angelscript.uplugin": {
       "mode": "0o644",
-      "sha256": "ec5a0f51b5b1f3b5b3e633aa58a7b0d33c87f6bec5576b20b4e5a91a13c16dcb",
+      "sha256": "17061c32c3ec57b9f034d86acef7f6acecc472657867b0cabaf3359dc30d286e",
       "size": 811
     },
     "AngelscriptRuntime/Config/Editor.ini": {
@@ -2667,18 +2667,18 @@
     },
     "NOTICE": {
       "mode": "0o644",
-      "sha256": "a60795f83800ad05177d978b62b90e3a2e101b37ecdaa531072b1b19226ad9e3",
-      "size": 4930
+      "sha256": "0e63281a8b45a8421efdaaaea1b89072a4cbd52b92309059772db5db31480d30",
+      "size": 3494
     },
     "README.md": {
       "mode": "0o644",
-      "sha256": "74b660f1b70537c0cc90c156819c52e2cde1cc82dcc862ff4e66db08c2abd3bc",
-      "size": 2054
+      "sha256": "54a6ec53500cac1eca71f64bfe5e0d82770553174dd3537438db7ff1eae53c68",
+      "size": 2043
     },
     "README.zh-CN.md": {
-      "mode": "0o664",
-      "sha256": "e5fbe9d62177b33cc715642aa83734dca705cda0035e743f1dad39381abd7b68",
-      "size": 1921
+      "mode": "0o644",
+      "sha256": "fb937ca0e93c5d5d3f14ecdbc2265322628cb604b4b17feec7638609c3ccd719",
+      "size": 1910
     },
     "SoloASBridge/Config/FilterPlugin.ini": {
       "mode": "0o644",
@@ -2702,7 +2702,7 @@
     },
     "SoloASBridge/SoloASBridge.uplugin": {
       "mode": "0o644",
-      "sha256": "059b4461ec625dbf6f7e80b035da89f3d11fcaac723e8a0ec36be8155b52a074",
+      "sha256": "103331a9161c85e614a8f2e32069fd6e6e573a7e9fef7a0194bc830c42373341",
       "size": 766
     },
     "SoloASBridge/Source/SoloASBridge/Private/Editor/SoloASCopyProperties.cpp": {
@@ -3161,11 +3161,11 @@
       "size": 3608
     },
     "UPSTREAM.md": {
-      "mode": "0o664",
-      "sha256": "e4c25daad2ad53354b062868374d61e92e88394d68463d2bacdf9c34f1568530",
+      "mode": "0o644",
+      "sha256": "76e884db16cbcd74a1676da4e1f1291a391d04d92a3fa7dbd416c1059b5ea457",
       "size": 1454
     }
   },
   "schema": 1,
-  "super_commit": "b3c7dc0e98709b57bde60e8af9b9f70cdeb04501"
+  "super_commit": "1af0bb6dbdd3fbba0cb36fbaf5714196ff6aa159"
 }
