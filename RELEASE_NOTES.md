@@ -20,21 +20,15 @@
 
 - Script delivery supports source, matching Game bytecode caches, and generated C++ compiled into the game module with the matching caches. / 脚本交付支持源码、配套 Game 字节码缓存，以及编入游戏模块并配套缓存的生成 C++。
 
-- GAS supports manual GameplayTask activation through `ReadyForActivation` after configuring task properties. / GAS 支持配置任务属性后通过 `ReadyForActivation` 手动激活 GameplayTask。
-
 - FullReload takes about 1.6–1.8× the Haze fork's time, a known adaptation cost. / FullReload 耗时约为 Haze fork 的 1.6–1.8 倍，属于已知适配成本。
 
-- Recommends Launcher UE 5.8.3. Same-tag source builds are theoretically equivalent but not guaranteed; modified engines are unsupported. / 推荐 Launcher UE 5.8.3；相同 tag 源码构建理论等价但不保证；不支持修改过的引擎。
+- Recommends Launcher UE 5.8.3. A source-built engine (the same adapted tag) is expected to be functionally equivalent in theory but is not guaranteed. / 推荐 Launcher UE 5.8.3；源码构建引擎（同一适配 tag）理论上功能等价，但不作保证。
 
 - Windows is primary; macOS has limited compile verification. / Windows 为主要平台；macOS 仅有有限编译验证。
-
-- Script interfaces, capturing lambdas and Blueprint parent import are outside this release; future extensions are planned. / 脚本接口、捕获 lambda 和 Blueprint 父类导入不在本版范围内；未来扩展为计划方向。
-
-- Includes English and Chinese setup instructions, script delivery links and component license information; see README and NOTICE. / 附中英文安装说明、脚本交付链接及组件许可信息，参见 README 和 NOTICE。
 
 ## Upstream snapshot / 上游快照
 
 - Epic UE: tag `5.8.3-release`, commit `396c9f059903aed5fec78ecd3d437a40c6415368`, build version `5.8.3-58210709+++UE5+Release-5.8`. / Epic UE：标签 `5.8.3-release`，提交 `396c9f059903aed5fec78ecd3d437a40c6415368`，构建版本 `5.8.3-58210709+++UE5+Release-5.8`。
-- Hazelight fork: branch `angelscript-master`, commit `4b2892f0b550f20f4856d38f68d4987e3dfdb7da`; see the [documentation](https://angelscript.hazelight.se/). / Hazelight 分支：`angelscript-master`，提交 `4b2892f0b550f20f4856d38f68d4987e3dfdb7da`；参见[使用文档](https://angelscript.hazelight.se/)。
-- The original Epic UE and Hazelight snapshots used for this adaptation are listed above. See [UPSTREAM.md](UPSTREAM.md) for component source paths and repositories, and [upstream.json](upstream.json) for the machine-readable record. / 本次适配所基于的 Epic UE 与 Hazelight 原版快照如上；各组件来源路径与仓库地址见 [UPSTREAM.md](UPSTREAM.md)，机器可读记录见 [upstream.json](upstream.json)。
+- Hazelight's UE fork (the Haze fork): branch `angelscript-master`, commit `4b2892f0b550f20f4856d38f68d4987e3dfdb7da`; see the [documentation](https://angelscript.hazelight.se/). / Hazelight 的 UE 分支（Haze fork）：`angelscript-master`，提交 `4b2892f0b550f20f4856d38f68d4987e3dfdb7da`；参见[使用文档](https://angelscript.hazelight.se/)。
+- The original Epic UE and Hazelight's UE fork (the Haze fork) snapshots used for this adaptation are listed above. See [UPSTREAM.md](UPSTREAM.md) for component source paths and repositories, and [upstream.json](upstream.json) for the machine-readable record. / 本次适配所基于的 Epic UE 与 Hazelight 的 UE 分支（Haze fork）原版快照如上；各组件来源路径与仓库地址见 [UPSTREAM.md](UPSTREAM.md)，机器可读记录见 [upstream.json](upstream.json)。
 - UE source access requires an Epic account linked to GitHub. / UE 私有源码仓库需要关联 Epic 账号与 GitHub 才能访问。
