@@ -16,14 +16,13 @@ English | [简体中文](README.zh-CN.md)
 
 ## About
 
-- AngelScript scripting for unmodified Unreal Engine, delivered as project plugins; compatible with common workflows from the Hazelight fork.
+- AngelScript scripting for unmodified Unreal Engine, delivered as project plugins; compatible with common workflows from Hazelight's UE fork (the Haze fork).
 - Version **0.1.0+ue5.8.3** · tag **v0.1.0** · [Release downloads](https://github.com/cuviss-open/soloAS/releases/tag/v0.1.0).
 
 ## Upstream snapshot
 
-- Original Epic UE and Hazelight fork snapshots, commits and component source paths: [UPSTREAM.md](UPSTREAM.md), [upstream.json](upstream.json).
+- Original Epic UE and Hazelight's UE fork (the Haze fork) snapshots, commits and component source paths: [UPSTREAM.md](UPSTREAM.md), [upstream.json](upstream.json).
 - Hazelight usage documentation: [angelscript.hazelight.se](https://angelscript.hazelight.se/).
-
 
 ## Included plugins
 
@@ -37,7 +36,7 @@ English | [简体中文](README.zh-CN.md)
 ## Requirements
 
 - **Unreal Engine 5.8.3**: the Launcher build is recommended.
-- A source build of the same tag is theoretically equivalent, but not guaranteed; modified engines are unsupported.
+- A source-built engine (the same adapted tag) is expected to be functionally equivalent in theory but is not guaranteed.
 - **Windows 11 x64** is the primary platform. Windows 10 is expected to work but has not been verified.
 - **macOS 15+** has limited compile verification, with no behavior guarantee.
 - Win64 precompiled package: Blueprint projects can use it directly in the editor. Windows 10 needs 7-Zip to extract it; Windows 11 can extract it directly.
@@ -87,7 +86,6 @@ English | [简体中文](README.zh-CN.md)
 - Use unmodified UE 5.8.3 and replace the fork's AngelScript plugin with the included plugins; remove duplicate installations.
 - Keep the project's scripts under `Script/` and rebuild its C++ Editor target.
 - For assets with an empty saved engine version, use **SoloAS → Resave assets with empty engine version**, then review the source-control changes.
-- CoreExtensions features—script interfaces, capturing lambdas and Blueprint parent import—are outside this release.
 - [Migration guide](https://soloas.cuviss.com/docs/en/migration.html)
 
 ## Script delivery
