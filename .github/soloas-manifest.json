@@ -7,8 +7,13 @@
     },
     ".github/scripts/check_public.py": {
       "mode": "0o664",
-      "sha256": "d5badbc0ccdb0943c4d693f1feed0ad4844a80bb1ee4a9cc23ae0d73112c7fcc",
-      "size": 5893
+      "sha256": "e688b117e2ad28387c4c97809d67f0b4909846daa7de5ac4366d6a420a78d751",
+      "size": 5873
+    },
+    ".github/upstream.json": {
+      "mode": "0o664",
+      "sha256": "db4b80f5178d706b844380085f4001c7fa838dccadab63e16f9aa7580606850d",
+      "size": 1259
     },
     ".github/workflows/checks.yml": {
       "mode": "0o664",
@@ -27,8 +32,8 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/NOTICE": {
       "mode": "0o644",
-      "sha256": "b905afdcffebc90ea73f0299f22706a32fece513159e153ce5c66806803421e4",
-      "size": 435
+      "sha256": "1d26ef69a20885822b9c599b7569f19774b53d33ac856b88eef268c21929a57b",
+      "size": 854
     },
     "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/AngelscriptEnhancedInput.Build.cs": {
       "mode": "0o644",
@@ -87,13 +92,13 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/NOTICE": {
       "mode": "0o644",
-      "sha256": "960a5f05830c0eb207b2d24b5a9bb25b7b4a457f2c7844b3c25ea1ddca3634bc",
-      "size": 211
+      "sha256": "94767048b316e326254a5b7b714613cfed1ec92fbce3356bcc80dd4650bb4f59",
+      "size": 393
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/README.md": {
       "mode": "0o644",
-      "sha256": "1752f3d11034a89b9f228b92ce27f71d907f3bd048608daec9a8296f8a5c52dd",
-      "size": 498
+      "sha256": "7ca675df79422337aee0ac11b7aaa27a76495c2b6262b4d3935f06a070cf970b",
+      "size": 943
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/AngelscriptGAS.Build.cs": {
       "mode": "0o644",
@@ -342,8 +347,8 @@
     },
     "AngelscriptRuntime/NOTICE": {
       "mode": "0o644",
-      "sha256": "4b49f7e65e404947a52679210b00aedcb48f2b2472896899a15f0ff863b49dde",
-      "size": 441
+      "sha256": "a5fb079d23781753ba4858b0d6ba1612a97beeeadb43cde807575a46a51ffa87",
+      "size": 837
     },
     "AngelscriptRuntime/Source/AngelscriptCode/AngelscriptCode.Build.cs": {
       "mode": "0o644",
@@ -2652,8 +2657,8 @@
     },
     "CONTRIBUTING.md": {
       "mode": "0o644",
-      "sha256": "d131d4a6b5322ae6c8420c071be298a12bc860879d8f750036cc8ff5c1cb3859",
-      "size": 1174
+      "sha256": "980b9ffcc1d2a71e582d0656dcc6907fdd3cb7e8c297db041f90d767039891bd",
+      "size": 2271
     },
     "LICENSE": {
       "mode": "0o644",
@@ -2662,23 +2667,18 @@
     },
     "NOTICE": {
       "mode": "0o644",
-      "sha256": "6c246c02dd29a2ef658b014f601c3e99e965343c54c1cf022dbc02bc3ff368c1",
-      "size": 3494
+      "sha256": "a60795f83800ad05177d978b62b90e3a2e101b37ecdaa531072b1b19226ad9e3",
+      "size": 4930
     },
     "README.md": {
       "mode": "0o644",
-      "sha256": "60874bad1fb4f35a1736a7acd7ea7c9e8e9aa7c8aa5103f90b0fc3be2fb26e77",
-      "size": 8647
+      "sha256": "74b660f1b70537c0cc90c156819c52e2cde1cc82dcc862ff4e66db08c2abd3bc",
+      "size": 2054
     },
     "README.zh-CN.md": {
       "mode": "0o664",
-      "sha256": "e9305e2dd8935e979328ff75c22959968570addbb9290eb2506627e805c25777",
-      "size": 8007
-    },
-    "RELEASE_NOTES.md": {
-      "mode": "0o664",
-      "sha256": "5e80047157e28d8fbbac90922647ed32b10b6fbacff947d84a78619f63aeac74",
-      "size": 4429
+      "sha256": "e5fbe9d62177b33cc715642aa83734dca705cda0035e743f1dad39381abd7b68",
+      "size": 1921
     },
     "SoloASBridge/Config/FilterPlugin.ini": {
       "mode": "0o644",
@@ -2697,8 +2697,8 @@
     },
     "SoloASBridge/README.md": {
       "mode": "0o644",
-      "sha256": "869304359deaa4867f96bf289845cb9425ea4f5cd972c47c589896c65b219efd",
-      "size": 601
+      "sha256": "e433a779c43d54505e256cd2ed6136a5dc871733be2fd5c3e00171cc2744c691",
+      "size": 1002
     },
     "SoloASBridge/SoloASBridge.uplugin": {
       "mode": "0o644",
@@ -3162,13 +3162,8 @@
     },
     "UPSTREAM.md": {
       "mode": "0o664",
-      "sha256": "1018a24658b085e115c2f5fb871f4c3a755a865643cb36d8e606979a5cb9e2ef",
-      "size": 1380
-    },
-    "upstream.json": {
-      "mode": "0o664",
-      "sha256": "db4b80f5178d706b844380085f4001c7fa838dccadab63e16f9aa7580606850d",
-      "size": 1259
+      "sha256": "e4c25daad2ad53354b062868374d61e92e88394d68463d2bacdf9c34f1568530",
+      "size": 1454
     }
   },
   "schema": 1,

@@ -25,14 +25,12 @@ soloAS 是一个为设计而生的 Unreal 脚本系统。它以原版引擎插�
 
 | 组件 | 许可证 |
 | --- | --- |
-| SoloASBridge | MPL-2.0 |
-| AngelscriptRuntime 插件源码，含 soloAS 修改 | MIT |
-| AngelScript 库，含修改 | zlib |
-| AngelscriptGAS，含 soloAS 修改 | Apache-2.0 或 MIT，可任选其一 |
-| AngelscriptEnhancedInput，含 soloAS 修改 | MIT |
+| AngelscriptRuntime（包含 AngelScript 库） | MIT，其中 AngelScript 库为 zlib |
+| AngelscriptGAS | Apache-2.0 或 MIT，任选其一 |
+| AngelscriptEnhancedInput | MIT |
+| 其余所有内容（包括 SoloASBridge） | MPL-2.0 |
 
 - 参见 [NOTICE](NOTICE)、各插件的许可文件及保留的源码声明。
-- 分发包含 MPL 代码的编译产品时，按 MPL-2.0 要求向接收者提供相应源码获取方式。
 
 注：凡是从 UE Haze fork 继承来的插件，我们对其所做的修改沿用该插件原有的许可证；除此之外，皆为 MPL-2.0。
 
@@ -40,4 +38,4 @@ soloAS 是一个为设计而生的 Unreal 脚本系统。它以原版引擎插�
 
 联系：[GitHub Issues](https://github.com/cuviss-open/soloAS/issues) · [contact@cuviss.com](mailto:contact@cuviss.com)。
 
-[UPSTREAM.md](UPSTREAM.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [LICENSE](LICENSE) · [RELEASE_NOTES.md](RELEASE_NOTES.md)
+[UPSTREAM.md](UPSTREAM.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [LICENSE](LICENSE)

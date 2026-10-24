@@ -27,4 +27,4 @@
 | AngelscriptEnhancedInput | `Engine/Plugins/AngelscriptEnhancedInput` |
 
 - SoloASBridge contains the stock engine adaptation code. / SoloASBridge 承载原版引擎适配代码。
-- Machine-readable snapshot / 机器可读快照：[upstream.json](upstream.json).
+- Machine-readable snapshot / 机器可读快照：[upstream.json](.github/upstream.json).
