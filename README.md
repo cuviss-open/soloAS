@@ -10,7 +10,7 @@ soloAS is an Unreal scripting system built for design. It adds AngelScript scrip
 
 ## Download
 
-[Release v0.1.0](https://github.com/cuviss-open/soloAS/releases/tag/v0.1.0): Win64 precompiled package (source and binaries), symbols package (PDB debugging symbols), and source package (requires compilation).
+[Release v0.1.1](https://github.com/cuviss-open/soloAS/releases): Win64 precompiled package (source and binaries), symbols package (PDB debugging symbols), and source package (requires compilation).
 
 ## Included plugins
 

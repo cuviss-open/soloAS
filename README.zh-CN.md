@@ -10,7 +10,7 @@ soloAS 是一个为设计而生的 Unreal 脚本系统。它以原版引擎插�
 
 ## 下载
 
-[Release v0.1.0](https://github.com/cuviss-open/soloAS/releases/tag/v0.1.0)：Win64 预编译包（源码与二进制）、符号包（PDB 调试符号）、源码包（需要自行编译）。
+[Release v0.1.1](https://github.com/cuviss-open/soloAS/releases)：Win64 预编译包（源码与二进制）、符号包（PDB 调试符号）、源码包（需要自行编译）。
 
 ## 包含的插件
 

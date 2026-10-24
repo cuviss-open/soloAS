@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "version": "0.1.0+ue5.8.3",
+  "version": "0.1.1+ue5.8.3",
   "epic": {
     "tag": "5.8.3-release",
     "commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
