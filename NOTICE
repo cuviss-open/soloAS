@@ -1,17 +1,16 @@
-soloAS (pronounced Solo A-S)
+soloAS (pronounced Solo A-S) / soloAS（读作 Solo A-S）
 https://soloas.cuviss.com
 
-Licensing follows each plugin directory, including Cuviss modifications:
-AngelscriptRuntime: MIT; its embedded AngelScript library: zlib.
-AngelscriptGAS: Apache-2.0 OR MIT. AngelscriptEnhancedInput: MIT.
-All other Cuviss code: MPL-2.0 (see LICENSE).
-These grants also cover historical Cuviss All Rights Reserved headers.
-This does not relicense inherited code. Original copyright and license
-notices embedded in source files remain in force and are retained.
-Unreal Engine and its plugins are required separately and are not
-distributed here.
+Licensing follows each plugin directory, including Cuviss modifications: / 许可按各插件目录划分，包含 Cuviss 的修改：
+AngelscriptRuntime: MIT; its embedded AngelScript library: zlib. / AngelscriptRuntime：MIT；内嵌 AngelScript 库：zlib。
+AngelscriptGAS: Apache-2.0 OR MIT. AngelscriptEnhancedInput: MIT. / AngelscriptGAS：Apache-2.0 或 MIT；AngelscriptEnhancedInput：MIT。
+All other Cuviss code: MPL-2.0 (see LICENSE). / 其他 Cuviss 代码：MPL-2.0（参见 LICENSE）。
+These grants also cover historical Cuviss All Rights Reserved headers. / 这些授权也适用于历史上标有 Cuviss 保留所有权利的代码。
+This does not relicense inherited code. Original copyright and license notices embedded in source files remain in force and are retained. / 此说明不改变继承代码的许可；源码中的原版权和许可声明仍然有效并予以保留。
+Unreal Engine and its plugins are required separately and are not distributed here. / Unreal Engine 及其插件需另行获取，不在此分发。
 
-Source identities and retained standalone license hashes:
+Source identities and original standalone license-file hashes are recorded below. Hashes identify the original files before bilingual documentation edits. JSON keys and identifiers are retained for machine use: category groups the components, license_scope describes their licenses, and commit/tree/path identify their sources. / 下方记录来源标识及原独立许可文件的哈希。哈希对应双语文档修订前的原文件。JSON 键和标识符保留供机器读取：category 表示组件分类，license_scope 说明许可范围，commit、tree、path 标识来源。
+The license_scope values repeat the licensing summary above; “core” groups Runtime and Bridge, and “Haze fork bindings” groups the GAS and Enhanced Input bindings from the Hazelight fork. / license_scope 的值与上述许可摘要一致；“core”指 Runtime 和 Bridge，“Haze fork bindings”指来自 Hazelight 分支的 GAS 和 Enhanced Input 绑定。
 {
   "products": [
     {

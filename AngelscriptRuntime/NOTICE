@@ -1,5 +1,5 @@
-AngelscriptRuntime plugin code, including Cuviss Studio additions and modifications, is licensed under MIT; see LICENSE-MIT.
+AngelscriptRuntime plugin code, including Cuviss Studio additions and modifications, is licensed under MIT; see LICENSE-MIT. / AngelscriptRuntime 插件代码（含 Cuviss Studio 的新增和修改）采用 MIT 许可证，参见 LICENSE-MIT。
 
-The embedded AngelCode Scripting Library in ThirdParty/, including modifications to that library, remains under the zlib license; see LICENSE-ZLIB and the original source notices.
+The embedded AngelCode Scripting Library in ThirdParty/, including modifications to that library, remains under the zlib license; see LICENSE-ZLIB and the original source notices. / ThirdParty/ 内嵌的 AngelCode 脚本库（含对该库的修改）仍采用 zlib 许可证，参见 LICENSE-ZLIB 及原始源码声明。
 
-Upstream license text: https://github.com/Hazelight/UnrealEngine-Angelscript/blob/4b2892f0b550f20f4856d38f68d4987e3dfdb7da/LICENSE.md
+Upstream license text: https://github.com/Hazelight/UnrealEngine-Angelscript/blob/4b2892f0b550f20f4856d38f68d4987e3dfdb7da/LICENSE.md / 上游许可文本：https://github.com/Hazelight/UnrealEngine-Angelscript/blob/4b2892f0b550f20f4856d38f68d4987e3dfdb7da/LICENSE.md

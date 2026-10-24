@@ -16,7 +16,7 @@
 
 ## 简介
 
-- 以项目插件为未经修改的 Unreal Engine 提供 AngelScript 脚本工作流，兼容 Hazelight fork 的常见用法。
+- 以项目插件为未经修改的 Unreal Engine 提供 AngelScript 脚本工作流，兼容 Hazelight 分支的常见用法。
 - 版本 **0.1.0+ue5.8.3** · 标签 **v0.1.0** · [发行下载](https://github.com/cuviss-open/soloAS/releases/tag/v0.1.0)。
 
 ## 上游快照
@@ -87,7 +87,7 @@
 - 使用未经修改的 UE 5.8.3，以本包插件替换 fork 的 AngelScript 插件，清除重复安装。
 - 项目脚本保留在 `Script/` 中，重新构建 C++ Editor target。
 - 资产提示保存引擎版本为空时，使用 **SoloAS → Resave assets with empty engine version**，随后检查源控差异。
-- CoreExtensions 的脚本接口、捕获 lambda 和 Blueprint 父类导入不在本版范围内。
+- CoreExtensions 提供的脚本接口、捕获 lambda 和 Blueprint 父类导入不在本版范围内。
 - [迁移指南](https://soloas.cuviss.com/docs/zh/migration.html)
 
 ## 脚本交付
