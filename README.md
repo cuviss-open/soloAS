@@ -25,14 +25,12 @@ soloAS is an Unreal scripting system built for design. It adds AngelScript scrip
 
 | Component | License |
 | --- | --- |
-| SoloASBridge | MPL-2.0 |
-| AngelscriptRuntime plugin source, including soloAS changes | MIT |
-| AngelScript library, including modifications | zlib |
-| AngelscriptGAS, including soloAS changes | Apache-2.0 or MIT, at your option |
-| AngelscriptEnhancedInput, including soloAS changes | MIT |
+| AngelscriptRuntime (including the AngelScript library) | MIT; the AngelScript library is licensed under zlib |
+| AngelscriptGAS | Apache-2.0 or MIT, at your option |
+| AngelscriptEnhancedInput | MIT |
+| All other content (including SoloASBridge) | MPL-2.0 |
 
 - See [NOTICE](NOTICE), each plugin's license files and retained source notices.
-- When distributing a compiled product containing MPL-covered code, provide recipients the corresponding source access required by MPL-2.0.
 
 Note: For plugins inherited from the UE Haze fork, our modifications to them are licensed under that plugin’s original license. Everything else is MPL-2.0.
 
@@ -40,4 +38,4 @@ Credits and showcase (optional): please credit soloAS and share your public proj
 
 Contact: [GitHub Issues](https://github.com/cuviss-open/soloAS/issues) · [contact@cuviss.com](mailto:contact@cuviss.com).
 
-[UPSTREAM.md](UPSTREAM.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [LICENSE](LICENSE) · [RELEASE_NOTES.md](RELEASE_NOTES.md)
+[UPSTREAM.md](UPSTREAM.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [LICENSE](LICENSE)

@@ -74,7 +74,7 @@ def licenses():
 def links(site=None):
     errors = []
     checked = set()
-    docs = [ROOT / name for name in ('README.md', 'README.zh-CN.md', 'CONTRIBUTING.md', 'RELEASE_NOTES.md', 'UPSTREAM.md')]
+    docs = [ROOT / name for name in ('README.md', 'README.zh-CN.md', 'CONTRIBUTING.md', 'UPSTREAM.md')]
     docs += list((ROOT / 'docs').rglob('*.md')) if (ROOT / 'docs').exists() else []
     for doc in docs:
         text = re.sub(r'```.*?```', '', doc.read_text(), flags=re.S)
