@@ -1,0 +1,5 @@
+AngelscriptRuntime plugin code, including Cuviss Studio additions and modifications, is licensed under MIT; see LICENSE-MIT.
+
+The embedded AngelCode Scripting Library in ThirdParty/, including modifications to that library, remains under the zlib license; see LICENSE-ZLIB and the original source notices.
+
+Upstream license text: https://github.com/Hazelight/UnrealEngine-Angelscript/blob/4b2892f0b550f20f4856d38f68d4987e3dfdb7da/LICENSE.md

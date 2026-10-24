@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "version": "0.1.0+ue5.8.3",
+  "epic": {
+    "tag": "5.8.3-release",
+    "commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
+    "buildVersion": "5.8.3-58210709+++UE5+Release-5.8"
+  },
+  "hazelight": {
+    "repository": "https://github.com/Hazelight/UnrealEngine-Angelscript.git",
+    "ref": "refs/heads/angelscript-master",
+    "commit": "4b2892f0b550f20f4856d38f68d4987e3dfdb7da"
+  },
+  "products": {
+    "AngelscriptRuntime": {
+      "repository": "https://github.com/Hazelight/UnrealEngine-Angelscript.git",
+      "ref": "refs/heads/angelscript-master",
+      "commit": "4b2892f0b550f20f4856d38f68d4987e3dfdb7da",
+      "sourcePath": "Engine/Plugins/Angelscript"
+    },
+    "AngelscriptGAS": {
+      "repository": "https://github.com/Hazelight/UnrealEngine-Angelscript.git",
+      "ref": "refs/heads/angelscript-master",
+      "commit": "4b2892f0b550f20f4856d38f68d4987e3dfdb7da",
+      "sourcePath": "Engine/Plugins/AngelscriptGAS"
+    },
+    "AngelscriptEnhancedInput": {
+      "repository": "https://github.com/Hazelight/UnrealEngine-Angelscript.git",
+      "ref": "refs/heads/angelscript-master",
+      "commit": "4b2892f0b550f20f4856d38f68d4987e3dfdb7da",
+      "sourcePath": "Engine/Plugins/AngelscriptEnhancedInput"
+    }
+  }
+}

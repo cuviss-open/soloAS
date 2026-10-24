@@ -1,0 +1,3176 @@
+{
+  "files": {
+    ".github/license-headers.json": {
+      "mode": "0o664",
+      "sha256": "00411cb5fb70370f4baf5ee752795e74804c00d9c6397056e622bc056f58e1f1",
+      "size": 71690
+    },
+    ".github/scripts/check_public.py": {
+      "mode": "0o664",
+      "sha256": "d5badbc0ccdb0943c4d693f1feed0ad4844a80bb1ee4a9cc23ae0d73112c7fcc",
+      "size": 5893
+    },
+    ".github/workflows/checks.yml": {
+      "mode": "0o664",
+      "sha256": "f9041620054f3c5c0a747b8cf421f40d1c979818c9ccee41be3928dac972a542",
+      "size": 732
+    },
+    "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/AngelscriptEnhancedInput.uplugin": {
+      "mode": "0o644",
+      "sha256": "dd066f3cf10ea6ff354962e3778b2ecc2c1b46267bdec42b698209033ec0054a",
+      "size": 650
+    },
+    "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/LICENSE-MIT": {
+      "mode": "0o644",
+      "sha256": "032f3a74937e7f3e7ac0e39c35f8739736356544a77c749e78a5d1b3b55040d5",
+      "size": 1058
+    },
+    "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/NOTICE": {
+      "mode": "0o644",
+      "sha256": "b905afdcffebc90ea73f0299f22706a32fece513159e153ce5c66806803421e4",
+      "size": 435
+    },
+    "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/AngelscriptEnhancedInput.Build.cs": {
+      "mode": "0o644",
+      "sha256": "9e5e3099f9663d80e297f4d6cc9cd2f4abd5145d3fe6dfdb00b116ac9a68d5dc",
+      "size": 1025
+    },
+    "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Private/AngelscriptEnhancedInputModule.cpp": {
+      "mode": "0o644",
+      "sha256": "e207cc0b1458ef88f605ed835a720ee58c8f36a58cd56e02dcfc57c81f00d505",
+      "size": 241
+    },
+    "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Private/Binds/Bind_FInputActionValue.cpp": {
+      "mode": "0o644",
+      "sha256": "2be2be1caaa1f5b6c2267f93706a8a08cacb7c02cb5a223bbfaf7f9876be1585",
+      "size": 3629
+    },
+    "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Private/Binds/Bind_FInputBindingHandle.cpp": {
+      "mode": "0o644",
+      "sha256": "add750b7c6ddc1aa78ed675b52681e270db14dca7a000a42f95cade1c763f9df",
+      "size": 7005
+    },
+    "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Private/Binds/Bind_UEnhancedInputComponent.cpp": {
+      "mode": "0o644",
+      "sha256": "7b55c117e5ea560445f600fb189eff8d281a255e99a6242c2b4327695b10cd6d",
+      "size": 4483
+    },
+    "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Public/AngelscriptEnhancedInputModule.h": {
+      "mode": "0o644",
+      "sha256": "320edffe67ea0c725180c2616eae6c66760f2326e9434a4deb6abd5cf85bc5ae",
+      "size": 263
+    },
+    "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Public/Mixin/EnhancedInputSubsystemsMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "2b9541891ab63a615692b90dbbad111e2dfa2b77b7090b53bd621364f590657a",
+      "size": 8036
+    },
+    "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Public/Mixin/InputActionValueMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "3bf99f9112d3ee0821b09d568830be87e68e337feefe4482cccebfa4569f77de",
+      "size": 1548
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/AngelscriptGAS.uplugin": {
+      "mode": "0o644",
+      "sha256": "5492f2e2e169d771dacadd5c2bdcac3ee1cb00171d1c6249308f3f7a816b2136",
+      "size": 727
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/LICENSE-APACHE": {
+      "mode": "0o644",
+      "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90",
+      "size": 10850
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/LICENSE-MIT": {
+      "mode": "0o644",
+      "sha256": "090a294a492ab2f41388252312a65cf2f0e423330b721a68c6665ac64766753b",
+      "size": 1058
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/NOTICE": {
+      "mode": "0o644",
+      "sha256": "960a5f05830c0eb207b2d24b5a9bb25b7b4a457f2c7844b3c25ea1ddca3634bc",
+      "size": 211
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/README.md": {
+      "mode": "0o644",
+      "sha256": "1752f3d11034a89b9f228b92ce27f71d907f3bd048608daec9a8296f8a5c52dd",
+      "size": 498
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/AngelscriptGAS.Build.cs": {
+      "mode": "0o644",
+      "sha256": "73d792f5ed97d7b3202ad2b216c5a3f86a5587b4d12fd93b4c9b7542eb3f28c2",
+      "size": 1069
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptAbilitySystemComponent.cpp": {
+      "mode": "0o644",
+      "sha256": "2082ca7140363c161ea937dc353d52e070981b0ac03802693adf1598aeb7e87d",
+      "size": 22141
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptAbilityTask.cpp": {
+      "mode": "0o644",
+      "sha256": "e3470d9f8a469071a05c6e1e3fc16f45e4236d062d3a99811c7a881566bbe8ea",
+      "size": 4462
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptAttributeSet.cpp": {
+      "mode": "0o644",
+      "sha256": "a86a7a41059e1596f8d984bd42d101e3c7fafe4961101a7a238b2341c5ac175d",
+      "size": 7833
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptGASAbility.cpp": {
+      "mode": "0o644",
+      "sha256": "4afb1104b97ac72241a766f0910d1457889c8d4b8b0318830f2ad19072db42fd",
+      "size": 5813
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptGASActor.cpp": {
+      "mode": "0o644",
+      "sha256": "bdfcd7d0316a1d800d9bf114d0ee982f087076b570fd95aae8dbd3d5010045c6",
+      "size": 401
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptGASCharacter.cpp": {
+      "mode": "0o644",
+      "sha256": "b91d85e9b576df65288ce8879dc857b488dcee4563cc019fc4d0a7ec351e5c01",
+      "size": 804
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptGASModule.cpp": {
+      "mode": "0o644",
+      "sha256": "a52a6c700ff1fb3a1f4efe42a228f1e3325f930e320363ea092e5d4d0fa2c082",
+      "size": 2615
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptGASPawn.cpp": {
+      "mode": "0o644",
+      "sha256": "1a1774fb5b7d5bb4cbb08422256c723dbbfed8b7ff6fbcb7d34be89705bbe929",
+      "size": 597
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptModMagnitudeCalculation.cpp": {
+      "mode": "0o644",
+      "sha256": "da28248f344726f5e262455029ac64749fb1c1024242db0ce2c91779139c2486",
+      "size": 245
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_FGameplayAbilitySpec.cpp": {
+      "mode": "0o644",
+      "sha256": "0d7db3a0e020a2913d554df7b746fdb81b8f9de79bdc240a544c8be28ba3f6c1",
+      "size": 5507
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_FGameplayAttribute.cpp": {
+      "mode": "0o644",
+      "sha256": "0ad2eaf56a2dae1a9f60b272ce4b300cd0c24c00351e7293b443c3b310ea7d2b",
+      "size": 573
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_FGameplayEffectSpec.cpp": {
+      "mode": "0o644",
+      "sha256": "addc8c76e80ac2e0d2f8b0ddc114ee367db550e452ea1b3a16a785eaa8ab8ad1",
+      "size": 1597
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_FGameplayTagBlueprintPropertyMap.cpp": {
+      "mode": "0o644",
+      "sha256": "4fa5be0ba7d9f089b595704d9019f7b93a01b002eafaad1d837cbc98a4b183ec",
+      "size": 654
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_GameplayTaskOwnership.cpp": {
+      "mode": "0o644",
+      "sha256": "112699206755b021af2869d1086c9331dc54d5ca28c6898e507f11e7958ddb65",
+      "size": 1344
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptAbilitySystemComponent.h": {
+      "mode": "0o644",
+      "sha256": "aa8626d6cfe1f9527ed9a732a37c288bfd0dd6f43cfc1b2f285a09498e0075c8",
+      "size": 15805
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptAbilityTask.h": {
+      "mode": "0o644",
+      "sha256": "0b0dde73f31c1216b19a6a8b0b1a7bdcba10735eebd46cc091fe605b24ef6ff8",
+      "size": 4259
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptAttributeSet.h": {
+      "mode": "0o644",
+      "sha256": "78a95fb60360d8e65880d83d2a3d25fc43ce795c989b834a7c46cbba19a193a9",
+      "size": 5462
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptGASAbility.h": {
+      "mode": "0o644",
+      "sha256": "ff672bb329952120c066e98f59cd3cf3163f7ff5a194567c6fb7235554194557",
+      "size": 4748
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptGASActor.h": {
+      "mode": "0o644",
+      "sha256": "5d5a57ee1eb1f7feeecad46d81d28a2fdf6d67cc60f3a899e28a368a56a9bb7b",
+      "size": 929
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptGASCharacter.h": {
+      "mode": "0o644",
+      "sha256": "784ebed980ad60056fd586b9919ae3339053a0eca99f042db029c3a107b360ef",
+      "size": 1758
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptGASModule.h": {
+      "mode": "0o644",
+      "sha256": "51c87d22ced171fd25e591ad35f7bfe084aa174d2affaca5aad6e8a43f21d16d",
+      "size": 243
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptGASPawn.h": {
+      "mode": "0o644",
+      "sha256": "1395b9002104c3de3a6c2f28a38602eaffed4676ae6a373c93b5038471c8003f",
+      "size": 1373
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptModMagnitudeCalculation.h": {
+      "mode": "0o644",
+      "sha256": "3de5090231877f7e4a9d6952bd82a3b2bfc248f20ed2176a8118fa825a1a91fd",
+      "size": 478
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/FunctionLibraries/AngelscriptAbilityAsyncLibrary.h": {
+      "mode": "0o644",
+      "sha256": "4aed029ab3b1cb853c28194b96422a73b8bd13a7797e139ef57713920eef3012",
+      "size": 2337
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/FunctionLibraries/AngelscriptAbilityTaskLibrary.h": {
+      "mode": "0o644",
+      "sha256": "5915ab0a8c0fc1fd18b0bbdb09a2c568c97ff15d75cbe3e99e62a4de32960ff7",
+      "size": 26287
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/FunctionLibraries/AngelscriptGameplayCueUtils.h": {
+      "mode": "0o644",
+      "sha256": "f81b4ab16293b2a9a59bde14f4239b9945e015893fbc2366ea71e0dfd3f3d92f",
+      "size": 4451
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/FunctionLibraries/AngelscriptGameplayEffectUtils.h": {
+      "mode": "0o644",
+      "sha256": "70359499a72e37266df2bc8bceb633838b92c0fdf342dce7e0bd934a70a83eaa",
+      "size": 3488
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/AbilityAsyncMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "bed2db5c66de24b6bf8e45682ca3d4bac17b10db18d0397631d5a86354b7d72c",
+      "size": 379
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/AbilitySystemComponentMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "14715121f69b93f7b4a1dba86e0c08f5cb5f60d512a1b50a36cef77eeb339cf7",
+      "size": 9517
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/AngelscriptGameplayAttributeDataMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "ab26ed2760a9fc022d8d9f75f8eb4bd2c1d98cc1209a1c766acef063051a6649",
+      "size": 1257
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayAbilityActorInfoMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "a66360de9a69f531b1b2f4418f4900820c5f2e6aa1652a21ad69c4bf1e339356",
+      "size": 4363
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayAbilityMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "5a2c2f0e69ac5ef69998205614e5c5101e5c20c0c98565a69bbf2a00d9cde684",
+      "size": 576
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayCueNotifyMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "d3c5bb64105ba1738a8ce757bffbb9470ccd5e8158a28cd0fc75dd2695b57822",
+      "size": 560
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayCueParametersMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "3d4965ce5fe70418d4e28d7b345c65c5cf030d8502401ebd6c0780542df26367",
+      "size": 2565
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectContextHandleMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "fba4a2024ddd74e747c960d038df2c50e364de6ed5a3ec16b097f97738912d36",
+      "size": 7127
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectCustomExecutionOutputMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "f460549ce40cf73da8465295d0be7f25ae97f12e5687b59be9036b3fda66913e",
+      "size": 3117
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectCustomExecutionParametersMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "9d21b7cfb0eab5270393d12d81206bd797febd22b79fff65fc61b98d86c9eefa",
+      "size": 6771
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectExecutionDefinitionMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "d838bce17b973beceba5c540c16253d8163c763851c3b3dd7c75b55594b04c4d",
+      "size": 2827
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectExecutionScopedModifierInfoMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "f17c4f28ceb69eb57d29eac3d7b750ce730412d6f0be6e2481e56cca7b3b070b",
+      "size": 1040
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectSpecHandleMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "081460b97ab921692d8904b0fdaea8d93917753745ad0bde80bedeeebde775c8",
+      "size": 1794
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectSpecMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "e932a82e74423a367ab84d5168d7627b39cb96bd1e6eb82cc0d9b877aa62532f",
+      "size": 10391
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayModifierEvaluatedDataMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "c06f00e5951aeeba93e4bdf1b25f404f8d112b79201193514e47ae3c5f4d03e3",
+      "size": 1969
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayTaskMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "0242e2cf64ca4289d20bd65c0205eddb1ea973c8009deda5fc284fbf959f9010",
+      "size": 381
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/InheritedTagContainerMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "8e9defb7b1a79af1ea77d52dfcc3be0116f8b021b4137f387819772def817475",
+      "size": 682
+    },
+    "AngelscriptRuntime/Angelscript.uplugin": {
+      "mode": "0o644",
+      "sha256": "ec5a0f51b5b1f3b5b3e633aa58a7b0d33c87f6bec5576b20b4e5a91a13c16dcb",
+      "size": 811
+    },
+    "AngelscriptRuntime/Config/Editor.ini": {
+      "mode": "0o644",
+      "sha256": "e4a8385f9863969813adec65a49131ebffd8034e2c2563412bf8b67ab931bfa4",
+      "size": 324
+    },
+    "AngelscriptRuntime/LICENSE-MIT": {
+      "mode": "0o644",
+      "sha256": "032f3a74937e7f3e7ac0e39c35f8739736356544a77c749e78a5d1b3b55040d5",
+      "size": 1058
+    },
+    "AngelscriptRuntime/LICENSE-ZLIB": {
+      "mode": "0o644",
+      "sha256": "b2c93cff25829e4fe6964b9b2a54e3e1c3e981c08a6852cccbb41a945ffc6508",
+      "size": 869
+    },
+    "AngelscriptRuntime/NOTICE": {
+      "mode": "0o644",
+      "sha256": "4b49f7e65e404947a52679210b00aedcb48f2b2472896899a15f0ff863b49dde",
+      "size": 441
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/AngelscriptCode.Build.cs": {
+      "mode": "0o644",
+      "sha256": "ee02bb71d016c7634c422d3fd846be0acf92678141718545a0deba2e5d4e9e4c",
+      "size": 6325
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptAllScriptRootsCommandlet.cpp": {
+      "mode": "0o644",
+      "sha256": "adfa8f9ed4a735af7f0f2d64a1c69b2f7becc8446915918bdb04402925f4171f",
+      "size": 584
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptAllScriptRootsCommandlet.h": {
+      "mode": "0o644",
+      "sha256": "e4ac66c4c2e627abcdcd07d9955a2dc642012d0b869dead1635c79f9d74e0883",
+      "size": 444
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptApiMetadata.cpp": {
+      "mode": "0o644",
+      "sha256": "111519e2560708a8ae7f89cac6222da1eef8b2f107084f498a848d7b8107b27f",
+      "size": 4321
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptAttachmentCallerScope.cpp": {
+      "mode": "0o644",
+      "sha256": "4a78a6c0aa005f5bb94ba765d3a62636c11a96ec750fda3e381e4226d0e7688e",
+      "size": 13601
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptBindDatabase.cpp": {
+      "mode": "0o644",
+      "sha256": "02b1b23996388aac16d539899efea4f16513ed4f36e04ee42de17a9bd0f34a7e",
+      "size": 5802
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptBinds.cpp": {
+      "mode": "0o644",
+      "sha256": "fcec59f04368c7a297fd9347ecba3c4badbbfc48f6bf1cbce117a47377803deb",
+      "size": 26653
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptCallableDispatchAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "e1a3a9feae70326dd9fb1a81ede97cd0e5d60d5b4acabee1143e9ec384d2b25f",
+      "size": 20412
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptCallableMetadataAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "653ed87836600c4eb74aeb58f3e8cc5810dee9fe90e9b8867bf2b7d4f61332e3",
+      "size": 2355
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptCodeModule.cpp": {
+      "mode": "0o644",
+      "sha256": "d21b152e742d9e6eb3df98f282239ee5dcfb8318ec0aaf3094f53ed5fa4e4172",
+      "size": 8371
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptDocs.cpp": {
+      "mode": "0o644",
+      "sha256": "0f93e1d35b8af1260f3349ddcb9fc9517f0d433bdabebc8a8c35dd0a30acbbcb",
+      "size": 20221
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptExecutionQuiescence.cpp": {
+      "mode": "0o644",
+      "sha256": "cbab793d76642ee5759c14df5e9766efefc4b9c75cf97ef7459308c5b9dc9581",
+      "size": 6244
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptManager.cpp": {
+      "mode": "0o644",
+      "sha256": "026a18b8fa9ecb60d2d337ce904fcec294d625139df0220486007116d7d4f58a",
+      "size": 238238
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptReflectionAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "3ee8781721bf48b0e9caffdf9fbca10c26a4660e81fca97377e0b6aeaeabfd8e",
+      "size": 8817
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptReloadSafety.cpp": {
+      "mode": "0o644",
+      "sha256": "0d5a8a976f0962e6080b839c6d27b4b73ee92e80b85db5dc9be6f9bcd8f86b08",
+      "size": 12812
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptScriptUnit.cpp": {
+      "mode": "0o644",
+      "sha256": "858daba084ee1fa3dbe5c54fe85345f4c2c9cfbcf7aaf63d700161d055c834fe",
+      "size": 32362
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptSharedPtr.h": {
+      "mode": "0o644",
+      "sha256": "0351b12483eb4ec99794626f6c9dd5871d47fce18af6045dd4a592c698bf8ff5",
+      "size": 1034
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptTestCommandlet.cpp": {
+      "mode": "0o644",
+      "sha256": "849973597cc7787a31c8a632b6bc117ad3b8401f44b36ee2e528d9be074baec7",
+      "size": 505
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptTestCommandlet.h": {
+      "mode": "0o644",
+      "sha256": "c001e27f23ae6a03f19b25d2f3ebb8c00ac7b884ccb1df1841b814603b80b137",
+      "size": 424
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptThirdPartyLib.cpp": {
+      "mode": "0o644",
+      "sha256": "6abda48c04d8aa40d97903cba236113f6040d6d1770203878e085b8709e8b104",
+      "size": 931
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptType.cpp": {
+      "mode": "0o644",
+      "sha256": "31a4f1859a22214c02dd58478193471c241678ddf59872f5563e8f3e258d34a1",
+      "size": 28005
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/AngelscriptInstancedStructMigration.cpp": {
+      "mode": "0o644",
+      "sha256": "981d176ced933edfd3ddb412e1a572fa6651fd420f26eaf780419003e5e2cb42",
+      "size": 6915
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/AngelscriptInstancedStructMigration.h": {
+      "mode": "0o644",
+      "sha256": "27f6cf326b2f630d584ca8fd1a71509c3931e35bfc841aa78b3e621f5eb253de",
+      "size": 2073
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_AActor.cpp": {
+      "mode": "0o644",
+      "sha256": "fee28f970416c47ec92550f4ce2c681f203117f248244c354532df9e3a739b4e",
+      "size": 19039
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_APlayerController.cpp": {
+      "mode": "0o644",
+      "sha256": "28ca88cfa633b489ceebbce1e829eed1545305b8b832f9c61843848b037209a6",
+      "size": 585
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_AVolume.cpp": {
+      "mode": "0o644",
+      "sha256": "bb4b36bce75091f12955f65348f7621d8a3d7865bff8fe7d8e62eaa81d11dc4c",
+      "size": 1401
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_AssetRegistry.cpp": {
+      "mode": "0o644",
+      "sha256": "7a0fde2c6143b28dbb18c6522a26bcf527d3ab7f2176e74eb70234a76a212427",
+      "size": 14577
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_BlueprintCallable.cpp": {
+      "mode": "0o644",
+      "sha256": "b8a5146932d7a66def816a23d127af513fedf56759ae658106399ae4646389e7",
+      "size": 10922
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_BlueprintEvent.cpp": {
+      "mode": "0o644",
+      "sha256": "05816c642d2ead062f6ce6a4a816037d783cf03f4d0129a801a02760abca5261",
+      "size": 30068
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_BlueprintType.cpp": {
+      "mode": "0o644",
+      "sha256": "25ae989dfec0e7a2dd986b7b76a0c6afb119e94b23f0553ba5c88e5a7e30712e",
+      "size": 122168
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_CallableReferenceReturns.cpp": {
+      "mode": "0o644",
+      "sha256": "ccbb9350159292def224b290fb5ebc3adf7ca63652152abc4dc4e254405114a1",
+      "size": 2355
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_CollisionProfile.cpp": {
+      "mode": "0o644",
+      "sha256": "3797424e17f92ad92e93be69f45a3b034116e50b22d100c7c7a7ce990bf6297b",
+      "size": 1260
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_ConfigEnums.cpp": {
+      "mode": "0o644",
+      "sha256": "f8f70cf72c8174acd1eaf99e39cb0696995d74a91b90ac58afcd4db000832ace",
+      "size": 3465
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Console.cpp": {
+      "mode": "0o644",
+      "sha256": "3e9bcca08d1462fe580b8785892ed3e7b5fe68e38528fe0cb6834b3daec8fc54",
+      "size": 5878
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_CoreGlobals.cpp": {
+      "mode": "0o644",
+      "sha256": "a940edd680f7e4c14754e4965face4eb6576215a0922084ebb9f15f3cff8f14f",
+      "size": 695
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Debugging.cpp": {
+      "mode": "0o644",
+      "sha256": "24c4e3e7223c7676d3aac2a995d73513933dbc93ac494019fa2163facca8ac36",
+      "size": 5490
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Debugging.h": {
+      "mode": "0o644",
+      "sha256": "9fb147c5395b3d5c1bd17f6b169ea6977834ea0bda65e80ba74287c150440e02",
+      "size": 402
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Delegates.cpp": {
+      "mode": "0o644",
+      "sha256": "bb4d587098eccac9b9d8896a02ffd599c9341b62ff9d56c60e9babe45007ac11",
+      "size": 52570
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Deprecations.cpp": {
+      "mode": "0o644",
+      "sha256": "e81ac990d0197faf247268b8e40460d98210a0e1e74963b96b61350775375842",
+      "size": 2852
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FAnchors.cpp": {
+      "mode": "0o644",
+      "sha256": "06efece27fb7c98b9102b250510f48bc06d6e0ea21237fb476961c3795484e8c",
+      "size": 1466
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FAngelscriptDelegateWithPayload.cpp": {
+      "mode": "0o644",
+      "sha256": "bfb07b008d581a4a6a5d4c492cd3d0283e3b250a26dac76fb01c14957191c857",
+      "size": 8093
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FAngelscriptGameThreadScopeWorldContext.cpp": {
+      "mode": "0o644",
+      "sha256": "49619d47ca43f381adffdfa2cc4311650d7e43f0532fd89e779ff305f93f0810",
+      "size": 744
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FApp.cpp": {
+      "mode": "0o644",
+      "sha256": "ff1abace11874baeebd3ffeec0103bb56f7b21772206e848a9d738eda08fff79",
+      "size": 508
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FBodyInstance.cpp": {
+      "mode": "0o644",
+      "sha256": "a1615c5ba5656ef4bdb63498acc9c670dd929ac028557499281915be6a9eaec3",
+      "size": 749
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FBox.cpp": {
+      "mode": "0o644",
+      "sha256": "dddc1966a51566d3a17b452310cda6d4470289e561a879ea0aa398b1bf4c3857",
+      "size": 6911
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FBox3f.cpp": {
+      "mode": "0o644",
+      "sha256": "48a9473b1ef0374e8006b997d6b6a9103ba04307b24f34c2391ced70ddd19588",
+      "size": 4301
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FBoxSphereBounds.cpp": {
+      "mode": "0o644",
+      "sha256": "8ec75b355080ebd28894593308277dece5a15541507bec91df75164b3cc5fd5d",
+      "size": 7094
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FBoxSphereBounds3f.cpp": {
+      "mode": "0o644",
+      "sha256": "5fc0a592203aba377089c602fffdc445a43b9e12bfa9ecd314577b6c6818b316",
+      "size": 5824
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FCollisionQueryParams.cpp": {
+      "mode": "0o644",
+      "sha256": "b3d29606d39549128fd3fe10d7182fd2e475a975e6cace6cb8e611451dfbbfb9",
+      "size": 24222
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FCollisionShape.cpp": {
+      "mode": "0o644",
+      "sha256": "241723ad5ac8655704d9c758be6b0badb0dcb564113c1623c91411c055b46d7a",
+      "size": 5126
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FColor.cpp": {
+      "mode": "0o644",
+      "sha256": "1c260e258f4d9a5eac0daf81a8c57fa90aa47b1d9962bbd0779c7f1cdbb766eb",
+      "size": 3418
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FCommandLine.cpp": {
+      "mode": "0o644",
+      "sha256": "e93f3eb22f7ee3d0621cae30d460a82808dc4feb15338b6e26065c2bd68087cd",
+      "size": 686
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FCpuProfilerTraceScoped.cpp": {
+      "mode": "0o644",
+      "sha256": "3fceb66f47c99cc614c23de6fe65f3cab65e146c5c4a0301c1cb1a4881a46e2e",
+      "size": 602
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FDateTime.cpp": {
+      "mode": "0o644",
+      "sha256": "643da8d21ebb37ef44894add7b63c46503559b1d5be72d653ce7f43685cfda82",
+      "size": 5347
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FFileHelper.cpp": {
+      "mode": "0o644",
+      "sha256": "1b71666a35b7fbeacb0072fce2465273407ac265fa63c20925d439a1230e636c",
+      "size": 2797
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FFormatArgumentValue.cpp": {
+      "mode": "0o644",
+      "sha256": "59ab17270808033ce2d5f6b26f40858967dfe54c6b93b160c0d49fcc1cd37c1a",
+      "size": 3728
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FGameplayTag.cpp": {
+      "mode": "0o644",
+      "sha256": "2bb326f6cb44e29dff8c88a3063572f6feb611e662467d850200bd36e9733ba4",
+      "size": 4979
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FGeometry.cpp": {
+      "mode": "0o644",
+      "sha256": "6455ea62066ec63e7470b2bc0135d2b0e527cb2a4200d0ce843807b2135ca05a",
+      "size": 2218
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FGuid.cpp": {
+      "mode": "0o644",
+      "sha256": "c6ac2aa9b6e2e43463be3ac984f985d51c28d8d0b533e52da3f62d72c70af531",
+      "size": 2946
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FHitResult.cpp": {
+      "mode": "0o644",
+      "sha256": "6438797ffb05426b53f3d21404344f8be6d16fa5ad1b8e30e007b099a791c470",
+      "size": 5932
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FInputActionKeyMapping.cpp": {
+      "mode": "0o644",
+      "sha256": "01a2e4e197fe94de6fdbb1889003354f252be6b4839cc9ecf546b5a62ed689a0",
+      "size": 456
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FInstancedStruct.cpp": {
+      "mode": "0o644",
+      "sha256": "e2c735d362cbc06bc2cb71c6f2d744779d3d9c5a52c557e8e01c5ed3a8e0a45c",
+      "size": 9188
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FIntPoint.cpp": {
+      "mode": "0o644",
+      "sha256": "adc7aa29b5a5525f9593ff8dfb658252ae190be223a0b76773a797fbd64a1d3d",
+      "size": 4298
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FIntVector.cpp": {
+      "mode": "0o644",
+      "sha256": "91d5dc56081d831b50cee86b563377805bb335e603dd5fb57ece4ffdca80f2d2",
+      "size": 4532
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FIntVector2.cpp": {
+      "mode": "0o644",
+      "sha256": "a3f2149094f01aad93b43e020613158dca33c0065d1c14422f2c51bd27d65e1f",
+      "size": 3100
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FIntVector4.cpp": {
+      "mode": "0o644",
+      "sha256": "f696182775c0ffbd91ec5bce5ed3559d80ea3f275ec35278f918c48a1a9ea132",
+      "size": 4501
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FLatentActionInfo.cpp": {
+      "mode": "0o644",
+      "sha256": "4f1bd937e52377505d22faf5b0f7d57fd943bc700ca2f759f1cd28bff47edee6",
+      "size": 1121
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FLinearColor.cpp": {
+      "mode": "0o644",
+      "sha256": "ca290a918a391f7edaacce8ca168747f19380dd99294b8370ec0044b656d5ff9",
+      "size": 10830
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FMargin.cpp": {
+      "mode": "0o644",
+      "sha256": "ab8c8e6532e18c7cef5cc0ff655c6c04aa1a0559fb04510f39730c7bb1469303",
+      "size": 2898
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FMath.cpp": {
+      "mode": "0o644",
+      "sha256": "3b6a3fb26e264ebb39eeca09e16527630f5cf73511c0d2a34555a81112b33074",
+      "size": 60324
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FMemoryReader.cpp": {
+      "mode": "0o644",
+      "sha256": "946342afde919f88c4936673591a938248a6f4d94b105738b64bec6fcfe29e72",
+      "size": 3541
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FMessageDialog.cpp": {
+      "mode": "0o644",
+      "sha256": "85f04d530210fa9f5d3c6641af3f52e5287dcb2b99df7ab784e689ec2298ef14",
+      "size": 1070
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FName.cpp": {
+      "mode": "0o644",
+      "sha256": "b02c42457364c6f79c98a156e6553ff2c389b73f1f7ed1ba34ca174eb152b0fd",
+      "size": 6544
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FNumberFormattingOptions.cpp": {
+      "mode": "0o644",
+      "sha256": "9570db6e4f3f25983d9dc2bcde97c60c9f3bfe42e57ae51996f2943bbb276e99",
+      "size": 3340
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FOverlapResult.cpp": {
+      "mode": "0o644",
+      "sha256": "f72a1be221df16623a59fd1376a19fd651705f4fa4d33549375f5a22f6eff799",
+      "size": 1414
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FParse.cpp": {
+      "mode": "0o644",
+      "sha256": "4fed50ecce70f01d199ab6aeec3ebbd2099531b8f2ecfa6a52f2bb714abe42cc",
+      "size": 1160
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FPaths.cpp": {
+      "mode": "0o644",
+      "sha256": "c86992c829902ff717517e02de8ec7c12a1e17174bc4c0cc7781353d73794bba",
+      "size": 6229
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FPlane.cpp": {
+      "mode": "0o644",
+      "sha256": "3c631351cfa9c4d9d91a7fce3f5c5a303c1d2f4e46dbdabc82a32943579ac0cc",
+      "size": 2905
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FPlane4f.cpp": {
+      "mode": "0o644",
+      "sha256": "2656750690bdac8b1047824046084082849c3e8ea38bac7014aa21539b652e50",
+      "size": 1401
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FPlatformApplicationMisc.cpp": {
+      "mode": "0o644",
+      "sha256": "029f911f6232b3f58faa0f788e3a3015d8f7551634e4574be259d4f2ba38dbfe",
+      "size": 619
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FPlatformMisc.cpp": {
+      "mode": "0o644",
+      "sha256": "a6ed74cb4f307bc9ef5ee4a681454fcd896c177a5c2bd4637795515e1432864a",
+      "size": 865
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FPlatformProcess.cpp": {
+      "mode": "0o644",
+      "sha256": "be7e0dc75785fb1629c5216223ed20b66462eacb416b7f71321ede697fd2566b",
+      "size": 2370
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FQuat.cpp": {
+      "mode": "0o644",
+      "sha256": "ff760765de42eac898c6f6a1666718fe65cf8c71dcb7aaa8de18dbded2aff7c1",
+      "size": 10238
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FQuat4f.cpp": {
+      "mode": "0o644",
+      "sha256": "e0ca957f2e2362e846bcf7ec2d2c9ce536cb3f622706b6a5e5c8bd81fec695c6",
+      "size": 10380
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FRandomStream.cpp": {
+      "mode": "0o644",
+      "sha256": "81dfd94167a9004719d5d8c5f465ab585d1971ab5101c7fd048f53985b7ff7c5",
+      "size": 3746
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FRay.cpp": {
+      "mode": "0o644",
+      "sha256": "ed5874a57be83cd38fcde959bf3942994cf1274620b7ed3a97135f18dae77e23",
+      "size": 2498
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FRotator.cpp": {
+      "mode": "0o644",
+      "sha256": "79a19a7d5a78a1486d43da4846c9a367314a59f78a5301f6c2a3c60ddf1356e7",
+      "size": 10215
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FRotator3f.cpp": {
+      "mode": "0o644",
+      "sha256": "9295ada7b4d56b9a64fb5ad330cf35f2eb40ddbd7fcbfd96e17c74a9e5759805",
+      "size": 8612
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FSphere.cpp": {
+      "mode": "0o644",
+      "sha256": "140ef0ad3760525437fefa79a93b92986560f4de5c5967bc7cc23f0323682e3e",
+      "size": 3686
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FSphere3f.cpp": {
+      "mode": "0o644",
+      "sha256": "10e30b1e77f7c5f9685362e6811f42fd6989de7776c77f00a996923a7de97a2f",
+      "size": 3506
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FString.cpp": {
+      "mode": "0o644",
+      "sha256": "25fcc8a17140cf57373f1f39cb0d42c390d55f24f31f6a12a66a251f88842f0f",
+      "size": 46044
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FStringTableRegistry.cpp": {
+      "mode": "0o644",
+      "sha256": "6dee2267c38883c57d218eebcd77c61134f241d333b24a130326e4eae3c9a6e9",
+      "size": 3013
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FText.cpp": {
+      "mode": "0o644",
+      "sha256": "9df7a8e3625019710275edd315b4fcc26fa8ddea400025febc536e25fb4e2843",
+      "size": 15756
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FTimespan.cpp": {
+      "mode": "0o644",
+      "sha256": "7ef3f461593d9d9a35aceef4885399e4a1aa0f1213d2011415643bf1f2de5088",
+      "size": 7207
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FTransform.cpp": {
+      "mode": "0o644",
+      "sha256": "969f0d531317a271bc2420d1f13dc834046d0a50aa469eecd0e34645036f5a7a",
+      "size": 11661
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FTransform3f.cpp": {
+      "mode": "0o644",
+      "sha256": "a674ca55ae76a831bc0c5daf3f373d9c0e61e463d329392660b0203aab671c74",
+      "size": 11710
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FVector.cpp": {
+      "mode": "0o644",
+      "sha256": "891efa473aea0e0af5acb40ebb342a39c795ab6286b4fcada31b4bb987cf321f",
+      "size": 19352
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FVector2D.cpp": {
+      "mode": "0o644",
+      "sha256": "0040247d4f20fd83c35d1e14fceea28312a19cbb495f19b6db4799ffc1688da5",
+      "size": 9537
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FVector2f.cpp": {
+      "mode": "0o644",
+      "sha256": "8b8c51590efe2471cfd349f39d4d725b976dd1e015e7f89aa19664788262ce29",
+      "size": 10430
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FVector3f.cpp": {
+      "mode": "0o644",
+      "sha256": "59631dd7b6fbb60106e0ab0889b34f15ec75e51fca0b227c15471bb771bf71e5",
+      "size": 17429
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FVector4.cpp": {
+      "mode": "0o644",
+      "sha256": "1595e163be865dcc00a65f900ea3449cc486df02842fd037741b33bf7d7d9bc0",
+      "size": 4162
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FVector4f.cpp": {
+      "mode": "0o644",
+      "sha256": "7a82523448841e14454c6f519ba50ee6e94b16ecab95936115bbc8c7b3e7acf8",
+      "size": 4185
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Hash.cpp": {
+      "mode": "0o644",
+      "sha256": "88cdc5a50948abdc2f4476ca2bf1311e726db3a77c8069b292cdb78a5311fee0",
+      "size": 2178
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_InputEvents.cpp": {
+      "mode": "0o644",
+      "sha256": "81510db71304cb8a2fdd52dd6adcd5d37a35d110b1f5a9d0f55663e050654187",
+      "size": 23045
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Json.cpp": {
+      "mode": "0o644",
+      "sha256": "3d8702a08293f9103e41934b24a7e5f99f85b099d13c4f5fab54dbc269e1b29c",
+      "size": 23178
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_JsonObjectConverter.cpp": {
+      "mode": "0o644",
+      "sha256": "dc38564691c80172690d0b8fbfc8e3eefc9d661ddd20800af3a1e8748bbf8a8a",
+      "size": 3680
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_LandscapeProxy.cpp": {
+      "mode": "0o644",
+      "sha256": "21747f82d34c7d3ca7643e920179e630776dd36e71183c63a1d2e55831142f30",
+      "size": 703
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Logging.cpp": {
+      "mode": "0o644",
+      "sha256": "143531371715eed3c1bc4f4c3bf1302b57ae27b7152d4f9f6a5d7db1e5286cd6",
+      "size": 9130
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Primitives.cpp": {
+      "mode": "0o644",
+      "sha256": "74321f1172249871b53be22b2949fe6164e9c00c7271ecdceb4ec4ddd35b421a",
+      "size": 34822
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_SoftObjectPath.cpp": {
+      "mode": "0o644",
+      "sha256": "a6c34383dd34b71620d029aa7cd4745dbb365e7efad2ba645a104c41205a58fa",
+      "size": 3658
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Stats.cpp": {
+      "mode": "0o644",
+      "sha256": "cecc19224ad7463c2b2bc4c5e5a1c61a8f790276a218cbbfb2e098ad2c9ed333",
+      "size": 2348
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Subsystems.cpp": {
+      "mode": "0o644",
+      "sha256": "f27510b6b01791a5a028b9e9c29cdc964db77630f63a73a58f2d78eeba05fe10",
+      "size": 4479
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_SystemTimers.cpp": {
+      "mode": "0o644",
+      "sha256": "7ce85abf91d34aec7af6cedb87cd0682fc8c45bc6c23b451c5a4054b3de9daf6",
+      "size": 1091
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TArray.cpp": {
+      "mode": "0o644",
+      "sha256": "503f28964e6a682e1fec92fabdd579503aa85f8e92b0db0c63f98b532770f1b3",
+      "size": 56645
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TMap.cpp": {
+      "mode": "0o644",
+      "sha256": "06a12f07eaf2f371068a1fb07cae41e00374d1a94101b55ee882b1aa1aa37995",
+      "size": 42114
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TOptional.cpp": {
+      "mode": "0o644",
+      "sha256": "45a47bc5e529bba9e87db4fff88e583a7596d6fa210ce9b22506770d8aa46fce",
+      "size": 24228
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TSet.cpp": {
+      "mode": "0o644",
+      "sha256": "a694e97d4fd67d27850fd4bad6c9d8edcee93377df76bd9a9aa25fdeb49a0c45",
+      "size": 24006
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TSoftObjectPtr.cpp": {
+      "mode": "0o644",
+      "sha256": "c83b55843c3a32d7a86e59f9614c4eb92d418324e7fbc9314d3d58fbd9baf42b",
+      "size": 23627
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UActorComponent.cpp": {
+      "mode": "0o644",
+      "sha256": "dd3aa5e9c7e3e8848e115fd01b7990b1691060b19b829d74072699bd610d08a3",
+      "size": 13093
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UAssetManager.cpp": {
+      "mode": "0o644",
+      "sha256": "89127740aac55d3295a2a8728e015c0e10f97513a76907b2ac7ed4da5d12302f",
+      "size": 8293
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UCollisionProfile.cpp": {
+      "mode": "0o644",
+      "sha256": "1394a05bfa2bdc1a7b7e7c1104681abeda3c7a966f5176a8c58e1da256cd620c",
+      "size": 1079
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UDataTable.cpp": {
+      "mode": "0o644",
+      "sha256": "682a50ba9d93fad7c176ab4fe1391c6a89936f5aed2d6988c9d447a21e91fd3c",
+      "size": 9051
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UEnum.cpp": {
+      "mode": "0o644",
+      "sha256": "05728257f84837e2689fcc1d4459a910a3af181c40f3a1c8ada525affb68ff3c",
+      "size": 26373
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UFXSystemComponent.cpp": {
+      "mode": "0o644",
+      "sha256": "a724212a36b68241f73fe0e5289db68a4fc710c299a6afb87a6a4489d4966c5b",
+      "size": 431
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UGameInstance.cpp": {
+      "mode": "0o644",
+      "sha256": "e609f1cc02515e0c53fe7d7d4c08d312a92d47dc2822d726d64e5d2a4c3d59fd",
+      "size": 2247
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UInputSettings.cpp": {
+      "mode": "0o644",
+      "sha256": "3d60c63f741ede46e2eb07d214362de4f1b97d3e912383c6ae93abb36c8ffeff",
+      "size": 1328
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_ULocalPlayer.cpp": {
+      "mode": "0o644",
+      "sha256": "e3c31214dfb25b71e7cca63ac31abd8222f1f871d936e70855498c00de969111",
+      "size": 634
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UObject.cpp": {
+      "mode": "0o644",
+      "sha256": "dd2e133f94ae3f07281f05d207a5dcaa27db9db3279a88d438eac9dd14710fdc",
+      "size": 18994
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UPackage.cpp": {
+      "mode": "0o644",
+      "sha256": "c9b29df3a2df42a27c89844f9b4a58b9aa2bc871618ae9899d1e2696093fd913",
+      "size": 304
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UPoseableMeshComponent.cpp": {
+      "mode": "0o644",
+      "sha256": "de2fe277105cdbec991ee06031d13f2aac895b89054713c22f592a8d9ecc6e8a",
+      "size": 595
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UPrimitiveComponent.cpp": {
+      "mode": "0o644",
+      "sha256": "a5102364a162d1dc416b4f135ac59ebd211a7dceeb29ac26800182ee49710e54",
+      "size": 4811
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UProjectileMovementComponent.cpp": {
+      "mode": "0o644",
+      "sha256": "799ba5d07bd425845c2db04bb70abda160dacfa4d7a6b3318353c141b1bb20d9",
+      "size": 831
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_USceneComponent.cpp": {
+      "mode": "0o644",
+      "sha256": "ae4b382f705eb5e5e662995353033aa7c9a2c38dc3ce43d6fe0943bf55de1426",
+      "size": 5426
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_USkeletalMeshComponent.cpp": {
+      "mode": "0o644",
+      "sha256": "5f05b48b30f5d3c8666d768b493f40beb7bd8c7063861b8c6553ab91e4c846b7",
+      "size": 549
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_USkinnedMeshComponent.cpp": {
+      "mode": "0o644",
+      "sha256": "97bb83955e3690c7a48b8dcc50c9116a98c3eefa4783fdeeb03452c5f5c9ed66",
+      "size": 536
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UStruct.cpp": {
+      "mode": "0o644",
+      "sha256": "28c52dbfc8b2841a5e9d34d3160197a53249d0cc6745aa5a007da0aa683d6c71",
+      "size": 56250
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UUserWidget.cpp": {
+      "mode": "0o644",
+      "sha256": "98d6133936bee38f343a5ecfba99556e98fb468a44406a9ed9b79b3784d9460b",
+      "size": 13253
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UWorld.cpp": {
+      "mode": "0o644",
+      "sha256": "144aa3a4cd83494c6cb141af0972b75c900b6d731e8355b5967f3037fe7c679a",
+      "size": 4296
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_WorldCollision.cpp": {
+      "mode": "0o644",
+      "sha256": "b1c926bc762979824d5f06496eb70cd66766ee46498b80564e9f9f05598586ca",
+      "size": 38984
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/FCpuProfilerTraceScoped.h": {
+      "mode": "0o644",
+      "sha256": "741a808ca9457b013b21a880c1edb7c617caeed494fa1c06636675fde71988d3",
+      "size": 552
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_AngelscriptArguments.h": {
+      "mode": "0o644",
+      "sha256": "0e21c1036db450a5792023c955c07caa0c4d0ffbcfe51103a241c63d8e35b40e",
+      "size": 3920
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_CppType.h": {
+      "mode": "0o644",
+      "sha256": "cfaf4b3bb58e78430c00c3b689b0dc3b8abad03380ad03ddded3a54cf0ec2a95",
+      "size": 6696
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_FunctionSignature.h": {
+      "mode": "0o644",
+      "sha256": "4a9576ba8ce1e175cac58cec005f216ed9290c168564487e5d8513c22d6165c4",
+      "size": 18321
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_GetTypeInfo.h": {
+      "mode": "0o644",
+      "sha256": "5ef7d458856b52d1df6c3e6646c33f31648ea650c66e62557e2a1eb408f29fee",
+      "size": 183
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_PropertyBind.h": {
+      "mode": "0o644",
+      "sha256": "41b1ea983cfec6d83383bbbac0ccf0ce43683eeee93374f056d7a95b4db3f8c9",
+      "size": 2619
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_StructType.h": {
+      "mode": "0o644",
+      "sha256": "2e7eff9216ad7be6fc657ac322d1437371333869ffd8ca129e7ceaa1be9ed6ee",
+      "size": 6481
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_ToString.h": {
+      "mode": "0o644",
+      "sha256": "4c6c9e62476b75ba8862019db5317ace1d226958c258d99ab0c6ef62cd95d334",
+      "size": 619
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/UObjectInWorld.cpp": {
+      "mode": "0o644",
+      "sha256": "2e33d0c4a6975fcd312e21b3f292e07a44e408a33b7b3d0e9e555a799222ab68",
+      "size": 516
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/UObjectInWorld.h": {
+      "mode": "0o644",
+      "sha256": "3deae870ebdc39859dec1469460ec07d3fa8f2ac51afef9f0d40528514299b2d",
+      "size": 498
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/UObjectTickable.cpp": {
+      "mode": "0o644",
+      "sha256": "90aa06ccbec8734f2a2b8c5f0ed4c59c6c07f2222a9f64ef95f4ac1fa807ea61",
+      "size": 701
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/UObjectTickable.h": {
+      "mode": "0o644",
+      "sha256": "5963387a7b382a51a6569ffa76919a7d2240bd8b89b5aa83d19f42e9a9f64b67",
+      "size": 1287
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/ASClass.cpp": {
+      "mode": "0o644",
+      "sha256": "fdef0490d3d17a0c721cfd36600d5e97e3962a2ce944fbe7fe117b6a67154a32",
+      "size": 161165
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/ASEnum.cpp": {
+      "mode": "0o644",
+      "sha256": "d5692734de71e6717af95278e66bfc8ed31c0c72b5745ee238ac2c61f04cef2c",
+      "size": 239
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/ASStruct.cpp": {
+      "mode": "0o644",
+      "sha256": "7a8d56e93a317f11eefb4ddef4b0145a1a5df83d786551de1b16e2b01a20bd32",
+      "size": 24873
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptActorBindingState.cpp": {
+      "mode": "0o644",
+      "sha256": "41f75b58ab0511d63e0e049e18a419ab951faacbef78fee077f52e4e14464baf",
+      "size": 2047
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptActorBindingState.h": {
+      "mode": "0o644",
+      "sha256": "18a97eb8b48179481101bc3c9451d3122604542635c87949c85e2824874bef48",
+      "size": 545
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptActorConstruction.cpp": {
+      "mode": "0o644",
+      "sha256": "4c6ab9dec9c018d9005d42e2816957197993c0083e27e7ade871e71dcecbafc2",
+      "size": 2658
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptClassGenerator.cpp": {
+      "mode": "0o644",
+      "sha256": "62d6c3001a3c115fbd74c1ef40b957a9e4a6942085a0c4ff5b41a80a5a9580a1",
+      "size": 265932
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptClassLifecycleAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "d160315ff55731890697cb33d49b8a0c3d5f84e93f0f7b9435a4f63356b8edbe",
+      "size": 3240
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptClassState.cpp": {
+      "mode": "0o644",
+      "sha256": "57a0215653760aeff522c273b64db0d8e5dca890d5804166a930f1a2fca5150a",
+      "size": 3599
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptFieldDestruction.cpp": {
+      "mode": "0o644",
+      "sha256": "088e345f2e16944f2cc33f85b4363732507d1e99548e2e804f4eb50b43a5b96b",
+      "size": 11748
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptFieldDestruction.h": {
+      "mode": "0o644",
+      "sha256": "1a3c5033280479bb4bdefa2a03f958798b5c7548f7bbd493f318ce11136fdd1a",
+      "size": 1461
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptGeneratedClassFunctionStateAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "3e474c47e1b01589c3474d38eeed7944dcd8c7a64074d4a68a4dac993e8a90de",
+      "size": 4962
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptGeneratedClassFunctionStateAdapter.h": {
+      "mode": "0o644",
+      "sha256": "1771f283b93cdc6c6b743760aec2598e4f7a433e99ca35004f4712adac1e8b55",
+      "size": 2318
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptInstancedSubobjectReplacementAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "650ce60ca235da738a26199fa6a5f08144604de6928199fea1ac89e647ef56d5",
+      "size": 3445
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptInstancedSubobjectReplacementAdapter.h": {
+      "mode": "0o644",
+      "sha256": "7b188ff9d394d4127ff1f481dbcc6ea79b0adfbb2b276bb6fff54e9c04de5827",
+      "size": 1336
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptObjectDestructionAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "c9907a47377bd593ad7d80893f5539fc0195db7b897699cff5f133d602814ed5",
+      "size": 2666
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptObjectDestructionAdapter.h": {
+      "mode": "0o644",
+      "sha256": "42463388654231441a2c496966d87b87b6d6221bbe5fb71798ad2e5d0404c9c1",
+      "size": 1536
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptPropertyInitialization.cpp": {
+      "mode": "0o644",
+      "sha256": "f6fbb2c4689b6c7b3f9dfa60d3782e3e607647c0571056a15808a07b43735c02",
+      "size": 6336
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptPropertyInitialization.h": {
+      "mode": "0o644",
+      "sha256": "5e276cfde08545a5f354343f5f98a8366bb76912e32488b9c763c23c6bebde26",
+      "size": 420
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptReplicationShadow.cpp": {
+      "mode": "0o644",
+      "sha256": "9afc5b5c2311fa2e43f3a9d9d78ede1e511f82795d4a6180bba58938395ed46f",
+      "size": 17809
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRetiredModules.cpp": {
+      "mode": "0o644",
+      "sha256": "42950f0435578ec8c03810ddeb210118f9232a69e8d550d883c58115c503c19b",
+      "size": 4371
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRetiredModules.h": {
+      "mode": "0o644",
+      "sha256": "24a0c4715db0a002649af8a92ec55049c4dadefb8efb9b532927cd73840bace4",
+      "size": 442
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeFunctionDispatch.cpp": {
+      "mode": "0o644",
+      "sha256": "d399923eeb64cae48f12a29ffbbc0a415fe045eefb7761239380a9877593b578",
+      "size": 3927
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeGcLifecycle.cpp": {
+      "mode": "0o644",
+      "sha256": "dc923e8dab6672abd1bb333e7991a039891709868f1604137ce60f42c8b0578e",
+      "size": 257552
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeGcMirror.cpp": {
+      "mode": "0o644",
+      "sha256": "b358d55d61c4133f1a39575d97e2e23cfd68b328242f50b7d0227b855a71061c",
+      "size": 168661
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeGcMirror.h": {
+      "mode": "0o644",
+      "sha256": "1d6908e45d48855fbf3aa7593030ce9bee0c6dd06d654a231ee38f281514adb5",
+      "size": 9533
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptScriptClassLifetimeTransitionAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "7dbe962e2c883def1f714c5a4ecc4edca145391b403cbfabe9b38633b2cc6545",
+      "size": 5674
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptScriptClassLifetimeTransitionAdapter.h": {
+      "mode": "0o644",
+      "sha256": "99b4682a5b3236e995ae55fae26317a31ae7aa3000563ad034a3dab2a0e9cfb3",
+      "size": 2441
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptTerminalDestructorAdmission.cpp": {
+      "mode": "0o644",
+      "sha256": "2879118575b974024f8b2eca5fff6e7449a0d0007e1b96df94c5ec0ec42be59b",
+      "size": 163061
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptTerminalDestructorAdmission.h": {
+      "mode": "0o644",
+      "sha256": "ab6991f730d315c1e25510887f74765f6008c550ad130c0ed02cbdc7a998efd3",
+      "size": 11135
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/CodeCoverage/AngelscriptCodeCoverage.cpp": {
+      "mode": "0o644",
+      "sha256": "ca3f85e80b71ad5ad9737400e46648d4024f8e2e5ac3416d0e9cfb0599216959",
+      "size": 6277
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/CodeCoverage/AngelscriptCodeCoverage.h": {
+      "mode": "0o644",
+      "sha256": "44948033934f504b830f5a80b4255d320a43fd2fcddbce277b2081016937fc65",
+      "size": 2419
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/CodeCoverage/CoverageReportGenerator.cpp": {
+      "mode": "0o644",
+      "sha256": "7244072b729bbb8616be7fdfe52a9fd458c1926d03d55b6398b93f9c8cf1d153",
+      "size": 9191
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/CodeCoverage/CoverageReportGenerator.h": {
+      "mode": "0o644",
+      "sha256": "a1657aa8564653fcdb67e2f28a9a2334257ebfa51f33abdde325ea1cd3af1c7c",
+      "size": 1963
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/CodeCoverage/LineCoverage.h": {
+      "mode": "0o644",
+      "sha256": "eb074ee2a012aa5c6ab72cf000380e1baa6d18d667e5d67bcca151d84a1206ef",
+      "size": 976
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Debugging/AngelscriptDebugServer.cpp": {
+      "mode": "0o644",
+      "sha256": "ac59f567715acf8d29b72f919b06a104af316fd51c9c5416315f3d07bf53650e",
+      "size": 108884
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Debugging/AngelscriptDebugServer.h": {
+      "mode": "0o644",
+      "sha256": "95a0d79e1215db63735f3aae11a680218a8a5b7ba3764ceb3bed63984b7613ec",
+      "size": 17209
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptExtensionPipeline.cpp": {
+      "mode": "0o644",
+      "sha256": "4b849a89fb62e50c80a766df1f952742b8d97d1782342ba3926e852ac099d608",
+      "size": 14984
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptExtensionPipelineInternal.h": {
+      "mode": "0o644",
+      "sha256": "d15b08fb015eba1bd427c5a6a502a6fafce3a054e313f113b4308053aee193b2",
+      "size": 2644
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptExtensionRegistration.cpp": {
+      "mode": "0o644",
+      "sha256": "e26698a8476ae82d47bbad80583a17be6cd11c457df49f1f2b671f19edd65db0",
+      "size": 9650
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptModdingInternal.h": {
+      "mode": "0o644",
+      "sha256": "901d86300fd3323d44c90180a1e38786d9c21229634595a34ce26cbfdaf3cb01",
+      "size": 5537
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptModdingRegistration.cpp": {
+      "mode": "0o644",
+      "sha256": "3c4fea1eb1cf33d7a5c23adbe3834f3ed7c065b52dea2e26d6483b724ad0ed59",
+      "size": 13663
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/Cache/AngelscriptExtensionCacheCompatibility.cpp": {
+      "mode": "0o644",
+      "sha256": "140ffc2fdc720e2ae6a111e7fe423d9e48a4857b978f5313f6280754d86e4dcb",
+      "size": 5077
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/Cache/AngelscriptExtensionCacheCompatibility.h": {
+      "mode": "0o644",
+      "sha256": "e4a0505519393ce5ae1bab479475d9bea211ef98063aa11634e1226c6c38efce",
+      "size": 1660
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuper.cpp": {
+      "mode": "0o644",
+      "sha256": "7e8b778e939c6fbcad7788a22e1ec33c66712190950bd55f08d79b03eea570a6",
+      "size": 7010
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperBinding.cpp": {
+      "mode": "0o644",
+      "sha256": "46afa3beb0c06367e02db58922dd6cd711f220a0354563070c7bf2681fa72b63",
+      "size": 5048
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperDispatch.cpp": {
+      "mode": "0o644",
+      "sha256": "456481fece46548f018621a3124699de7eb7834e6650617c102afae67f092f0e",
+      "size": 6179
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperHost.h": {
+      "mode": "0o644",
+      "sha256": "f8321a953d2582187bb1abacdc6557b85c3e34bed361a97fc1b575eb6bdf5838",
+      "size": 2859
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperInternal.h": {
+      "mode": "0o644",
+      "sha256": "2bb81f46bdf3e36c2a8761f8bff8f8253a44ab0a468eb1856078707b3dffb7a0",
+      "size": 1945
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperThirdParty.cpp": {
+      "mode": "0o644",
+      "sha256": "91ac906932574558c5a7d58a17f6fae1a8bc5278db1ca360edf29dc80f8c8a31",
+      "size": 14903
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperThirdParty.h": {
+      "mode": "0o644",
+      "sha256": "fb7b47bf92cb7c46f77547a56b7e76a5c3b3fb621b2e4ae526ae53fb434c729f",
+      "size": 1901
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/FunctionLibraries/AngelscriptScriptLibrary.cpp": {
+      "mode": "0o644",
+      "sha256": "ebfeb125fcd058f85286daf7a12007d08e6bc6796848b0bd5e85c4798f06c86e",
+      "size": 1077
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Preprocessor/AngelscriptPreprocessor.cpp": {
+      "mode": "0o644",
+      "sha256": "e1e9768231aa8a6244280b3606dc67cd14c8e0859486b2f488d372936e213eef",
+      "size": 141468
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Preprocessor/Helper_CommentFormat.h": {
+      "mode": "0o644",
+      "sha256": "1b7d63eeefc228df77033d31870328dd30083ff927c564fa8e70531c79e1bafb",
+      "size": 6087
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/AngelscriptBytecodes.cpp": {
+      "mode": "0o644",
+      "sha256": "8351df9dda46633d4c4f15f476a608abd990b059b3660186289b2c6eab06e2de",
+      "size": 207839
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/AngelscriptBytecodes.h": {
+      "mode": "0o644",
+      "sha256": "d6cc543b013e14991014f98e43d7464ea9d6f88497acb330dc9f13996ad8ba15",
+      "size": 4056
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/AngelscriptStaticJIT.cpp": {
+      "mode": "0o644",
+      "sha256": "7ec3b2c95ec381b1bdb1d4c73cb50e4229e1699e49cbdbe1b2690b55a6964912",
+      "size": 143054
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/AngelscriptStaticJIT.h": {
+      "mode": "0o644",
+      "sha256": "4bc10152ee7631cd14c106ad5b50a0abc7e9401ce000425564fec2b704598a4f",
+      "size": 13490
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/PrecompiledData.cpp": {
+      "mode": "0o644",
+      "sha256": "89a7f492a8fd1c3084caa1f320129373b22358b7a59dd76c9f5d6c34ffd71453",
+      "size": 135016
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/PrecompiledData.h": {
+      "mode": "0o644",
+      "sha256": "607afdc4b60f1220d699f7b166d0d76823377188474c9fc7aa510edef2678fb8",
+      "size": 30315
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/PrecompiledDataAllocator.h": {
+      "mode": "0o644",
+      "sha256": "aba041cf55e784a6d0142405792939951637f97547b8cacfb967d3ad7111fdfd",
+      "size": 3072
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/StaticJITBinds.cpp": {
+      "mode": "0o644",
+      "sha256": "c91db3f9fad24f48c2ff2af85e0bcd29060cbf74e76716580fd409740aaf9f67",
+      "size": 36615
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/StaticJITHeader.cpp": {
+      "mode": "0o644",
+      "sha256": "1cf737ae116a6c65956828866d61fc6b5f8d621310f314a81bfc3efb8bed9505",
+      "size": 10099
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/StringInArchive.h": {
+      "mode": "0o644",
+      "sha256": "e5474804d140e76623bb874de57f06ae50768ed2c4b3dc7e7f5ab43f49e6054b",
+      "size": 4611
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/AngelscriptTest.cpp": {
+      "mode": "0o644",
+      "sha256": "f89874f824da99d7235ca054bdb797f73bb80330aa7f482a2c2a5f2ca38e8f86",
+      "size": 22547
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/AngelscriptTest.h": {
+      "mode": "0o644",
+      "sha256": "edb79d144031c109e4ae635dbe53c35fca79a3df256a3542f81e5f9011a7fac0",
+      "size": 4453
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/AngelscriptTestSettings.h": {
+      "mode": "0o644",
+      "sha256": "6e7a179c5884c4d1e49497ef27231b1db0fab05a595e0027ed05d9a052f4206c",
+      "size": 6192
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/DiscoverTests.cpp": {
+      "mode": "0o644",
+      "sha256": "670672719d272a775a49f1ae913f810b261a7a5740a03e2d2fa817e42cb292d2",
+      "size": 7032
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/DiscoverTests.h": {
+      "mode": "0o644",
+      "sha256": "389cc156d09b2a05a2245e73ae93ff43a33c234340c33a43e8e88338dfa0827d",
+      "size": 934
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/IntegrationTest.cpp": {
+      "mode": "0o644",
+      "sha256": "053299598138fb1377196845e05b6893904425a74dba2785e3042f6b67884a29",
+      "size": 34883
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/IntegrationTestTerminator.cpp": {
+      "mode": "0o644",
+      "sha256": "53c0a63241520a0d11b71283a2adbc23df2aedc5b3192eedcf522179f4f10b02",
+      "size": 5114
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/IntegrationTestTerminator.h": {
+      "mode": "0o644",
+      "sha256": "7bec0a1880464c7c3428c45be101a7ff5fb887860516e59a454cb74e82fa97c7",
+      "size": 1631
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/LatentAutomationCommand.cpp": {
+      "mode": "0o644",
+      "sha256": "691f4c9fdd194f7c12152b6eca60b476713c24d07cec2550580972e2b1741d21",
+      "size": 3978
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/LatentAutomationCommand.h": {
+      "mode": "0o644",
+      "sha256": "594fb1f6bc1ddead79e6e89b52e76fb03260a08617c4d9f2141e2ae588cfd652",
+      "size": 1890
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/LatentAutomationCommandClientExecutor.cpp": {
+      "mode": "0o644",
+      "sha256": "8c441761b72ebaab2c0334f4351925e42bd8048308c27376edb2979164b95a63",
+      "size": 12105
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/LatentAutomationCommandClientExecutor.h": {
+      "mode": "0o644",
+      "sha256": "4bf92b9b98fa924b6377f0d1396533bc7edc27a901915ca06b30a941a5b2bafb",
+      "size": 4395
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/Network/FakeNetDriver.cpp": {
+      "mode": "0o644",
+      "sha256": "ef8e6fefabdfc20d0c9332ab1fd2f3a0d0d9aa21e11dab086d8d20cedc84078c",
+      "size": 174
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/Network/FakeNetDriver.h": {
+      "mode": "0o644",
+      "sha256": "a70b5f4bccd38ebb9a7510e5f31b805af7dbc881fb9107444d3ce31ff6690952",
+      "size": 292
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/UnitTest.cpp": {
+      "mode": "0o644",
+      "sha256": "a79c6c59f8cbda1207d4cbafac8df88096a2579407dfc5f1a7241649d2bd47be",
+      "size": 26785
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/UnitTest.h": {
+      "mode": "0o644",
+      "sha256": "76434a4a16fe8c78e9422b99176c4a71d49945c8c97a88dedc71a1f8bb904195",
+      "size": 2151
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptAnyStructParameter.h": {
+      "mode": "0o644",
+      "sha256": "dab54aa1326869dc732572b12df293389a5296f60057f7f595ca8788bea805c5",
+      "size": 650
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptApiMetadata.h": {
+      "mode": "0o644",
+      "sha256": "ac4304c11de04eb2b38c2dacd0d38f46e1d85a164806810848a3732d8bc01dce",
+      "size": 1116
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptAttachmentCallerScope.h": {
+      "mode": "0o644",
+      "sha256": "7ccc63b616f8137407440e680b6be29661b9efda088e82a1784da001d630f24a",
+      "size": 1964
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBindDatabase.h": {
+      "mode": "0o644",
+      "sha256": "40aece4e7a8fd2ac2fca035b2e54e2ed414bfd1f137a0434c830c8f60cc47978",
+      "size": 3758
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBindString.h": {
+      "mode": "0o644",
+      "sha256": "3b66524a8a1a159b800df6b1facb841c54c262ccc5d7c176ce08f3e338adbcf4",
+      "size": 2479
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds.h": {
+      "mode": "0o644",
+      "sha256": "22c58fa82efd5d24fdfc95eb5140e48ded8e8f18f91cbe46443465cd6ca44791",
+      "size": 26325
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_Actor.h": {
+      "mode": "0o644",
+      "sha256": "808a5bab782e73984d1aabd7f9f7331d52dcb7f58ef6e4b5a7b2805b8229f0bf",
+      "size": 2702
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_Console.h": {
+      "mode": "0o644",
+      "sha256": "f841b044fbaf292f2f4c5be8e161bcfc1e2c2dfacb0466f3c94add6410da55a2",
+      "size": 2342
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_Delegates.h": {
+      "mode": "0o644",
+      "sha256": "0359d4b725c85843ed62eb80aaab86e912b9b203efeb6288cc154116e8f0f3e6",
+      "size": 3294
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_FGameplayTag.h": {
+      "mode": "0o644",
+      "sha256": "43ff2cf96e3e5beeb8b05883b18e88138618a1f58b6678bae4f80a634a0360ff",
+      "size": 98
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_Helpers.h": {
+      "mode": "0o644",
+      "sha256": "f2ce09e512e80bc88868cfecd2a053787ab4e796e65d56a285656c2eb45c1129",
+      "size": 8806
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TArray.h": {
+      "mode": "0o644",
+      "sha256": "b71720811706a65f8445db1ac9014216f9187a23e7d47e79f1aa0b2eecafee0a",
+      "size": 3035
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TArray_Functions.h": {
+      "mode": "0o644",
+      "sha256": "dbded014282fd009521c74be92fb37ce30fe85dbb90bf56fbc7c4131611988e6",
+      "size": 14680
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TArray_Structs.h": {
+      "mode": "0o644",
+      "sha256": "73263c91a49d8ab79404b76b90ad1646fbb147deb4675cc35dd3e825af5f6807",
+      "size": 714
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TMap.h": {
+      "mode": "0o644",
+      "sha256": "74563c4ceb3843266d18a21618ec6b982875258f919eeb4d5092db3a0239840b",
+      "size": 17491
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TOptional.h": {
+      "mode": "0o644",
+      "sha256": "617ca32b0cbe1f62c5b39cc3b9f34b5511b2420f948791f887d07bb7735782fb",
+      "size": 4642
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TSet.h": {
+      "mode": "0o644",
+      "sha256": "cb3cd4d84ad71d95ddde5db238f863c00408ada2df53a31b724d44c1fd8c8df6",
+      "size": 11681
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TSubclassOf.h": {
+      "mode": "0o644",
+      "sha256": "b0603d172e4ad8dd83855a829b6bc193717f3b5d28b83ff46239da6dc56b07ff",
+      "size": 3545
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Helper_PODType.h": {
+      "mode": "0o644",
+      "sha256": "f1a50b26c73d45ed62a70bb5c9ce96b9f04ba4d60462ca4b4260579ee6fc7bd7",
+      "size": 5230
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptCallableDispatchAdapter.h": {
+      "mode": "0o644",
+      "sha256": "b26caf668626656a8e4dee1c98578884dbcf83636ea62bf4fd2293cd381c4915",
+      "size": 2190
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptCallableMetadataAdapter.h": {
+      "mode": "0o644",
+      "sha256": "9bacc64b8b3e3334e690554c5bfa1f5dd44d69b6186c381adb0514252541a844",
+      "size": 445
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptCodeModule.h": {
+      "mode": "0o644",
+      "sha256": "35f99f340112f68a3ffff4f089e422e7fd906fc618b838d1d6f89c9223ac2d19",
+      "size": 7835
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptDelegateWithPayload.h": {
+      "mode": "0o644",
+      "sha256": "366a6dab88cf0d837e7d34f58359914d5ca93fa4e4b84bbd0109fdc39c711a48",
+      "size": 1780
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptDocs.h": {
+      "mode": "0o644",
+      "sha256": "b298edb5d67b1bf749b615dbf443efbeb13120761c0fcf29cb40dabdd0197c23",
+      "size": 2240
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptExecutionQuiescence.h": {
+      "mode": "0o644",
+      "sha256": "f1ad4559be7ca75a7554a0ba262ebe7f929b4e3d36776df2f559ac3b29f07871",
+      "size": 2505
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptInclude.h": {
+      "mode": "0o644",
+      "sha256": "a47d6219e3550985b07276aaee1f928b86a73adac818178e4da98f916c38d050",
+      "size": 111
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptManager.h": {
+      "mode": "0o644",
+      "sha256": "55d328cc6ec8994cc1b74b8b6603a5baef0dc79d7bd0e7e6a3c5af704913edbf",
+      "size": 50860
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptReflectionAdapter.h": {
+      "mode": "0o644",
+      "sha256": "7e058ef855a8cfb87b0d25cdc0bc2aae8787943ba6a8b304638e66ea558d028d",
+      "size": 1418
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptReloadSafety.h": {
+      "mode": "0o644",
+      "sha256": "ca7d7ca2d73418237e2976e4c13c2feb4c39fde237f9d1bf0917573b01a0deee",
+      "size": 5941
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptRuntimeGcLifecycle.h": {
+      "mode": "0o644",
+      "sha256": "bf5a4c75761b4a5a9995afb0aed9eceecdee312e7791f3b33b302fad2cd2a47d",
+      "size": 10314
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptRuntimeGcMirrorAPI.h": {
+      "mode": "0o644",
+      "sha256": "747f20414c55e866e9496a4b96b3b3385e9a2c004ce3137e0be0c9f101cb9eb7",
+      "size": 4039
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptScriptUnit.h": {
+      "mode": "0o644",
+      "sha256": "30529c71da405862ca49cb941e89ca5a65ca59b4aac6f12190b66ceec3b60ed1",
+      "size": 1766
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptSettings.h": {
+      "mode": "0o644",
+      "sha256": "83fff3a754a42980bf56f05c836f4ccd88f2ace7fcea154bd2fbe6c1c6aba936",
+      "size": 13882
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptSort.h": {
+      "mode": "0o644",
+      "sha256": "4b3ad2ab884aecde9bff02a6df70eb7997eb22568f32dbb0a8611e4bd20adda6",
+      "size": 1825
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptStockAutoCaller.h": {
+      "mode": "0o644",
+      "sha256": "70306835ece0ee672a5819e730c366e2c7f6d1bbc1d54b679b557c0b42fa0153",
+      "size": 144
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptType.h": {
+      "mode": "0o644",
+      "sha256": "bd2d0d0f4e20e2be08784fe9dca1fa49ddc129d3be22b32647d009dd459b6f0e",
+      "size": 31891
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/BaseClasses/ScriptEngineSubsystem.h": {
+      "mode": "0o644",
+      "sha256": "1fd29a784cdda50f3bc1e940846ebca7a26133760c902c1fef52990bc46baee4",
+      "size": 3263
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/BaseClasses/ScriptGameInstanceSubsystem.h": {
+      "mode": "0o644",
+      "sha256": "9ecabb44cb70819d4fe0b6d0b50566b06251f725a1ec6843975fb4b74d85169b",
+      "size": 2234
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/BaseClasses/ScriptLocalPlayerSubsystem.h": {
+      "mode": "0o644",
+      "sha256": "982b70db9255109d235d61a5bd59e16479307211afcf9940dc038e3ababb3189",
+      "size": 1245
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/BaseClasses/ScriptWorldSubsystem.h": {
+      "mode": "0o644",
+      "sha256": "afeab37e31affb4393a7225df935f854b536df7dd85ada49bd6ee2742050120e",
+      "size": 3738
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/ASClass.h": {
+      "mode": "0o644",
+      "sha256": "db4d3f6bc119e1d1f0f033c2993b9b1c772deb9e7084f43c1905f21c54ee7967",
+      "size": 23562
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/ASEnum.h": {
+      "mode": "0o644",
+      "sha256": "4001b47b37d4727c017223e04eef86cc96a88bad42d3a2b6ed513074c561fea4",
+      "size": 368
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/ASStruct.h": {
+      "mode": "0o644",
+      "sha256": "f0fa055c76f3b4c900697302dcee4c44b30ccf3eb38e35afe785b37f39809580",
+      "size": 3835
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptActorConstruction.h": {
+      "mode": "0o644",
+      "sha256": "19a4b33338e8de118bb35edb4c8563f7cfddf6fc0084e43c058a8433f317dd39",
+      "size": 454
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptAdditionalCompileChecks.h": {
+      "mode": "0o644",
+      "sha256": "ebdd08a4c28317334dc31aa6cd3b20c37ba391421d354f065d3a491153920386",
+      "size": 472
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptClassGenerator.h": {
+      "mode": "0o644",
+      "sha256": "b111947530a0f65891ebe3bf6578ff862938246a10a9ce6d403933ca1dc40b66",
+      "size": 12419
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptClassLifecycleAdapter.h": {
+      "mode": "0o644",
+      "sha256": "70314a8407759a8107efcde0c37bb181559e1e0a42fd4cb29fea08353fc6a029",
+      "size": 2220
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptClassState.h": {
+      "mode": "0o644",
+      "sha256": "4ebfc28ca446eb46152c75d1249c4943426783990555917e9f6c34499bfeede3",
+      "size": 1277
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptReplicationShadow.h": {
+      "mode": "0o644",
+      "sha256": "8e03dce6e92577378c2724c5a4203ac268d48d2056a78e24a2ba059cbc041b5f",
+      "size": 1593
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/EndAngelscriptHeaders.h": {
+      "mode": "0o644",
+      "sha256": "7a327048a273b44262035a5cc5d3f82ad194b7c21509dfa64cd2f859eef880ea",
+      "size": 82
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/AngelscriptExtensionHooks.h": {
+      "mode": "0o644",
+      "sha256": "cb3e78f0ed8ee040b2202fea954a2ce46309f727239afc3bb0ecff577f362d18",
+      "size": 13246
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/AngelscriptModdingRegistration.h": {
+      "mode": "0o644",
+      "sha256": "16855a6b737d92e3b16f26991df688ca426621ce6c58ac99b93d9cf29df039e9",
+      "size": 16371
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/LambdaClosure/SoloASLambdaCaptureStore.h": {
+      "mode": "0o644",
+      "sha256": "e0ef47e6e5b9521e4a4b637166eeeb16c079fe364ecde00ba56fa17ff490531d",
+      "size": 859
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/LambdaClosure/SoloASNativeLambdaBindingProvider.h": {
+      "mode": "0o644",
+      "sha256": "13d12be51f9da6aa3ad1a33a871777f2e58a9d4efbe3143f1c71223e16695691",
+      "size": 436
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/NativeEventSuper/AngelscriptNativeEventSuper.h": {
+      "mode": "0o644",
+      "sha256": "44fbadd13357cf080b10329b7548c3accf40edd203a1e36f7262b248e195bfcb",
+      "size": 354
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptActorLibrary.h": {
+      "mode": "0o644",
+      "sha256": "0292cae8b63154113d9c76965838a4def788cc20b5c81148df4a1fc66fb24527",
+      "size": 7919
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptComponentLibrary.h": {
+      "mode": "0o644",
+      "sha256": "2a91470beae8de112124f30a67c0f2f3b19a36390d9dbe805b1e0fa6532d83e7",
+      "size": 10088
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptFrameTimeMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "ab7c2ff96f9f7de010613b6ea58e74c43b6b06b5a6d50dabb7dc5bd587b16327",
+      "size": 448
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptHitResultLibrary.h": {
+      "mode": "0o644",
+      "sha256": "055baba84964b7773f32582c9512cc86d40bf14afb229c5a84bd2e54e4ee940a",
+      "size": 4535
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptLevelStreamingLibrary.h": {
+      "mode": "0o644",
+      "sha256": "f2149150c40a2010291789dd6b6937bbd5da68c8c88038f16d6fb9ff4d2fc812",
+      "size": 459
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptMathLibrary.h": {
+      "mode": "0o644",
+      "sha256": "a090570d5ad25b4eeb26a7b3b1c4007e1fb6004d0b9d1123480a3b2f86c87683",
+      "size": 41589
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptScriptLibrary.h": {
+      "mode": "0o644",
+      "sha256": "ca288fbb4a6977354cba107dab5281d7f02f9e484864d82fae85a0198cb5684f",
+      "size": 1214
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptWorldLibrary.h": {
+      "mode": "0o644",
+      "sha256": "429c9dc1c615b573eb18e7c055099507a0be30b8a2b884a950c8a9269ef7ed10",
+      "size": 411
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/GameplayLibrary.h": {
+      "mode": "0o644",
+      "sha256": "f3b77e1ffc51286838a692be0be5cdafeac928c83ea26c75f0c074d4e833104c",
+      "size": 3249
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/GameplayTagContainerMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "8325b0f988c1cfc2900e431c846f1c83682273f021c469fabe24845498d755cc",
+      "size": 4300
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/GameplayTagMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "d8c9af3f28c8b87e047833643c58e9f3ec5ce919259b3c7eafb92da94e4c344d",
+      "size": 1902
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/GameplayTagQueryMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "34f924dac0557b5aac9af05f9da3179f7a5b0575e333eeab284524a47f95e0b2",
+      "size": 875
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/InputComponentScriptMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "f37b20f7f55090d8e0ff0fe33cefe97468e66e624f7ad014af605c83efb596ac",
+      "size": 8066
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/RuntimeCurveLinearColorMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "b51370c583331636a74ec7aae42b04a8f70ffde3f7649f8b91aebc2b54e764bb",
+      "size": 703
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/RuntimeFloatCurveMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "8365228e98c1011c26bbc4dabb995974a0419603b7ca9b0e7c2ed10bbc6af7bb",
+      "size": 22909
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/SoftReferenceStatics.h": {
+      "mode": "0o644",
+      "sha256": "667a4e6c90eb96f4ce9cdb635704e5b700bf4ac2fee398c95c24c8579db5cbab",
+      "size": 328
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/SubsystemLibrary.h": {
+      "mode": "0o644",
+      "sha256": "2f8c13a3d8cfae5a996a7efc31046ae4f942e21957c21411469abf1d923c33d5",
+      "size": 2960
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/UAssetManagerMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "8a36b61ab1b636fb12ff4de392008667525c3d4e861357ac75578a7c6f2139c8",
+      "size": 4230
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/WidgetBlueprintStatics.h": {
+      "mode": "0o644",
+      "sha256": "be3b5acf63b614dcaf1294c02281468b758acf2b6ed9d61ab1b6f302b3756bf3",
+      "size": 1103
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/WorldCollisionStatics.h": {
+      "mode": "0o644",
+      "sha256": "3b633fb9b235f0cdbf71172b1725c07fe067bdbcca96a786fe1d7fdfcc2caafb",
+      "size": 535
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/Preprocessor/AngelscriptPreprocessor.h": {
+      "mode": "0o644",
+      "sha256": "56cdaae95e78d841e67575c43ede6ac0234cbc795f2915e319727daa725f5f8a",
+      "size": 9473
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/StartAngelscriptHeaders.h": {
+      "mode": "0o644",
+      "sha256": "21f1ab4f9b6a56c4cae6ecb1bd7cb7e5a3f4f3a746bf0a91b653c740b6896197",
+      "size": 158
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/StaticJIT/StaticJITBinds.h": {
+      "mode": "0o644",
+      "sha256": "0b1297ef56c59793bdc4b226cbade21e368290be1456687c13db070fcdd9c877",
+      "size": 8399
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/StaticJIT/StaticJITConfig.h": {
+      "mode": "0o644",
+      "sha256": "1127aa40f5878889063df9d8c0013df92e7f0e61323bd8a3bda66af08f8b9a95",
+      "size": 316
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/StaticJIT/StaticJITHeader.h": {
+      "mode": "0o644",
+      "sha256": "1141c77fd7813ddbde4fd845128f234805073ec3cc7df9929c98f651877349c4",
+      "size": 12508
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/StaticJIT/StaticJITHelperFunctions.h": {
+      "mode": "0o644",
+      "sha256": "b08f74fae4ebd23ef9d4fa352d3849de0e0e88e0cb380708d0ea5a50cc368b6b",
+      "size": 491
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/AngelscriptEditor.Build.cs": {
+      "mode": "0o644",
+      "sha256": "708c4c435a341c0a0d79a98f03a4bded13b06b586798826f2aaac725955908d8",
+      "size": 4876
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptAIGraphClassProvider.cpp": {
+      "mode": "0o644",
+      "sha256": "76b4d89f07a10be88bc1bca10b196d7c3511c91571545d3809cc2feb84403aac",
+      "size": 1982
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptAIGraphClassProvider.h": {
+      "mode": "0o644",
+      "sha256": "6b5aa3fd2ac39a135bd2a962d0cac6f950745acec0c8edfc78c5278d36be9887",
+      "size": 921
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptBehaviorTreeGraphSchema.cpp": {
+      "mode": "0o644",
+      "sha256": "ede2ef1bdc0dd3e7169339d36888a598fd76ee8244a0e232fc1860b5e04bba20",
+      "size": 20489
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptBehaviorTreeGraphSchema.h": {
+      "mode": "0o644",
+      "sha256": "7ecb211180a5a8f570a42f81f9cb9bb44a6f5eb2047a29aa4d47ee8da341fad5",
+      "size": 3973
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptScriptNodeMenuTitle.h": {
+      "mode": "0o644",
+      "sha256": "5a2030b3dc3586d16b1ef1d1bd838b1b7e269ca3a56efdf085881a26e7c05b0f",
+      "size": 322
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptContentBrowserDataSource.cpp": {
+      "mode": "0o644",
+      "sha256": "67f44fdc90ac265160edfd6f3a6ef1240eba97a5270e1a0583e790c13ed32c36",
+      "size": 8419
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptContentBrowserDataSource.h": {
+      "mode": "0o644",
+      "sha256": "06413f2ec5088bdff9158eda4505e74bb94f4b1aeca45daad85d351f61fcd715",
+      "size": 3710
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptCreateBlueprintOverride.h": {
+      "mode": "0o644",
+      "sha256": "415ae3492f693ff52237ff6cbd916c80d9c4e21119ba6382835f7037d9f496a5",
+      "size": 763
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptEditorModule.cpp": {
+      "mode": "0o644",
+      "sha256": "437c77cab75093ad1f54be697c3b9469c31e17f0b8ec59ac9cfdfbea02126506",
+      "size": 47085
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptEditorModule.h": {
+      "mode": "0o644",
+      "sha256": "d6faa47606cfca9b1f197bf3430af798317f69516eb874edb738680919ffb4c6",
+      "size": 907
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptSourceCodeNavigation.cpp": {
+      "mode": "0o644",
+      "sha256": "c400085e05ae9949e7bd6f2566dbdbd2bbfc05753490fd5cd848a02fd2b2a31f",
+      "size": 6707
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Bind_EditorCallableReferenceReturns.cpp": {
+      "mode": "0o644",
+      "sha256": "94f4273d136db5c5e02abf8fe8b78c4508dfe661a2935a74e3370373ab167a1a",
+      "size": 769
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptActorReplacementTransaction.cpp": {
+      "mode": "0o644",
+      "sha256": "5618dbc7c44aa35d161a7d52d99df19b7bdd14249901d5e2b0d83db8e17ff64e",
+      "size": 23043
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptActorReplacementTransaction.h": {
+      "mode": "0o644",
+      "sha256": "42620adb0b49f8b57bbac22aefa0555037fb2e454321ce2e3868f1c93427322f",
+      "size": 332
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintActorComponentOrderingAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "db7ba190629fb497194bec5a95618faf1fce62eed4743411ce8289ec98eb8174",
+      "size": 4338
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintActorComponentOrderingAdapter.h": {
+      "mode": "0o644",
+      "sha256": "dc5cfdd603a06be46e1b7fe85276a8239921da45aaf0b1e96d6484c8e1a71847",
+      "size": 1606
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintCompilationTransactionAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "610abed3c37fbb86750e7c7f797ccef7c128187026a22211520bd85de3bf754a",
+      "size": 4919
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintCompilationTransactionAdapter.h": {
+      "mode": "0o644",
+      "sha256": "3b843ac54b87630b3d1a5b6be5835fc64df450aab5b4796e5e9da4c607e8a572",
+      "size": 2268
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintDefaultCopyFilterAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "aeb0460135643a0efc58757c3d4447e3a9b019377c90a1e9b33556ff67f21780",
+      "size": 5037
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintDefaultCopyFilterAdapter.h": {
+      "mode": "0o644",
+      "sha256": "f57e80b83905cbe33ddc66d54c289b4cbe550bc2e64a183a9ef3161c94c32788",
+      "size": 1858
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintReinstancingOrchestrationAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "d41dd25197221571c4d451c6781cd10e42802012d4237695410a197800d16b3b",
+      "size": 11037
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintReinstancingOrchestrationAdapter.h": {
+      "mode": "0o644",
+      "sha256": "424558f87f4ddb9403cac301f11804f38a2bc3d6af0a496552c60b5f5582f0ce",
+      "size": 4559
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptInheritedComponentAttachmentRepair.cpp": {
+      "mode": "0o644",
+      "sha256": "6958f4091cd09342ffe0f4cc80f47ecbd14176a328a85b4e70051cf538e02177",
+      "size": 37355
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptInheritedComponentAttachmentRepair.h": {
+      "mode": "0o644",
+      "sha256": "f111caf6f1fcd0c6f07b9e912b02ef4193b6d3a56bfc2410435fed15ec6e9f66",
+      "size": 2146
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptInheritedComponentAttachmentRepairSupport.h": {
+      "mode": "0o644",
+      "sha256": "f12bffec28fd9ee49a53d130ed80b9cf7397cdc8a41e23d5190eaef47b350408",
+      "size": 11899
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptRetiredClassDefaultScope.h": {
+      "mode": "0o644",
+      "sha256": "3b9078dc801e259cd82b5f2ae9f92f3d69d23fe553dc668712111e4d39f0b0e2",
+      "size": 2933
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadEventSignatureResolver.cpp": {
+      "mode": "0o644",
+      "sha256": "d75bdf7a8ec248abb6d1ddd2129d9afde99206f4bf5f0e2f7e6dbdf9972f190d",
+      "size": 1424
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadEventSignatureResolver.h": {
+      "mode": "0o644",
+      "sha256": "787677b561c2016f9454fc9a0ff8a4ee4a48f8435c17031b4c28a214e996ccdb",
+      "size": 211
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadHelper.cpp": {
+      "mode": "0o644",
+      "sha256": "df8d17e7d89ed9715ee2bc07813c637b2a9d7c3a62bcc08f000b627b400f33d6",
+      "size": 87286
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadHelper.h": {
+      "mode": "0o644",
+      "sha256": "4e586990cd2bbfaac8d98c500f5e71902ffef5a2c3ddffdf5922b0e1ac778284",
+      "size": 8806
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptActorConstructionHook.cpp": {
+      "mode": "0o644",
+      "sha256": "4dd72a446eb1d33c65119d7b6f421068bb146cf25864353cace1a23d088d6002",
+      "size": 6511
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptActorConstructionHook.h": {
+      "mode": "0o644",
+      "sha256": "97ca4f7a3aaabbc9a1025c7648c100c5e97fa83dd54968f639c02fe631f41ce9",
+      "size": 177
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptBpgcSemanticsHooks.cpp": {
+      "mode": "0o644",
+      "sha256": "c5100c394a03b24ee76b6099624e8387efe28dc4d00288072fe003bd38d7d4e2",
+      "size": 24304
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptBpgcSemanticsHooks.h": {
+      "mode": "0o644",
+      "sha256": "aefefe06da8c248cb53ada45b1a5740d6a58811cc376c6d64ae942942ffb8a38",
+      "size": 177
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptBpgcSemanticsHooksTest.h": {
+      "mode": "0o644",
+      "sha256": "f2f65832543fc87a6f74642a122e6190d23e222adeb271e61da6652841ee715f",
+      "size": 467
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptDataTableRowValidationHook.cpp": {
+      "mode": "0o644",
+      "sha256": "c70bc00c741bbebc59b44cdd7fc41a4e56c228cf66f760ba2e9962d798f80fbf",
+      "size": 2154
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptDataTableRowValidationHook.h": {
+      "mode": "0o644",
+      "sha256": "97b9324faca0e0ddd3e94db520fb6baa5a94f00f73e995cb216f690545937907",
+      "size": 186
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptNativeBoundaryHook.cpp": {
+      "mode": "0o644",
+      "sha256": "4f45c2e51d0398b8e6170d6ac07d6678247769821d43420aa237a4bfcf825b26",
+      "size": 2449
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptNativeBoundaryHook.h": {
+      "mode": "0o644",
+      "sha256": "55717815b9507bed74a1f1e156de5048d20520564b7be16e908c1647c379c746",
+      "size": 182
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptPythonTypeRetirement.cpp": {
+      "mode": "0o644",
+      "sha256": "7b2a8c03a14889c9b466faa6c3d82d0d57e29d658bfc2b261c7304316c5dc6d6",
+      "size": 8586
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptPythonTypeRetirement.h": {
+      "mode": "0o644",
+      "sha256": "8cac6d46082c5a08c680cd4853ced161e5bb4c2a50644f0471037a7e31bec8ea",
+      "size": 176
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorObject/AngelscriptEditorObjectPrecreateImportAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "2268a81d1a53a4f9d6f748e29bd317e96058d80e9d1ff92e8323af0e87f0e52b",
+      "size": 36074
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorObject/AngelscriptEditorObjectPrecreateImportAdapter.h": {
+      "mode": "0o644",
+      "sha256": "edbfc2db5843b8f1f86ff6810c8cb783ef10e07941f00f4a72d0609c9a2534a6",
+      "size": 2827
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/FunctionLibraries/AssetToolsStatics.h": {
+      "mode": "0o644",
+      "sha256": "757d92d7cc6c6de12aef934116a08a380cb880c54d748619391969b4ec98a889",
+      "size": 4506
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/FunctionLibraries/EditorStatics.h": {
+      "mode": "0o644",
+      "sha256": "88484b65895ac3f6e9dc3389fcc5eacaf0494cc1181deb07b1489a9b46af77b0",
+      "size": 1657
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/FunctionLibraries/ScriptableFactory.cpp": {
+      "mode": "0o644",
+      "sha256": "4f9d1784a8d33dfcfad62a3cf981fbc13f25b57bdda51f66bafdf96c99fbc272",
+      "size": 1067
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/FunctionLibraries/ScriptableFactory.h": {
+      "mode": "0o644",
+      "sha256": "48ce0f71fd1574c60aba51c36b627aaf8f4ea9459d5a1f6edcb0c512c93c263a",
+      "size": 1267
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/InstancedStructReload.cpp": {
+      "mode": "0o644",
+      "sha256": "37ddfc622de0ecc673d37e9b9464e695db17f75dcece85c2e7eac8b9536e40e6",
+      "size": 193878
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/InstancedStructReload.h": {
+      "mode": "0o644",
+      "sha256": "896391977ae1319d15e38ef2c4a66fc32021f252c587cb25fb0c302301d3ef76",
+      "size": 2588
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/SoloASEditorManagement.cpp": {
+      "mode": "0o644",
+      "sha256": "5dd84037ce765c97808166fd5d269b7f3689bc19feb42fd9b131e9cd698a61aa",
+      "size": 29987
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/StateTree/AngelscriptStateTreeClassProvider.cpp": {
+      "mode": "0o644",
+      "sha256": "f2b18ca84fb64a80df53ef544e4d6362247937e125fe5f72b5d1836cf836119f",
+      "size": 7636
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/StateTree/AngelscriptStateTreeClassProvider.h": {
+      "mode": "0o644",
+      "sha256": "f17a3757f84ea9bf7260da3e736e3cf17f210886496baa2f5e0d7b0a2df565e7",
+      "size": 918
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/UMG/AngelscriptListViewEntryAdapter.cpp": {
+      "mode": "0o644",
+      "sha256": "996d936a92421f2ab888ffc76d991480b97c07b1c87da3e59c64f1b3ad009baf",
+      "size": 3938
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/UMG/AngelscriptListViewEntryAdapter.h": {
+      "mode": "0o644",
+      "sha256": "cd8225662bdb9b597e22347e87757f9ed1d986c7361004b82cafe1344a02225f",
+      "size": 2082
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Public/BaseClasses/ScriptEditorSubsystem.h": {
+      "mode": "0o644",
+      "sha256": "d14d1e2ca83babafc9403919e1bfc3b5404c181f9b09c6ada4b0e9dfe7458895",
+      "size": 2235
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptActorMenuExtension.cpp": {
+      "mode": "0o644",
+      "sha256": "429020490d900424ea3e12f12a30a9ed5df9bdf662e4dd669dcfd56c58156294",
+      "size": 3019
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptActorMenuExtension.h": {
+      "mode": "0o644",
+      "sha256": "4dd21d6181d5accae12a59e90e4bce5a2d34bca3b8e8ee9c92bcf5e78fbd4159",
+      "size": 2118
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptAssetMenuExtension.cpp": {
+      "mode": "0o644",
+      "sha256": "77fee0d6870b6d13c0c70197b13ff3c30e6c5a584e585159f454763b9d9d86fc",
+      "size": 2633
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptAssetMenuExtension.h": {
+      "mode": "0o644",
+      "sha256": "553751b1073c102f69d2fc311145bb6a6679431bcb0ba990cbea6218c29d758f",
+      "size": 1237
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorMenuExtension.cpp": {
+      "mode": "0o644",
+      "sha256": "54874bb3cef94c54dd0b077e0738f8ebe8a0fecbdfd116365217d4b3e1902c5f",
+      "size": 56459
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorMenuExtension.h": {
+      "mode": "0o644",
+      "sha256": "bbd327848e88270f3d3d1914c17d5c4831912fccf768528a65e1976fa74f6709",
+      "size": 5168
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorPrompts.cpp": {
+      "mode": "0o644",
+      "sha256": "d7ba833e2b69cf1c2edac622b4244b6f7d73113c4bd1fa3060a345638ee079d2",
+      "size": 14657
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorPrompts.h": {
+      "mode": "0o644",
+      "sha256": "3fc545f7f9ecabd3c9928332f095ee652a78911b3f77c57d764fe4b448ecd736",
+      "size": 1518
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Public/FunctionLibraries/BlueprintMixinLibrary.h": {
+      "mode": "0o644",
+      "sha256": "765f424e5c2fd0b7bc5a346f926f40e1142d5972fe9ba8960419dfcff6cd8be5",
+      "size": 446
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Public/FunctionLibraries/EditorSubsystemLibrary.h": {
+      "mode": "0o644",
+      "sha256": "8e96ce418bf0ec7048a5a26123c78f608858f7c7101998f06d630904fbf36f57",
+      "size": 579
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Public/SoloASEditorManagement.h": {
+      "mode": "0o644",
+      "sha256": "97a8b263cc7511896675c701a29f6bde977274f9db643f3b1a16fac3783ce23a",
+      "size": 765
+    },
+    "AngelscriptRuntime/Source/AngelscriptLoader/AngelscriptLoader.Build.cs": {
+      "mode": "0o644",
+      "sha256": "2b9fc21669771dc2e1991db6a2ad7f5474771194c35fc41fafd96859007b9218",
+      "size": 658
+    },
+    "AngelscriptRuntime/Source/AngelscriptLoader/Private/AngelscriptLoaderModule.cpp": {
+      "mode": "0o644",
+      "sha256": "c410bf5b79c7830b046b1403e36eedf573a1719f3184e28e984c4cd0a2ef58d2",
+      "size": 291
+    },
+    "AngelscriptRuntime/Source/AngelscriptLoader/Private/AngelscriptLoaderModule.h": {
+      "mode": "0o644",
+      "sha256": "f4664ccdd2dcc509268fb1680f1f9db65f5d70f3c76fe5e23e8b4dd95f165f3c",
+      "size": 240
+    },
+    "AngelscriptRuntime/ThirdParty/include/angelscript.h": {
+      "mode": "0o644",
+      "sha256": "10ee8b4da34f28b6800d27519d05b99afa5a84854ed21acabdf41e88a8af542d",
+      "size": 71257
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_array.h": {
+      "mode": "0o644",
+      "sha256": "f4d2290c23989b38b1995e2e355919333f0d6466bdd1434229ca230c9eb5027b",
+      "size": 11152
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_atomic.cpp": {
+      "mode": "0o644",
+      "sha256": "1f1a419924e57505409e1e5bd88b0ae83f7eb7f4d6462e13f5413b343991259a",
+      "size": 2494
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_atomic.h": {
+      "mode": "0o644",
+      "sha256": "ccbb86beca8590be5c0b9005c6e2482d598741c3f9e8c3ff7e3dd5d4d479c243",
+      "size": 1617
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_builder.cpp": {
+      "mode": "0o644",
+      "sha256": "c3b90f732f9a7cefa3cb57be341a39f24e2c6c94189f3338cf9bbfab8bf0e815",
+      "size": 202774
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_builder.h": {
+      "mode": "0o644",
+      "sha256": "ea25207c2203eaa4cea363966de510ddc4a7b43fc5b6aa9ed110320d1b256178",
+      "size": 17056
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_bytecode.cpp": {
+      "mode": "0o644",
+      "sha256": "50bed5c28d723bcf598847226dfaa1220cbfc754a8c23f78ab0c851a926bf170",
+      "size": 90446
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_bytecode.h": {
+      "mode": "0o644",
+      "sha256": "6e41aba3a9d6bc893f69ee6d59702cdb33a2a50d992b9574b112a6e8231108b7",
+      "size": 5917
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc.cpp": {
+      "mode": "0o644",
+      "sha256": "589378c6a219a5cacf4d855470c9d3a2d67706e4affd0a90e9a6f5e692a32287",
+      "size": 24328
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc.h": {
+      "mode": "0o644",
+      "sha256": "4f00d07604f5f9beb3052e6ec9cb3d775acdc0b4d3838e9443ebec5b2f8615e1",
+      "size": 4052
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_arm.cpp": {
+      "mode": "0o644",
+      "sha256": "7c56bd2192bdae353ec5bb2e92b39653587d3c7df62b617d3a14354c2ac7e527",
+      "size": 21905
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_arm_gcc.S": {
+      "mode": "0o644",
+      "sha256": "3a1fd690608d782ef0884b4f79616c7ced561a11b7dbf14a2cd06c662027e1d3",
+      "size": 26602
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_arm_msvc.asm": {
+      "mode": "0o644",
+      "sha256": "556b93a530cf39d1f05c618a2a1b2ecd9d0bb3a8b2221f6dfaa1bd34adf77cfc",
+      "size": 6962
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_arm_vita.S": {
+      "mode": "0o644",
+      "sha256": "31e19f7654957a6f953a077464269ab6130d6654b15207709fff9c22daac0330",
+      "size": 15859
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_arm_xcode.s": {
+      "mode": "0o644",
+      "sha256": "63cd42fa3b1d816756220851e4ab85aad9456be5a3133ac0507174e5ca357d47",
+      "size": 6649
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_mips.cpp": {
+      "mode": "0o644",
+      "sha256": "271cd9fdba07d7c802c649a3ef61ffba213a06dff45e0e0dc12ca5553852311a",
+      "size": 21058
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_ppc.cpp": {
+      "mode": "0o644",
+      "sha256": "0327418ef55e757b525fec8327e316aeb4bc9fd175b4897a8955f949f960856a",
+      "size": 25619
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_ppc_64.cpp": {
+      "mode": "0o644",
+      "sha256": "cb8c323460a715eeee203d11f57c512a5236175c4052e2e508f0833ea9a68f6d",
+      "size": 28031
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_sh4.cpp": {
+      "mode": "0o644",
+      "sha256": "5ee594f1fa2c9a2455c816f9fca243681ebbccbd430c7d412941b7fd9c4dcbe6",
+      "size": 11415
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_x64_gcc.cpp": {
+      "mode": "0o644",
+      "sha256": "6771b272266bd9ec94da7447ba2b87fd67bb61a1b9ab6a610efd190c7a6020af",
+      "size": 16243
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_x64_mingw.cpp": {
+      "mode": "0o644",
+      "sha256": "71f32bde05843c09c8b677bf3982e3e50e534a8c3fa2c5d9da39654fbdb9b63f",
+      "size": 10326
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_x64_msvc.cpp": {
+      "mode": "0o644",
+      "sha256": "34b20bfe0514abf69da2d1b76a47881cfd1a0dd49dd8b35de7c25cdba38bf70e",
+      "size": 6385
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_x64_msvc_asm.asm": {
+      "mode": "0o644",
+      "sha256": "80ce4629b71950a8eac291a22d4087ad064386480120c59f1b3b4c755f4657f5",
+      "size": 4834
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_x86.cpp": {
+      "mode": "0o644",
+      "sha256": "8ca1ea7b5f2d683018dd0a048b551f5db92cd0b1c0c33ea36eb13464dd03e664",
+      "size": 45324
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_callfunc_xenon.cpp": {
+      "mode": "0o644",
+      "sha256": "c85240d960372f6ce47cb26ed445d8a3533173982cc980e746bcfed811cfad93",
+      "size": 20647
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_compiler.cpp": {
+      "mode": "0o644",
+      "sha256": "1b5b12388967077f37c8316f87096226695e73bd50c9709a2a3ac8771462c708",
+      "size": 615356
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_compiler.h": {
+      "mode": "0o644",
+      "sha256": "3df7a00178e16c06ea553e4085c8c68c6cdf710cbae2b37032b0564f5aa47fce",
+      "size": 25009
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_config.h": {
+      "mode": "0o644",
+      "sha256": "413d50180284d46aa47b4a48f192d2c1e68d2e7217e83f5b5d1b93fc3289b859",
+      "size": 43286
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_configgroup.cpp": {
+      "mode": "0o644",
+      "sha256": "91ea63ed75eb5f64fa678968c27a2e576b47427b79b485451f233cef4f4245a3",
+      "size": 2925
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_configgroup.h": {
+      "mode": "0o644",
+      "sha256": "4717007311f2514aefbd26213e5c008eac32d8ffcfa2854d95909dc78e0b39c7",
+      "size": 2350
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_context.cpp": {
+      "mode": "0o644",
+      "sha256": "ee8568b78198339a449b4a762df67ad7ea17877fc4419b60e5e97354a4d3be1f",
+      "size": 171758
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_context.h": {
+      "mode": "0o644",
+      "sha256": "9c392bbc54267cb058af0c994cdc4fa1aaad757f799069471857cad9217f9665",
+      "size": 10528
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_criticalsection.h": {
+      "mode": "0o644",
+      "sha256": "8fb6196bf083631a6e689656c125d52f04dd4ca6147e6c1e2d622f26107f961d",
+      "size": 1620
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_datatype.cpp": {
+      "mode": "0o644",
+      "sha256": "df81ebe91e524b5f36c8030e82a812d73f4aefdac38d7dc6c9d50b4ccb897eee",
+      "size": 20372
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_datatype.h": {
+      "mode": "0o644",
+      "sha256": "a75e5cce30b304ae4823b83c24823cf4f40f29aedb82f438d0ac63fa44ad1789",
+      "size": 6747
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_debug.h": {
+      "mode": "0o644",
+      "sha256": "c34a3905aad00b2d23fbec4a60048415e011b5ffc13cdafbfa538b52d668f6d1",
+      "size": 5712
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_gc.cpp": {
+      "mode": "0o644",
+      "sha256": "926d0afc96809e1014afba6368c03615b0c3d6e54094e3526bd13b21f81593e4",
+      "size": 29314
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_gc.h": {
+      "mode": "0o644",
+      "sha256": "c99ef9108a0e7934808e0809ab86f2a5f3ffbcf7f13ee4a56841def361238d9c",
+      "size": 4594
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_generic.cpp": {
+      "mode": "0o644",
+      "sha256": "3133802de27e2b567ae2c284ee70d26ea9b6fec49fa8942d7086ad9055b5170c",
+      "size": 12358
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_generic.h": {
+      "mode": "0o644",
+      "sha256": "e1725ddfcc0135e510d4f589e481a848e252218e068bf2c113ec5e35895a7f88",
+      "size": 3020
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_globalproperty.cpp": {
+      "mode": "0o644",
+      "sha256": "783a925ac5e7a33937ceca1be6234a7764856324c3eec651b0aca133b18c8e4b",
+      "size": 3266
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_map.h": {
+      "mode": "0o644",
+      "sha256": "da5bf1d67ab19b0112422157d8ae60ca3138377133d627e891bc8fca18dfaa46",
+      "size": 26622
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_memory.cpp": {
+      "mode": "0o644",
+      "sha256": "c3d8863abfcf8f844ce90214a86eaff2d450a9a551fce592171afda36a791c44",
+      "size": 6525
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_memory.h": {
+      "mode": "0o644",
+      "sha256": "144ead7d890ed5358880a3343a9f609cc953335b29105745b9707b2c25b4ad55",
+      "size": 2907
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_module.cpp": {
+      "mode": "0o644",
+      "sha256": "fc790a9ef24d3006f1d5ae17f9e122b53a54e2b57f885e20de1b34dd897372df",
+      "size": 73984
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_module.h": {
+      "mode": "0o644",
+      "sha256": "9857149c1b7b5b4316786c19732bf9b23bf6c2d821b1b6ae23a91c319f1ddfb8",
+      "size": 12591
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_namespace.h": {
+      "mode": "0o644",
+      "sha256": "07eba96041bec9637c2cab8aa99c37e05416c022866a4eb9418d54727106ee78",
+      "size": 2104
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_objecttype.cpp": {
+      "mode": "0o644",
+      "sha256": "e58c6532310177c1a80d3e508562eaf8b32bc58405acd71390a306e5c6fae324",
+      "size": 19938
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_objecttype.h": {
+      "mode": "0o644",
+      "sha256": "99750bdbcbe7e8e3609a56076f56526ddf81db286c72699001c2930b32e1988f",
+      "size": 11986
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_outputbuffer.cpp": {
+      "mode": "0o644",
+      "sha256": "892f59b25823a623ba83c6d2b170ca57d3467c6ede884e9e7297e47e177e6bd6",
+      "size": 2664
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_outputbuffer.h": {
+      "mode": "0o644",
+      "sha256": "45182d485a1b73e9f6d16b82c3c943884b95cda938e8870aa43ca6e6fa85bd0e",
+      "size": 1888
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_parser.cpp": {
+      "mode": "0o644",
+      "sha256": "eb6a0abe3163a6d5d9d2492b90b9d0d7aeb5ceb539b7c0b84411ba89926783c3",
+      "size": 111046
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_parser.h": {
+      "mode": "0o644",
+      "sha256": "a9e41065604d29528118a75a5f9940595b32071f3a985e821568db9b2cfdc9ca",
+      "size": 6536
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_property.h": {
+      "mode": "0o644",
+      "sha256": "0ac0d09839fcaae0bc4e148841b0152253816e888cc81e8efc3a2dcb2955aaa0",
+      "size": 5174
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_scriptcode.cpp": {
+      "mode": "0o644",
+      "sha256": "86820e21955944129ac1b9f4234733f97f60a7d67c4b371529601b7c76155710",
+      "size": 3481
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_scriptcode.h": {
+      "mode": "0o644",
+      "sha256": "157e3d9b419454f7f489765aee217dc983b9acd8e53dc9a07d26efd857c43936",
+      "size": 1945
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_scriptengine.cpp": {
+      "mode": "0o644",
+      "sha256": "ee9eb4f940c9d88c73f87c143fbbc54e035c48fed8635195d3b05e1d5510d010",
+      "size": 184708
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_scriptengine.h": {
+      "mode": "0o644",
+      "sha256": "27f42d45b3850fb99184e399b0d48392a5a4ab1a7bd20bbf5df8e6e5e207ffc3",
+      "size": 24640
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_scriptfunction.cpp": {
+      "mode": "0o644",
+      "sha256": "389266564d2ed1a4493c982ad2bdd1a8378446e10efdad78ef6947e9dcd1db82",
+      "size": 47480
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_scriptfunction.h": {
+      "mode": "0o644",
+      "sha256": "c0761f42e261593f3901373f078fe94ef13a9367cfa5535121c1e9390a863143",
+      "size": 14467
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_scriptnode.cpp": {
+      "mode": "0o644",
+      "sha256": "efb9d833aa4daa9498ebc42c4d836cb634b31773b2a8f71417faebbe8159b47a",
+      "size": 3329
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_scriptnode.h": {
+      "mode": "0o644",
+      "sha256": "0c59afdb80bb2d3b15cc5850e34a0913d4211f60fb860f8e2d1bde1d91123128",
+      "size": 2741
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_scriptobject.cpp": {
+      "mode": "0o644",
+      "sha256": "d103c2377bf2be600c0d424c6967f52174917ba02d8248a4b6e3bfb9040bf3da",
+      "size": 31932
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_scriptobject.h": {
+      "mode": "0o644",
+      "sha256": "032c5835af41962bbd1944fb1193674dcab19b1e32545011291659a87053fe31",
+      "size": 2575
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_string.cpp": {
+      "mode": "0o644",
+      "sha256": "dc445ea50fc7e4eecadc16ecb17c6cfc6aac8de2a9ccec79edecaf88deca3254",
+      "size": 11938
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_string.h": {
+      "mode": "0o644",
+      "sha256": "d7b3f6750edfbab9c9727339d59477774d3dbfd77ff63894c8c842164fcaea72",
+      "size": 4564
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_string_util.cpp": {
+      "mode": "0o644",
+      "sha256": "5c4cea6e7ddd48c860f2b33c7223a11855cd90b67fc830ad77f5398f191a9e01",
+      "size": 7443
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_string_util.h": {
+      "mode": "0o644",
+      "sha256": "b59b1ce7bbe1d437e1cf045c5152fed1876b14cf59eb90533b7966b630443330",
+      "size": 1727
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_symboltable.h": {
+      "mode": "0o644",
+      "sha256": "fa7b75c4bf78e76daae375e06ba4a17361e98c9aafeaec3451aedc34e76c1e80",
+      "size": 11802
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_texts.h": {
+      "mode": "0o644",
+      "sha256": "241ae5edc4f87b0cee51ada820ce3085aaee32607fec916b2b87fed21b3977bd",
+      "size": 32108
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_thread.cpp": {
+      "mode": "0o644",
+      "sha256": "4c7158eff964bee675f93fd6d83582cdc00c4647b6806d8def3d3a710574938f",
+      "size": 1857
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_thread.h": {
+      "mode": "0o644",
+      "sha256": "0cfb2583480b6c087bc2329997e891e1d2e27167525b46c6294a3c689df46ed8",
+      "size": 2018
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_tokendef.h": {
+      "mode": "0o644",
+      "sha256": "293287748a5823f229b55a8f25904e9300056bfc1ab366bb15c03a13b0cdbca5",
+      "size": 11535
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_tokenizer.cpp": {
+      "mode": "0o644",
+      "sha256": "2333114289d54e3e87bc5b6a5ecc8bcb70408c485516b25e7d1e3711fb64980b",
+      "size": 12120
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_tokenizer.h": {
+      "mode": "0o644",
+      "sha256": "29648c6d62a1fa09bc81cda5ea75722f6f101df2806366348c1f9341adb4884c",
+      "size": 2436
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_typeinfo.cpp": {
+      "mode": "0o644",
+      "sha256": "3b5798d1b5c0b3da2b3a559990fa36fa28250be0c914171630c0a8e29d70000f",
+      "size": 9185
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_typeinfo.h": {
+      "mode": "0o644",
+      "sha256": "5e3cd26deb7deacd49286051f7958b669808a6edba608f3c0d3f516d603afef1",
+      "size": 8177
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_variablescope.cpp": {
+      "mode": "0o644",
+      "sha256": "ae6f580550dcfad174b396d5fe800c824128af9516f14ec405c7ccfcca88fd44",
+      "size": 3174
+    },
+    "AngelscriptRuntime/ThirdParty/source/as_variablescope.h": {
+      "mode": "0o644",
+      "sha256": "b62c34a7d02c6fe39640e3e55051b3a1f8e1a9ebe3c4e6c6c9dfa995233770fc",
+      "size": 2073
+    },
+    "CONTRIBUTING.md": {
+      "mode": "0o644",
+      "sha256": "d131d4a6b5322ae6c8420c071be298a12bc860879d8f750036cc8ff5c1cb3859",
+      "size": 1174
+    },
+    "LICENSE": {
+      "mode": "0o644",
+      "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85",
+      "size": 16726
+    },
+    "NOTICE": {
+      "mode": "0o644",
+      "sha256": "6c246c02dd29a2ef658b014f601c3e99e965343c54c1cf022dbc02bc3ff368c1",
+      "size": 3494
+    },
+    "README.md": {
+      "mode": "0o644",
+      "sha256": "60874bad1fb4f35a1736a7acd7ea7c9e8e9aa7c8aa5103f90b0fc3be2fb26e77",
+      "size": 8647
+    },
+    "README.zh-CN.md": {
+      "mode": "0o664",
+      "sha256": "e9305e2dd8935e979328ff75c22959968570addbb9290eb2506627e805c25777",
+      "size": 8007
+    },
+    "RELEASE_NOTES.md": {
+      "mode": "0o664",
+      "sha256": "5e80047157e28d8fbbac90922647ed32b10b6fbacff947d84a78619f63aeac74",
+      "size": 4429
+    },
+    "SoloASBridge/Config/FilterPlugin.ini": {
+      "mode": "0o644",
+      "sha256": "91b0351a6ae17bc6cd83f9e7d8771d50536867288fe60e17f2b22bd74b0fd9fc",
+      "size": 81
+    },
+    "SoloASBridge/Config/Game.ini": {
+      "mode": "0o644",
+      "sha256": "24e73c2dc821ea0cd1f58d218c073cfb06f2403d17a27e60916d45b30669a913",
+      "size": 97
+    },
+    "SoloASBridge/LICENSE": {
+      "mode": "0o644",
+      "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85",
+      "size": 16726
+    },
+    "SoloASBridge/README.md": {
+      "mode": "0o644",
+      "sha256": "869304359deaa4867f96bf289845cb9425ea4f5cd972c47c589896c65b219efd",
+      "size": 601
+    },
+    "SoloASBridge/SoloASBridge.uplugin": {
+      "mode": "0o644",
+      "sha256": "059b4461ec625dbf6f7e80b035da89f3d11fcaac723e8a0ec36be8155b52a074",
+      "size": 766
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Editor/SoloASCopyProperties.cpp": {
+      "mode": "0o644",
+      "sha256": "f8637556358315c40e9240408865724aa59fdc6866b470d6908f2dc86b47bcd2",
+      "size": 1991
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Editor/SoloASEditorCopyPropertiesImports.cpp": {
+      "mode": "0o644",
+      "sha256": "170e1423f7d4c11b494023aade6f68a8c839c16b3fd75a837e5c377452168085",
+      "size": 46015
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Editor/SoloASRetiredLoadingExportRepair.cpp": {
+      "mode": "0o644",
+      "sha256": "09ceccddd51fefb7df48d30ca907f14d3150bc62b237eb6f0834491370845bc6",
+      "size": 5643
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/Extensions/SoloASInterfaceDispatch.cpp": {
+      "mode": "0o644",
+      "sha256": "1995518ddabdabd3875b7310cbc8173fc382c2af36df4b687227c88083c3a101",
+      "size": 1711
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/NativeEventSuper/SoloASBridgeNativeEventSuper.cpp": {
+      "mode": "0o644",
+      "sha256": "4180ce353b628fa229dc5ffcc1db805839ed5182e4f0a84e4a3d176eb511fc03",
+      "size": 16648
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeCallableDispatch.cpp": {
+      "mode": "0o644",
+      "sha256": "bf37d848607704ae68b562a23c213183fc47f31edd48d7e01cb7ab0303141c5f",
+      "size": 33986
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeCallableDispatchSupport.cpp": {
+      "mode": "0o644",
+      "sha256": "b4d4a9c11d30d120e694ac7a991e8714481159508de7da97aef0db1ab38dcb02",
+      "size": 14021
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeCallableDispatchSupport.h": {
+      "mode": "0o644",
+      "sha256": "d0d585864226f113758876e4e9781eb36562993e91e3317994c5eb78361c3b9d",
+      "size": 1057
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeClassState.cpp": {
+      "mode": "0o644",
+      "sha256": "e1b9020a0a339bb28e9f6151d6d3448be43945106ecff7e22cab19bf29f9bd01",
+      "size": 3550
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeObjectLifecycle.cpp": {
+      "mode": "0o644",
+      "sha256": "507b83969f23ad11cce1edb6cd2a39691c17e55a40eff996b8d13ab19f36da8d",
+      "size": 11353
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeObjectLifecycleSupport.cpp": {
+      "mode": "0o644",
+      "sha256": "33f67e5634f5415b39acdcfab6d89581a79aacc7d0f0d7046185eb06eae81d70",
+      "size": 27367
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeObjectLifecycleSupport.h": {
+      "mode": "0o644",
+      "sha256": "ff3381b2ad1a7e96e33b20ce65817094a9a6df7c7672f369d55b2d1c8bc794d1",
+      "size": 1807
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeScriptMetadata.cpp": {
+      "mode": "0o644",
+      "sha256": "cae0dd0a0d49d679f1db5e7a1942714c1d7bed024834933ea571d30ecd51ac57",
+      "size": 10930
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeScriptPropertyAliases.cpp": {
+      "mode": "0o644",
+      "sha256": "5aee8730506ee47ec9e045b570820ed7c4cb3fa73e7328d92bf72df6c092931d",
+      "size": 1579
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeStaticCallContext.cpp": {
+      "mode": "0o644",
+      "sha256": "04f86364ed3eb25d3bca99337f68e2d54c67bb89517c8e12d4e85135a571c9da",
+      "size": 271
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeStaticCallContext.h": {
+      "mode": "0o644",
+      "sha256": "9106d09474d30846cf70c847174b2957849f27f29361ca3d9a8e1851ea2392dc",
+      "size": 261
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASObjectPropertyInitialization.cpp": {
+      "mode": "0o644",
+      "sha256": "f44daa831ad6ad69c7b4762a6fdebaef2e5d5b091c3a7cf0cf67d971daf87969",
+      "size": 2625
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASSceneComponentAttachment.cpp": {
+      "mode": "0o644",
+      "sha256": "d1e353238ce921b09dd7a6701e6dd1f5cebc064b07591043e4dd75c90b0d212f",
+      "size": 2305
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASScriptPackageImport.cpp": {
+      "mode": "0o644",
+      "sha256": "08218dcb09ccd0254e9c1489e652dc6cd3431fa1794c0894b881edd6e50c926b",
+      "size": 506
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBlueprintDefaultObject.cpp": {
+      "mode": "0o644",
+      "sha256": "279c0c0e02e1253bd526ea3a077d6cc50b48bbaf35e814ba074677fc745703e9",
+      "size": 21138
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeExtensionCache.cpp": {
+      "mode": "0o644",
+      "sha256": "1b10c2e7348fcc7675b7d00ad406de9a2a97f1ce86a17b86811bc781b25a534b",
+      "size": 12315
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeExtensionCacheValidation.cpp": {
+      "mode": "0o644",
+      "sha256": "eaaec8d7df6cf1812448df34fb6bfe28819d2b01b3680b167493e6a4bded93c3",
+      "size": 4594
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeExtensionCacheValidation.h": {
+      "mode": "0o644",
+      "sha256": "36752b09faf11b9c5b703e4662b5b6a548facd87d23dc6565ca17bc35ee4812e",
+      "size": 682
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeExtensionIdentity.cpp": {
+      "mode": "0o644",
+      "sha256": "367b7366edd9722cd623a7e29063df76b73dbb71ae74ebf8dc8b03e8f8ada2a5",
+      "size": 7509
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeModule.cpp": {
+      "mode": "0o644",
+      "sha256": "a94cdd07a26c4e649e05ba4b062826084ed6304eae708da2fa0b04fa9f29bb1f",
+      "size": 2503
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeReflection.cpp": {
+      "mode": "0o644",
+      "sha256": "8041db895b923e7149b9ea2a3f165c8da5f5d2ede9bf643984160ffd2913de08",
+      "size": 10060
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeReflectionSupport.cpp": {
+      "mode": "0o644",
+      "sha256": "26796421992fe491d5625d8aadb1630421184e9b0d9f01d32055811b361767d7",
+      "size": 8233
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeReflectionSupport.h": {
+      "mode": "0o644",
+      "sha256": "df5bd6bb962341a8d61c808e9dd3d8fc872159fb8d1f4bb7c9ff67ef7674b70e",
+      "size": 1527
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASPrivateAccess.h": {
+      "mode": "0o644",
+      "sha256": "e980aa4ea013be7a0656f463b4a03d8cdfe9f251b60bb312a7fc7bdbe1a2fcf0",
+      "size": 2114
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASScriptBlueprint.cpp": {
+      "mode": "0o644",
+      "sha256": "fd5e63abf2c564bbe017ee5d6cd2a0b2fcd08adee165463c83b3f9aaf0323c3c",
+      "size": 29809
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/cuviss/hooks/anchor.cpp": {
+      "mode": "0o644",
+      "sha256": "fcbcdce7f2421d25b10f411882bee5107f867726cedf6a9844ebfdab3bad3cce",
+      "size": 12356
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/UHT/SoloASBridgeUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "5a6b863bf29f6fcf33f19a212bf5f0edb0b2557ddd5cf2c014a448af3f3bffb7",
+      "size": 163
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASCopyProperties.h": {
+      "mode": "0o644",
+      "sha256": "d1cb1b417a36dd36a9557bffb6300d2a207f1c71b6c74860a5dc72d0f8929861",
+      "size": 456
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASEditorEntryHook.h": {
+      "mode": "0o644",
+      "sha256": "dd3c0e14e5c6889cb678d6ba9cb099540aa670a05350ebe402e3a4abab1e95ab",
+      "size": 21557
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASEditorFieldPathReload.h": {
+      "mode": "0o644",
+      "sha256": "7a0eece84a2054e5114c986ba7bdd0038a14a7965af8d171046ea2ff468ee0e1",
+      "size": 578
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASEditorObjectImportProperties.h": {
+      "mode": "0o644",
+      "sha256": "bc139cbf747fc31bc29a4296d2758915276c34900c654679f63af36000183466",
+      "size": 1312
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASRetiredLoadingExportRepair.h": {
+      "mode": "0o644",
+      "sha256": "7eeb47cc417a4249d0c69fb1c64064b52ebbed4ff60821e0bec5709b5e8b6ab0",
+      "size": 1327
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Runtime/NativeEventSuper/SoloASBridgeNativeEventSuper.h": {
+      "mode": "0o644",
+      "sha256": "c3dfcc8cf7ba354421495b719c48fc77371dfb2fc0263593fe16eb0e8230251c",
+      "size": 3453
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeCallableDispatch.h": {
+      "mode": "0o644",
+      "sha256": "28aa3fb22038cf2ad72245c8dd786322bd2336b0b67fb67a4fc518e6c2a2a6cf",
+      "size": 7381
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeClassState.h": {
+      "mode": "0o644",
+      "sha256": "bec7433dac24ba746c3c8ab1b5bfa3cc3fc112ab528e80c22946fbab14948237",
+      "size": 1212
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeObjectLifecycle.h": {
+      "mode": "0o644",
+      "sha256": "f6f13497722feb00cf0f19ef7f7ac322f056f0e05308ea145116000a653f35ae",
+      "size": 3618
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeScriptMetadata.h": {
+      "mode": "0o644",
+      "sha256": "a42f58b85bc38165fde62e224ef42895ef8cc900e584a6c50e0e464f95be4629",
+      "size": 1446
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeScriptPropertyAliases.h": {
+      "mode": "0o644",
+      "sha256": "4d4b15b708f2de9e9d79320e0ebce7f35ec158483d1a0a40aba4ca8950612427",
+      "size": 204
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeStockAutoCaller.h": {
+      "mode": "0o644",
+      "sha256": "312793754e37b0853d7624a4571cab39a3fe45417a791fa23d82974c75af16dc",
+      "size": 5164
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASInterfaceDispatch.h": {
+      "mode": "0o644",
+      "sha256": "b86df36cd53af5eba2cdeebb5f213a9899c8c5da4dc49bdc11a00f253256a5b8",
+      "size": 337
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASObjectPropertyInitialization.h": {
+      "mode": "0o644",
+      "sha256": "81cbc0d24138107d2049c5c091b6c7ce97cdd1272360f0dd58b801af4fc85ac6",
+      "size": 430
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASSceneComponentAttachment.h": {
+      "mode": "0o644",
+      "sha256": "af68170de859def31b9ab35debf9a5fed7075aae7a4f6daf79c6fa4d5f92bbd4",
+      "size": 341
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASScriptPackageImport.h": {
+      "mode": "0o644",
+      "sha256": "d5d47d603e311113b77843e59a3057631ae44cb837a8a5c35fc054956b68621f",
+      "size": 174
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeExtensionCache.h": {
+      "mode": "0o644",
+      "sha256": "f954c4b273158b0cebb515d079a57a6f67be68a5c67daa0f94358d5fa07c6985",
+      "size": 2849
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeExtensionIdentity.h": {
+      "mode": "0o644",
+      "sha256": "3840f6311f40329311020be8af9c90b970a1c9418308f083fd3b118ece88973d",
+      "size": 2423
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeModule.h": {
+      "mode": "0o644",
+      "sha256": "82896bf4e7a6b8ee24643c558d2606be2d2f9b613561f02fb9aaa678ac18e8b0",
+      "size": 464
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeReflection.h": {
+      "mode": "0o644",
+      "sha256": "096305c221bd9018a944d310b18cce98696feb0dd3ecf2b6ab512dd9084c0ea3",
+      "size": 2391
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeScriptMetadataProvider.h": {
+      "mode": "0o644",
+      "sha256": "b807d4e63009b5b093568f860269e64ccf6d4700b4b868077a68fb72f662529b",
+      "size": 3280
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASScriptBlueprint.h": {
+      "mode": "0o644",
+      "sha256": "d7bf1bc614b747d19af3285f1177a0eca62047cd4c25f7b09e80609e80e7bd61",
+      "size": 5049
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Shared/cuviss/hooks/anchor.h": {
+      "mode": "0o644",
+      "sha256": "6008f78d351f15ba2b20a5ffb5fcfa2e3a4fdfcfc94055e17b7c3f09a7748e72",
+      "size": 6765
+    },
+    "SoloASBridge/Source/SoloASBridge/SoloASBridge.Build.cs": {
+      "mode": "0o644",
+      "sha256": "c9b0f1e7c6890dbae7636819c04c40e9defa48f34ac26aafaf97c6f7be6b4c54",
+      "size": 3604
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/CoreExtensions/SoloASBlueprintChildRelink.cpp": {
+      "mode": "0o644",
+      "sha256": "32b9a404878f66cecb188e00fb4b50675057fbf409e067e628ead672a033078d",
+      "size": 10926
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeColorRegionOuterAlias.cpp": {
+      "mode": "0o644",
+      "sha256": "2d322f70e5c81fbb1883efae9186fcb72ae2bd94f3ab9d72c47de34743c5dfb0",
+      "size": 1196
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeCoreRedirectClassificationHook.cpp": {
+      "mode": "0o644",
+      "sha256": "9a88aad8b141ad7b3639dba09e76f33da0b4e2a429d646666c1e379be57cd574",
+      "size": 33281
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeCoreRedirectClassificationHook.h": {
+      "mode": "0o644",
+      "sha256": "efcdfe4a3945f97a24fd237a7bb973b44ad99b34c4407b6e41864b6738db36ef",
+      "size": 145
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeEditorInlineHook.cpp": {
+      "mode": "0o644",
+      "sha256": "eed129dc72d7c61236777a4f031f46dd017cb52a4e1b6c46fcf951cdcf24c702",
+      "size": 13664
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeEditorInlineHook.h": {
+      "mode": "0o644",
+      "sha256": "cab3c08c20019612677cd4d9634e704a0f63d6d6842d3f5c7b2222d46105722b",
+      "size": 1008
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeEditorModule.cpp": {
+      "mode": "0o644",
+      "sha256": "315b04cb7b36546a1dbcf50ac6245f5f43348557b7bf2866d353ed5517a8619a",
+      "size": 26097
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeEnumEditor.cpp": {
+      "mode": "0o644",
+      "sha256": "d3bdee1dbb0429b936d27d855bb4c8b6a989b8077596569bd4bc6886f474e989",
+      "size": 4111
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeListViewEntryClassHook.cpp": {
+      "mode": "0o644",
+      "sha256": "538c6b83e511e99302c11c47e02ab99146f99fbd40e16bc304247317ada66e68",
+      "size": 7931
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeListViewEntryClassHook.h": {
+      "mode": "0o644",
+      "sha256": "aa43f19f6b96fe47f3e20d56a02e56906f3f7caf1b7b452c50b0b9a85ea2cd5c",
+      "size": 178
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeOutlinerScriptSourceLinkHook.cpp": {
+      "mode": "0o644",
+      "sha256": "0289d27fb389f4fb8a6ba41ced57a618e257d39a47ee91f68d7c126c339d8752",
+      "size": 4264
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeOutlinerScriptSourceLinkHook.h": {
+      "mode": "0o644",
+      "sha256": "07c94cece8d38cba3df927c6ea9ac3101e8ab0a28f8663d7d96ecc0f582b9db4",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeReload.cpp": {
+      "mode": "0o644",
+      "sha256": "3990ac123f945489f84e0e0345e259f81bc1b1ea506e099238d2ce8e0881cb2c",
+      "size": 22427
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeScriptFunctionSourceNavigationHook.cpp": {
+      "mode": "0o644",
+      "sha256": "1e673a51e94ca9c4c14efb368e84348ff85c583e3ca42b5a5e0ebe755ce2cc39",
+      "size": 8400
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeScriptFunctionSourceNavigationHook.h": {
+      "mode": "0o644",
+      "sha256": "3fab0c721f1d14ce22bb532b2ee0b09a14511743ecbe167513d9520107de6bdc",
+      "size": 203
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeSourceNavigation.cpp": {
+      "mode": "0o644",
+      "sha256": "ca03cc5de2184e5cc90843a000e3b6ef87fed54ffdcfbd17a4f62978cd0ab77e",
+      "size": 1761
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeStateTree.cpp": {
+      "mode": "0o644",
+      "sha256": "9cfe8094d9c3bae935d185976e4f575d61fa4920db935698f43108ac8be18e98",
+      "size": 3191
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASEditorExperienceImports.cpp": {
+      "mode": "0o644",
+      "sha256": "0ca3fe3b5c8173fde3fa2fbb5492413f1fdbb38c833d5b526e0b7fc49a659dd3",
+      "size": 59441
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASEditorExperienceImports.h": {
+      "mode": "0o644",
+      "sha256": "c9afe89eae99337fad5b7b818195a33ded4725ab107e32793dbdfe0c100ee14f",
+      "size": 690
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintCompiler.cpp": {
+      "mode": "0o644",
+      "sha256": "061e4a21916bbcc102f745a0a0dddca548fab4268462627159286d810485d484",
+      "size": 11887
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintDependencies.cpp": {
+      "mode": "0o644",
+      "sha256": "e6841db8f7f6b5fcb8dd851260e26230a4f466b7666cdd5c6d2672bf78567a8b",
+      "size": 7151
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintEditorInternal.h": {
+      "mode": "0o644",
+      "sha256": "5c048da64568561bd9bdd340b8cad3269914f089a693fe910e54c0952938e5e6",
+      "size": 1258
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintProvider.cpp": {
+      "mode": "0o644",
+      "sha256": "f6d6241c0af4568f04136129dff99ca97b7ce083272efd054b427477e3d9ddec",
+      "size": 3477
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintValidator.cpp": {
+      "mode": "0o644",
+      "sha256": "ff37fca0adc56563be6481775e71e8c78e5640dd5e71036199ffefbb5abc0d24",
+      "size": 9075
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Public/CoreExtensions/SoloASBlueprintChildRelink.h": {
+      "mode": "0o644",
+      "sha256": "cef6dbcd45401ba7a6529c92fac3be897e3eb812006df1f6b5dec286ba5fa9f1",
+      "size": 585
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeEnumEditor.h": {
+      "mode": "0o644",
+      "sha256": "9f13929175480a37a16cf005dc8f1f183613f41df71041c29f54a4fbfcaa53f3",
+      "size": 323
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeReload.h": {
+      "mode": "0o644",
+      "sha256": "f1fcb2a165b7c73aa5d9c4205a50d3b4880204de99abb91ac81e40236f71f257",
+      "size": 2334
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeSourceNavigation.h": {
+      "mode": "0o644",
+      "sha256": "fb21ca536010dbe265f249f743558177dfc6ff37d81581d3e09ccb53a5dd39ac",
+      "size": 544
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeStateTree.h": {
+      "mode": "0o644",
+      "sha256": "5675b91f7406b9533890b848ab9b78f31a1badcbaf74d1696269562c33ff24ae",
+      "size": 477
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASScriptBlueprintDependencies.h": {
+      "mode": "0o644",
+      "sha256": "761952ab2a1241d8f9508de5660e70f59d6bb258a1bde0c3aa773c80916aa040",
+      "size": 665
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/SoloASBridgeEditor.Build.cs": {
+      "mode": "0o644",
+      "sha256": "a3de7851b64c0b5c14ca91d18b8670fc6cc753733d8d3de678296cd7cc580f17",
+      "size": 1206
+    },
+    "SoloASBridge/Source/SoloASBridgeUht/SoloASBridgeExporter.cs": {
+      "mode": "0o644",
+      "sha256": "999de1bc4e76829da3ab6f540ac121434f4eeb8b80b495766da0b68d06e33c7f",
+      "size": 20865
+    },
+    "SoloASBridge/Source/SoloASBridgeUht/SoloASBridgeExporterSupport.cs": {
+      "mode": "0o644",
+      "sha256": "fe030bb9fdbb568467e9dbe33f27a87aacaddb7d783600fd4f6eb85d0c58d84e",
+      "size": 650
+    },
+    "SoloASBridge/Source/SoloASBridgeUht/SoloASBridgeSpecifiers.cs": {
+      "mode": "0o644",
+      "sha256": "458938957d86847f88514c3c7d3c4bae7f1e74fca1c0b582d0355c14ff0e92fe",
+      "size": 1818
+    },
+    "SoloASBridge/Source/SoloASBridgeUht/SoloASBridgeUht.ubtplugin.csproj": {
+      "mode": "0o644",
+      "sha256": "355b699fb20fbb08c56548076951b92a9846585adebe133b7d6d92d31fb4922e",
+      "size": 3608
+    },
+    "UPSTREAM.md": {
+      "mode": "0o664",
+      "sha256": "1018a24658b085e115c2f5fb871f4c3a755a865643cb36d8e606979a5cb9e2ef",
+      "size": 1380
+    },
+    "upstream.json": {
+      "mode": "0o664",
+      "sha256": "db4b80f5178d706b844380085f4001c7fa838dccadab63e16f9aa7580606850d",
+      "size": 1259
+    }
+  },
+  "schema": 1,
+  "super_commit": "b3c7dc0e98709b57bde60e8af9b9f70cdeb04501"
+}

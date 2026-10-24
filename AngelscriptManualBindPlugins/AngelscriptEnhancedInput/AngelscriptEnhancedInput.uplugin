@@ -1,0 +1,33 @@
+{
+  "FileVersion": 1,
+  "Version": 1,
+  "VersionName": "0.1.0+ue5.8.3",
+  "FriendlyName": "Enhanced Input support for Angelscript",
+  "Description": "",
+  "Category": "Scripting",
+  "CreatedBy": "",
+  "CreatedByURL": "",
+  "DocsURL": "",
+  "MarketplaceURL": "",
+  "EnabledByDefault": false,
+  "CanContainContent": false,
+  "IsBetaVersion": false,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "AngelscriptEnhancedInput",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "EnhancedInput",
+      "Enabled": true
+    },
+    {
+      "Name": "Angelscript",
+      "Enabled": true
+    }
+  ]
+}

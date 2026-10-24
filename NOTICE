@@ -1,0 +1,88 @@
+soloAS (pronounced Solo A-S)
+https://soloas.cuviss.com
+
+Licensing follows each plugin directory, including Cuviss modifications:
+AngelscriptRuntime: MIT; its embedded AngelScript library: zlib.
+AngelscriptGAS: Apache-2.0 OR MIT. AngelscriptEnhancedInput: MIT.
+All other Cuviss code: MPL-2.0 (see LICENSE).
+These grants also cover historical Cuviss All Rights Reserved headers.
+This does not relicense inherited code. Original copyright and license
+notices embedded in source files remain in force and are retained.
+Unreal Engine and its plugins are required separately and are not
+distributed here.
+
+Source identities and retained standalone license hashes:
+{
+  "products": [
+    {
+      "category": "Haze fork bindings",
+      "commit": "137d40088aaadbf7a8ca5bd9bca428818c70ae47",
+      "license_scope": "Plugin source and Cuviss contributions: MIT.",
+      "name": "AngelscriptEnhancedInput",
+      "path": "AngelscriptManualBindPlugins/AngelscriptEnhancedInput",
+      "tree": "c85fa3d98768e1d88632f25db628841d30cea277"
+    },
+    {
+      "category": "Haze fork bindings",
+      "commit": "f94975126103d592d7e4e8bcd553b2aaa75de51b",
+      "license_scope": "Plugin source and Cuviss contributions: Apache-2.0 OR MIT.",
+      "name": "AngelscriptGAS",
+      "path": "AngelscriptManualBindPlugins/AngelscriptGAS",
+      "tree": "38330a6d572c9a4e2694cbc013041265ddef5bc8"
+    },
+    {
+      "category": "core",
+      "commit": "5d7ad3c80c5daba300888dc1e3099a4a8be44091",
+      "license_scope": "Plugin source and Cuviss contributions: MIT. Embedded AngelScript library and its modifications: zlib.",
+      "name": "AngelscriptRuntime",
+      "path": "AngelscriptRuntime",
+      "tree": "41f6d4406dd2ce35b1ddbbe99ef5ed6cd9f71a3e"
+    },
+    {
+      "category": "core",
+      "commit": "74e835550a3f11f134461339655258928daa723a",
+      "license_scope": "Cuviss original code and modifications are under MPL-2.0.",
+      "name": "SoloASBridge",
+      "path": "SoloASBridge",
+      "tree": "0eab226b54df7469963cc409dda4d0e86dc604c0"
+    }
+  ],
+  "retained_license_files": [
+    {
+      "path": "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/LICENSE-MIT",
+      "sha256": "032f3a74937e7f3e7ac0e39c35f8739736356544a77c749e78a5d1b3b55040d5"
+    },
+    {
+      "path": "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/NOTICE",
+      "sha256": "b905afdcffebc90ea73f0299f22706a32fece513159e153ce5c66806803421e4"
+    },
+    {
+      "path": "AngelscriptManualBindPlugins/AngelscriptGAS/LICENSE-APACHE",
+      "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+    },
+    {
+      "path": "AngelscriptManualBindPlugins/AngelscriptGAS/LICENSE-MIT",
+      "sha256": "090a294a492ab2f41388252312a65cf2f0e423330b721a68c6665ac64766753b"
+    },
+    {
+      "path": "AngelscriptManualBindPlugins/AngelscriptGAS/NOTICE",
+      "sha256": "960a5f05830c0eb207b2d24b5a9bb25b7b4a457f2c7844b3c25ea1ddca3634bc"
+    },
+    {
+      "path": "AngelscriptRuntime/LICENSE-MIT",
+      "sha256": "032f3a74937e7f3e7ac0e39c35f8739736356544a77c749e78a5d1b3b55040d5"
+    },
+    {
+      "path": "AngelscriptRuntime/LICENSE-ZLIB",
+      "sha256": "b2c93cff25829e4fe6964b9b2a54e3e1c3e981c08a6852cccbb41a945ffc6508"
+    },
+    {
+      "path": "AngelscriptRuntime/NOTICE",
+      "sha256": "4b49f7e65e404947a52679210b00aedcb48f2b2472896899a15f0ff863b49dde"
+    },
+    {
+      "path": "SoloASBridge/LICENSE",
+      "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+    }
+  ]
+}

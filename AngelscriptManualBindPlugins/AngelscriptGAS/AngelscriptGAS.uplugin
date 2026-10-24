@@ -1,0 +1,34 @@
+{
+  "FileVersion": 1,
+  "Version": 1,
+  "VersionName": "0.1.0+ue5.8.3",
+  "FriendlyName": "GAS for Angelscript",
+  "Description": "",
+  "Category": "Scripting",
+  "CreatedBy": "Embark Studios",
+  "CreatedByURL": "https://github.com/EmbarkStudios",
+  "DocsURL": "",
+  "MarketplaceURL": "",
+  "SupportURL": "mailto:opensource@embark-studios.com",
+  "EnabledByDefault": false,
+  "CanContainContent": false,
+  "IsBetaVersion": false,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "AngelscriptGAS",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "GameplayAbilities",
+      "Enabled": true
+    },
+    {
+      "Name": "Angelscript",
+      "Enabled": true
+    }
+  ]
+}

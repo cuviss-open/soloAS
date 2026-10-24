@@ -1,0 +1,600 @@
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Curves/CurveFloat.h"
+#include "AngelscriptManager.h"
+#include "RuntimeFloatCurveMixinLibrary.generated.h"
+
+USTRUCT(BlueprintType)
+struct FCurveKeyHandle
+{
+	GENERATED_BODY()
+
+	FKeyHandle KeyHandle;
+};
+
+UCLASS(meta = (ScriptMixin = "FRuntimeFloatCurve"))
+class ANGELSCRIPTCODE_API URuntimeFloatCurveMixinLibrary  : public UObject
+{
+	GENERATED_BODY()
+	
+public:
+
+	/** Evaluate this float curve at the specified time */
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+    static float GetFloatValue(const FRuntimeFloatCurve& Target, const float InTime, const float DefaultValue = 0)
+	{
+		return Target.GetRichCurveConst()->Eval(InTime, DefaultValue);
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+    static void GetTimeRange(const FRuntimeFloatCurve& Target, float& MinTime, float& MaxTime)
+	{
+		Target.GetRichCurveConst()->GetTimeRange(MinTime, MaxTime);
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+    static void GetValueRange(const FRuntimeFloatCurve& Target, float& MinValue, float& MaxValue)
+	{
+		Target.GetRichCurveConst()->GetValueRange(MinValue, MaxValue);
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves", Meta = (ScriptName = "GetTimeRange"))
+    static void GetTimeRange_Double(const FRuntimeFloatCurve& Target, double& MinTime, double& MaxTime)
+	{
+		float MinTimeFlt, MaxTimeFlt;
+		Target.GetRichCurveConst()->GetTimeRange(MinTimeFlt, MaxTimeFlt);
+		MinTime = MinTimeFlt;
+		MaxTime = MaxTimeFlt;
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves", Meta = (ScriptName = "GetValueRange"))
+    static void GetValueRange_Double(const FRuntimeFloatCurve& Target, double& MinValue, double& MaxValue)
+	{
+		float MinValueFlt, MaxValueFlt;
+		Target.GetRichCurveConst()->GetValueRange(MinValueFlt, MaxValueFlt);
+		MinValue = MinValueFlt;
+		MaxValue = MaxValueFlt;
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+    static int32 GetNumKeys(const FRuntimeFloatCurve& Target)
+	{
+		return Target.GetRichCurveConst()->GetNumKeys();
+	}
+	
+	UFUNCTION(ScriptCallable, Category = "Math|Curves", Meta = (ScriptName = "GetKeys"))
+	static const TArray<FRichCurveKey>& GetKeysConst(const FRuntimeFloatCurve& Target)
+	{
+		return Target.GetRichCurveConst()->Keys;
+	}
+	
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FRichCurveKey GetKeyAtIndex(const FRuntimeFloatCurve& Target, int Index)
+	{
+		if (!Target.GetRichCurveConst()->Keys.IsValidIndex(Index))
+			return FRichCurveKey();
+		
+		return Target.GetRichCurveConst()->Keys[Index];
+	}
+	
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+    static bool Equals(const FRuntimeFloatCurve& Target, const FRuntimeFloatCurve& Other)
+	{
+		const FRichCurve* TargetCurve = Target.GetRichCurveConst();
+		const FRichCurve* OtherCurve = Other.GetRichCurveConst();
+		if (!TargetCurve || !OtherCurve)
+			return (!TargetCurve && !OtherCurve); // Equal only if both are nullptr
+			
+		return (*TargetCurve) == (*OtherCurve);
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void AddDefaultKey(FRuntimeFloatCurve& Target, float InTime, float InValue)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return;
+		}
+
+		Target.EditorCurveData.AddKey(InTime, InValue);
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void AutoSetTangents(FRuntimeFloatCurve& Target)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return;
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		Curve->AutoSetTangents();
+	}
+	
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetDefaultValue(FRuntimeFloatCurve& Target, float DefaultValue)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return;
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		Curve->SetDefaultValue(DefaultValue);
+	}
+	
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetPreInfinityExtrap(FRuntimeFloatCurve& Target, ERichCurveExtrapolation Extrapolation)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return;
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		Curve->PreInfinityExtrap = Extrapolation;
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetKeyInterpMode(FRuntimeFloatCurve& Target, FCurveKeyHandle KeyHandle, ERichCurveInterpMode NewInterpMode, bool bAutoSetTangents)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return;
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		Curve->SetKeyInterpMode(KeyHandle.KeyHandle, NewInterpMode, bAutoSetTangents);
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetKeyTangentMode(FRuntimeFloatCurve& Target, FCurveKeyHandle KeyHandle, ERichCurveTangentMode NewTangentMode, bool bAutoSetTangents = true)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return;
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		Curve->SetKeyTangentMode(KeyHandle.KeyHandle, NewTangentMode, bAutoSetTangents);
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetKeyTangentWeightMode(FRuntimeFloatCurve& Target, FCurveKeyHandle KeyHandle, ERichCurveTangentWeightMode NewTangentWeightMode, bool bAutoSetTangents = true)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return;
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		Curve->SetKeyTangentWeightMode(KeyHandle.KeyHandle, NewTangentWeightMode, bAutoSetTangents);
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetKeyUserTangents(FRuntimeFloatCurve& Target, FCurveKeyHandle KeyHandle, float ArriveTangent, float LeaveTangent)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return;
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		if (!Curve->IsKeyHandleValid(KeyHandle.KeyHandle))
+			return;
+		
+		FRichCurveKey& Key = Curve->GetKey(KeyHandle.KeyHandle);
+		Key.ArriveTangent = ArriveTangent;
+		Key.LeaveTangent = LeaveTangent;
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetKeyUserTangentWeights(FRuntimeFloatCurve& Target, FCurveKeyHandle KeyHandle, float ArriveTangentWeight, float LeaveTangentWeight)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return;
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		if (!Curve->IsKeyHandleValid(KeyHandle.KeyHandle))
+			return;
+		
+		FRichCurveKey& Key = Curve->GetKey(KeyHandle.KeyHandle);
+		Key.ArriveTangentWeight = ArriveTangentWeight;
+		Key.LeaveTangentWeight = LeaveTangentWeight;
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddConstantKey(FRuntimeFloatCurve& Target, float InTime, float InValue)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return FCurveKeyHandle{};
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		FKeyHandle Handle = Curve->AddKey(InTime, InValue);
+		Curve->SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Constant, false);
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddLinearKey(FRuntimeFloatCurve& Target, float InTime, float InValue)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return FCurveKeyHandle{};
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		FKeyHandle Handle = Curve->AddKey(InTime, InValue);
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddAutoKey(FRuntimeFloatCurve& Target, float InTime, float InValue)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return FCurveKeyHandle{};
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		FKeyHandle Handle = Curve->AddKey(InTime, InValue);
+		Curve->SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		Curve->SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_Auto, false);
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddSmartAutoKey(FRuntimeFloatCurve& Target, float InTime, float InValue)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return FCurveKeyHandle{};
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		FKeyHandle Handle = Curve->AddKey(InTime, InValue);
+		Curve->SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		Curve->SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_SmartAuto, false);
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddKeyTangent(FRuntimeFloatCurve& Target, float InTime, float InValue, float Tangent)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return FCurveKeyHandle{};
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		FKeyHandle Handle = Curve->AddKey(InTime, InValue);
+		Curve->SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		Curve->SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_User, false);
+
+		FRichCurveKey& Key = Curve->GetKey(Handle);
+		Key.ArriveTangent = Tangent;
+		Key.LeaveTangent = Tangent;
+
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddKeyBrokenTangent(FRuntimeFloatCurve& Target, float InTime, float InValue, float ArriveTangent, float LeaveTangent)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return FCurveKeyHandle{};
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		FKeyHandle Handle = Curve->AddKey(InTime, InValue);
+		Curve->SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		Curve->SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_Break, false);
+
+		FRichCurveKey& Key = Curve->GetKey(Handle);
+		Key.ArriveTangent = ArriveTangent;
+		Key.LeaveTangent = LeaveTangent;
+
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddKeyWeightedArriveTangent(FRuntimeFloatCurve& Target, float InTime, float InValue, bool bBrokenTangent, float ArriveTangent, float LeaveTangent, float ArriveTangentWeight, float LeaveTangentWeight)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return FCurveKeyHandle{};
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		FKeyHandle Handle = Curve->AddKey(InTime, InValue);
+		Curve->SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		if (bBrokenTangent)
+			Curve->SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_Break, false);
+		else
+			Curve->SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_User, false);
+
+		FRichCurveKey& Key = Curve->GetKey(Handle);
+		Key.ArriveTangent = ArriveTangent;
+		Key.ArriveTangentWeight = ArriveTangentWeight;
+		Key.LeaveTangent = LeaveTangent;
+		Key.LeaveTangentWeight = LeaveTangentWeight;
+		Key.TangentWeightMode = ERichCurveTangentWeightMode::RCTWM_WeightedArrive;
+
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddKeyWeightedLeaveTangent(FRuntimeFloatCurve& Target, float InTime, float InValue, bool bBrokenTangent, float ArriveTangent, float LeaveTangent, float ArriveTangentWeight, float LeaveTangentWeight)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return FCurveKeyHandle{};
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		FKeyHandle Handle = Curve->AddKey(InTime, InValue);
+		Curve->SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		if (bBrokenTangent)
+			Curve->SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_Break, false);
+		else
+			Curve->SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_User, false);
+
+		FRichCurveKey& Key = Curve->GetKey(Handle);
+		Key.ArriveTangent = ArriveTangent;
+		Key.ArriveTangentWeight = ArriveTangentWeight;
+		Key.LeaveTangent = LeaveTangent;
+		Key.LeaveTangentWeight = LeaveTangentWeight;
+		Key.TangentWeightMode = ERichCurveTangentWeightMode::RCTWM_WeightedLeave;
+
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddKeyWeightedBothTangent(FRuntimeFloatCurve& Target, float InTime, float InValue, bool bBrokenTangent, float ArriveTangent, float LeaveTangent, float ArriveTangentWeight, float LeaveTangentWeight)
+	{
+		if (Target.ExternalCurve != nullptr)
+		{
+			FAngelscriptManager::Throw("Cannot modify FRuntimeFloatCurve when it has an external curve set");
+			return FCurveKeyHandle{};
+		}
+
+		FRichCurve* Curve = &Target.EditorCurveData;
+		FKeyHandle Handle = Curve->AddKey(InTime, InValue);
+		Curve->SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		if (bBrokenTangent)
+			Curve->SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_Break, false);
+		else
+			Curve->SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_User, false);
+
+		FRichCurveKey& Key = Curve->GetKey(Handle);
+		Key.ArriveTangent = ArriveTangent;
+		Key.ArriveTangentWeight = ArriveTangentWeight;
+		Key.LeaveTangent = LeaveTangent;
+		Key.LeaveTangentWeight = LeaveTangentWeight;
+		Key.TangentWeightMode = ERichCurveTangentWeightMode::RCTWM_WeightedBoth;
+
+		return FCurveKeyHandle{Handle};
+	}
+};
+
+UCLASS(meta = (ScriptMixin = "UCurveFloat"))
+class ANGELSCRIPTCODE_API UCurveFloatMixinLibrary  : public UObject
+{
+	GENERATED_BODY()
+	
+public:
+	
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddCurveKey(UCurveFloat* Curve, float InTime, float InValue)
+	{
+		FKeyHandle Handle = Curve->FloatCurve.AddKey(InTime, InValue);
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void AutoSetTangents(UCurveFloat* Curve)
+	{
+		Curve->FloatCurve.AutoSetTangents();
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetDefaultValue(UCurveFloat* Curve, float DefaultValue)
+	{
+		Curve->FloatCurve.SetDefaultValue(DefaultValue);
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetPreInfinityExtrap(UCurveFloat* Curve, ERichCurveExtrapolation Extrapolation)
+	{
+		Curve->FloatCurve.PreInfinityExtrap = Extrapolation;
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetPostInfinityExtrap(UCurveFloat* Curve, ERichCurveExtrapolation Extrapolation)
+	{
+		Curve->FloatCurve.PostInfinityExtrap = Extrapolation;
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetKeyInterpMode(UCurveFloat* Curve, FCurveKeyHandle KeyHandle, ERichCurveInterpMode NewInterpMode, bool bAutoSetTangents)
+	{
+		Curve->FloatCurve.SetKeyInterpMode(KeyHandle.KeyHandle, NewInterpMode, bAutoSetTangents);
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetKeyTangentMode(UCurveFloat* Curve, FCurveKeyHandle KeyHandle, ERichCurveTangentMode NewTangentMode, bool bAutoSetTangents = true)
+	{
+		Curve->FloatCurve.SetKeyTangentMode(KeyHandle.KeyHandle, NewTangentMode, bAutoSetTangents);
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetKeyTangentWeightMode(UCurveFloat* Curve, FCurveKeyHandle KeyHandle, ERichCurveTangentWeightMode NewTangentWeightMode, bool bAutoSetTangents = true)
+	{
+		Curve->FloatCurve.SetKeyTangentWeightMode(KeyHandle.KeyHandle, NewTangentWeightMode, bAutoSetTangents);
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetKeyUserTangents(UCurveFloat* Curve, FCurveKeyHandle KeyHandle, float ArriveTangent, float LeaveTangent)
+	{
+		if (!Curve->FloatCurve.IsKeyHandleValid(KeyHandle.KeyHandle))
+			return;
+		FRichCurveKey& Key = Curve->FloatCurve.GetKey(KeyHandle.KeyHandle);
+		Key.ArriveTangent = ArriveTangent;
+		Key.LeaveTangent = LeaveTangent;
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static void SetKeyUserTangentWeights(UCurveFloat* Curve, FCurveKeyHandle KeyHandle, float ArriveTangentWeight, float LeaveTangentWeight)
+	{
+		if (!Curve->FloatCurve.IsKeyHandleValid(KeyHandle.KeyHandle))
+			return;
+		FRichCurveKey& Key = Curve->FloatCurve.GetKey(KeyHandle.KeyHandle);
+		Key.ArriveTangentWeight = ArriveTangentWeight;
+		Key.LeaveTangentWeight = LeaveTangentWeight;
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddConstantCurveKey(UCurveFloat* Curve, float InTime, float InValue)
+	{
+		FKeyHandle Handle = Curve->FloatCurve.AddKey(InTime, InValue);
+		Curve->FloatCurve.SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Constant, false);
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddLinearCurveKey(UCurveFloat* Curve, float InTime, float InValue)
+	{
+		FKeyHandle Handle = Curve->FloatCurve.AddKey(InTime, InValue);
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddAutoCurveKey(UCurveFloat* Curve, float InTime, float InValue)
+	{
+		FKeyHandle Handle = Curve->FloatCurve.AddKey(InTime, InValue);
+		Curve->FloatCurve.SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		Curve->FloatCurve.SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_Auto, false);
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddSmartAutoCurveKey(UCurveFloat* Curve, float InTime, float InValue)
+	{
+		FKeyHandle Handle = Curve->FloatCurve.AddKey(InTime, InValue);
+		Curve->FloatCurve.SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		Curve->FloatCurve.SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_SmartAuto, false);
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddCurveKeyTangent(UCurveFloat* Curve, float InTime, float InValue, float Tangent)
+	{
+		FKeyHandle Handle = Curve->FloatCurve.AddKey(InTime, InValue);
+		Curve->FloatCurve.SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		Curve->FloatCurve.SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_User, false);
+
+		FRichCurveKey& Key = Curve->FloatCurve.GetKey(Handle);
+		Key.ArriveTangent = Tangent;
+		Key.LeaveTangent = Tangent;
+
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddCurveKeyBrokenTangent(UCurveFloat* Curve, float InTime, float InValue, float ArriveTangent, float LeaveTangent)
+	{
+		FKeyHandle Handle = Curve->FloatCurve.AddKey(InTime, InValue);
+		Curve->FloatCurve.SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		Curve->FloatCurve.SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_Break, false);
+
+		FRichCurveKey& Key = Curve->FloatCurve.GetKey(Handle);
+		Key.ArriveTangent = ArriveTangent;
+		Key.LeaveTangent = LeaveTangent;
+
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddCurveKeyWeightedArriveTangent(UCurveFloat* Curve, float InTime, float InValue, bool bBrokenTangent, float ArriveTangent, float LeaveTangent, float ArriveTangentWeight, float LeaveTangentWeight)
+	{
+		FKeyHandle Handle = Curve->FloatCurve.AddKey(InTime, InValue);
+		Curve->FloatCurve.SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		if (bBrokenTangent)
+			Curve->FloatCurve.SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_Break, false);
+		else
+			Curve->FloatCurve.SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_User, false);
+
+		FRichCurveKey& Key = Curve->FloatCurve.GetKey(Handle);
+		Key.ArriveTangent = ArriveTangent;
+		Key.ArriveTangentWeight = ArriveTangentWeight;
+		Key.LeaveTangent = LeaveTangent;
+		Key.LeaveTangentWeight = LeaveTangentWeight;
+		Key.TangentWeightMode = ERichCurveTangentWeightMode::RCTWM_WeightedArrive;
+
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddCurveKeyWeightedLeaveTangent(UCurveFloat* Curve, float InTime, float InValue, bool bBrokenTangent, float ArriveTangent, float LeaveTangent, float ArriveTangentWeight, float LeaveTangentWeight)
+	{
+		FKeyHandle Handle = Curve->FloatCurve.AddKey(InTime, InValue);
+		Curve->FloatCurve.SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		if (bBrokenTangent)
+			Curve->FloatCurve.SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_Break, false);
+		else
+			Curve->FloatCurve.SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_User, false);
+
+		FRichCurveKey& Key = Curve->FloatCurve.GetKey(Handle);
+		Key.ArriveTangent = ArriveTangent;
+		Key.ArriveTangentWeight = ArriveTangentWeight;
+		Key.LeaveTangent = LeaveTangent;
+		Key.LeaveTangentWeight = LeaveTangentWeight;
+		Key.TangentWeightMode = ERichCurveTangentWeightMode::RCTWM_WeightedLeave;
+
+		return FCurveKeyHandle{Handle};
+	}
+
+	UFUNCTION(ScriptCallable, Category = "Math|Curves")
+	static FCurveKeyHandle AddCurveKeyWeightedBothTangent(UCurveFloat* Curve, float InTime, float InValue, bool bBrokenTangent, float ArriveTangent, float LeaveTangent, float ArriveTangentWeight, float LeaveTangentWeight)
+	{
+		FKeyHandle Handle = Curve->FloatCurve.AddKey(InTime, InValue);
+		Curve->FloatCurve.SetKeyInterpMode(Handle, ERichCurveInterpMode::RCIM_Cubic, false);
+		if (bBrokenTangent)
+			Curve->FloatCurve.SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_Break, false);
+		else
+			Curve->FloatCurve.SetKeyTangentMode(Handle, ERichCurveTangentMode::RCTM_User, false);
+
+		FRichCurveKey& Key = Curve->FloatCurve.GetKey(Handle);
+		Key.ArriveTangent = ArriveTangent;
+		Key.ArriveTangentWeight = ArriveTangentWeight;
+		Key.LeaveTangent = LeaveTangent;
+		Key.LeaveTangentWeight = LeaveTangentWeight;
+		Key.TangentWeightMode = ERichCurveTangentWeightMode::RCTWM_WeightedBoth;
+
+		return FCurveKeyHandle{Handle};
+	}
+};

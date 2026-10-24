@@ -1,0 +1,7 @@
+AngelscriptEnhancedInput, including Cuviss Studio additions and modifications, is licensed under MIT; see LICENSE-MIT. Preserve the inherited copyright and license notices.
+
+Upstream source attribution
+Repository: https://github.com/Hazelight/UnrealEngine-Angelscript.git
+Source commit: 4b2892f0b550f20f4856d38f68d4987e3dfdb7da
+Source tree: ebb7f9155587002398ca1492a68456c567520869
+Source path: Engine/Plugins/AngelscriptEnhancedInput

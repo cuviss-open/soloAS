@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="DefineConstants">
+  <Import
+    Project="SoloASBridgeUht.ubtplugin.csproj.props"
+    Condition="Exists('SoloASBridgeUht.ubtplugin.csproj.props')"
+  />
+  <Import Project="$(EngineDir)\Source\Programs\Shared\UnrealEngine.csproj.props" />
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Development</Configuration>
+    <OutputType>Library</OutputType>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <Configurations>Debug;Release;Development</Configurations>
+    <RootNamespace>SoloASBridgeUht</RootNamespace>
+    <AssemblyName>SoloASBridgeUht</AssemblyName>
+    <UhtPluginOutputRoot>..\..\Binaries\DotNET\UnrealBuildTool\</UhtPluginOutputRoot>
+    <OutputPath>$(UhtPluginOutputRoot)Plugins\SoloASBridgeUht\</OutputPath>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DebugType>pdbonly</DebugType>
+    <Nullable>enable</Nullable>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <!-- Source-built engine capability probe, not a UE version check: inspect the fixed UHT source for the actual ScriptCallable handler. -->
+  <PropertyGroup>
+    <SoloASUhtFunctionSpecifierFile>$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Specifiers\UhtFunctionSpecifiers.cs</SoloASUhtFunctionSpecifierFile>
+    <SoloASUhtPropertyMemberSpecifierFile>$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Specifiers\UhtPropertyMemberSpecifiers.cs</SoloASUhtPropertyMemberSpecifierFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="Exists('$(SoloASUhtFunctionSpecifierFile)') and $([System.IO.File]::ReadAllText('$(SoloASUhtFunctionSpecifierFile)').Contains('ScriptCallableSpecifier'))">
+    <DefineConstants>$(DefineConstants);SOLOAS_UHT_BUILTIN_SCRIPT_CALLABLE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="Exists('$(SoloASUhtPropertyMemberSpecifierFile)') and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptReadOnlySpecifier')) and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptReadOnly'))">
+    <DefineConstants>$(DefineConstants);SOLOAS_UHT_BUILTIN_SCRIPT_READ_ONLY</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="Exists('$(SoloASUhtPropertyMemberSpecifierFile)') and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptReadWriteSpecifier')) and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptReadWrite'))">
+    <DefineConstants>$(DefineConstants);SOLOAS_UHT_BUILTIN_SCRIPT_READ_WRITE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="Exists('$(SoloASUhtPropertyMemberSpecifierFile)') and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptEditOnlySpecifier')) and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptEditOnly'))">
+    <DefineConstants>$(DefineConstants);SOLOAS_UHT_BUILTIN_SCRIPT_EDIT_ONLY</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="EpicGames.Core">
+      <HintPath>$(EngineDir)\Binaries\DotNET\UnrealBuildTool\EpicGames.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="EpicGames.UHT">
+      <HintPath>$(EngineDir)\Binaries\DotNET\UnrealBuildTool\EpicGames.UHT.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,1160 @@
+{
+  "SoloASBridge/Source/SoloASBridgeUht/SoloASBridgeExporter.cs": [],
+  "SoloASBridge/Source/SoloASBridgeUht/SoloASBridgeExporterSupport.cs": [],
+  "SoloASBridge/Source/SoloASBridgeUht/SoloASBridgeSpecifiers.cs": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/SoloASBridgeEditor.Build.cs": [],
+  "SoloASBridge/Source/SoloASBridge/SoloASBridge.Build.cs": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Editor/SoloASRetiredLoadingExportRepair.cpp": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridge/Private/Editor/SoloASCopyProperties.cpp": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridge/Private/Editor/SoloASEditorCopyPropertiesImports.cpp": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBlueprintDefaultObject.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeModule.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeExtensionCache.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeReflectionSupport.h": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeReflection.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeReflectionSupport.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASPrivateAccess.h": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeExtensionCacheValidation.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASScriptBlueprint.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeExtensionIdentity.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeExtensionCacheValidation.h": [],
+  "SoloASBridge/Source/SoloASBridge/Private/UHT/SoloASBridgeUhtAnchor.h": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeObjectLifecycleSupport.h": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASScriptPackageImport.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASObjectPropertyInitialization.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeObjectLifecycleSupport.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeStaticCallContext.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeCallableDispatch.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeScriptPropertyAliases.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeStaticCallContext.h": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeCallableDispatchSupport.h": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeClassState.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeCallableDispatchSupport.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeObjectLifecycle.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeScriptMetadata.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASSceneComponentAttachment.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/NativeEventSuper/SoloASBridgeNativeEventSuper.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Private/Runtime/Extensions/SoloASInterfaceDispatch.cpp": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridge/Private/Shared/cuviss/hooks/anchor.cpp": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASEditorObjectImportProperties.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASEditorEntryHook.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASEditorFieldPathReload.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASRetiredLoadingExportRepair.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASCopyProperties.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeExtensionIdentity.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeScriptMetadataProvider.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeExtensionCache.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeModule.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASScriptBlueprint.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeReflection.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASSceneComponentAttachment.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeClassState.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASInterfaceDispatch.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeObjectLifecycle.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeCallableDispatch.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeStockAutoCaller.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeScriptMetadata.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASObjectPropertyInitialization.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASScriptPackageImport.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeScriptPropertyAliases.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Runtime/NativeEventSuper/SoloASBridgeNativeEventSuper.h": [],
+  "SoloASBridge/Source/SoloASBridge/Public/Shared/cuviss/hooks/anchor.h": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeListViewEntryClassHook.cpp": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintProvider.cpp": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeEditorModule.cpp": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeCoreRedirectClassificationHook.cpp": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASEditorExperienceImports.h": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeEnumEditor.cpp": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeScriptFunctionSourceNavigationHook.cpp": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeEditorInlineHook.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeOutlinerScriptSourceLinkHook.cpp": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintDependencies.cpp": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASEditorExperienceImports.cpp": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeListViewEntryClassHook.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeReload.cpp": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeOutlinerScriptSourceLinkHook.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintEditorInternal.h": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeColorRegionOuterAlias.cpp": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeSourceNavigation.cpp": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeCoreRedirectClassificationHook.h": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeStateTree.cpp": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintValidator.cpp": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintCompiler.cpp": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeEditorInlineHook.cpp": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeScriptFunctionSourceNavigationHook.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridgeEditor/Private/CoreExtensions/SoloASBlueprintChildRelink.cpp": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeEnumEditor.h": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeSourceNavigation.h": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeStateTree.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASScriptBlueprintDependencies.h": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeReload.h": [],
+  "SoloASBridge/Source/SoloASBridgeEditor/Public/CoreExtensions/SoloASBlueprintChildRelink.h": [
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/AngelscriptEnhancedInput.Build.cs": [],
+  "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Public/AngelscriptEnhancedInputModule.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Private/AngelscriptEnhancedInputModule.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Private/Binds/Bind_FInputBindingHandle.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Private/Binds/Bind_UEnhancedInputComponent.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Private/Binds/Bind_FInputActionValue.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Public/Mixin/EnhancedInputSubsystemsMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Public/Mixin/InputActionValueMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/AngelscriptGAS.Build.cs": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptAbilityTask.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptAbilitySystemComponent.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptGASPawn.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptGASCharacter.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptModMagnitudeCalculation.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptGASModule.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptGASAbility.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptGASActor.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptAttributeSet.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptAbilitySystemComponent.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptGASCharacter.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptGASAbility.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptModMagnitudeCalculation.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptGASPawn.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptGASActor.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptGASModule.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptAttributeSet.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptAbilityTask.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_FGameplayEffectSpec.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_FGameplayTagBlueprintPropertyMap.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_FGameplayAbilitySpec.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_GameplayTaskOwnership.cpp": [
+    "// SPDX-License-Identifier: (Apache-2.0 OR MIT)",
+    "// Copyright Cuviss Studio."
+  ],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_FGameplayAttribute.cpp": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/AbilitySystemComponentMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayCueParametersMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayModifierEvaluatedDataMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/AngelscriptGameplayAttributeDataMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayAbilityActorInfoMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectExecutionDefinitionMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectCustomExecutionOutputMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayTaskMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectCustomExecutionParametersMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectSpecMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/InheritedTagContainerMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayCueNotifyMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectSpecHandleMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/AbilityAsyncMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectExecutionScopedModifierInfoMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectContextHandleMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayAbilityMixinLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/FunctionLibraries/AngelscriptAbilityAsyncLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/FunctionLibraries/AngelscriptGameplayEffectUtils.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/FunctionLibraries/AngelscriptAbilityTaskLibrary.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/FunctionLibraries/AngelscriptGameplayCueUtils.h": [],
+  "AngelscriptRuntime/ThirdParty/include/angelscript.h": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_builder.cpp": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_property.h": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_x64_gcc.cpp": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_ppc_64.cpp": [
+    "Copyright (c) 2003-2016 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_parser.h": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_objecttype.h": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_x86.cpp": [
+    "Copyright (c) 2003-2016 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_memory.h": [
+    "Copyright (c) 2003-2014 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_string_util.h": [
+    "Copyright (c) 2003-2016 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_globalproperty.cpp": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_bytecode.cpp": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_xenon.cpp": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_typeinfo.cpp": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_string.cpp": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_thread.h": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_symboltable.h": [
+    "Copyright (c) 2012-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_context.cpp": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_scriptnode.h": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_arm_vita.S": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_atomic.h": [
+    "Copyright (c) 2003-2013 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_thread.cpp": [
+    "Copyright (c) 2003-2014 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_x64_msvc.cpp": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_module.h": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_outputbuffer.cpp": [
+    "Copyright (c) 2003-2012 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_array.h": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_string.h": [
+    "Copyright (c) 2003-2014 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_scriptnode.cpp": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_namespace.h": [
+    "Copyright (c) 2013-2014 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_scriptobject.cpp": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_scriptcode.h": [
+    "Copyright (c) 2003-2011 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_arm.cpp": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_scriptengine.cpp": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_parser.cpp": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_variablescope.h": [
+    "Copyright (c) 2003-2012 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_x64_msvc_asm.asm": [
+    ";  Copyright (c) 2003-2011 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_arm_msvc.asm": [
+    ";  Copyright (c) 2003-2014 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_outputbuffer.h": [
+    "Copyright (c) 2003-2012 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_typeinfo.h": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_context.h": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_tokenizer.cpp": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_scriptcode.cpp": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_string_util.cpp": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_compiler.cpp": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_gc.cpp": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_arm_xcode.s": [
+    "Copyright (c) 2003-2009 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_mips.cpp": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_datatype.h": [
+    "Copyright (c) 2003-2016 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc.h": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_tokendef.h": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_generic.h": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_sh4.cpp": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_variablescope.cpp": [
+    "Copyright (c) 2003-2012 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_generic.cpp": [
+    "Copyright (c) 2003-2016 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_builder.h": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_configgroup.cpp": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_config.h": [
+    "Copyright (c) 2003-2016 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_gc.h": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_debug.h": [
+    "Copyright (c) 2003-2016 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_x64_mingw.cpp": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc.cpp": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_map.h": [
+    "Copyright (c) 2003-2013 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_scriptengine.h": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_memory.cpp": [
+    "Copyright (c) 2003-2016 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_atomic.cpp": [
+    "Copyright (c) 2003-2014 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_module.cpp": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_datatype.cpp": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_arm_gcc.S": [
+    "Copyright (c) 2003-2016 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_texts.h": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_criticalsection.h": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_scriptobject.h": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_scriptfunction.cpp": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_scriptfunction.h": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_tokenizer.h": [
+    "Copyright (c) 2003-2013 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_callfunc_ppc.cpp": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_compiler.h": [
+    "Copyright (c) 2003-2018 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_configgroup.h": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_objecttype.cpp": [
+    "Copyright (c) 2003-2017 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/ThirdParty/source/as_bytecode.h": [
+    "Copyright (c) 2003-2015 Andreas Jonsson"
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/AngelscriptEditor.Build.cs": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/AngelscriptCode.Build.cs": [],
+  "AngelscriptRuntime/Source/AngelscriptLoader/AngelscriptLoader.Build.cs": [],
+  "AngelscriptRuntime/Source/AngelscriptLoader/Private/AngelscriptLoaderModule.h": [],
+  "AngelscriptRuntime/Source/AngelscriptLoader/Private/AngelscriptLoaderModule.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptRuntimeGcMirrorAPI.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptInclude.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptAnyStructParameter.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptRuntimeGcLifecycle.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/StartAngelscriptHeaders.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptExecutionQuiescence.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptScriptUnit.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBindString.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBindDatabase.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptSort.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptDelegateWithPayload.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptAttachmentCallerScope.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/EndAngelscriptHeaders.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptCallableDispatchAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptCodeModule.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptCallableMetadataAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptReloadSafety.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptReflectionAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptApiMetadata.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptStockAutoCaller.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptType.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptDocs.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptSettings.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptManager.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptScriptUnit.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptApiMetadata.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptCallableDispatchAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptTestCommandlet.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptDocs.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptManager.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptThirdPartyLib.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptType.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptExecutionQuiescence.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptReloadSafety.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptSharedPtr.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptTestCommandlet.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptAttachmentCallerScope.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptBinds.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptBindDatabase.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptReflectionAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptAllScriptRootsCommandlet.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptCallableMetadataAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptAllScriptRootsCommandlet.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptCodeModule.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/CodeCoverage/AngelscriptCodeCoverage.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/CodeCoverage/LineCoverage.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/CodeCoverage/AngelscriptCodeCoverage.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/CodeCoverage/CoverageReportGenerator.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/CodeCoverage/CoverageReportGenerator.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/FunctionLibraries/AngelscriptScriptLibrary.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/IntegrationTestTerminator.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/AngelscriptTest.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/LatentAutomationCommandClientExecutor.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/DiscoverTests.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/LatentAutomationCommand.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/IntegrationTestTerminator.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/DiscoverTests.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/AngelscriptTestSettings.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/IntegrationTest.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/LatentAutomationCommand.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/AngelscriptTest.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/LatentAutomationCommandClientExecutor.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/UnitTest.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/UnitTest.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Preprocessor/AngelscriptPreprocessor.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Preprocessor/Helper_CommentFormat.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptGeneratedClassFunctionStateAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptObjectDestructionAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptInstancedSubobjectReplacementAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptTerminalDestructorAdmission.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptActorConstruction.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptClassGenerator.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/ASStruct.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptGeneratedClassFunctionStateAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeGcMirror.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptClassState.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRetiredModules.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptInstancedSubobjectReplacementAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeFunctionDispatch.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptFieldDestruction.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/ASEnum.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptActorBindingState.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/ASClass.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptScriptClassLifetimeTransitionAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptReplicationShadow.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptObjectDestructionAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptScriptClassLifetimeTransitionAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptPropertyInitialization.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptFieldDestruction.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptActorBindingState.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptTerminalDestructorAdmission.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptClassLifecycleAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeGcLifecycle.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptPropertyInitialization.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRetiredModules.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeGcMirror.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UDataTable.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FVector4.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_USkinnedMeshComponent.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Logging.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_SystemTimers.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FName.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FText.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_BlueprintType.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FVector4f.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FInstancedStruct.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FVector.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_AVolume.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Deprecations.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FHitResult.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FCollisionShape.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FMargin.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FOverlapResult.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FGameplayTag.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FString.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_SoftObjectPath.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FMemoryReader.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FIntVector2.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_USkeletalMeshComponent.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FTimespan.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FRay.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_PropertyBind.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_InputEvents.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TMap.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_ConfigEnums.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FGeometry.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UGameInstance.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_StructType.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FRandomStream.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FIntVector.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_AActor.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FNumberFormattingOptions.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_JsonObjectConverter.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FLatentActionInfo.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FPaths.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UStruct.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FFileHelper.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FIntVector4.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Primitives.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/UObjectTickable.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FBoxSphereBounds3f.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/UObjectInWorld.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UInputSettings.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FRotator.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/UObjectInWorld.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Delegates.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_CoreGlobals.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FTransform3f.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_BlueprintCallable.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FBoxSphereBounds.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FGuid.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TArray.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/FCpuProfilerTraceScoped.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FCommandLine.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UPrimitiveComponent.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UActorComponent.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_AngelscriptArguments.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FCpuProfilerTraceScoped.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TSet.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FAngelscriptGameThreadScopeWorldContext.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_GetTypeInfo.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UProjectileMovementComponent.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FLinearColor.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FQuat.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FSphere3f.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FFormatArgumentValue.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UWorld.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UFXSystemComponent.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FBodyInstance.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FAngelscriptDelegateWithPayload.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/AngelscriptInstancedStructMigration.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FCollisionQueryParams.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FMessageDialog.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_CppType.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FPlane.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_WorldCollision.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UPoseableMeshComponent.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UCollisionProfile.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/UObjectTickable.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_APlayerController.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FQuat4f.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FIntPoint.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FApp.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UPackage.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_BlueprintEvent.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FPlatformMisc.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Console.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FInputActionKeyMapping.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FBox.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UAssetManager.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FVector2D.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_ULocalPlayer.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FSphere.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Debugging.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FPlatformApplicationMisc.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_AssetRegistry.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UUserWidget.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FMath.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_CallableReferenceReturns.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FParse.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FStringTableRegistry.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/AngelscriptInstancedStructMigration.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FRotator3f.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FBox3f.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UObject.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Stats.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_FunctionSignature.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Subsystems.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Json.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_USceneComponent.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_CollisionProfile.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_ToString.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FVector2f.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FAnchors.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FPlane4f.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TSoftObjectPtr.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FPlatformProcess.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Debugging.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FTransform.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FVector3f.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Hash.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FDateTime.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UEnum.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TOptional.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_LandscapeProxy.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FColor.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptModdingRegistration.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptExtensionPipelineInternal.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptModdingInternal.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptExtensionPipeline.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptExtensionRegistration.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Debugging/AngelscriptDebugServer.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Debugging/AngelscriptDebugServer.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/PrecompiledDataAllocator.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/StaticJITHeader.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/PrecompiledData.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/AngelscriptStaticJIT.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/AngelscriptBytecodes.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/PrecompiledData.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/StringInArchive.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/AngelscriptStaticJIT.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/StaticJITBinds.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/AngelscriptBytecodes.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperThirdParty.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperDispatch.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperThirdParty.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperHost.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuper.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperInternal.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperBinding.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/Cache/AngelscriptExtensionCacheCompatibility.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/Cache/AngelscriptExtensionCacheCompatibility.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/Network/FakeNetDriver.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/Network/FakeNetDriver.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/RuntimeFloatCurveMixinLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/GameplayTagQueryMixinLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptMathLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/InputComponentScriptMixinLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptFrameTimeMixinLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptWorldLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptActorLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptHitResultLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/GameplayTagContainerMixinLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/WidgetBlueprintStatics.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/UAssetManagerMixinLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptLevelStreamingLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/SoftReferenceStatics.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptScriptLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/RuntimeCurveLinearColorMixinLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/GameplayTagMixinLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/GameplayLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptComponentLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/SubsystemLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/WorldCollisionStatics.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/Preprocessor/AngelscriptPreprocessor.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptReplicationShadow.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/ASStruct.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptAdditionalCompileChecks.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptActorConstruction.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptClassGenerator.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptClassState.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptClassLifecycleAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/ASClass.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/ASEnum.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/AngelscriptModdingRegistration.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/AngelscriptExtensionHooks.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_Actor.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TArray.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Helper_PODType.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TMap.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TArray_Functions.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TSet.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_Delegates.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TSubclassOf.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_Helpers.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_Console.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_FGameplayTag.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TOptional.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TArray_Structs.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/StaticJIT/StaticJITHeader.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/StaticJIT/StaticJITHelperFunctions.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/StaticJIT/StaticJITConfig.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/StaticJIT/StaticJITBinds.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/BaseClasses/ScriptLocalPlayerSubsystem.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/BaseClasses/ScriptGameInstanceSubsystem.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/BaseClasses/ScriptEngineSubsystem.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/BaseClasses/ScriptWorldSubsystem.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/NativeEventSuper/AngelscriptNativeEventSuper.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/LambdaClosure/SoloASLambdaCaptureStore.h": [],
+  "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/LambdaClosure/SoloASNativeLambdaBindingProvider.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/SoloASEditorManagement.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadEventSignatureResolver.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/InstancedStructReload.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptCreateBlueprintOverride.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptSourceCodeNavigation.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Bind_EditorCallableReferenceReturns.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptEditorModule.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptContentBrowserDataSource.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/InstancedStructReload.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadHelper.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadEventSignatureResolver.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptContentBrowserDataSource.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/SoloASEditorManagement.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadHelper.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptEditorModule.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintCompilationTransactionAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptRetiredClassDefaultScope.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintReinstancingOrchestrationAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptActorReplacementTransaction.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptInheritedComponentAttachmentRepair.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintActorComponentOrderingAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptInheritedComponentAttachmentRepairSupport.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintDefaultCopyFilterAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintReinstancingOrchestrationAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptInheritedComponentAttachmentRepair.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintActorComponentOrderingAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintDefaultCopyFilterAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptActorReplacementTransaction.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintCompilationTransactionAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorObject/AngelscriptEditorObjectPrecreateImportAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorObject/AngelscriptEditorObjectPrecreateImportAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/FunctionLibraries/ScriptableFactory.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/FunctionLibraries/AssetToolsStatics.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/FunctionLibraries/EditorStatics.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/FunctionLibraries/ScriptableFactory.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/StateTree/AngelscriptStateTreeClassProvider.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/StateTree/AngelscriptStateTreeClassProvider.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptAIGraphClassProvider.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptBehaviorTreeGraphSchema.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptAIGraphClassProvider.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptScriptNodeMenuTitle.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptBehaviorTreeGraphSchema.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptActorConstructionHook.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptPythonTypeRetirement.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptNativeBoundaryHook.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptPythonTypeRetirement.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptNativeBoundaryHook.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptBpgcSemanticsHooks.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptDataTableRowValidationHook.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptBpgcSemanticsHooks.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptDataTableRowValidationHook.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptBpgcSemanticsHooksTest.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptActorConstructionHook.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/UMG/AngelscriptListViewEntryAdapter.h": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Private/UMG/AngelscriptListViewEntryAdapter.cpp": [
+    "// SPDX-License-Identifier: MIT",
+    "// Copyright Cuviss Studio. All Rights Reserved."
+  ],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/FunctionLibraries/BlueprintMixinLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/FunctionLibraries/EditorSubsystemLibrary.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorMenuExtension.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptAssetMenuExtension.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorMenuExtension.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptAssetMenuExtension.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorPrompts.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptActorMenuExtension.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptActorMenuExtension.h": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorPrompts.cpp": [],
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/BaseClasses/ScriptEditorSubsystem.h": []
+}

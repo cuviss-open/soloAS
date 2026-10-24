@@ -1,0 +1,35 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0+ue5.8.3",
+  "FriendlyName": "SoloAS Bridge",
+  "Description": "Compatibility bridge for AngelScript-compatible consumers and an unmodified Unreal Engine.",
+  "Category": "Scripting",
+  "CreatedBy": "Cuviss Studio",
+  "EnabledByDefault": false,
+  "CanContainContent": false,
+  "IsBetaVersion": false,
+  "Installed": false,
+  "Plugins": [
+    {
+      "Name": "DataValidation",
+      "Enabled": true
+    },
+    {
+      "Name": "StateTree",
+      "Enabled": true
+    }
+  ],
+  "Modules": [
+    {
+      "Name": "SoloASBridge",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault"
+    },
+    {
+      "Name": "SoloASBridgeEditor",
+      "Type": "UncookedOnly",
+      "LoadingPhase": "Default"
+    }
+  ]
+}
