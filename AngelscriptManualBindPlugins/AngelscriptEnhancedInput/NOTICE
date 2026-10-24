@@ -1,7 +1,11 @@
-AngelscriptEnhancedInput, including Cuviss Studio additions and modifications, is licensed under MIT; see LICENSE-MIT. Preserve the inherited copyright and license notices.
+AngelscriptEnhancedInput, including Cuviss Studio additions and modifications, is licensed under MIT; see LICENSE-MIT. Preserve the inherited copyright and license notices. / AngelscriptEnhancedInput（含 Cuviss Studio 的新增和修改）采用 MIT 许可证，参见 LICENSE-MIT。请保留继承的版权及许可声明。
 
-Upstream source attribution
-Repository: https://github.com/Hazelight/UnrealEngine-Angelscript.git
-Source commit: 4b2892f0b550f20f4856d38f68d4987e3dfdb7da
-Source tree: ebb7f9155587002398ca1492a68456c567520869
-Source path: Engine/Plugins/AngelscriptEnhancedInput
+Upstream source attribution / 上游来源说明
+
+Repository: https://github.com/Hazelight/UnrealEngine-Angelscript.git / 仓库：https://github.com/Hazelight/UnrealEngine-Angelscript.git
+
+Source commit: 4b2892f0b550f20f4856d38f68d4987e3dfdb7da / 来源提交：4b2892f0b550f20f4856d38f68d4987e3dfdb7da
+
+Source tree: ebb7f9155587002398ca1492a68456c567520869 / 来源树：ebb7f9155587002398ca1492a68456c567520869
+
+Source path: Engine/Plugins/AngelscriptEnhancedInput / 来源路径：Engine/Plugins/AngelscriptEnhancedInput
