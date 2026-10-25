@@ -77,6 +77,8 @@ public:
 	bool StartsWith(const char *str) const;
 	bool EndsWith(const char *str) const;
 
+	bool StartsWith_CaseInsensitive(const asCString& str) const;
+
 	size_t Format(const char *fmt, ...);
 
 	bool Equals(const char* str) const;

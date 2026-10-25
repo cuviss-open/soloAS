@@ -184,6 +184,12 @@ FAngelscriptPreGenerateClasses& FAngelscriptCodeModule::GetPreGenerateClasses()
 	return Delegate;
 }
 
+FAngelscriptPostSetupClasses& FAngelscriptCodeModule::GetPostSetupClasses()
+{
+	static FAngelscriptPostSetupClasses Delegate;
+	return Delegate;
+}
+
 FAngelscriptLiteralAssetCreated& FAngelscriptCodeModule::GetOnLiteralAssetCreated()
 {
 	static FAngelscriptLiteralAssetCreated Delegate;
@@ -205,6 +211,12 @@ FAngelscriptDebugListAssets& FAngelscriptCodeModule::GetDebugListAssets()
 FAngelscriptEditorCreateBlueprint& FAngelscriptCodeModule::GetEditorCreateBlueprint()
 {
 	static FAngelscriptEditorCreateBlueprint Delegate;
+	return Delegate;
+}
+
+FAngelscriptCompilePostLayoutTypes& FAngelscriptCodeModule::GetCompilePostLayoutTypes()
+{
+	static FAngelscriptCompilePostLayoutTypes Delegate;
 	return Delegate;
 }
 

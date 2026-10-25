@@ -4723,12 +4723,14 @@ bool asCContext::IsVarInScope(asUINT varIndex, asUINT stackLevel)
 
 	asCScriptFunction *func;
 	asUINT pos;
+	asDWORD *sf;
 
 	if( stackLevel == 0 )
 	{
 		func = m_currentFunction;
 		if( func->scriptData == 0 ) return false;
 		pos = asUINT(m_regs.programPointer - func->scriptData->byteCode.AddressOf());
+		sf = m_regs.stackFramePointer;
 	}
 	else
 	{
@@ -4736,6 +4738,7 @@ bool asCContext::IsVarInScope(asUINT varIndex, asUINT stackLevel)
 		func = (asCScriptFunction*)s[1];
 		if( func->scriptData == 0 ) return false;
 		pos = asUINT((asDWORD*)s[2] - func->scriptData->byteCode.AddressOf());
+		sf = (asDWORD*)s[0];
 	}
 
 	// First determine if the program position is after the variable declaration
@@ -4755,6 +4758,11 @@ bool asCContext::IsVarInScope(asUINT varIndex, asUINT stackLevel)
 			bIsParameter = true;
 		
 		if (!bIsParameter && referenceLine >= currentLine)
+			return false;
+
+		// If the reference is null, consider it not to be in scope
+		void* ReferenceValue = *(void**)(sf - func->scriptData->variables[varIndex]->stackOffset);
+		if (ReferenceValue == nullptr)
 			return false;
 	}
 

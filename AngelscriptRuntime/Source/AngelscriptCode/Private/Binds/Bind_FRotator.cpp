@@ -89,12 +89,14 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FRotator(FAngelscriptBinds::EO
 	FAngelscriptBinds::SetPreviousBindNoDiscard(true);
 	SCRIPT_TRIVIAL_NATIVE_CONSTRUCTOR_CUSTOMFORM(FRotator_, "FRotator", "0.f");
 
+#if !WITH_ANGELSCRIPT_HAZE
 	FRotator_.Constructor("void f(float64 F)", [](FRotator* Address, double F)
 	{
 		new(Address) FRotator(F);
 	});
 	FAngelscriptBinds::SetPreviousBindNoDiscard(true);
 	SCRIPT_TRIVIAL_NATIVE_CONSTRUCTOR(FRotator_, "FRotator");
+#endif
 
 	FRotator_.Constructor("void f(const FRotator& Other)", [](FRotator* Address, const FRotator& Other)
 	{

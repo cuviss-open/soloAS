@@ -349,6 +349,25 @@ void FStaticJITContext::DebugLineNumber()
 	Line("SCRIPT_DEBUG_CALLSTACK_LINE({0});", LineNumber);
 }
 
+// Plain and namespaced UENUMs are stored as TEnumAsByte (1 byte) in UHT parms structs,
+// regardless of the size of the C++ enum type
+static bool IsEnumStoredAsByteInParms(const asCDataType& DataType, const FAngelscriptTypeUsage& Usage)
+{
+	if (!DataType.IsEnumType() || !Usage.IsValid())
+	{
+		return false;
+	}
+
+	// Null for script enums, which already use uint8
+	const UEnum* Enum = (const UEnum*)Usage.Type->GetData();
+	if (Enum == nullptr)
+	{
+		return false;
+	}
+
+	return Enum->GetCppForm() != UEnum::ECppForm::EnumClass;
+}
+
 void FStaticJITContext::GenerateNewFunction(asIScriptFunction* InScriptFunction)
 {
 	// Init the state for this entry
@@ -623,15 +642,23 @@ void FStaticJITContext::GenerateNewFunction(asIScriptFunction* InScriptFunction)
 				Param.LiteralType = VMType;
 			Param.bIsValue = true;
 
+			// Lay out by-value plain enums as 1 byte to match the UHT parms struct
+			// (e.g. sizeof(EMovementMode) is 4, but UHT stores TEnumAsByte<EMovementMode>)
+			FString ParmsType = Param.LiteralType;
+			if (IsEnumStoredAsByteInParms(DataType, Param.Type))
+			{
+				ParmsType = TEXT("uint8");
+			}
+
 			// This is a primitive value with a defined C++ type
 			if (i != 0)
-				ParmsEntryHeader += FString::Printf(TEXT("\tParmsOffset = Align(ParmsOffset, alignof(%s));\n"), *Param.LiteralType);
+				ParmsEntryHeader += FString::Printf(TEXT("\tParmsOffset = Align(ParmsOffset, alignof(%s));\n"), *ParmsType);
 			ParmsEntryHeader += FString::Printf(TEXT("\tconst SIZE_T %s = ParmsOffset;\n"), *ParmsEntryParamOffsetVar);
-			ParmsEntryHeader += FString::Printf(TEXT("\tParmsOffset += sizeof(%s);\n"), *Param.LiteralType);
+			ParmsEntryHeader += FString::Printf(TEXT("\tParmsOffset += sizeof(%s);\n"), *ParmsType);
 
 			CppEntryInArgs += FString::Printf(TEXT(", %s %s"), *VMType, *Param.LocalName);
 			VMEntryOutArgs += FString::Printf(TEXT(",\n\t\t*(%s*)(l_fp + %d)"), *VMType, -Offset);
-			ParmsEntryOutArgs += FString::Printf(TEXT(",\n\t\t(%s)*(%s*)(((SIZE_T)Parms) + %s)"), *VMType, *Param.LiteralType, *ParmsEntryParamOffsetVar);
+			ParmsEntryOutArgs += FString::Printf(TEXT(",\n\t\t(%s)*(%s*)(((SIZE_T)Parms) + %s)"), *VMType, *ParmsType, *ParmsEntryParamOffsetVar);
 		}
 
 		ArgTypePrefixes += Param.LiteralType.Mid(0, 1);
@@ -860,12 +887,22 @@ void FStaticJITContext::GenerateNewFunction(asIScriptFunction* InScriptFunction)
 				}
 			}
 
+			// Lay out by-value plain enums as 1 byte to match the UHT parms struct
+			// (e.g. sizeof(EMovementMode) is 4, but UHT stores TEnumAsByte<EMovementMode>)
+			FString ParmsType = LiteralType;
+			FString ParmsCast;
+			if (IsEnumStoredAsByteInParms(ScriptFunction->returnType, ReturnType))
+			{
+				ParmsType = TEXT("uint8");
+				ParmsCast = TEXT("(uint8)");
+			}
+
 			if (bHasParameters)
-				ParmsEntryHeader += FString::Printf(TEXT("\tParmsOffset = Align(ParmsOffset, alignof(%s));\n"), *LiteralType);
+				ParmsEntryHeader += FString::Printf(TEXT("\tParmsOffset = Align(ParmsOffset, alignof(%s));\n"), *ParmsType);
 			ParmsEntryHeader += FString::Printf(TEXT("\tconst SIZE_T %s = ParmsOffset;\n"), *ParmsEntryParamOffsetVar);
 
 			VMEntryAssignment = FString::Printf(TEXT("*(%s*)l_outValue = "), *LiteralType);
-			ParmsEntryAssignment = FString::Printf(TEXT("*(%s*)(((SIZE_T)Parms) + %s) = "), *LiteralType, *ParmsEntryParamOffsetVar);
+			ParmsEntryAssignment = FString::Printf(TEXT("*(%s*)(((SIZE_T)Parms) + %s) = %s"), *ParmsType, *ParmsEntryParamOffsetVar, *ParmsCast);
 
 			if (ScriptFunction->returnType.GetTokenType() == ttFloat32 || ScriptFunction->returnType.GetTokenType() == ttFloat64)
 				bReturnIsFloatingPoint = true;
@@ -2933,10 +2970,13 @@ bool FAngelscriptStaticJIT::IsTypePotentiallyDifferent(asITypeInfo* TypeInfo)
 	// Assumption that any template containers are never different
 	if ((Flags & asOBJ_TEMPLATE) != 0)
 	{
-		if ((ObjectType->templateBaseType->flags & asOBJ_TEMPLATE_SUBTYPE_DETERMINES_SIZE) == 0)
-			return false;
-		else
-			return true;
+		if ((ObjectType->templateBaseType->flags & asOBJ_TEMPLATE_SUBTYPE_DETERMINES_SIZE) != 0)
+		{
+			if (ObjectType->templateSubTypes[0].GetTypeInfo() != nullptr)
+				return IsTypePotentiallyDifferent(ObjectType->templateSubTypes[0].GetTypeInfo());
+		}
+
+		return false;
 	}
 
 	if ((Flags & asOBJ_SCRIPT_OBJECT) == 0)
@@ -3430,7 +3470,7 @@ TSharedPtr<FAngelscriptStaticJIT::FComputedTypeOffsets> FAngelscriptStaticJIT::G
 			if (bValidToHardcode)
 			{
 				Offsets->bCanHardcodeSize = true;
-				Offsets->HardcodedSize = Align(HardcodedSize, HardcodedAlignment);
+				Offsets->HardcodedSize = Align(HardcodedSize + PreviousPropertyHardcodedSize, HardcodedAlignment);
 				Offsets->HardcodedAlignment = HardcodedAlignment;
 
 				check(Offsets->HardcodedSize == ObjectType->size);

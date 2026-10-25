@@ -19,8 +19,8 @@ void USoloASScriptBlueprintGeneratedClass::DetachDefaultObjectScope(FSoloASBluep
 }
 #endif
 
-// Validated against the 5.8.3 UClass/FObjectInitializer construction path.
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 8 && ENGINE_PATCH_VERSION == 3 \
+// Enabled only after the build rules authenticate the configured engine profile.
+#if SOLOASBRIDGE_ENGINE_PROFILE_MATCHED \
     && USE_CIRCULAR_DEPENDENCY_LOAD_DEFERRING
 #include "Shared/SoloASPrivateAccess.h"
 #include "AutoRTFM.h"
@@ -282,7 +282,7 @@ UObject* USoloASScriptBlueprintGeneratedClass::CreateDefaultObject()
             return Existing;
         return PublishConstructed(Super::CreateDefaultObject());
     };
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 8 && ENGINE_PATCH_VERSION == 3 \
+#if SOLOASBRIDGE_ENGINE_PROFILE_MATCHED \
     && USE_CIRCULAR_DEPENDENCY_LOAD_DEFERRING
     UClass* Parent = GetSuperClass();
     if (HasAnyFlags(RF_ClassDefaultObject | RF_NeedLoad | RF_NeedPostLoad | RF_NeedInitialization)
@@ -331,12 +331,12 @@ UObject* USoloASScriptBlueprintGeneratedClass::CreateDefaultObject()
 
 void USoloASScriptBlueprintGeneratedClass::PostLoadDefaultObject(UObject* Object)
 {
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 8 && ENGINE_PATCH_VERSION == 3 \
+#if SOLOASBRIDGE_ENGINE_PROFILE_MATCHED \
     && USE_CIRCULAR_DEPENDENCY_LOAD_DEFERRING
     FBlueprintSerializeAndPostLoadScope SerializeAndPostLoadScope(*this);
 #endif
     Super::PostLoadDefaultObject(Object);
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 8 && ENGINE_PATCH_VERSION == 3 \
+#if SOLOASBRIDGE_ENGINE_PROFILE_MATCHED \
     && USE_CIRCULAR_DEPENDENCY_LOAD_DEFERRING
     UClass* Parent = GetSuperClass();
     UObject* ParentDefault = Parent != nullptr ? Parent->GetDefaultObject(false) : nullptr;
@@ -364,14 +364,14 @@ void USoloASScriptBlueprintGeneratedClass::PostLoadDefaultObject(UObject* Object
 #if WITH_EDITOR
 void USoloASScriptBlueprintGeneratedClass::PreSave(FObjectPreSaveContext SaveContext)
 {
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 8 && ENGINE_PATCH_VERSION == 3 \
+#if SOLOASBRIDGE_ENGINE_PROFILE_MATCHED \
     && USE_CIRCULAR_DEPENDENCY_LOAD_DEFERRING
     FBlueprintSerializeAndPostLoadScope SerializeAndPostLoadScope(*this);
 #endif
     Super::PreSave(SaveContext);
     NativePropertyOverrideIds.Reset();
     bNativePropertyOverrideIdsValid = false;
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 8 && ENGINE_PATCH_VERSION == 3 \
+#if SOLOASBRIDGE_ENGINE_PROFILE_MATCHED \
     && USE_CIRCULAR_DEPENDENCY_LOAD_DEFERRING
     UClass* Parent = GetSuperClass();
     UObject* BlueprintDefault = GetDefaultObject(false);
@@ -405,7 +405,7 @@ void USoloASScriptBlueprintGeneratedClass::InitPropertiesFromCustomList(
     const uint8* DefaultDataPtr
 )
 {
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 8 && ENGINE_PATCH_VERSION == 3 \
+#if SOLOASBRIDGE_ENGINE_PROFILE_MATCHED \
     && USE_CIRCULAR_DEPENDENCY_LOAD_DEFERRING
     FBlueprintSerializeAndPostLoadScope SerializeAndPostLoadScope(*this);
 #endif
@@ -414,7 +414,7 @@ void USoloASScriptBlueprintGeneratedClass::InitPropertiesFromCustomList(
     // would replay script-parent values that Haze intentionally leaves to the
     // inherited script defaults. Bridge owns the exact native override list.
     UClass::InitPropertiesFromCustomList(DataPtr, DefaultDataPtr);
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 8 && ENGINE_PATCH_VERSION == 3 \
+#if SOLOASBRIDGE_ENGINE_PROFILE_MATCHED \
     && USE_CIRCULAR_DEPENDENCY_LOAD_DEFERRING
     UClass* Parent = GetSuperClass();
     UObject* BlueprintDefault = GetDefaultObject(false);

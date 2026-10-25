@@ -3057,7 +3057,7 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 				});
 
 				// Now that everything is parsed, generate the actual types
-				for (auto Module : CompiledModules)
+				for (auto Module : CurrentCompileList)
 				{
 					asCModule* ScriptModule = Module->ScriptModule;
 					if (ScriptModule == nullptr)
@@ -3103,6 +3103,8 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 					if (Module->bCompileError)
 						bHadCompileErrors = true;
 				}
+
+				FAngelscriptCodeModule::GetCompilePostLayoutTypes().Broadcast(CurrentCompileList);
 
 				if (bUseRecompileAvoidance)
 				{
@@ -4159,6 +4161,9 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 		}
 		else
 		{
+			// Run the delegate that the game might hook to provide more errors/warnings
+			FAngelscriptCodeModule::GetPostSetupClasses().Broadcast(CompiledModules);
+
 			// Emit diagnostics before we go into potentially very slow unreal reload
 			EmitDiagnostics();
 

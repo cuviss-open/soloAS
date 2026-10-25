@@ -568,7 +568,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_SoftReferences((int32)FAngelsc
 	SCRIPT_BIND_DOCUMENTATION("Asynchronously loads the package that contains the referenced object.\nDelegate may be called immediately if object is already loaded.");
 	FAngelscriptBinds::PreviousBindPassScriptObjectTypeAsFirstParam();
 
-#if WITH_EDITOR
+#if WITH_EDITOR && !WITH_ANGELSCRIPT_HAZE
 	TSoftObjectPtr_.Method("T handle_only EditorOnlyLoadSynchronous() const", [](FSoftObjectPtr* Self, asCObjectType* TemplateType) -> UObject*
 	{
 		UClass* ObjClass = GetSoftPtrSubType(TemplateType);

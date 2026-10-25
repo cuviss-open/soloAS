@@ -370,7 +370,7 @@ const FImportSpec ImportSpecs[] =
         "?IsNative@FField@@QEBA_NXZ", "__ZNK6FField8IsNativeEv",
         reinterpret_cast<void*>(&HookFieldIsNative)},
     {EExperienceImport::FunctionHidden,
-        "UnrealEditor-Kismet", "UnrealEditor-UnrealEd.dll",
+        "UnrealEditor-Kismet", "UnrealEditor-Engine.dll",
         "?IsFunctionHiddenFromClass@FObjectEditorUtils@@YA_NPEBVUFunction@@PEBVUClass@@@Z",
         "__ZN18FObjectEditorUtils25IsFunctionHiddenFromClassEPK9UFunctionPK6UClass",
         reinterpret_cast<void*>(&HookIsFunctionHiddenFromClass)},
@@ -1114,6 +1114,14 @@ int32 RebindWindowsImage(uint8* Base, const FString& ImageName)
     }
 
     const uint32 ImageSize = Nt->OptionalHeader.SizeOfImage;
+    uint32 ExpectedImports = 0, InstalledImportKinds = 0;
+    const FString NormalizedImporter = NormalizeImageName(*ImageName);
+    for (const FImportSpec& Spec : ImportSpecs)
+    {
+        if (FCStringAnsi::Strcmp(Spec.Importer, "*") != 0
+            && NormalizedImporter == UTF8_TO_TCHAR(Spec.Importer) && IsImportEnabled(Spec.Id))
+            ExpectedImports |= 1u << static_cast<uint8>(Spec.Id);
+    }
     int32 Changed = 0;
     int32 LinkerDetachSlotsChanged = 0;
     const auto& Directory = Nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
@@ -1169,19 +1177,20 @@ int32 RebindWindowsImage(uint8* Base, const FString& ImageName)
             }
             const ANSICHAR* Symbol = reinterpret_cast<const ANSICHAR*>(
                 Base + Name + sizeof(WORD));
-            const FString NormalizedImporter = NormalizeImageName(*ImageName);
             const FImportSpec* Spec = nullptr;
             for (const FImportSpec& Candidate : ImportSpecs)
             {
                 const bool bImporterMatches = FCStringAnsi::Strcmp(Candidate.Importer, "*") == 0
                     || NormalizedImporter == UTF8_TO_TCHAR(Candidate.Importer);
-                if (bImporterMatches
-                    && FCStringAnsi::Strcmp(Provider, Candidate.Provider) == 0
-                    && FCStringAnsi::Strcmp(Symbol, Candidate.WindowsSymbol) == 0
+                if (bImporterMatches && FCStringAnsi::Strcmp(Symbol, Candidate.WindowsSymbol) == 0
                     && IsImportEnabled(Candidate.Id))
                 {
-                    Spec = &Candidate;
-                    break;
+                    ExpectedImports |= 1u << static_cast<uint8>(Candidate.Id);
+                    if (FCStringAnsi::Strcmp(Provider, Candidate.Provider) == 0)
+                    {
+                        Spec = &Candidate;
+                        break;
+                    }
                 }
             }
             if (Spec == nullptr)
@@ -1215,12 +1224,15 @@ int32 RebindWindowsImage(uint8* Base, const FString& ImageName)
             const bool bApplied = ApplySlot(Base, ImageName, Slot, *Spec,
                 reinterpret_cast<void*>(OriginalAddress), false);
             Changed += bApplied ? 1 : 0;
+            if (bApplied) InstalledImportKinds |= 1u << static_cast<uint8>(Spec->Id);
             if (bApplied && !bWasInstalled && Spec->Id == EExperienceImport::LinkerDetach)
             {
                 ++LinkerDetachSlotsChanged;
             }
         }
     }
+    if ((ExpectedImports & ~InstalledImportKinds) != 0)
+        WarnOnce(TEXT("a configured provider or import slot was not found in its target Editor image"));
     if (LinkerDetachSlotsChanged > 0)
     {
         UE_LOG(LogSoloASEditorExperienceImports, Display,

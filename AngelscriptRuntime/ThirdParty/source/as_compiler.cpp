@@ -5780,6 +5780,7 @@ void asCCompiler::CompileForRangeStatement(asCScriptNode *fnode, asCByteCode *bc
 {
 	// Add a variable scope that will be used by CompileBreak/Continue to know where to stop deallocating variables
 	AddVariableScope(true, true);
+	bc->Block(true);
 
 	int afterLabel = nextLabel++;
 	int continueLabel = nextLabel++;
@@ -5982,7 +5983,7 @@ void asCCompiler::CompileForRangeStatement(asCScriptNode *fnode, asCByteCode *bc
 		CheckVariableNameForShadowing(name, varNameNode);
 
 		// Add marker that the variable has been declared
-		bc->VarDecl((int)outFunc->scriptData->variables.GetLength());
+		int variableIndex = (int)outFunc->scriptData->variables.GetLength();
 		outFunc->AddVariable(name, type, offset);
 
 		if (auto* TypeInfo = type.GetTypeInfo())
@@ -5995,6 +5996,7 @@ void asCCompiler::CompileForRangeStatement(asCScriptNode *fnode, asCByteCode *bc
 		if (!iterateFunc->returnType.IsPrimitive())
 			iterateContext.bc.Instr(asBC_PopPtr);
 		iterateContext.bc.InstrDWORD(asBC_JNullR, afterLabel);
+		iterateContext.bc.VarDecl(variableIndex);
 
 		if (type.IsReference())
 		{
@@ -6051,7 +6053,6 @@ void asCCompiler::CompileForRangeStatement(asCScriptNode *fnode, asCByteCode *bc
 
 	//-------------------------------
 	// Join the code pieces
-	bc->Block(true);
 	bc->AddCode(&initContext.bc);
 
 	// Add a suspend bytecode inside the loop to guarantee
@@ -18208,6 +18209,15 @@ void asCCompiler::CompileBooleanOperator(asCScriptNode *node, asCExprContext *lc
 			ConvertToVariable(rctx);
 			ReleaseTemporaryVariable(rctx->type, &rctx->bc);
 			rctx->bc.InstrW_W(asBC_CpyVtoV4, offset, rctx->type.stackOffset);
+
+			// Immediately release temporary variables, even if we're in a context where temporary lifetimes should be extended (ie for loop statements)
+			// Boolean operators can't leak references since they always return a value bool,
+			// and not deallocating here can incorrectly call destructors for temporaries whose initialization was skipped by shortcircuiting
+			{
+				TGuardValue ScopeDeallocImmediately(bDelayTempVariableDeallocs, false);
+				ProcessDeferredParams(rctx);
+			}
+
 			MergeExprBytecode(ctx, rctx);
 			ctx->bc.Label((short)label2);
 

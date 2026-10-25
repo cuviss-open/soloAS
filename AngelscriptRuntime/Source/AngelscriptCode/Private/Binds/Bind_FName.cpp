@@ -127,14 +127,18 @@ struct FNameType : TAngelscriptPODPropertyType<FNameProperty>
 
 static FName SCRIPT_NAME_None(NAME_None);
 
-AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FName((int32)FAngelscriptBinds::EOrder::Early+1, []
+AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FName_Declaration((int32)FAngelscriptBinds::EOrder::Early-1, []
 {
 	FBindFlags Flags;
 	Flags.bPOD = true;
 
 	auto FName_ = FAngelscriptBinds::ValueClass<FName>("FName", Flags);
 	FAngelscriptType::Register(MakeShared<FNameType>());
+});
 
+AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FName((int32)FAngelscriptBinds::EOrder::Early+1, []
+{
+	auto FName_ = FAngelscriptBinds::ExistingClass("FName");
 	FName_.Constructor("void f()", [](FName* Address)
 	{
 		new(Address) FName();

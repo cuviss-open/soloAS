@@ -2158,18 +2158,29 @@ FString FAngelscriptPreprocessor::ParseFormatExpression(FFile& File, const FStri
 		bFoundFormat = true;
 		if (Char == ':')
 		{
+			// Check if the equals is before the format specifier
 			FString Specifier = FormatExpr.Mid(Pos+1);
-			if (Pos > 0 && FormatExpr[Pos - 1] == '=')
+			EqualsPos = Pos-1;
+			for (; EqualsPos >= 0; --EqualsPos)
 			{
-				FString Expr = FormatExpr.Mid(0, Pos - 1);
-				Expr.TrimStartAndEndInline();
-				return FString::Printf(TEXT("\"%s = \"+FString::ApplyFormat((%s), \"%s\")"), *Expr, *Expr, *Specifier);
+				int16 EqualsChar = FormatExpr[EqualsPos];
+				if (EqualsChar == ' ' || EqualsChar == '\t')
+					continue;
+
+				if (EqualsChar == '=')
+				{
+					FString Expr = FormatExpr.Mid(0, EqualsPos);
+					Expr.TrimStartAndEndInline();
+					return FString::Printf(TEXT("\"%s = \"+FString::ApplyFormat((%s), \"%s\")"), *Expr, *Expr, *Specifier);
+				}
+				else
+				{
+					break;
+				}
 			}
-			else
-			{
-				FString Expr = FormatExpr.Mid(0, Pos);
-				return FString::Printf(TEXT("FString::ApplyFormat((%s), \"%s\")"), *Expr, *Specifier);
-			}
+
+			FString Expr = FormatExpr.Mid(0, Pos);
+			return FString::Printf(TEXT("FString::ApplyFormat((%s), \"%s\")"), *Expr, *Specifier);
 		}
 
 		bool bValidFormatSpec = false;
@@ -2842,6 +2853,20 @@ void FAngelscriptPreprocessor::ProcessPropertyMacro(FFile& File, FChunk& Chunk, 
 		if (PropDesc->bBlueprintReadable || PropDesc->bBlueprintWritable || PropDesc->bEditableOnDefaults || PropDesc->bEditableOnInstance)
 		{
 			MacroError(File, Macro, TEXT("BindComponent should not be exposed to blueprint at all. Remove any BlueprintRead/Write and Editable specifiers."));
+			bHasError = true;
+		}
+	}
+
+	if (bIsOverrideComponent || bIsBindComponent || bIsDefaultComponent)
+	{
+		if (ClassDesc->CodeSuperClass != nullptr && !ClassDesc->CodeSuperClass->IsChildOf(AActor::StaticClass()))
+		{
+			if (bIsDefaultComponent)
+				MacroError(File, Macro, TEXT("Only Actor classes can have DefaultComponents"));
+			else if (bIsBindComponent)
+				MacroError(File, Macro, TEXT("Only Actor classes can use BindComponent"));
+			else
+				MacroError(File, Macro, TEXT("Only Actor classes can use OverrideComponent"));
 			bHasError = true;
 		}
 	}

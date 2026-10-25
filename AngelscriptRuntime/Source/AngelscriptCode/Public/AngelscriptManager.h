@@ -1204,6 +1204,30 @@ struct FAngelscriptClassDesc
 		return nullptr;
 	}
 
+	TSharedPtr<FAngelscriptFunctionDesc> GetMethod(const ANSICHAR* FuncName)
+	{
+		for (auto FuncDesc : Methods)
+		{
+			if (FuncDesc->FunctionName.Equals(FuncName))
+			{
+				return FuncDesc;
+			}
+		}
+		return nullptr;
+	}
+
+	TSharedPtr<FAngelscriptFunctionDesc> GetMethodByScriptName(const ANSICHAR* FuncName)
+	{
+		for (auto FuncDesc : Methods)
+		{
+			if (FuncDesc->ScriptFunctionName.Equals(FuncName))
+			{
+				return FuncDesc;
+			}
+		}
+		return nullptr;
+	}
+
 	bool AreFlagsEqual(const FAngelscriptClassDesc& Other) const
 	{
 		return bAbstract == Other.bAbstract

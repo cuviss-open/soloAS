@@ -13,7 +13,7 @@ public:
 
 	UScriptEngineSubsystem(const FObjectInitializer& Initializer)
 		: Super()
-		, FTickableGameObject(IsTemplate() ? ETickableTickType::Never : ETickableTickType::NewObject)
+		, FTickableGameObject(ETickableTickType::Never)
 	{}
 
 	// Enable this subsystem to tick when paused
@@ -41,6 +41,8 @@ public:
 
 		check(!bInitialized);
 		bInitialized = true;
+
+		SetTickableTickType(GetTickableTickType());
 	}
 
 	virtual void Deinitialize() override
@@ -49,23 +51,25 @@ public:
 			BP_Deinitialize();
 
 		Super::Deinitialize();
+
+		SetTickableTickType(ETickableTickType::Never);
 	}
 
 	// FTickableGameObject implementation Begin
 	virtual ETickableTickType GetTickableTickType() const override
-	{ 
-		// By default (if the child class doesn't override GetTickableTickType), don't let CDOs ever tick: 
-		return IsTemplate() ? ETickableTickType::Never : FTickableGameObject::GetTickableTickType(); 
+	{
+		// CDOs never tick
+		if (IsTemplate())
+			return ETickableTickType::Never;
+
+		// If no tick function is implemented in the script class, don't tick
+		auto* TickFunction = GetClass()->FindFunctionByName("BP_Tick");
+		if (TickFunction == nullptr || TickFunction->GetOuterUClass() == UScriptEngineSubsystem::StaticClass())
+			return ETickableTickType::Never;
+
+		return ETickableTickType::Always;
 	}
 	
-	virtual bool IsAllowedToTick() const override final
-	{
-		// No matter what IsTickable says, don't let CDOs or uninitialized world subsystems tick :
-		// Note: even if GetTickableTickType was overridden by the child class and returns something else than ETickableTickType::Never for CDOs, 
-		//  it's probably a mistake, so by default, don't allow ticking. If the child class really intends its CDO to tick, he can always override IsAllowedToTick...
-		return !IsTemplate() && bInitialized;
-	}
-
 	virtual bool IsTickableWhenPaused() const override
 	{
 		return bIsTickableWhenPaused;

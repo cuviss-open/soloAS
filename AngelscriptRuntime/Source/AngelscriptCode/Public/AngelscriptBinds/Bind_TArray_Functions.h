@@ -279,6 +279,7 @@ struct ANGELSCRIPTCODE_API FArrayOperations
 	static void RemoveAt(FScriptArray& Arr, asCObjectType* Meta, int32 Index);
 	static void RemoveAtSwap(FScriptArray& Arr, asCObjectType* Meta, int32 Index, bool bAllowShrinking);
 	static void Sort(FScriptArray& Arr, asCObjectType* Meta, bool bDescendingOrder);
+	static void SortByProperty(FScriptArray& Arr, asCObjectType* Meta, const FName& PropertyName, bool bDescendingOrder);
 	static void Shrink(FScriptArray& Arr, asCObjectType* Meta);
 
 	template<typename T>
