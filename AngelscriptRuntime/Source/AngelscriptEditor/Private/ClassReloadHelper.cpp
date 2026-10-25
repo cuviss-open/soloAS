@@ -1726,6 +1726,12 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 			}
 
 			FBlueprintCompilationManager::FlushCompilationQueueAndReinstance();
+
+			// Call PostEditChange on any actor instances of the recompiled blueprints.
+			// The blueprint editor does this when recompiling a blueprint, and it's needed
+			// to update certain actor state such as animations.
+			for (UBlueprint* BP : DependencyBPs)
+				FBlueprintEditorUtils::PostEditChangeBlueprintActors(BP, false);
 		}
 
 		for (auto& Struct : ReloadStructs)

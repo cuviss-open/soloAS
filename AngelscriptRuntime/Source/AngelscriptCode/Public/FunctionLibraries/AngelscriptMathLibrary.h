@@ -82,6 +82,20 @@ public:
 		return FMath::LineBoxIntersection(Box, Start, End, End - Start);
 	}
 
+	UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptNoDiscard))
+	static bool SphereConeIntersection(const FSphere& Sphere, const FVector& ConeCenter, const FVector& ConeDirection, float ConeLength, float ConeAngleRadians)
+	{
+		float Distance = FVector::Distance(Sphere.Center, ConeCenter);
+		if (Distance > ConeLength + Sphere.W)
+			return false;
+
+		return FMath::SphereConeIntersection(
+			Sphere.Center - ConeCenter,
+			Sphere.W, ConeDirection,
+			FMath::Sin(ConeAngleRadians),
+			FMath::Cos(ConeAngleRadians));
+	}
+
 	UFUNCTION(ScriptCallable, Meta = (ScriptTrivial, ScriptName = "Modf", ScriptNoDiscard))
 	static float Modf_32(float InValue, float& OutIntPart)
 	{

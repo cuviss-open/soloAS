@@ -1156,5 +1156,8 @@
   "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptActorMenuExtension.cpp": [],
   "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptActorMenuExtension.h": [],
   "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorPrompts.cpp": [],
-  "AngelscriptRuntime/Source/AngelscriptEditor/Public/BaseClasses/ScriptEditorSubsystem.h": []
+  "AngelscriptRuntime/Source/AngelscriptEditor/Public/BaseClasses/ScriptEditorSubsystem.h": [],
+  "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Bind_FActiveGameplayEffectHandle.cpp": [
+    "// SPDX-License-Identifier: (Apache-2.0 OR MIT)"
+  ]
 }

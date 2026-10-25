@@ -16,7 +16,7 @@ public:
 
 	UScriptWorldSubsystem(const FObjectInitializer& Initializer)
 		: Super()
-		, FTickableGameObject(IsTemplate() ? ETickableTickType::Never : ETickableTickType::NewObject)
+		, FTickableGameObject(ETickableTickType::Never)
 	{}
 
 	// Create this subsystem for worlds representing levels loaded in the editor
@@ -63,6 +63,8 @@ public:
 		bInitialized = true;
 		if (!IsUnreachable())
 			BP_Initialize();
+
+		SetTickableTickType(GetTickableTickType());
 	}
 
 	virtual void Deinitialize() override
@@ -71,6 +73,8 @@ public:
 			BP_Deinitialize();
 		bInitialized = false;
 		Super::Deinitialize();
+
+		SetTickableTickType(ETickableTickType::Never);
 	}
 
 	virtual void PostInitialize() override
@@ -83,8 +87,8 @@ public:
 
 	virtual void Tick(float DeltaTime) override
 	{
-		if (!IsUnreachable())
-			BP_Tick(DeltaTime);
+		check(!IsUnreachable());
+		BP_Tick(DeltaTime);
 	}
 
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override
@@ -129,12 +133,16 @@ public:
 
 	virtual ETickableTickType GetTickableTickType() const override
 	{
-		return IsTemplate() ? ETickableTickType::Never : FTickableGameObject::GetTickableTickType(); 
-	}
+		// CDOs never tick
+		if (IsTemplate())
+			return ETickableTickType::Never;
 
-	virtual bool IsAllowedToTick() const override final
-	{
-		return !IsTemplate() && bInitialized;
+		// If no tick function is implemented in the script class, don't tick
+		auto* TickFunction = GetClass()->FindFunctionByName("BP_Tick");
+		if (TickFunction == nullptr || TickFunction->GetOuterUClass() == UScriptWorldSubsystem::StaticClass())
+			return ETickableTickType::Never;
+
+		return ETickableTickType::Always;
 	}
 
 	virtual TStatId GetStatId() const override
@@ -144,7 +152,7 @@ public:
 
 	virtual bool IsTickableInEditor() const override
 	{
-		return bCreateForLevelEditorWorlds;
+		return bCreateForLevelEditorWorlds && (GetWorld() == nullptr || !GetWorld()->IsGameWorld());
 	}
 
 	virtual bool IsTickableWhenPaused() const override

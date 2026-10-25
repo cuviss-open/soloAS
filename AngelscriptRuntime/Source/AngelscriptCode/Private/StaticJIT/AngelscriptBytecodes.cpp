@@ -5904,7 +5904,7 @@ IMPL_BYTECODE_BEGIN(asBC_DIVi64)
 		Context.Line("{");
 		Context.Line("  asINT64 divider = {0};", Context.VArg_SignedVar(2));
 		Context.Line("  asINT64 operand = {0};", Context.VArg_SignedVar(1));
-		Context.Line("  if (divider == 0) [[unlikely]");
+		Context.Line("  if (divider == 0) [[unlikely]]");
 		Context.Line("  {");
 		Context.DebugLineNumber();
 		Context.Line("     SCRIPT_DIV0_EXCEPTION();");

@@ -2874,13 +2874,21 @@ asCScriptNode* asCParser::ParseAccessDecl()
 			}
 			else
 			{
-				RewindTo(&t1);
-				auto* idNode = ParseIdentifier();
-				if (isSyntaxError) return node;
-
 				accessNode = CreateNode(snUndefined);
+
+				asCScriptNode* idNode = CreateNode(snIdentifier);
+				idNode->tokenType = ttIdentifier;
+				idNode->tokenPos = t1.pos;
 				accessNode->AddChildLast(idNode);
 				node->AddChildLast(accessNode);
+
+				while (t1.type == ttIdentifier || t1.type == ttDot || t1.type == ttScope)
+				{
+					idNode->tokenLength = (t1.pos + t1.length) - idNode->tokenPos;
+					GetToken(&t1);
+				}
+
+				RewindTo(&t1);
 			}
 
 			// Optionally we can specify readonly or editdefaults on the class

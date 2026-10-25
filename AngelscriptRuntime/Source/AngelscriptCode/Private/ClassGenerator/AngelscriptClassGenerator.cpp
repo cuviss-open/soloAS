@@ -4043,7 +4043,6 @@ void FAngelscriptClassGenerator::DoFullReloadClass(FModuleData& ModuleData, FCla
 		// Initialize UFunction object
 		auto* NewFunction = UASFunction::AllocateFunctionFor(NewClass, FunctionName, FunctionDesc);
 		NewFunction->SetSuperStruct(ParentFunction);
-		NewFunction->ReturnValueOffset = MAX_uint16;
 		NewFunction->FirstPropertyToInit = NULL;
                                                                                                                           
 #if 0
@@ -4054,9 +4053,7 @@ void FAngelscriptClassGenerator::DoFullReloadClass(FModuleData& ModuleData, FCla
 		NewFunction->FunctionFlags |= FUNC_Native;
 		NewFunction->SetNativeFunc(&UASFunction::execAngelscriptRuntimeThunk);
                                                                                                                        
-		NewFunction->ScriptFunction = FunctionDesc->ScriptFunction;
-		NewFunction->NumParms = 0;
-		NewFunction->ParmsSize = 0;
+		NewFunction->ScriptFunction = (asCScriptFunction*)FunctionDesc->ScriptFunction;
 		NewFunction->bIsNoOp = FunctionDesc->bIsNoOp;
 
 		if (ScriptFunction->traits.GetTrait(asTRAIT_FINAL))
@@ -4319,10 +4316,6 @@ void FAngelscriptClassGenerator::DoFullReloadClass(FModuleData& ModuleData, FCla
 		NewFunction->StaticLink(true);
 		NewFunction->FinalizeArguments();
 
-		// Record offsets after linking
-		if (NewFunction->ReturnArgument.Property != nullptr)
-			NewFunction->ReturnValueOffset = NewFunction->ReturnArgument.Property->GetOffset_ForUFunction();
-
 		for (int32 i = ArgumentProperties.Num() - 1; i >= 0; --i)
 		{
 			auto* Prop = ArgumentProperties[i];
@@ -4338,18 +4331,6 @@ void FAngelscriptClassGenerator::DoFullReloadClass(FModuleData& ModuleData, FCla
 				NewFunction->WorldContextOffsetInParms = Prop->GetOffset_ForUFunction();
 				break;
 			}
-		}
-
-		if (WorldContextProperty != nullptr)
-		{
-			// If we generated a world context property ourselves, it is always the last argument
-			NewFunction->ParmsSize = WorldContextProperty->GetOffset_ForUFunction() + WorldContextProperty->GetSize();
-		}
-		else if(NewFunction->Arguments.Num() != 0)
-		{
-			// Parameter size is the byte count after the last argument
-			auto* LastArgProperty = NewFunction->Arguments.Last().Property;
-			NewFunction->ParmsSize = LastArgProperty->GetOffset_ForUFunction() + LastArgProperty->GetSize();
 		}
 	}
 
@@ -4664,7 +4645,6 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& Module, FDelegateData
 {
 	auto FunctionDesc = DelegateData.NewDelegate->Signature;
 	UDelegateFunction* NewFunction = DelegateData.NewDelegate->Function;
-	NewFunction->ReturnValueOffset = MAX_uint16;
 	NewFunction->FirstPropertyToInit = NULL;
                                                                                                                          
 #if 0
@@ -4674,8 +4654,6 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& Module, FDelegateData
 #endif
 	check(!NewFunction->HasAnyFunctionFlags(FUNC_Native));
                                                                                                                      
-	NewFunction->NumParms = 0;
-	NewFunction->ParmsSize = 0;
 
 	NewFunction->FunctionFlags |= FUNC_Delegate;
 	if (DelegateData.NewDelegate->bIsMulticast)
@@ -4716,12 +4694,6 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& Module, FDelegateData
 
 	// Link function
 	NewFunction->StaticLink(true);
-
-	// Record offsets after linking
-	if (ReturnProp != nullptr)
-		NewFunction->ReturnValueOffset = ReturnProp->GetOffset_ForUFunction();
-	for (FProperty* ArgProp : ArgumentProperties)
-		NewFunction->ParmsSize = ArgProp->GetOffset_ForUFunction() + ArgProp->GetSize();
 
                                                                                                                                 
 	NotifyRegistrationEvent(
@@ -4769,7 +4741,6 @@ FProperty* FAngelscriptClassGenerator::AddFunctionReturnType(UFunction* NewFunct
 		// Store it in the function for easy lookup
 		if(ASFunction != nullptr)
 			ASFunction->ReturnArgument = UASFunction::FArgument{NewProperty, ReturnType};
-		NewFunction->NumParms += 1;
 		return NewProperty;
 	}
 
@@ -4828,7 +4799,6 @@ FProperty* FAngelscriptClassGenerator::AddFunctionArgument(UFunction* NewFunctio
 	// Store it in the function for easy lookup
 	if (ASFunction != nullptr && bAddToArgList)
 		ASFunction->Arguments.Add(UASFunction::FArgument{NewProperty, ArgDesc.Type});
-	NewFunction->NumParms += 1;
 
 	return NewProperty;
 }
@@ -4994,8 +4964,8 @@ void FAngelscriptClassGenerator::DoSoftReload(FModuleData& ModuleData, FClassDat
 	DestroyUnversionedSchema(Class);
                                                                                                                             
 #endif
-#if ENGINE_MAJOR_VERSION != 5 || ENGINE_MINOR_VERSION != 8 || ENGINE_PATCH_VERSION != 3
-#error Class generator requires the locked UE 5.8.3 schema layout.
+#if !SOLOASBRIDGE_ENGINE_PROFILE_MATCHED
+#error Class generator requires the configured engine schema layout.
 #endif
 	const FUnversionedStructSchema* PreviousGameSchema =
 		Class->UnversionedGameSchema.exchange(nullptr, std::memory_order_acq_rel);
@@ -5110,7 +5080,7 @@ void FAngelscriptClassGenerator::DoSoftReload(FModuleData& ModuleData, FClassDat
 		if (OldFuncDesc->Function != nullptr && OldFuncDesc->ScriptFunction != nullptr)
 		{
 			FuncDesc->Function = OldFuncDesc->Function;
-			((UASFunction*)FuncDesc->Function)->ScriptFunction = FuncDesc->ScriptFunction;
+			((UASFunction*)FuncDesc->Function)->ScriptFunction = (asCScriptFunction*)FuncDesc->ScriptFunction;
 
 			// We need to check the function's arguments and update the script types in them
 			SoftReloadFunction(OldFuncDesc->Function);
@@ -5203,8 +5173,8 @@ void FAngelscriptClassGenerator::DoSoftReload(FModuleData& ModuleData, FClassDat
 			DestroyUnversionedSchema(CheckClass);
                                                                                                                                        
 #endif
-#if ENGINE_MAJOR_VERSION != 5 || ENGINE_MINOR_VERSION != 8 || ENGINE_PATCH_VERSION != 3
-#error Class generator requires the locked UE 5.8.3 schema layout.
+#if !SOLOASBRIDGE_ENGINE_PROFILE_MATCHED
+#error Class generator requires the configured engine schema layout.
 #endif
 			const FUnversionedStructSchema* PreviousGameSchema =
 				CheckClass->UnversionedGameSchema.exchange(

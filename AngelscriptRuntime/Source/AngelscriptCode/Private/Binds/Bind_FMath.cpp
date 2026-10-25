@@ -290,6 +290,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FMath([]
 
 	FAngelscriptBinds::BindGlobalFunction("int32 TruncToInt(float64 F) no_discard", FUNCPR_TRIVIAL(int32, FMath::TruncToInt32, (double)));
 	FAngelscriptBinds::BindGlobalFunction("int32 TruncToInt(float32 F) no_discard", FUNCPR_TRIVIAL(int32, FMath::TruncToInt, (float)));
+	FAngelscriptBinds::BindGlobalFunction("int64 TruncToInt64(float64 F) no_discard", FUNCPR_TRIVIAL(int64, FMath::TruncToInt64, (double)));
 	FAngelscriptBinds::BindGlobalFunction("float64 TruncToFloat(float64 F) no_discard", FUNCPR_TRIVIAL(double, FMath::TruncToFloat, (double)));
 	FAngelscriptBinds::BindGlobalFunction("float32 TruncToFloat(float32 F) no_discard", FUNCPR_TRIVIAL(float, FMath::TruncToFloat, (float)));
 
@@ -299,6 +300,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FMath([]
 
 	FAngelscriptBinds::BindGlobalFunction("int32 RoundToInt(float64 F) no_discard", FUNCPR_TRIVIAL(int32, FMath::RoundToInt32, (double)));
 	FAngelscriptBinds::BindGlobalFunction("int32 RoundToInt(float32 F) no_discard", FUNCPR_TRIVIAL(int32, FMath::RoundToInt, (float)));
+	FAngelscriptBinds::BindGlobalFunction("int64 RoundToInt64(float64 F) no_discard", FUNCPR_TRIVIAL(int64, FMath::RoundToInt64, (double)));
 	FAngelscriptBinds::BindGlobalFunction("float64 RoundToFloat(float64 F) no_discard", FUNCPR_TRIVIAL(double, FMath::RoundToFloat, (double)));
 	FAngelscriptBinds::BindGlobalFunction("float32 RoundToFloat(float32 F) no_discard", FUNCPR_TRIVIAL(float, FMath::RoundToFloat, (float)));
 
@@ -308,6 +310,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FMath([]
 
 	FAngelscriptBinds::BindGlobalFunction("int32 FloorToInt(float64 F) no_discard", FUNCPR_TRIVIAL(int32, FMath::FloorToInt32, (double)));
 	FAngelscriptBinds::BindGlobalFunction("int32 FloorToInt(float32 F) no_discard", FUNCPR_TRIVIAL(int32, FMath::FloorToInt, (float)));
+	FAngelscriptBinds::BindGlobalFunction("int64 FloorToInt64(float64 F) no_discard", FUNCPR_TRIVIAL(int64, FMath::FloorToInt64, (double)));
 	FAngelscriptBinds::BindGlobalFunction("float64 FloorToFloat(float64 F) no_discard", FUNCPR_TRIVIAL(double, FMath::FloorToFloat, (double)));
 	FAngelscriptBinds::BindGlobalFunction("float32 FloorToFloat(float32 F) no_discard", FUNCPR_TRIVIAL(float, FMath::FloorToFloat, (float)));
 
@@ -317,6 +320,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FMath([]
 
 	FAngelscriptBinds::BindGlobalFunction("int32 CeilToInt(float64 F) no_discard", FUNCPR_TRIVIAL(int32, FMath::CeilToInt32, (double)));
 	FAngelscriptBinds::BindGlobalFunction("int32 CeilToInt(float32 F) no_discard", FUNCPR_TRIVIAL(int32, FMath::CeilToInt, (float)));
+	FAngelscriptBinds::BindGlobalFunction("int64 CeilToInt64(float64 F) no_discard", FUNCPR_TRIVIAL(int64, FMath::CeilToInt64, (double)));
 	FAngelscriptBinds::BindGlobalFunction("float64 CeilToFloat(float64 F) no_discard", FUNCPR_TRIVIAL(double, FMath::CeilToFloat, (double)));
 	FAngelscriptBinds::BindGlobalFunction("float32 CeilToFloat(float32 F) no_discard", FUNCPR_TRIVIAL(float, FMath::CeilToFloat, (float)));
 

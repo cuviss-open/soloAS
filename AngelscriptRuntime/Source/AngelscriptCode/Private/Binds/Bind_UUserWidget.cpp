@@ -283,6 +283,21 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_UUserWidget((int32)FAngelscrip
 			PaintContext.WidgetStyle.GetColorAndOpacityTint() * Color);
 	});
 
+	FPaintContext_.Method("void PushClip(const FVector2D& TopLeft, const FVector2D& BotRight, bool bIntersectParent = true, bool bAlwaysClip = false)",
+	[](FPaintContext& PaintContext, const FVector2D& TopLeft, const FVector2D& BotRight, bool bIntersectParent, bool bAlwaysClip)
+	{
+		FSlateClippingZone Zone = FSlateClippingZone(FSlateRect(FVector2f(TopLeft), FVector2f(BotRight)));
+		Zone.SetShouldIntersectParent(bIntersectParent);
+		Zone.SetAlwaysClip(bAlwaysClip);
+		PaintContext.OutDrawElements.PushClip(Zone);
+	});
+
+	FPaintContext_.Method("void PopClip()",
+	[](FPaintContext& PaintContext)
+	{
+		PaintContext.OutDrawElements.PopClip();
+	});
+
 	auto FSlateColor_ = FAngelscriptBinds::ExistingClass("FSlateColor");
 	FSlateColor_.ImplicitConstructor("void f(const FLinearColor& InColor)", [](FSlateColor* SlateColor, const FLinearColor& Color)
 	{

@@ -6,11 +6,11 @@
 #include "AngelscriptBinds.h"
 #include "AngelscriptDocs.h"
 #include "AngelscriptManager.h"
-#include "AngelscriptSort.h"
 
 #include "ClassGenerator/ASClass.h"
 
 #include "Containers/ScriptArray.h"
+#include "Templates/Greater.h"
 #include "UObject/UnrealType.h"
 #include "UObject/GarbageCollectionSchema.h"
 
@@ -456,78 +456,6 @@ bool FAngelscriptArrayType::GetCppForm(const FAngelscriptTypeUsage& Usage, FCppF
 	OutCppForm.TemplateObjectForm = TEXT("FScriptArray");
 	return true;
 }
-
-template<int Size = 1>
-struct FScriptArraySorter
-{
-	struct FElement
-	{
-		uint8 Data[Size];
-	};
-
-	bool bDescendingOrder = false;
-	FArrayOperations* Ops;
-
-	FScriptArraySorter(FArrayOperations* InOps, bool InDescendingOrder)
-		: bDescendingOrder(InDescendingOrder)
-		, Ops(InOps)
-	{
-	}
-
-	bool operator()(const FElement& A, const FElement& B) const
-	{
-		const int32 Order = Ops->CompareFunction != nullptr
-							? InvokeCompareFunction((void*)&A, (void*)&B) // We have an explicit compare function, use that.
-							: Ops->Type.CompareOrder((void*)&A, (void*)&B); // Use the default CompareOrder for this type.
-
-		return bDescendingOrder ? Order > 0 : Order < 0;
-	}
-
-	static int DynamicCompareFunction_NonObjectPointer(void* Context, void const* A, void const* B)
-	{
-		FScriptArraySorter<>* Sorter = static_cast<FScriptArraySorter<>*>(Context);
-		const int32 DescendingOrderSign = Sorter->bDescendingOrder ? -1.0f : 1.0f;
-		return Sorter->InvokeCompareFunction(const_cast<void*>(A), const_cast<void*>(B)) * DescendingOrderSign;
-	}
-	
-	static int DynamicCompareFunction_ObjectPointer(void* Context, void const* A, void const* B)
-	{
-		FScriptArraySorter<>* Sorter = static_cast<FScriptArraySorter<>*>(Context);
-		const int32 DescendingOrderSign = Sorter->bDescendingOrder ? -1.0f : 1.0f;
-
-		void* AObjectPtr = *static_cast<void**>(const_cast<void*>(A));
-		void* BObjectPtr = *static_cast<void**>(const_cast<void*>(B));
-
-		int32 Result;
-		if (AObjectPtr == nullptr || BObjectPtr == nullptr)
-		{
-			Result = AObjectPtr == nullptr ? -1 : 1;
-		}
-		else
-		{
-			Result = Sorter->InvokeCompareFunction(AObjectPtr, BObjectPtr);
-		}
-
-		return Result * DescendingOrderSign;
-	}
-
-	int32 InvokeCompareFunction(void* A, void* B) const
-	{
-		ensure(Ops->CompareFunction != nullptr);
-		FAngelscriptContext Context;
-		Context->Prepare(Ops->CompareFunction);
-		Context->SetObject(A);
-		Context->SetArgAddress(0, B);
-		Context->Execute();
-		return Context->GetReturnDWord();
-	}
-
-	static void Sort(FArrayOperations* Ops, FScriptArray& Arr, bool bDescendingOrder)
-	{
-		TArrayRange<FElement> ArrayRange( (FElement*)Ops->Get(Arr, 0), Arr.Num() );
-		Algo::Sort(ArrayRange, FScriptArraySorter<Size>(Ops, bDescendingOrder));
-	}
-};
 
 FScriptArray& FArrayOperations::OpAssign(FScriptArray& DestinationArray, asCObjectType* Meta, FScriptArray& SourceArray)
 {
@@ -1294,12 +1222,133 @@ void FArrayOperations::RemoveAtSwap(FScriptArray& Arr, asCObjectType* Meta, int3
 	Arr.Remove(SwapWith, 1, Ops->NumBytesPerElement, Ops->Alignment, bAllowShrinking ? EAllowShrinking::Yes : EAllowShrinking::No);
 }
 
+struct FScriptArraySortIterator
+{
+	FScriptArraySortIterator() {}
+
+	FScriptArraySortIterator(FScriptArray& ScriptArray, int StartIndex, int ArrayStride)
+		: Container(&ScriptArray)
+		, Index(StartIndex)
+		, Stride(ArrayStride)
+	{
+	}
+
+	FScriptArraySortIterator(const FScriptArraySortIterator& Other)
+		: Container(Other.Container)
+		, Index(Other.Index)
+		, Stride(Other.Stride)
+	{
+	}
+
+	FScriptArraySortIterator& operator++()
+	{
+		++Index;
+		return *this;
+	}
+
+	FScriptArraySortIterator operator++(int)
+	{
+		FScriptArraySortIterator Tmp(*this);
+		++Index;
+		return Tmp;
+	}
+
+	FScriptArraySortIterator& operator--()
+	{
+		--Index;
+		return *this;
+	}
+
+	FScriptArraySortIterator operator--(int)
+	{
+		FScriptArraySortIterator Tmp(*this);
+		--Index;
+		return Tmp;
+	}
+
+	FScriptArraySortIterator operator+(FScriptArraySortIterator& Other) const
+	{
+		FScriptArraySortIterator Tmp(*this);
+		Tmp.Index += Other.Index;
+		return Tmp;
+	}
+
+	FScriptArraySortIterator operator+(int Count) const
+	{
+		FScriptArraySortIterator Tmp(*this);
+		Tmp.Index += Count;
+		return Tmp;
+	}
+
+	FScriptArraySortIterator operator-(FScriptArraySortIterator& Other) const
+	{
+		FScriptArraySortIterator Tmp(*this);
+		Tmp.Index -= Other.Index;
+		return Tmp;
+	}
+
+	FScriptArraySortIterator operator-(int Count) const
+	{
+		FScriptArraySortIterator Tmp(*this);
+		Tmp.Index -= Count;
+		return Tmp;
+	}
+
+	operator int() const
+	{
+		return Index;
+	}
+
+	UE_FORCEINLINE_HINT FScriptArraySortIterator& operator*()
+	{
+		return *this;
+	}
+
+	UE_FORCEINLINE_HINT FScriptArraySortIterator operator[](int Offset)
+	{
+		FScriptArraySortIterator Tmp(*this);
+		Tmp.Index += Offset;
+		return Tmp;
+	}
+
+	void* GetElementPtr()
+	{
+		return (void*)((SIZE_T)Container->GetData() + (Stride * Index));
+	}
+
+	UE_FORCEINLINE_HINT explicit operator bool() const
+	{
+		return Container->IsValidIndex(Index);
+	}
+
+	UE_FORCEINLINE_HINT bool operator==(const FScriptArraySortIterator& Rhs) const
+	{
+		return Index == Rhs.Index;
+	}
+
+	FScriptArray* Container;
+	int Index;
+	int Stride;
+};
+
+void Swap(FScriptArraySortIterator A, FScriptArraySortIterator B)
+{
+	void* Tmp = FMemory_Alloca(A.Stride);
+	FMemory::Memcpy(Tmp, A.GetElementPtr(), A.Stride);
+	FMemory::Memcpy(A.GetElementPtr(), B.GetElementPtr(), A.Stride);
+	FMemory::Memcpy(B.GetElementPtr(), Tmp, A.Stride);
+}
+
 void FArrayOperations::Sort(FScriptArray& Arr, asCObjectType* Meta, bool bDescendingOrder)
 {
 #if AS_ITERATOR_DEBUGGING
 	if (!CheckArrayIteratorDebug(Arr))
 		return;
 #endif
+
+	// Emit a cycle counter. Dynamic script object sorts are relatively slow so this way
+	// it is more visible if a large script array is being sorted.
+	QUICK_SCOPE_CYCLE_COUNTER(Angelscript_TArray_Sort);
 
 	auto* Ops = GetArrayOperations(Meta);
 	const int32 Size = Ops->NumBytesPerElement;
@@ -1308,45 +1357,258 @@ void FArrayOperations::Sort(FScriptArray& Arr, asCObjectType* Meta, bool bDescen
 	InvalidateReferencesToArray(Arr, Ops);
 #endif
 
+	FScriptArraySortIterator Iterator(Arr, 0, Ops->NumBytesPerElement);
+
 	if (Ops->CompareFunction != nullptr)
 	{
-		FScriptArraySorter<> Sorter(Ops, bDescendingOrder);
-		if (Ops->bIsObjectPointer)
-		{
-			AngelscriptSort::QuickSort<FScriptArraySorter<>::DynamicCompareFunction_ObjectPointer>(Arr.GetData(), Arr.Num(), Size, &Sorter);
-		}
-		else
-		{
-			AngelscriptSort::QuickSort<FScriptArraySorter<>::DynamicCompareFunction_NonObjectPointer>(Arr.GetData(), Arr.Num(), Size, &Sorter);
-		}
+		FAngelscriptContext Context;
+
+		bool bDerefPointer = Ops->bIsObjectPointer;
+		AlgoImpl::IntroSortInternal(
+			Iterator,
+			Arr.Num(),
+			FIdentityFunctor(),
+			[&](FScriptArraySortIterator A, FScriptArraySortIterator B) -> bool
+			{
+				void* AElem = A.GetElementPtr();
+				void* BElem = B.GetElementPtr();
+
+				if (bDerefPointer)
+				{
+					AElem = *(void**)AElem;
+					BElem = *(void**)BElem;
+
+					if (AElem == nullptr)
+						return !bDescendingOrder;
+					else if (BElem == nullptr)
+						return bDescendingOrder;
+				}
+
+				Context->Prepare(Ops->CompareFunction);
+				Context->SetObject(AElem);
+				Context->SetArgAddress(0, BElem);
+				Context->Execute();
+
+				int Result = (int)Context->GetReturnDWord();
+				if (Result <= 0)
+					return !bDescendingOrder;
+				else
+					return bDescendingOrder;
+			}
+		);
+
 		return;
+	}
+
+	// If the array is of a primitive type, use native C++ sorts
+	asCDataType SubDataType = Meta->templateSubTypes[0];
+	if (SubDataType.IsPrimitive())
+	{
+		if (SubDataType.IsEnumType() || SubDataType.GetTokenType() == ttUInt8)
+		{
+			check(SubDataType.GetSizeInMemoryBytes() == 1);
+			if (bDescendingOrder)
+				((TArray<uint8>*)&Arr)->Sort(TGreater<uint8>());
+			else
+				((TArray<uint8>*)&Arr)->Sort();
+			return;
+		}
+		else if (SubDataType.GetTokenType() == ttFloat32)
+		{
+			if (bDescendingOrder)
+				((TArray<float>*)&Arr)->Sort(TGreater<float>());
+			else
+				((TArray<float>*)&Arr)->Sort();
+			return;
+		}
+		else if (SubDataType.GetTokenType() == ttFloat64)
+		{
+			if (bDescendingOrder)
+				((TArray<double>*)&Arr)->Sort(TGreater<double>());
+			else
+				((TArray<double>*)&Arr)->Sort();
+			return;
+		}
+		else if (SubDataType.GetTokenType() == ttInt)
+		{
+			if (bDescendingOrder)
+				((TArray<int32>*)&Arr)->Sort(TGreater<int32>());
+			else
+				((TArray<int32>*)&Arr)->Sort();
+			return;
+		}
+		else if (SubDataType.GetTokenType() == ttInt64)
+		{
+			if (bDescendingOrder)
+				((TArray<int64>*)&Arr)->Sort(TGreater<int64>());
+			else
+				((TArray<int64>*)&Arr)->Sort();
+			return;
+		}
+		else if (SubDataType.GetTokenType() == ttUInt)
+		{
+			if (bDescendingOrder)
+				((TArray<uint32>*)&Arr)->Sort(TGreater<uint32>());
+			else
+				((TArray<uint32>*)&Arr)->Sort();
+			return;
+		}
+		else if (SubDataType.GetTokenType() == ttUInt64)
+		{
+			if (bDescendingOrder)
+				((TArray<uint64>*)&Arr)->Sort(TGreater<uint64>());
+			else
+				((TArray<uint64>*)&Arr)->Sort();
+			return;
+		}
+		else if (SubDataType.GetTokenType() == ttUInt16)
+		{
+			if (bDescendingOrder)
+				((TArray<uint16>*)&Arr)->Sort(TGreater<uint16>());
+			else
+				((TArray<uint16>*)&Arr)->Sort();
+			return;
+		}
+		else if (SubDataType.GetTokenType() == ttInt16)
+		{
+			if (bDescendingOrder)
+				((TArray<int16>*)&Arr)->Sort(TGreater<int16>());
+			else
+				((TArray<int16>*)&Arr)->Sort();
+			return;
+		}
+		else if (SubDataType.GetTokenType() == ttInt8)
+		{
+			if (bDescendingOrder)
+				((TArray<int8>*)&Arr)->Sort(TGreater<int8>());
+			else
+				((TArray<int8>*)&Arr)->Sort();
+			return;
+		}
 	}
 	
 	if (!Ops->Type.IsOrdered())
 	{
-		const FString ParamType = Ops->bIsObjectPointer ? TEXT("{0}") : TEXT("const {0}&");
-		const FString Parameter = FString::Format(*ParamType, { *Ops->Type.GetFriendlyTypeName() });
-		const FString FunctionDecl = FString::Format(TEXT("int opCmp({0}) const"), { Parameter });
-
+		const FString FunctionDecl = FString::Format(TEXT("int opCmp({0}) const"), { Ops->Type.GetFriendlyTypeName() });
 		const FString Error = FString::Format(TEXT("Array element type not sortable. To sort TArray<{0}>, {1} needs to be implemented."), { *Ops->Type.GetFriendlyTypeName(), FunctionDecl });
 		FAngelscriptManager::Throw(TCHAR_TO_ANSI(*Error));
 		return;
 	}
 
-	if (Size == 1)
-		FScriptArraySorter<1>::Sort(Ops, Arr, bDescendingOrder);
-	else if (Size == 2)
-		FScriptArraySorter<2>::Sort(Ops, Arr, bDescendingOrder);
-	else if (Size == 4)
-		FScriptArraySorter<4>::Sort(Ops, Arr, bDescendingOrder);
-	else if (Size == 8)
-		FScriptArraySorter<8>::Sort(Ops, Arr, bDescendingOrder);
-	else if (Size == 12)
-		FScriptArraySorter<12>::Sort(Ops, Arr, bDescendingOrder);
-	else if (Size == 16)
-		FScriptArraySorter<16>::Sort(Ops, Arr, bDescendingOrder);
+	// Fall back to sorting using FAngelscriptType.CompareOrder()
+	AlgoImpl::IntroSortInternal(
+		Iterator,
+		Arr.Num(),
+		FIdentityFunctor(),
+		[&](FScriptArraySortIterator A, FScriptArraySortIterator B) -> bool
+		{
+			void* AElem = A.GetElementPtr();
+			void* BElem = B.GetElementPtr();
+
+			int Result = Ops->Type.CompareOrder(AElem, BElem);
+			if (Result <= 0)
+				return !bDescendingOrder;
+			else
+				return bDescendingOrder;
+		}
+	);
+}
+
+
+void FArrayOperations::SortByProperty(FScriptArray& Arr, asCObjectType* Meta, const FName& PropertyName, bool bDescendingOrder)
+{
+#if AS_ITERATOR_DEBUGGING
+	if (!CheckArrayIteratorDebug(Arr))
+		return;
+#endif
+
+	QUICK_SCOPE_CYCLE_COUNTER(Angelscript_TArray_SortByProperty);
+
+	auto* Ops = GetArrayOperations(Meta);
+
+#if AS_REFERENCE_DEBUGGING
+	InvalidateReferencesToArray(Arr, Ops);
+#endif
+
+	UStruct* ElementStruct = nullptr;
+	bool bDerefPointer = false;
+
+	if (Ops->bIsObjectPointer)
+	{
+		ElementStruct = Ops->Type.GetClass();
+		bDerefPointer = true;
+	}
 	else
-		FAngelscriptManager::Throw("Array element is too large to sort.");
+	{
+		ElementStruct = Ops->Type.GetUnrealStruct();
+		bDerefPointer = false;
+	}
+
+	if (ElementStruct == nullptr)
+	{
+		FAngelscriptManager::Throw("Invalid array element type to sort by property. Only structs and UObjects can be sorted by property.");
+		return;
+	}
+
+	FProperty* Property = ElementStruct->FindPropertyByName(PropertyName);
+	if (Property == nullptr)
+	{
+		FAngelscriptManager::Throw("Could not find property to sort by in struct/class. Property must be a UPROPERTY()");
+		return;
+	}
+
+	int PropertyOffset = Property->GetOffset_ForUFunction();
+	FScriptArraySortIterator Iterator(Arr, 0, Ops->NumBytesPerElement);
+
+	auto PerformSort = [&]<typename NativeType>()
+	{
+		AlgoImpl::IntroSortInternal(
+			Iterator,
+			Arr.Num(),
+			FIdentityFunctor(),
+			[&](FScriptArraySortIterator A, FScriptArraySortIterator B) -> bool
+			{
+				void* AElem = A.GetElementPtr();
+				void* BElem = B.GetElementPtr();
+
+				if (bDerefPointer)
+				{
+					AElem = *(void**)AElem;
+					BElem = *(void**)BElem;
+
+					if (AElem == nullptr)
+						return !bDescendingOrder;
+					else if (BElem == nullptr)
+						return bDescendingOrder;
+				}
+
+				return (*(NativeType*)((SIZE_T)AElem + PropertyOffset) < *(NativeType*)((SIZE_T)BElem + PropertyOffset)) != bDescendingOrder;
+			}
+		);
+	};
+
+	if (Property->IsA<FDoubleProperty>())
+		PerformSort.template operator()<double>();
+	else if (Property->IsA<FByteProperty>() || Property->IsA<FEnumProperty>())
+		PerformSort.template operator()<uint8>();
+	else if (Property->IsA<FIntProperty>())
+		PerformSort.template operator()<int32>();
+	else if (Property->IsA<FFloatProperty>())
+		PerformSort.template operator()<float>();
+	else if (Property->IsA<FInt64Property>())
+		PerformSort.template operator()<int64>();
+	else if (Property->IsA<FUInt32Property>())
+		PerformSort.template operator()<uint32>();
+	else if (Property->IsA<FUInt64Property>())
+		PerformSort.template operator()<uint64>();
+	else if (Property->IsA<FInt16Property>())
+		PerformSort.template operator()<int16>();
+	else if (Property->IsA<FInt8Property>())
+		PerformSort.template operator()<int8>();
+	else if (Property->IsA<FUInt16Property>())
+		PerformSort.template operator()<uint16>();
+	else
+		FAngelscriptManager::Throw("Property to sort by must be a numeric primitive or enum");
 }
 
 void FArrayOperations::Shrink(FScriptArray& Arr, asCObjectType* Meta)
@@ -1530,6 +1792,12 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_TArray(FAngelscriptBinds::EOrd
 
 	TArray_.Method("void Sort(bool bDescendingOrder = false)", FUNC(FArrayOperations::Sort));
 	FAngelscriptBinds::PreviousBindPassScriptObjectTypeAsFirstParam();
+
+	TArray_.Method("void SortByProperty(const FName& PropertyName, bool bDescendingOrder = false)", FUNC(FArrayOperations::SortByProperty));
+	FAngelscriptBinds::PreviousBindPassScriptObjectTypeAsFirstParam();
+	SCRIPT_BIND_DOCUMENTATION(
+		"Sort the array by the value of a property of its elements. Only works on arrays of structs or UObjects.\n"
+		"The specified property must be a numeric primitive or enum, and must be declared as a UPROPERTY().");
 
 	TArray_.Method("int Num() const", FUNC_TRIVIAL(FArrayOperations::Num));
 	TArray_.Method("int Max() const", FUNC_TRIVIAL(FArrayOperations::Max));

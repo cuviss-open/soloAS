@@ -7,6 +7,11 @@
 #include "Misc/Paths.h"
 #include "Misc/SecureHash.h"
 
+#if WITH_DEV_AUTOMATION_TESTS
+#include "HAL/FileManagerGeneric.h"
+#include "Misc/AutomationTest.h"
+#endif
+
 namespace SoloASBridge::Extensions
 {
 namespace
@@ -193,31 +198,120 @@ void DeletePathsBestEffort(const TArray<FString>& Paths)
         IFileManager::Get().Delete(*Path, false, true, true);
 }
 
-bool DeletePublishTarget(const FString& Path, FString& OutError)
+bool DeletePublishTarget(
+    const FString& Path,
+    FString& OutError,
+    IFileManager& FileManager = IFileManager::Get())
 {
-    IFileManager& FileManager = IFileManager::Get();
-    if (FileManager.DirectoryExists(*Path))
+    const FString WritePath = FileManager.ConvertToAbsolutePathForExternalAppForWrite(*Path);
+    if (FileManager.DirectoryExists(*WritePath))
     {
         OutError = FString::Printf(
-            TEXT("Cache publish target is a directory: %s"), *Path);
+            TEXT("Cache publish target is a directory: %s"), *WritePath);
         return false;
     }
-    if (FileManager.FileExists(*Path)
-        && !FileManager.Delete(*Path, false, true, true))
+    if (FileManager.FileExists(*WritePath)
+        && !FileManager.Delete(*WritePath, false, true, true))
     {
         OutError = FString::Printf(
-            TEXT("Stale cache publish target cannot be deleted: %s"), *Path);
+            TEXT("Stale cache publish target cannot be deleted: %s"), *WritePath);
         return false;
     }
-    if (FileManager.FileExists(*Path))
+    if (FileManager.FileExists(*WritePath))
     {
         OutError = FString::Printf(
             TEXT("Stale cache publish target remains after deletion: %s"),
-            *Path);
+            *WritePath);
         return false;
     }
     return true;
 }
+
+#if WITH_DEV_AUTOMATION_TESTS
+class FCachePublishSandboxFileManager final : public FFileManagerGeneric
+{
+public:
+    const FString SourcePath = TEXT("/Project/Script/PrecompiledScript.Cache");
+    const FString WritePath = TEXT("/Project/Saved/Cooked/Windows/Project/Script/PrecompiledScript.Cache");
+    bool bSourceExists = true;
+    bool bWriteExists = true;
+    bool bWriteIsDirectory = false;
+    bool bDeleteSucceeds = true;
+    bool bKeepAfterDelete = false;
+    FString DeletedPath;
+
+    FString ConvertToAbsolutePathForExternalAppForWrite(const TCHAR* Filename) override
+    {
+        return SourcePath == Filename ? WritePath : FString(Filename);
+    }
+
+    bool DirectoryExists(const TCHAR* Filename) override
+    {
+        return WritePath == Filename && bWriteIsDirectory;
+    }
+
+    bool FileExists(const TCHAR* Filename) override
+    {
+        return (SourcePath == Filename && (bSourceExists || bWriteExists))
+            || (WritePath == Filename && bWriteExists);
+    }
+
+    bool Delete(const TCHAR* Filename, bool, bool, bool) override
+    {
+        DeletedPath = Filename;
+        if (!bDeleteSucceeds)
+            return false;
+        if (!bKeepAfterDelete && WritePath == Filename)
+            bWriteExists = false;
+        return true;
+    }
+};
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCachePublishSandboxTest,
+    "SoloAS.ExtensionCache.PublishSandboxOverlay",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FCachePublishSandboxTest::RunTest(const FString&)
+{
+    FCachePublishSandboxFileManager Files;
+    FString Error;
+    TestTrue(TEXT("Delete the write overlay despite the retained source cache"),
+        DeletePublishTarget(Files.SourcePath, Error, Files));
+    TestEqual(TEXT("Delete targets the actual write path"), Files.DeletedPath, Files.WritePath);
+    TestFalse(TEXT("Write overlay was removed"), Files.bWriteExists);
+    TestTrue(TEXT("Source cache is retained and remains readable"),
+        Files.bSourceExists && Files.FileExists(*Files.SourcePath));
+    TestTrue(TEXT("Missing overlay also succeeds with a retained source cache"),
+        DeletePublishTarget(Files.SourcePath, Error, Files));
+    TestTrue(TEXT("No error"), Error.IsEmpty());
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCachePublishDeleteFailureTest,
+    "SoloAS.ExtensionCache.PublishDeleteFailure",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FCachePublishDeleteFailureTest::RunTest(const FString&)
+{
+    FCachePublishSandboxFileManager Files;
+    FString Error;
+    Files.bDeleteSucceeds = false;
+    TestFalse(TEXT("A real deletion failure rejects publication"),
+        DeletePublishTarget(Files.SourcePath, Error, Files));
+    TestTrue(TEXT("Error identifies the write target"),
+        Error.Contains(TEXT("cannot be deleted")) && Error.Contains(Files.WritePath));
+    Files.bDeleteSucceeds = true;
+    Files.bKeepAfterDelete = true;
+    TestFalse(TEXT("A residual write target rejects publication"),
+        DeletePublishTarget(Files.SourcePath, Error, Files));
+    TestTrue(TEXT("Residual target error is retained"), Error.Contains(TEXT("remains after deletion")));
+    Files.bWriteIsDirectory = true;
+    TestFalse(TEXT("A directory is never a publish target"),
+        DeletePublishTarget(Files.SourcePath, Error, Files));
+    TestTrue(TEXT("Directory error is retained"), Error.Contains(TEXT("is a directory")));
+    return true;
+}
+#endif
 
 bool WriteSnapshotMembers(
     const FString& SnapshotPath,

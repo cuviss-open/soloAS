@@ -14,6 +14,8 @@ DECLARE_DELEGATE_OneParam(FAngelscriptComponentCreated, class UActorComponent*);
 DECLARE_DELEGATE_ThreeParams(FAngelscriptClassAnalyzeDelegate, FString&, TSharedPtr<struct FAngelscriptClassDesc>, bool&);
 DECLARE_MULTICAST_DELEGATE_OneParam(FAngelscriptPostCompileClassCollection, const TArray<TSharedRef<struct FAngelscriptModuleDesc>>&);
 DECLARE_MULTICAST_DELEGATE_OneParam(FAngelscriptPreGenerateClasses, const TArray<TSharedRef<struct FAngelscriptModuleDesc>>&);
+DECLARE_MULTICAST_DELEGATE_OneParam(FAngelscriptPostSetupClasses, const TArray<TSharedRef<struct FAngelscriptModuleDesc>>&);
+DECLARE_MULTICAST_DELEGATE_OneParam(FAngelscriptCompilePostLayoutTypes, const TArray<TSharedRef<struct FAngelscriptModuleDesc>>&);
 DECLARE_MULTICAST_DELEGATE(FAngelscriptCompilationDelegate);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FAngelscriptLiteralAssetCreated, UObject*, const FString&);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FAngelscriptDebugListAssets, TArray<FString>, class UASClass*);
@@ -74,11 +76,13 @@ public:
                                                                                                                          
 	static FAngelscriptClassAnalyzeDelegate& GetClassAnalyze();
 	static FAngelscriptPreGenerateClasses& GetPreGenerateClasses();
+	static FAngelscriptPostSetupClasses& GetPostSetupClasses();
                                                                                                                              
 	static ANGELSCRIPTCODE_API FAngelscriptPostCompileClassCollection& GetPostCompileClassCollection();
                                                                                                                            
 	static FAngelscriptLiteralAssetCreated& GetOnLiteralAssetCreated();
 	static FAngelscriptLiteralAssetCreated& GetPostLiteralAssetSetup();
+	static FAngelscriptCompilePostLayoutTypes& GetCompilePostLayoutTypes();
                                                                                                                   
 	static ANGELSCRIPTCODE_API FAngelscriptDebugListAssets& GetDebugListAssets();
                                                                                                                 

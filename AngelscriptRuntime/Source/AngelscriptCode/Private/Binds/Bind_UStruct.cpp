@@ -1230,9 +1230,9 @@ bool ShouldBindEngineType(UScriptStruct* Struct)
 		return false;
 
 	// BlueprintType always gets bound
-	if (Struct->GetBoolMetaData(NAME_STRUCT_BlueprintType))
+	if (Struct->GetBoolMetaDataHierarchical(NAME_STRUCT_BlueprintType))
 		return true;
-	if (Struct->GetBoolMetaData(NAME_STRUCT_NotBlueprintType))
+	if (Struct->GetBoolMetaDataHierarchical(NAME_STRUCT_NotBlueprintType))
 		return false;
 
 	// If the class has any BlueprintVisible properties, also bind it

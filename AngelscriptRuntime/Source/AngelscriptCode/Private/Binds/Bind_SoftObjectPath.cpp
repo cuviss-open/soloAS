@@ -32,9 +32,11 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FSoftObjectPath(FAngelscriptBi
 
 	SoftObjectPath_.Method("bool opEquals(const FSoftObjectPath& Other) const", METHOD_TRIVIAL(FSoftObjectPath, operator==));
 
+#if !WITH_ANGELSCRIPT_HAZE
 	SoftObjectPath_.Method("UObject TryLoad() const", [](FSoftObjectPath* Path) -> UObject* {
 		return Path->TryLoad();
 	});
+#endif
 
 	SoftObjectPath_.Method("UObject ResolveObject() const", METHOD_TRIVIAL(FSoftObjectPath, ResolveObject));
 
@@ -74,10 +76,13 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FSoftClassPath(FAngelscriptBin
 		return SoftClassPath.ResolveClass();
 	});
 
+#if !WITH_ANGELSCRIPT_HAZE
 	FSoftClassPath_.Method("UClass TryLoadClass() const", [](const FSoftClassPath& SoftClassPath)
 	{
 		return SoftClassPath.TryLoadClass<UObject>();
 	});
+#endif
+
 	FToStringHelper::Register(TEXT("FSoftClassPath"), [](void* Ptr, FString& Str)
 	{
 		Str += ((FSoftClassPath*)Ptr)->ToString();

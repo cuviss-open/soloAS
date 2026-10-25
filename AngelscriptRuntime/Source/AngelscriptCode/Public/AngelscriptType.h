@@ -389,7 +389,7 @@ struct ANGELSCRIPTCODE_API FAngelscriptTypeUsage
 		ScriptClass = nullptr;
 	}
 
-	FAngelscriptTypeUsage(TSharedPtr<FAngelscriptType> InType)
+	explicit FAngelscriptTypeUsage(TSharedPtr<FAngelscriptType> InType)
 		: Type(InType)
 	{
 	}

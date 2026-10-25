@@ -68,14 +68,14 @@ class SScriptEditorPromptDialog : public SCompoundWidget
 
 			if (PromptOptions.bShowOnlyParameters)
 			{
-				if (InPropertyAndParent.Property.HasAnyPropertyFlags(CPF_Parm))
+				if (InPropertyAndParent.Property.HasAnyPropertyFlags(CPF_Parm) && !InPropertyAndParent.Property.HasAnyPropertyFlags(CPF_ReturnParm))
 				{
 					return true;
 				}
 
 				for (const FProperty* Parent : InPropertyAndParent.ParentProperties)
 				{
-					if (Parent->HasAnyPropertyFlags(CPF_Parm))
+					if (Parent->HasAnyPropertyFlags(CPF_Parm) && !Parent->HasAnyPropertyFlags(CPF_ReturnParm))
 					{
 						return true;
 					}
@@ -203,6 +203,11 @@ bool FScriptEditorPrompts::ShowPromptToCallFunction(const UObject* Object, FName
 	int32 ParameterIndex = 0;
 	for (TFieldIterator<FProperty> It(Function); It && It->HasAnyPropertyFlags(CPF_Parm); ++It)
 	{
+		if (!It->HasAnyPropertyFlags(CPF_Parm))
+			continue;
+		if (It->HasAnyPropertyFlags(CPF_ReturnParm))
+			continue;
+
 		FString Defaults;
 		if (UEdGraphSchema_K2::FindFunctionParameterDefaultValue(Function, *It, Defaults))
 		{
@@ -287,6 +292,11 @@ bool FScriptEditorPrompts::ShowPromptToCallFunction(const UObject* Object, FName
 	int32 ParameterIndex = 0;
 	for (TFieldIterator<FProperty> It(Function); It && It->HasAnyPropertyFlags(CPF_Parm); ++It)
 	{
+		if (!It->HasAnyPropertyFlags(CPF_Parm))
+			continue;
+		if (It->HasAnyPropertyFlags(CPF_ReturnParm))
+			continue;
+
 		FString Defaults;
 		if (UEdGraphSchema_K2::FindFunctionParameterDefaultValue(Function, *It, Defaults))
 		{
@@ -364,6 +374,11 @@ bool FScriptEditorPrompts::ShowPromptToCallFunctionOnObjects(UFunction* Function
 	bool bHasParametersToFill = false;
 	for (TFieldIterator<FProperty> It(Function); It && It->HasAnyPropertyFlags(CPF_Parm); ++It)
 	{
+		if (!It->HasAnyPropertyFlags(CPF_Parm))
+			continue;
+		if (It->HasAnyPropertyFlags(CPF_ReturnParm))
+			continue;
+
 		FString Defaults;
 		if (UEdGraphSchema_K2::FindFunctionParameterDefaultValue(Function, *It, Defaults))
 		{

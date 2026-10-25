@@ -1,7 +1,7 @@
 {
 	"FileVersion": 1,
-	"Version": 2,
-	"VersionName": "0.1.1+ue5.8.3",
+	"Version": 3,
+	"VersionName": "0.1.2+ue5.8.4",
 	"FriendlyName": "Angelscript",
 	"Description": "Angelscript Integration for Unreal Engine ",
 	"Category": "Scripting",

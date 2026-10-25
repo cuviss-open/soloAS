@@ -833,6 +833,11 @@ void asSAccessSpecifier::GetAllowedAccess(bool bAccessedFromDerivedType, asCScri
 				bSpecApplies = true;
 			}
 
+			if (!bSpecApplies && accessFromFunction->module != nullptr && accessFromFunction->module->baseModuleName.StartsWith_CaseInsensitive(spec.accessName))
+			{
+				bSpecApplies = true;
+			}
+
 			if (spec.bInherited && !bSpecApplies && accessFromType != nullptr)
 			{
 				auto* superType = accessFromType->derivedFrom;

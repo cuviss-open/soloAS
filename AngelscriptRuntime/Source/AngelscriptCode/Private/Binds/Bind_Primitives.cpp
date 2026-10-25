@@ -531,7 +531,7 @@ struct FUnrealFloatParamExtendedToDoubleType : TNumericAngelscriptType<float, FF
 
 	bool GetDebuggerValue(const FAngelscriptTypeUsage& Usage, void* Address, struct FDebuggerValue& Value) const
 	{
-		Value.Usage = FAngelscriptType::ScriptDoubleType();
+		Value.Usage = FAngelscriptTypeUsage(FAngelscriptType::ScriptDoubleType());
 		Value.Type = Value.Usage.GetAngelscriptDeclaration();
 		Value.Value = LexToString(Usage.ResolvePrimitive<double>(Address));
 		Value.Address = Address;

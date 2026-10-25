@@ -23,7 +23,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FDateTime(FAngelscriptBinds::E
 	FDateTime_.Method("int GetDay() const", METHOD_TRIVIAL(FDateTime, GetDay));
 	FDateTime_.Method("int GetDayOfYear() const", METHOD_TRIVIAL(FDateTime, GetDayOfYear));
 	FDateTime_.Method("int GetHour() const", METHOD_TRIVIAL(FDateTime, GetHour));
-	FDateTime_.Method("int GetHour12() const", METHOD_TRIVIAL(FDateTime, GetHour));
+	FDateTime_.Method("int GetHour12() const", METHOD_TRIVIAL(FDateTime, GetHour12));
 	FDateTime_.Method("int GetMillisecond() const", METHOD_TRIVIAL(FDateTime, GetMillisecond));
 	FDateTime_.Method("int GetMinute() const", METHOD_TRIVIAL(FDateTime, GetMinute));
 	FDateTime_.Method("int GetMonth() const", METHOD_TRIVIAL(FDateTime, GetMonth));

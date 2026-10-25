@@ -29,7 +29,7 @@ template struct TMember<FModifiedAttachChildrenTag, &USceneComponent::ModifiedAt
 
 bool SoloASBridge::NormalizeSceneComponentChildren(USceneComponent* Parent)
 {
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 8 && ENGINE_PATCH_VERSION == 3
+#if SOLOASBRIDGE_ENGINE_PROFILE_MATCHED
     if (!IsInGameThread() || IsGarbageCollecting() || !IsValid(Parent) || Parent->IsBeingDestroyed())
         return false;
     auto Normalize = [Parent](TArray<TObjectPtr<USceneComponent>>& Children)

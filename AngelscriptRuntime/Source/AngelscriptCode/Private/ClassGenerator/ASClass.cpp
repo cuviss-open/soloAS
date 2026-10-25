@@ -430,8 +430,8 @@ UASClass::UASClass(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
                                                                                                                            
-#if ENGINE_MAJOR_VERSION != 5 || ENGINE_MINOR_VERSION != 8 || ENGINE_PATCH_VERSION != 3
-#error CS.Runtime.ClassConstruction.ScriptClassIdentity.EnginePrivateRoute requires the locked UE 5.8.3 Haze seam.
+#if !SOLOASBRIDGE_ENGINE_PROFILE_MATCHED
+#error CS.Runtime.ClassConstruction.ScriptClassIdentity.EnginePrivateRoute requires the configured engine profile.
 #endif
 	// UObjectGlobals consumes this identity during object construction, before
 	// the generator can publish ScriptTypePtr on the completed UASClass.
@@ -1097,6 +1097,22 @@ FORCEINLINE void MakeRawJITCall_Arg(UObject* Object, asJITFunction_Raw InFunctio
 	using TFuncPtr = void(*)(FScriptExecution&, void*, TArgument Arg);
 	((TFuncPtr)InFunction)(
 		Execution, Object, ArgValue
+	);
+}
+
+template<typename TArgument, typename TArgument2>
+FORCEINLINE void MakeRawJITCall_2Arg(UObject* Object, asJITFunction_Raw InFunction, TArgument ArgValue, TArgument2 Arg2Value)
+{
+	AS_LLM_SCOPE
+
+	checkSlow(FAngelscriptManager::GameThreadTLD == asCThreadManager::GetLocalData());
+
+	FAngelscriptGameThreadScopeWorldContext WorldContext(Object);
+	FScriptExecution Execution(FAngelscriptManager::GameThreadTLD);
+
+	using TFuncPtr = void(*)(FScriptExecution&, void*, TArgument Arg, TArgument2 Arg2);
+	((TFuncPtr)InFunction)(
+		Execution, Object, ArgValue, Arg2Value
 	);
 }
 
@@ -3530,6 +3546,18 @@ UASFunction* UASFunction::AllocateFunctionFor(UClass* InClass, FName ObjectName,
 				return NewObject<UASFunction_ReferenceArg>(InClass, ObjectName, RF_Public);
 		}
 
+		// void ScriptFunction({TYPE}& Value, float Value);
+		if (!FunctionDesc->ReturnType.IsValid()
+			&& FunctionDesc->Arguments.Num() == 2
+			&& FunctionDesc->Arguments[0].Type.bIsReference
+			&& FunctionDesc->Arguments[1].Type.Type == FAngelscriptType::ScriptFloatParamExtendedToDoubleType())
+		{
+			if (bHasNonVirtualJitFunction)
+				return NewObject<UASFunction_RefArg_FloatExtendedArg_JIT>(InClass, ObjectName, RF_Public);
+			else
+				return NewObject<UASFunction_RefArg_FloatExtendedArg>(InClass, ObjectName, RF_Public);
+		}
+
 		// {PRIMITIVE} ScriptFunction();
 		if (FunctionDesc->ReturnType.IsValid()
 			&& !FunctionDesc->ReturnType.bIsReference
@@ -4937,4 +4965,60 @@ void UASFunction_ByteReturn_JIT::RuntimeCallEvent(UObject* Object, void* Parms)
 	checkSlow(ReturnArgument.ParmBehavior == EArgumentParmBehavior::Value1Byte);
 
 	*(asBYTE*)Parms = MakeRawJITCall_ReturnValue<asBYTE>(Object, JitFunction_Raw);
+}
+
+void UASFunction_RefArg_FloatExtendedArg::RuntimeCallFunction(UObject* Object, FFrame& Stack, RESULT_DECL)
+{
+	AngelscriptCallFromBPVM<false, false>(this, Object, Stack, RESULT_PARAM);
+}
+
+void UASFunction_RefArg_FloatExtendedArg::RuntimeCallEvent(UObject* Object, void* Parms)
+{
+#if AS_CAN_HOTRELOAD
+	if (ScriptFunction == nullptr)
+		return;
+#endif
+
+	if (!CheckGameThreadExecution(this))
+		return;
+
+	float Argument2Value = *(float*)((SIZE_T)Parms + Arg2Offset);
+
+	asCScriptFunction* RealFunction = ResolveScriptVirtual(this, Object);
+	if (auto* JitFunc = RealFunction->jitFunction_Raw)
+	{
+		MakeRawJITCall_2Arg<void*, double>(Object, JitFunc, Parms, (double)Argument2Value);
+	}
+	else
+	{
+		AS_LLM_SCOPE
+		FAngelscriptGameThreadContext Context(Object);
+		Context->Prepare(RealFunction);
+		Context->SetObject(Object);
+
+		checkSlow(Context->m_returnValueSize == 0);
+		checkSlow(Arguments[0].PosInParmStruct == 0);
+		checkSlow(Arguments[1].PosInParmStruct == Arg2Offset);
+		checkSlow(Arguments[1].ParmBehavior == EArgumentParmBehavior::FloatExtendedToDouble);
+
+		*(void**)&Context->m_regs.stackFramePointer[AS_PTR_SIZE] = (void*)Parms;
+		*(double*)&Context->m_regs.stackFramePointer[AS_PTR_SIZE*2] = (double)Argument2Value;
+
+		Context->Execute();
+	}
+}
+
+void UASFunction_RefArg_FloatExtendedArg_JIT::RuntimeCallFunction(UObject* Object, FFrame& Stack, RESULT_DECL)
+{
+	AngelscriptCallFromBPVM<false, false>(this, Object, Stack, RESULT_PARAM);
+}
+
+void UASFunction_RefArg_FloatExtendedArg_JIT::RuntimeCallEvent(UObject* Object, void* Parms)
+{
+	if (!CheckGameThreadExecution(this))
+		return;
+	VerifyScriptVirtualResolved(this, Object);
+
+	float Argument2Value = *(float*)((SIZE_T)Parms + Arg2Offset);
+	MakeRawJITCall_2Arg<void*, double>(Object, JitFunction_Raw, Parms, (double)Argument2Value);
 }

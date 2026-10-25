@@ -462,6 +462,25 @@ bool asCString::EndsWith(const char* str) const
 	return len > length ? false : memcmp(AddressOf() + (length - len), str, len) == 0;
 }
 
+bool asCString::StartsWith_CaseInsensitive(const asCString& str) const
+{
+	if (length < str.GetLength())
+		return false;
+	if (length == 0)
+		return true;
+
+	const char* A = AddressOf();
+	const char* B = str.AddressOf();
+	while (*B != '\0')
+	{
+		if (RemoveCase(*A) != RemoveCase(*B))
+			return false;
+		++A;
+		++B;
+	}
+	return true;
+}
+
 int32 asCString::LevenshteinDistance(const asCString& other)
 {
 	const int32 LenA = GetLength();

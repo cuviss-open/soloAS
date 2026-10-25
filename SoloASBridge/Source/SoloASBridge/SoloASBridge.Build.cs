@@ -6,6 +6,37 @@ namespace UnrealBuildTool.Rules
 {
     public static class SoloASBridgeBuildPath
     {
+        public static bool MatchesEngineProfile(
+            string ActualVersion, int ActualCompatibleChangelist,
+            string SourceVersion, string InstalledVersion, int CompatibleChangelist)
+        {
+            return ActualCompatibleChangelist == CompatibleChangelist
+                && (ActualVersion == SourceVersion || ActualVersion == InstalledVersion);
+        }
+
+        public static void ConfigureEngineProfile(ModuleRules Module, string EngineRoot)
+        {
+            string ProfilePath = Path.Combine(Module.PluginDirectory, "Config", "EngineCompatibility.json");
+            string VersionPath = Path.Combine(EngineRoot, "Build", "Build.version");
+            Module.ExternalDependencies.Add(ProfilePath);
+            Module.ExternalDependencies.Add(VersionPath);
+            JsonObject Profile = JsonObject.Read(new FileReference(ProfilePath));
+            JsonObject Version = JsonObject.Read(new FileReference(VersionPath));
+            string ActualVersion = Version.GetIntegerField("MajorVersion") + "."
+                + Version.GetIntegerField("MinorVersion") + "." + Version.GetIntegerField("PatchVersion")
+                + "-" + Version.GetIntegerField("Changelist") + "+" + Version.GetStringField("BranchName");
+            string SourceVersion = Profile.GetStringField("buildVersion");
+            JsonObject Installed = Profile.GetObjectField("installedBuild");
+            string InstalledVersion = SourceVersion.Split('-')[0] + "-"
+                + Installed.GetIntegerField("changelist") + "+" + Installed.GetStringField("branch");
+            if (!MatchesEngineProfile(ActualVersion, Version.GetIntegerField("CompatibleChangelist"),
+                SourceVersion, InstalledVersion, Installed.GetIntegerField("compatibleChangelist")))
+            {
+                throw new BuildException("SOLOASBRIDGE_ENGINE_PROFILE_MISMATCH: " + ActualVersion);
+            }
+            Module.PublicDefinitions.Add("SOLOASBRIDGE_ENGINE_PROFILE_MATCHED=1");
+        }
+
         public static bool ShouldUsePrecompiled(
             ModuleRules Module, ReadOnlyTargetRules Target, bool ReadOnlyDefault)
         {
@@ -59,6 +90,7 @@ public sealed class SoloASBridge : ModuleRules
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PrecompileForTargets = PrecompileTargetsType.Any;
+        UnrealBuildTool.Rules.SoloASBridgeBuildPath.ConfigureEngineProfile(this, EngineDirectory);
         bUsePrecompiled = UnrealBuildTool.Rules.SoloASBridgeBuildPath.ShouldUsePrecompiled(this, Target, bUsePrecompiled);
         PrivateDependencyModuleNames.Add("AutoRTFM");
         PrivateIncludePaths.Add(

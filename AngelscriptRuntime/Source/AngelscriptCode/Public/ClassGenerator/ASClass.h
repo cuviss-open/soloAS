@@ -253,7 +253,7 @@ class ANGELSCRIPTCODE_API UASFunction : public UFunction
 	GENERATED_BODY()
 public:
 
-	class asIScriptFunction* ScriptFunction = nullptr;
+	class asCScriptFunction* ScriptFunction = nullptr;
 
 	// Cached pointer to RPC _Validate function (if applicable)
 	UFunction* ValidateFunction = nullptr;
@@ -330,7 +330,7 @@ public:
 	int GetSourceLineNumber() const;
 #endif
 
-	void FinalizeArguments();
+	virtual void FinalizeArguments();
 
 	uint8 OptimizedCall_ByteReturn(UObject* Object);
 	void OptimizedCall_FloatArg(UObject* Object, float Argument);
@@ -492,6 +492,23 @@ public:
 };
 
 UCLASS(NotBlueprintType)
+class ANGELSCRIPTCODE_API UASFunction_RefArg_FloatExtendedArg : public UASFunction
+{
+	GENERATED_BODY()
+public:
+	SIZE_T Arg2Offset;
+
+	virtual void FinalizeArguments() override
+	{
+		Super::FinalizeArguments();
+		Arg2Offset = Arguments[1].PosInParmStruct;
+	}
+
+	virtual void RuntimeCallFunction(UObject* Object, FFrame& Stack, RESULT_DECL) override;
+	virtual void RuntimeCallEvent(UObject* Object, void* Parms) override;
+};
+
+UCLASS(NotBlueprintType)
 class ANGELSCRIPTCODE_API UASFunction_JIT : public UASFunction
 {
 	GENERATED_BODY()
@@ -631,6 +648,23 @@ class ANGELSCRIPTCODE_API UASFunction_ByteReturn_JIT : public UASFunction
 {
 	GENERATED_BODY()
 public:
+	virtual void RuntimeCallFunction(UObject* Object, FFrame& Stack, RESULT_DECL) override;
+	virtual void RuntimeCallEvent(UObject* Object, void* Parms) override;
+};
+
+UCLASS(NotBlueprintType)
+class ANGELSCRIPTCODE_API UASFunction_RefArg_FloatExtendedArg_JIT : public UASFunction
+{
+	GENERATED_BODY()
+public:
+	SIZE_T Arg2Offset;
+
+	virtual void FinalizeArguments() override
+	{
+		Super::FinalizeArguments();
+		Arg2Offset = Arguments[1].PosInParmStruct;
+	}
+
 	virtual void RuntimeCallFunction(UObject* Object, FFrame& Stack, RESULT_DECL) override;
 	virtual void RuntimeCallEvent(UObject* Object, void* Parms) override;
 };
