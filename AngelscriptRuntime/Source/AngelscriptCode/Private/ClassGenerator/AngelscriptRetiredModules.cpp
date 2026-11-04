@@ -26,6 +26,7 @@ TSet<asCModule*> RequiredModules()
     TSet<asCModule*> Required;
     TArray<asCModule*> Pending;
     for (const auto& Pair : LiveTypesByModule) Pending.Add(Pair.Key);
+    AppendStructInstanceModules(Pending);
     for (const auto& Module : FAngelscriptManager::Get().GetActiveModules())
         if (Module->ScriptModule) Pending.Add(Module->ScriptModule);
     while (!Pending.IsEmpty())

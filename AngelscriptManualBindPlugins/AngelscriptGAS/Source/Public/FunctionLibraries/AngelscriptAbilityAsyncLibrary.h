@@ -8,6 +8,9 @@
 #include "Abilities/Async/AbilityAsync_WaitGameplayTagQuery.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 
+                                                                                            
+#include "SoloASEngineCompat.h"
+                                                                                          
 #include "AngelscriptAbilityAsyncLibrary.generated.h"
 
 UCLASS()
@@ -63,6 +66,20 @@ class ANGELSCRIPTGAS_API UAngelscriptAbilityAsyncLibrary : public UBlueprintFunc
 		const bool bTriggerOnce = false
 	)
 	{
+                                                                                                    
+                                                                                                                                
+#if SOLOAS_UE_BEFORE(5, 6)
+        struct FFactoryAccess : UAbilityAsync_WaitGameplayTagQuery
+        {
+            using UAbilityAsync_WaitGameplayTagQuery::WaitGameplayTagQueryOnActor;
+        };
+        return FFactoryAccess::WaitGameplayTagQueryOnActor(TargetActor, Query, TriggerCondition, bTriggerOnce);
+#else
+                                                                                                  
 		return UAbilityAsync_WaitGameplayTagQuery::WaitGameplayTagQueryOnActor(TargetActor, Query, TriggerCondition, bTriggerOnce);
+                                                                                                  
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                
 	}
 };

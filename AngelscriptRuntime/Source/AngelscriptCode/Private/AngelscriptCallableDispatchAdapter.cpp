@@ -39,6 +39,7 @@ uint32 GetTypeHash(const FCallableDispatchKey& Key)
 
 struct FCallableDispatchRecord
 {
+    bool bNativeReferenceReturn = false;
 	FCallableDispatchKey Key;
 	uint64 BindEpoch = 0;
 	int32 ArgumentCount = 0;
@@ -188,7 +189,8 @@ void DispatchReflectedCallable(
         if (ReturnValue && Record->SkippedReturnSize)
         {
             FMemory::Memzero(ReturnValue, Record->SkippedReturnSize);
-            if (Record->SkippedReturnType.Type.IsValid() && Record->SkippedReturnType.NeedConstruct())
+            if (!Record->SkippedReturnType.bIsReference && Record->SkippedReturnType.Type.IsValid()
+                && Record->SkippedReturnType.NeedConstruct())
                 Record->SkippedReturnType.ConstructValue(ReturnValue);
         }
         const uint64 Count = ++GetCallableDispatchRegistry().ExitPurgeStaticSkips;
@@ -314,6 +316,7 @@ void DispatchReflectedCallable(
 		Record->ArgumentCount
 	);
 	Request.ReturnValue = ReturnValue;
+	Request.bNativeReferenceReturn = Record->bNativeReferenceReturn;
 
 	const ESoloASBridgeCallableDispatchResult Result =
         !IsInGameThread() && Record->PreparedNative.IsValid()
@@ -372,7 +375,10 @@ bool RegisterAngelscriptCallableDispatch(
     }
     FAngelscriptExecutionWriteScope ExecutionWriteScope;
     SoloASBridge::InitializeScriptStaticCallContext(&AngelscriptRuntimeGcMirror::HasRuntimeObjectsPendingFinishDestroy);
-    auto PreparedNative = SoloASBridge::PrepareNativeCallable(Function);
+    const bool bNativeReferenceReturn = SoloASBridge::GetNativeReferenceCaller(Function) != nullptr;
+    auto PreparedNative = bNativeReferenceReturn
+        ? TSharedPtr<const FSoloASBridgePreparedNativeCallable, ESPMode::ThreadSafe>()
+        : SoloASBridge::PrepareNativeCallable(Function);
 
 	const UClass* OwnerClass = Function->GetOuterUClass();
 	if (OwnerClass == nullptr)
@@ -449,10 +455,14 @@ bool RegisterAngelscriptCallableDispatch(
     ClearTerminalStaticQualification(*Record);
 #endif
     Record->PreparedNative = MoveTemp(PreparedNative);
+    Record->bNativeReferenceReturn = bNativeReferenceReturn;
     if (FProperty* ReturnProperty = Function->GetReturnProperty())
     {
         Record->SkippedReturnType = FAngelscriptTypeUsage::FromProperty(ReturnProperty);
-        Record->SkippedReturnSize = ReturnProperty->GetSize();
+                                                                                                                         
+        Record->SkippedReturnSize = Record->SkippedReturnType.bIsReference
+            ? sizeof(void*) : ReturnProperty->GetSize();
+                                                                                                               
     }
     if (OwnerClass->HasAnyClassFlags(CLASS_Native | CLASS_Intrinsic)
         && !OwnerClass->HasAnyClassFlags(CLASS_Interface))

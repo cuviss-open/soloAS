@@ -1,14 +1,19 @@
 #include "Runtime/SoloASBridgeCallableDispatch.h"
+#include "Compat/SoloASRuntimeCompat.h"
 #include "Runtime/SoloASBridgeStaticCallContext.h"
 #include "UObject/UObjectGlobals.h"
 #include "UObject/Package.h"
 #include "Runtime/SoloASBridgeObjectLifecycle.h"
 #include "Runtime/SoloASBridgeCallableDispatchSupport.h"
+#include "Runtime/SoloASBridgeScriptMetadata.h"
 
 #include "HAL/ThreadingBase.h"
 #include "HAL/UnrealMemory.h"
 #include "Math/UnrealMathUtility.h"
 #include "Misc/ScopeExit.h"
+#include "Misc/CoreDelegates.h"
+#include "UObject/GCObject.h"
+#include "UObject/StructOnScope.h"
 #include "Templates/AlignmentTemplates.h"
 #include "Templates/Atomic.h"
 #include "UObject/Class.h"
@@ -18,8 +23,49 @@
 #include "UObject/StrongObjectPtr.h"
 #include "UObject/UObjectThreadContext.h"
 
+// Installed modular 5.6-5.8 Engines omit this defaulted constructor from their exports.
+// Keep the exact C++ copy construction used by the fork's typed return caller.
+// The module rules reject an SDK that exports it, so this definition never replaces an engine export.
+                                                                                                                                           
+#if !IS_MONOLITHIC && ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
+#include "Kismet/ImportanceSamplingLibrary.h"
+#if PLATFORM_WINDOWS
+// Export from the linker without changing the engine header's C++ DLL linkage.
+#pragma comment(linker, "/EXPORT:??0FImportanceTexture@@QEAA@AEBU0@@Z")
+#endif
+// CS.Bridge.CallableDispatch.ImportanceCopyMacExport: keep the exact defaulted copy
+// visible to modular editor callers without changing the installed Engine.
+#if PLATFORM_MAC && WITH_EDITOR
+__attribute__((visibility("default")))
+#endif
+FImportanceTexture::FImportanceTexture(const FImportanceTexture& Other) = default;
+#endif
+// SOLOAS-COMPAT-END
+
 namespace
 {
+class FReflectedReturnCopies final : public FGCObject
+{
+public:
+    TArray<TUniquePtr<FStructOnScope>> Frames;
+    void BeforeCall(bool bWithoutEndFrame)
+    {
+        if (bWithoutEndFrame) Frames.Reset();
+    }
+    virtual void AddReferencedObjects(FReferenceCollector& Collector) override
+    {
+        for (const TUniquePtr<FStructOnScope>& Frame : Frames)
+        {
+            UStruct* Function = const_cast<UStruct*>(Frame->GetStructPtr().GetEvenIfUnreachable());
+            Collector.AddReferencedObject(Function);
+            Collector.AddPropertyReferences(Function, Frame->GetStructMemory());
+        }
+    }
+    virtual FString GetReferencerName() const override { return TEXT("SoloASBridgeReflectedReturnCopies"); }
+};
+TUniquePtr<FReflectedReturnCopies> ReflectedReturnCopies;
+FDelegateHandle ReflectedReturnEndFrameHandle;
+
 thread_local UObject* ScriptFinishDestroyReceiver = nullptr;
 thread_local UObject* ScriptDefaultConstructionObject = nullptr;
 TWeakObjectPtr<USoloASBridgeStaticCallContext> StaticCallContext;
@@ -27,7 +73,7 @@ SoloASBridge::FPendingScriptFinishDestroy PendingScriptObjects = nullptr;
 
 struct FCallableParameterBuffer
 {
-    explicit FCallableParameterBuffer(UFunction& InFunction)
+    explicit FCallableParameterBuffer(UFunction& InFunction, bool bInBorrowReferences = false)
         : Function(InFunction)
         , Data(
               FMemory::Malloc(
@@ -35,6 +81,7 @@ struct FCallableParameterBuffer
                   FMath::Max<uint32>(1U, Function.GetMinAlignment())
               )
           )
+        , bBorrowReferences(bInBorrowReferences)
     {
         FMemory::Memzero(Data, FMath::Max<int32>(1, Function.ParmsSize));
         for (
@@ -47,7 +94,9 @@ struct FCallableParameterBuffer
         )
         {
             FProperty* Property = *It;
-            if (Property->HasAnyPropertyFlags(CPF_Parm))
+            if (Property->HasAnyPropertyFlags(CPF_Parm)
+                && !(bBorrowReferences && !Property->HasAnyPropertyFlags(CPF_ReturnParm)
+                    && Property->HasAnyPropertyFlags(CPF_OutParm | CPF_ReferenceParm)))
             {
                 Property->InitializeValue_InContainer(Data);
             }
@@ -66,7 +115,9 @@ struct FCallableParameterBuffer
         )
         {
             FProperty* Property = *It;
-            if (Property->HasAnyPropertyFlags(CPF_Parm))
+            if (Property->HasAnyPropertyFlags(CPF_Parm)
+                && !(bBorrowReferences && !Property->HasAnyPropertyFlags(CPF_ReturnParm)
+                    && Property->HasAnyPropertyFlags(CPF_OutParm | CPF_ReferenceParm)))
             {
                 Property->DestroyValue_InContainer(Data);
             }
@@ -80,6 +131,7 @@ struct FCallableParameterBuffer
 
     UFunction& Function;
     void* Data;
+    bool bBorrowReferences;
 };
 }
 
@@ -250,6 +302,31 @@ bool SoloASBridge::HasPendingScriptFinishDestroyObjects()
     return PendingScriptObjects && PendingScriptObjects();
 }
 
+// === BEGIN CUVISS STUDIO EXTENSION: CS.Bridge.CallableDispatch.NativeReferenceReturn | by Cuviss Studio ===
+SoloASBridge::FNativeReferenceCaller SoloASBridge::GetNativeReferenceCaller(const UFunction* Function)
+{
+    const UClass* Owner = Function ? Function->GetTypedOuter<UClass>() : nullptr;
+    if (!Owner) return nullptr;
+    const FString OwnerName = FString(Owner->GetPrefixCPP()) + Owner->GetName();
+    const FString FunctionName = Function->GetName();
+    const auto Metadata = GetScriptMetadata();
+    int32 First = 0;
+    int32 Last = Metadata->FunctionTraits.Num();
+    while (First < Last)
+    {
+        const int32 Middle = First + (Last - First) / 2;
+        const auto& Row = Metadata->FunctionTraits[Middle];
+        int32 Order = OwnerName.Compare(ANSI_TO_TCHAR(Row.OwnerName), ESearchCase::CaseSensitive);
+        if (Order == 0)
+            Order = FunctionName.Compare(ANSI_TO_TCHAR(Row.FunctionName), ESearchCase::CaseSensitive);
+        if (Order == 0) return Row.NativeReferenceCaller;
+        if (Order < 0) Last = Middle;
+        else First = Middle + 1;
+    }
+    return nullptr;
+}
+// === END CUVISS STUDIO EXTENSION: CS.Bridge.CallableDispatch.NativeReferenceReturn | by Cuviss Studio ===
+
 bool SoloASBridge::CanInvokeReflectedCallable(const UFunction* Function)
 {
     return Function != nullptr
@@ -358,7 +435,16 @@ ESoloASBridgeCallableDispatchResult SoloASBridge::InvokeReflectedCallable(
         return SlotResult;
     }
 
-    bool bBorrowedConstReferences = false;
+    // A: preserve native reference identity; never initialize/copy a value into this pointer slot.
+    if (Request.bNativeReferenceReturn)
+    {
+        const FNativeReferenceCaller Caller = GetNativeReferenceCaller(ActualFunction);
+        if (!Caller) return ESoloASBridgeCallableDispatchResult::UnsupportedSignature;
+        Caller(Receiver, const_cast<void**>(Request.Arguments.GetData()), Request.ReturnValue);
+        return ESoloASBridgeCallableDispatchResult::Succeeded;
+    }
+
+    bool bBorrowedNativeReferences = false;
     if (!SoloASBridge::IsExitPurgeScriptNativeCall() && ActualFunction == DeclaredFunction
         && ActualFunction->HasAnyFunctionFlags(FUNC_Native)
         && !ActualFunction->HasAnyFunctionFlags(FUNC_Event | FUNC_BlueprintEvent | FUNC_Net
@@ -368,11 +454,13 @@ ESoloASBridgeCallableDispatchResult SoloASBridge::InvokeReflectedCallable(
         && !Owner->HasAnyClassFlags(CLASS_Interface))
     {
         for (TFieldIterator<FProperty> It(ActualFunction, EFieldIteratorFlags::ExcludeSuper); It; ++It)
-            bBorrowedConstReferences |= It->HasAllPropertyFlags(CPF_Parm | CPF_OutParm | CPF_ConstParm | CPF_ReferenceParm)
-                && !It->HasAnyPropertyFlags(CPF_ReturnParm);
+            bBorrowedNativeReferences |= It->HasAnyPropertyFlags(CPF_OutParm | CPF_ReferenceParm)
+                && It->HasAnyPropertyFlags(CPF_Parm) && !It->HasAnyPropertyFlags(CPF_ReturnParm);
     }
-    FCallableParameterBuffer Buffer(*ActualFunction);
-    Private::CopyInputs(*ActualFunction, Request.Arguments, Buffer.Data);
+    const bool bBorrowedReferences = bBorrowedNativeReferences
+        || SoloASBridge::IsExitPurgeScriptNativeCall() || bConstructionCall;
+    FCallableParameterBuffer Buffer(*ActualFunction, bBorrowedReferences);
+    Private::CopyInputs(*ActualFunction, Request.Arguments, Buffer.Data, bBorrowedReferences);
     if (SoloASBridge::IsExitPurgeScriptNativeCall() || bConstructionCall)
     {
         if (!bConstructionCall)
@@ -427,17 +515,19 @@ ESoloASBridgeCallableDispatchResult SoloASBridge::InvokeReflectedCallable(
             }
         }
         TArray<FOutParmRec, TInlineAllocator<8>> OutParameters;
+        int32 ArgumentIndex = 0;
         for (TFieldIterator<FProperty> It(ActualFunction, EFieldIteratorFlags::ExcludeSuper); It; ++It)
         {
             FProperty* Property = *It;
-            if (Property->HasAllPropertyFlags(CPF_Parm | CPF_OutParm)
-                && !Property->HasAnyPropertyFlags(CPF_ReturnParm))
+            if (!Property->HasAnyPropertyFlags(CPF_Parm) || Property->HasAnyPropertyFlags(CPF_ReturnParm)) continue;
+            if (Property->HasAnyPropertyFlags(CPF_OutParm | CPF_ReferenceParm))
             {
                 FOutParmRec& Out = OutParameters.AddDefaulted_GetRef();
                 Out.Property = Property;
-                Out.PropAddr = Property->ContainerPtrToValuePtr<uint8>(Buffer.Data);
+                Out.PropAddr = static_cast<uint8*>(Request.Arguments[ArgumentIndex]);
                 Out.NextOutParm = nullptr;
             }
+            ++ArgumentIndex;
         }
         for (int32 Index = 1; Index < OutParameters.Num(); ++Index)
         {
@@ -458,24 +548,22 @@ ESoloASBridgeCallableDispatchResult SoloASBridge::InvokeReflectedCallable(
                 *Owner->GetPathName(), *ActualFunction->GetName(), Request.TerminalStaticBindEpoch);
 #endif
     }
-    else if (bBorrowedConstReferences)
+    else if (bBorrowedNativeReferences)
     {
-        // Native exec thunks accept the original const-reference address through
-        // FFrame::OutParms. Keep other parameters in the existing owned buffer.
+        // Native exec thunks receive the caller's reference storage through OutParms.
+        // Value arguments remain in the owned parameter buffer.
         TArray<FOutParmRec, TInlineAllocator<8>> OutParameters;
         int32 ArgumentIndex = 0;
         for (TFieldIterator<FProperty> It(ActualFunction, EFieldIteratorFlags::ExcludeSuper); It; ++It)
         {
             FProperty* Property = *It;
             if (!Property->HasAnyPropertyFlags(CPF_Parm) || Property->HasAnyPropertyFlags(CPF_ReturnParm)) continue;
-            if (Property->HasAnyPropertyFlags(CPF_OutParm))
+            if (Property->HasAnyPropertyFlags(CPF_OutParm | CPF_ReferenceParm))
             {
                 FOutParmRec& Out = OutParameters.AddDefaulted_GetRef();
                 Out.Property = Property;
                 Out.NextOutParm = nullptr;
-                Out.PropAddr = Property->HasAllPropertyFlags(CPF_ConstParm | CPF_ReferenceParm)
-                    ? static_cast<uint8*>(Request.Arguments[ArgumentIndex])
-                    : Property->ContainerPtrToValuePtr<uint8>(Buffer.Data);
+                Out.PropAddr = static_cast<uint8*>(Request.Arguments[ArgumentIndex]);
             }
             ++ArgumentIndex;
         }
@@ -498,7 +586,7 @@ ESoloASBridgeCallableDispatchResult SoloASBridge::InvokeReflectedCallable(
         Request.Arguments,
         Request.ReturnValue,
         Buffer.Data,
-        bBorrowedConstReferences
+        bBorrowedReferences
     );
     return ESoloASBridgeCallableDispatchResult::Succeeded;
 }
@@ -563,7 +651,7 @@ bool GetPreparedNativeScalarLayout(
         if (PropertyClass != Type.Class) continue;
         OutLayout.Size = Type.Size;
         OutLayout.Alignment = Type.Alignment;
-        return Property.GetElementSize() == OutLayout.Size
+        return SoloASBridge::Compat::GetPropertyElementSize(&Property) == OutLayout.Size
             && Property.GetSize() == OutLayout.Size;
     }
     return false;
@@ -608,8 +696,7 @@ struct FSoloASBridgePreparedNativeCallable
         FProperty* Property = nullptr;
         int32 Offset = 0;
         int32 Size = 0;
-        bool bInput = false;
-        bool bOutput = false;
+        bool bBorrowedReference = false;
         bool bIdentitySensitive = false;
     };
     TStrongObjectPtr<UFunction> Function;
@@ -708,11 +795,9 @@ SoloASBridge::PrepareNativeCallable(const UFunction* Function)
         Slot.Property = Property;
         Slot.Offset = Offset;
         Slot.Size = ScalarLayout.Size;
-        Slot.bOutput = Property->HasAnyPropertyFlags(CPF_OutParm);
+        Slot.bBorrowedReference = Property->HasAnyPropertyFlags(CPF_OutParm | CPF_ReferenceParm);
         Slot.bIdentitySensitive = Property->HasAnyPropertyFlags(
             CPF_OutParm | CPF_ReferenceParm | CPF_ConstParm);
-        Slot.bInput = !Slot.bOutput
-            || Property->HasAnyPropertyFlags(CPF_ReferenceParm);
     }
     if (Function->GetStructureSize() != int32(Align(uint32(Function->ParmsSize), RequiredAlignment))) return nullptr;
     UObject* Receiver = Owner->GetDefaultObject();
@@ -728,6 +813,79 @@ SoloASBridge::PrepareNativeCallable(const UFunction* Function)
     Prepared->ParameterAlignment = FMath::Max(8U, RequiredAlignment);
     return Prepared;
 }
+
+
+namespace SoloASBridge::Private
+{
+void InitializeReflectedReturnCopies()
+{
+    ReflectedReturnCopies = MakeUnique<FReflectedReturnCopies>();
+    ReflectedReturnEndFrameHandle = FCoreDelegates::OnEndFrame.AddLambda([]()
+    {
+        ReflectedReturnCopies->Frames.Reset();
+    });
+}
+void ShutdownReflectedReturnCopies()
+{
+    FCoreDelegates::OnEndFrame.Remove(ReflectedReturnEndFrameHandle);
+    ReflectedReturnEndFrameHandle.Reset();
+    ReflectedReturnCopies.Reset();
+}
+}
+
+void* SoloASBridge::InvokeReflectedReturnCopy(UObject* Target, UFunction* Function, void** Arguments)
+{
+    check(IsInGameThread());
+    check(Target && Function && Function->GetReturnProperty() && ReflectedReturnCopies);
+    // Commandlets/cook need not broadcast OnEndFrame. Their previous call expires here.
+    ReflectedReturnCopies->BeforeCall(IsRunningCommandlet() || !GIsRunning);
+    TUniquePtr<FStructOnScope> Frame = MakeUnique<FStructOnScope>(Function);
+    FStructOnScope* Storage = Frame.Get();
+    ReflectedReturnCopies->Frames.Add(MoveTemp(Frame));
+    Private::CopyInputs(*Function, MakeArrayView(Arguments, int32(Function->NumParms) - 1), Storage->GetStructMemory());
+    Target->ProcessEvent(Function, Storage->GetStructMemory());
+    return Function->GetReturnProperty()->ContainerPtrToValuePtr<void>(Storage->GetStructMemory());
+}
+
+#if WITH_DEV_AUTOMATION_TESTS
+#include "Misc/AutomationTest.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "UObject/ObjectRedirector.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSoloASReflectedReturnCopyTest,
+    "SoloAS.ReflectedReturnCopyLifetime", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FSoloASReflectedReturnCopyTest::RunTest(const FString&)
+{
+    UClass* Owner = UKismetSystemLibrary::StaticClass();
+    UFunction* Function = Owner->FindFunctionByName(TEXT("Conv_SoftObjectReferenceToObject"));
+    if (!TestNotNull(TEXT("Original native thunk"), Function)) return false;
+    UObject* Object = NewObject<UObjectRedirector>();
+    TWeakObjectPtr<UObject> WeakObject = Object;
+    TSoftObjectPtr<UObject> SoftObject(Object);
+    void* Arguments[] = {&SoftObject};
+    void* First = SoloASBridge::InvokeReflectedReturnCopy(Owner->GetDefaultObject(), Function, Arguments);
+    TestEqual(TEXT("Original thunk result"), *static_cast<UObject**>(First), Object);
+    if (!IsRunningCommandlet() && GIsRunning)
+    {
+        void* Second = SoloASBridge::InvokeReflectedReturnCopy(Owner->GetDefaultObject(), Function, Arguments);
+        TestTrue(TEXT("Each invocation owns distinct storage"), First != Second);
+        TestEqual(TEXT("Independent copies keep the same value"), *static_cast<UObject**>(Second), Object);
+    }
+    CollectGarbage(RF_NoFlags);
+    TestTrue(TEXT("Frame properties keep returned objects alive"), WeakObject.IsValid());
+    ReflectedReturnCopies->Frames.Reset();
+    CollectGarbage(RF_NoFlags);
+    TestFalse(TEXT("Releasing frames releases object references"), WeakObject.IsValid());
+    FReflectedReturnCopies NoFramePool;
+    for (int32 Index = 0; Index < 1024; ++Index)
+    {
+        NoFramePool.BeforeCall(true);
+        NoFramePool.Frames.Add(MakeUnique<FStructOnScope>(Function));
+    }
+    TestEqual(TEXT("No-EndFrame calls retain only the current frame"), NoFramePool.Frames.Num(), 1);
+    return true;
+}
+#endif
 
 ESoloASBridgeCallableDispatchResult SoloASBridge::InvokePreparedNativeCallable(
     const FSoloASBridgePreparedNativeCallable& Prepared,
@@ -805,15 +963,15 @@ ESoloASBridgeCallableDispatchResult SoloASBridge::InvokePreparedNativeCallable(
     for (int32 Index = 0; Index < Arguments.Num(); ++Index)
     {
         const auto& Slot = Prepared.Arguments[Index];
-        if (Slot.bInput)
+        if (!Slot.bBorrowedReference)
         {
             FMemory::Memcpy(Data + Slot.Offset, Arguments[Index], Slot.Size);
         }
-        if (Slot.bOutput)
+        if (Slot.bBorrowedReference)
         {
             FOutParmRec& Out = OutParameters.AddDefaulted_GetRef();
             Out.Property = Slot.Property;
-            Out.PropAddr = Data + Slot.Offset;
+            Out.PropAddr = static_cast<uint8*>(Arguments[Index]);
             Out.NextOutParm = nullptr;
         }
     }
@@ -830,14 +988,6 @@ ESoloASBridgeCallableDispatchResult SoloASBridge::InvokePreparedNativeCallable(
     void* Result = Prepared.ReturnOffset == INDEX_NONE
         ? nullptr : Data + Prepared.ReturnOffset;
     Prepared.Entry(Prepared.Receiver.Get(), Frame, Result);
-    for (int32 Index = 0; Index < Arguments.Num(); ++Index)
-    {
-        const auto& Slot = Prepared.Arguments[Index];
-        if (Slot.bOutput)
-        {
-            FMemory::Memcpy(Arguments[Index], Data + Slot.Offset, Slot.Size);
-        }
-    }
     if (Result != nullptr)
     {
         FMemory::Memcpy(ReturnValue, Result, Prepared.ReturnSize);

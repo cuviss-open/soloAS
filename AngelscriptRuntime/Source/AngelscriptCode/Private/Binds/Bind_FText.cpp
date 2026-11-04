@@ -1,4 +1,8 @@
 #include "AngelscriptBinds.h"
+                                                                                                
+#include "SoloASEngineCompat.h"
+#include "Internationalization/Internationalization.h"
+                                                                                              
 #include "AngelscriptManager.h"
 #include "AngelscriptDocs.h"
 
@@ -56,6 +60,19 @@ struct FTextType : TAngelscriptCppPropertyType<FTextProperty>
 
 AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FText(FAngelscriptBinds::EOrder::Early, []
 {
+                                                                                           
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 has the native enum but no reflected registration [test: SoloAS.EngineCompat.ReflectionSurface]
+#if SOLOAS_UE_BEFORE(5, 5)
+    auto DateTimeStyle = FAngelscriptBinds::Enum("EDateTimeStyle");
+    DateTimeStyle["Default"] = EDateTimeStyle::Default;
+    DateTimeStyle["Short"] = EDateTimeStyle::Short;
+    DateTimeStyle["Medium"] = EDateTimeStyle::Medium;
+    DateTimeStyle["Long"] = EDateTimeStyle::Long;
+    DateTimeStyle["Full"] = EDateTimeStyle::Full;
+    DateTimeStyle["Custom"] = EDateTimeStyle::Custom;
+#endif
+// SOLOAS-COMPAT-END
+                                                                                         
 	auto ETextComparisonLevel_ = FAngelscriptBinds::Enum("ETextComparisonLevel");
 	ETextComparisonLevel_["Default"] = ETextComparisonLevel::Type::Default;
 	ETextComparisonLevel_["Primary"] = ETextComparisonLevel::Type::Primary;
@@ -274,7 +291,15 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FText_Operations(FAngelscriptB
 	[](const FString& Namespace, const FString& Key, const FString& Text) -> FText
 	{
 		// Call the internal function directly here so we don't gather this line for localization
+                                                                                        
+                                                                                                     
+#if SOLOAS_UE_BEFORE(5, 5)
+        return FInternationalization::ForUseOnlyByLocMacroAndGraphNodeTextLiterals_CreateText(*Text, *Namespace, *Key);
+#else
 		return FText::AsLocalizable_Advanced(*Namespace, *Key, *Text);
+#endif
+// SOLOAS-COMPAT-END
+                                                                                      
 	});
 	SCRIPT_BIND_DOCUMENTATION(
 	 "Function for using localization texts in Angelscript. Emulates NSLOCTEXT macro.\n"

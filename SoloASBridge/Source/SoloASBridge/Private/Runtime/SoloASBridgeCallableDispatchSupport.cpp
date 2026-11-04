@@ -1,4 +1,5 @@
 #include "Runtime/SoloASBridgeCallableDispatchSupport.h"
+#include "Compat/SoloASRuntimeCompat.h"
 
 #include "UObject/Class.h"
 #include "UObject/UnrealType.h"
@@ -28,7 +29,17 @@ bool IsReadOnlyClassWrapperInput(const FProperty& Property)
             || Property.HasAllPropertyFlags(CPF_ConstParm | CPF_ReferenceParm));
 }
 
-bool IsUnsupportedWritableRawObjectSlot(const FProperty& Property)
+// A: these AS value types retain the native wrapper's FProperty storage layout.
+bool IsSupportedObjectWrapperSlot(const FProperty& Property)
+{
+    return Property.IsA<FSoftObjectProperty>()
+        || (Property.GetClass() == FClassProperty::StaticClass()
+            && Property.HasAnyPropertyFlags(CPF_UObjectWrapper)
+            && !Property.HasAnyPropertyFlags(CPF_TObjectPtr));
+}
+
+// A: UE-AS fork passes UObject*& as a pointer slot, while UObject* is the object itself.
+bool IsRawObjectReferenceSlot(const FProperty& Property)
 {
     return IsRawObjectSlot(Property)
         && !Property.HasAnyPropertyFlags(CPF_ReturnParm)
@@ -37,7 +48,9 @@ bool IsUnsupportedWritableRawObjectSlot(const FProperty& Property)
 
 bool IsRawObjectSlotValueCompatible(const FProperty& Property, const void* Slot)
 {
-    UObject* Object = static_cast<UObject*>(const_cast<void*>(Slot));
+    UObject* Object = IsRawObjectReferenceSlot(Property)
+        ? *static_cast<UObject* const*>(Slot)
+        : static_cast<UObject*>(const_cast<void*>(Slot));
     if (Object == nullptr)
     {
         return true;
@@ -118,7 +131,7 @@ bool HasSupportedParameterLayout(const UFunction& Function)
         }
 
         if (
-            Property->GetElementSize() <= 0
+            SoloASBridge::Compat::GetPropertyElementSize(Property) <= 0
             || Property->GetOffset_ForInternal() < 0
             || Property->GetOffset_ForInternal() + Property->GetSize()
                 > Function.ParmsSize
@@ -126,8 +139,8 @@ bool HasSupportedParameterLayout(const UFunction& Function)
                 Property->IsA<FObjectPropertyBase>()
                 && !IsRawObjectSlot(*Property)
                 && !IsReadOnlyClassWrapperInput(*Property)
+                && !IsSupportedObjectWrapperSlot(*Property)
             )
-            || IsUnsupportedWritableRawObjectSlot(*Property)
         )
         {
             return false;
@@ -136,6 +149,7 @@ bool HasSupportedParameterLayout(const UFunction& Function)
         if (
             Property->HasAnyPropertyFlags(CPF_ReturnParm)
             && Property->HasAnyPropertyFlags(CPF_ReferenceParm)
+            && SoloASBridge::GetNativeReferenceCaller(&Function) == nullptr
         )
         {
             return false;
@@ -226,6 +240,20 @@ UFunction* ResolveDeclaredFunction(
                 ESoloASBridgeCallableDispatchResult::FunctionNotFound;
             return nullptr;
         }
+// SOLOAS-COMPAT-BEGIN(<5.8) BeginDestroy clears outer package names before script finalization on UE 5.4-5.7 [test: SoloAS.RealProjectLifecycleBenchmark] [id: CS.Bridge.CallableDispatch.ExitNativeOwnerIdentity]
+#if SOLOAS_UE_BEFORE(5, 8)
+        // A: CS.Bridge.CallableDispatch.ExitNativeOwnerIdentity replaces UE-AS fork native-pointer dispatch.
+        // Use the bound native identities before touching the retired outer path.
+        if (GetScriptFinishDestroyReceiver() && GExitPurge
+            && Function->HasAnyFunctionFlags(FUNC_Native)
+            && OutOwner->HasAnyClassFlags(CLASS_Native | CLASS_Intrinsic)
+            && !Function->HasAnyFlags(RF_FinishDestroyed) && !OutOwner->HasAnyFlags(RF_FinishDestroyed)
+            && Function == OutOwner->FindFunctionByName(Function->GetFName()))
+        {
+            return Function;
+        }
+#endif
+// SOLOAS-COMPAT-END
         if (
             Request.OwnerPath != nullptr
             && OutOwner->GetPathName() != Request.OwnerPath
@@ -305,7 +333,7 @@ ESoloASBridgeCallableDispatchResult ValidateSlots(
         }
         if (
             Arguments[ArgumentIndex] == nullptr
-            && !IsRawObjectSlot(*Property)
+            && (!IsRawObjectSlot(*Property) || IsRawObjectReferenceSlot(*Property))
         )
         {
             return ESoloASBridgeCallableDispatchResult::
@@ -372,8 +400,8 @@ ESoloASBridgeCallableDispatchResult ValidateSlots(
             if (
                 bEitherSlotRequiresIdentity
                 && EarlierProperty != nullptr
-                && !IsRawObjectSlot(*Property)
-                && !IsRawObjectSlot(*EarlierProperty)
+                && (!IsRawObjectSlot(*Property) || IsRawObjectReferenceSlot(*Property))
+                && (!IsRawObjectSlot(*EarlierProperty) || IsRawObjectReferenceSlot(*EarlierProperty))
                 && SlotsOverlap(
                     Arguments[ArgumentIndex],
                     Property->GetSize(),
@@ -397,7 +425,8 @@ ESoloASBridgeCallableDispatchResult ValidateSlots(
 void CopyInputs(
     const UFunction& Function,
     TConstArrayView<void*> Arguments,
-    void* ParameterData
+    void* ParameterData,
+    bool bBorrowedReferences
 )
 {
     int32 ArgumentIndex = 0;
@@ -419,7 +448,13 @@ void CopyInputs(
             continue;
         }
 
-        if (IsRawObjectSlot(*Property))
+        if (bBorrowedReferences && Property->HasAnyPropertyFlags(CPF_OutParm | CPF_ReferenceParm))
+        {
+            ++ArgumentIndex;
+            continue;
+        }
+
+        if (IsRawObjectSlot(*Property) && !IsRawObjectReferenceSlot(*Property))
         {
             FObjectPropertyBase* ObjectProperty =
                 CastFieldChecked<FObjectPropertyBase>(Property);
@@ -435,11 +470,9 @@ void CopyInputs(
                 Arguments[ArgumentIndex]
             );
         }
-        else if (
-            !Property->HasAnyPropertyFlags(CPF_OutParm)
-            || Property->HasAnyPropertyFlags(CPF_ReferenceParm)
-        )
+        else
         {
+            // Event dispatch uses an owned value frame, matching fork event calls.
             Property->CopyCompleteValue(
                 Property->ContainerPtrToValuePtr<void>(ParameterData),
                 Arguments[ArgumentIndex]
@@ -454,7 +487,7 @@ void CopyOutputs(
     TConstArrayView<void*> Arguments,
     void* ReturnValue,
     const void* ParameterData,
-    bool bBorrowedConstReferences
+    bool bBorrowedReferences
 )
 {
     int32 ArgumentIndex = 0;
@@ -482,7 +515,7 @@ void CopyOutputs(
             continue;
         }
         if (Property->HasAnyPropertyFlags(CPF_OutParm)
-            && !(bBorrowedConstReferences && Property->HasAllPropertyFlags(CPF_ConstParm | CPF_ReferenceParm)))
+            && !bBorrowedReferences)
         {
             Property->CopyCompleteValue(
                 Arguments[ArgumentIndex],

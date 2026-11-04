@@ -321,6 +321,9 @@ bool InstallEditorInlineHook(
 	}
 	Handle.TargetModuleStart = ModuleStart;
 	Handle.TargetModuleEnd = ModuleEnd;
+    Handle.InstallationTarget = Target;
+    RecordEditorHookInstallation(HookName, TEXT("editor entry"), TEXT("entry"),
+        Target, Handle.Original, Replacement);
 	return true;
 #elif PLATFORM_MAC
 	if (!AllocateTrampoline(Handle, static_cast<const uint8*>(Target)))
@@ -365,6 +368,9 @@ bool InstallEditorInlineHook(
 	Handle.TargetAddress = Target;
 	Handle.TargetModuleStart = ModuleStart;
 	Handle.TargetModuleEnd = ModuleEnd;
+    Handle.InstallationTarget = Target;
+    RecordEditorHookInstallation(HookName, TEXT("editor entry"), TEXT("entry"),
+        Target, Handle.Original, Replacement);
 	return true;
 #endif
 }
@@ -392,6 +398,8 @@ bool RemoveEditorInlineHook(
 		UE_LOG(LogTemp, Warning, TEXT("[SoloAS] Could not restore editor inline hook: %s"), HookName);
 		return false;
 	}
+	ForgetEditorHookInstallation(Handle.InstallationTarget);
+	Handle.InstallationTarget = nullptr;
 	Handle.Original = nullptr;
 	Handle.TargetModuleStart = 0;
 	Handle.TargetModuleEnd = 0;
@@ -415,6 +423,7 @@ bool RemoveEditorInlineHook(
 	mach_vm_deallocate(mach_task_self(),
 		reinterpret_cast<mach_vm_address_t>(Handle.TrampolineAddress),
 		Handle.TrampolineAllocationSize);
+	ForgetEditorHookInstallation(Handle.InstallationTarget);
 	Handle = FEditorInlineHookHandle{};
 	return true;
 #endif

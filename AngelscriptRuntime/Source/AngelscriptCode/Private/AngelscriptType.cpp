@@ -29,10 +29,6 @@ class asITypeInfo* FAngelscriptType::MulticastTypeInfo = nullptr;
 
 FString FAngelscriptType::GetBoundClassName(UClass* Class)
 {
-                                                                                                
-    if (!Class->HasAnyClassFlags(CLASS_Native))
-        if (const auto Type = GetByClass(Class)) return Type->GetAngelscriptTypeName();
-                                                                                              
 	FString Name = Class->GetPrefixCPP();
 	Name += Class->GetName();
 	return Name;
@@ -55,16 +51,6 @@ struct FAngelscriptTypeDatabase
 	}
 };
 
-                                                                                                          
-// Internal to the object-view binding implementation; the VM type and aliases stay alive.
-void RebindAngelscriptObjectViewDatabase(TSharedRef<FAngelscriptType> Type, UClass* PreviousClass)
-{
-    auto& Database = FAngelscriptTypeDatabase::Get();
-    check(Database.TypesByClass.FindChecked(PreviousClass) == Type);
-    Database.TypesByClass.Remove(PreviousClass);
-    Database.TypesByClass.Add(Type->GetClass(FAngelscriptTypeUsage::DefaultUsage), Type);
-}
-                                                                                                        
 
 const TArray<TSharedRef<FAngelscriptType>>& FAngelscriptType::GetTypes()
 {
@@ -695,16 +681,12 @@ FString FAngelscriptType::BuildFunctionDeclaration(const FAngelscriptTypeUsage& 
 		asUINT TokenLength = 0;
 		const asETokenClass TokenClass = ScriptEngine->ParseToken(
 			Utf8ArgumentName.Get(), Utf8ArgumentName.Length(), &TokenLength);
-		const bool bArgumentNameIsType = ScriptEngine->GetTypeIdByDecl(Utf8ArgumentName.Get()) >= 0;
-		if (TokenClass != asTC_IDENTIFIER || TokenLength != static_cast<asUINT>(Utf8ArgumentName.Length())
-			|| bArgumentNameIsType)
+		if (TokenClass != asTC_IDENTIFIER || TokenLength != static_cast<asUINT>(Utf8ArgumentName.Length()))
 		{
 			ArgumentName += TEXT("_");
 			while (true)
 			{
-				const FTCHARToUTF8 Utf8CandidateName(*ArgumentName);
-				if (!ArgumentNames.Contains(ArgumentPrefix + ArgumentName)
-					&& ScriptEngine->GetTypeIdByDecl(Utf8CandidateName.Get()) < 0)
+				if (!ArgumentNames.Contains(ArgumentPrefix + ArgumentName))
 					break;
 				ArgumentName += TEXT("_");
 			}
@@ -925,4 +907,3 @@ bool FAngelscriptType::GetDebuggerValueFromFunction(asIScriptFunction* InScriptF
 
 	return false;
 }
-

@@ -10,11 +10,6 @@
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/MemoryReader.h"
 
-                                                                                                 
-#include "Extensions/AngelscriptModdingInternal.h"
-#include <type_traits>
-                                                                                               
-
 #define DEBUG_SERVER_VERSION 2
 
 // Intended to be called from the debugger Immediate window, to exit a softlock due to a spamming data breakpoint
@@ -523,28 +518,6 @@ class FAngelscriptDebugServer
 
 	bool HandleConnectionAccepted(class FSocket* ClientSocket, const FIPv4Endpoint& ClientEndpoint);
 
-                                                                                                 
-	using FDebugMessageAccessContext = FAngelscriptModdingDebugMessageAccessGate::FMessageContext;
-
-	FDebugMessageAccessContext BuildMessageAccessContext(
-		EDebugMessageType MessageType, const FArrayReaderPtr& Datagram, FSocket* Client);
-	FDebugMessageAccessContext BuildScriptAccessContext(
-		FAngelscriptModdingDebugMessageAccessGate::EOperation Operation, int32 DebuggerFrame);
-	FDebugMessageAccessContext BuildContextFromScriptContext(
-		FAngelscriptModdingDebugMessageAccessGate::EOperation Operation,
-		asIScriptContext* Context,
-		int32 ScriptFrame) const;
-	FDebugMessageAccessContext BuildSourceAccessContext(
-		FAngelscriptModdingDebugMessageAccessGate::EOperation Operation,
-		const FString& Filename,
-		const FString& ModuleName) const;
-	FDebugMessageAccessContext BuildOutgoingAccessContext(FSocket* Client, EDebugMessageType MessageType);
-	bool IsDebugMessageAllowed(const FDebugMessageAccessContext& Context, const TCHAR* Direction) const;
-
-	TMap<FSocket*, FDebugMessageAccessContext> ClientAccessContexts;
-	FDebugMessageAccessContext CurrentAccessContext;
-                                                                                               
-
 public:
 	bool bBreakNextScriptLine = false;
 	bool bIsPaused = false;
@@ -597,19 +570,9 @@ public:
 
 	void HandleMessage(EDebugMessageType MessageType, FArrayReaderPtr Datagram, class FSocket* Client);
 
-	                                                                                                 
 	template<typename T>
 	void SendMessageToAll(EDebugMessageType MessageType, T& Message)
 	{
-		if (FAngelscriptModdingDebugMessageAccessGateRuntime::HasHandlers())
-		{
-			const FDebugMessageAccessContext CuvissAccessContext = BuildOutgoingAccessContext(nullptr, MessageType);
-			if (!IsDebugMessageAllowed(CuvissAccessContext, TEXT("out")))
-			{
-				return;
-			}
-		}
-
 		TArray<uint8> Body;
 		FMemoryWriter BodyWriter(Body);
 		BodyWriter << Message;
@@ -631,51 +594,10 @@ public:
 			TrySendingMessages(Client);
 		}
 	}
-	                                                                                               
 
-	                                                                                                 
 	template<typename T>
-	void SendMessageToClient(
-		FSocket* Client,
-		EDebugMessageType MessageType,
-		T& Message,
-		const FDebugMessageAccessContext* AccessContextOverride = nullptr)
+	void SendMessageToClient(FSocket* Client, EDebugMessageType MessageType, T& Message)
 	{
-		if (FAngelscriptModdingDebugMessageAccessGateRuntime::HasHandlers())
-		{
-			FDebugMessageAccessContext CuvissAccessContext = AccessContextOverride != nullptr
-				? *AccessContextOverride
-				: BuildOutgoingAccessContext(Client, MessageType);
-			if constexpr (std::is_same_v<T, FAngelscriptDiagnostics>)
-			{
-				CuvissAccessContext = BuildSourceAccessContext(
-					FAngelscriptModdingDebugMessageAccessGate::EOperation::Source,
-					Message.Filename,
-					FString());
-			}
-			else if constexpr (std::is_same_v<T, FAngelscriptBreakpoint>)
-			{
-				CuvissAccessContext = BuildSourceAccessContext(
-					FAngelscriptModdingDebugMessageAccessGate::EOperation::Breakpoint,
-					Message.Filename,
-					Message.ModuleName);
-			}
-			else if constexpr (std::is_same_v<T, FAngelscriptCallStack>)
-			{
-				CuvissAccessContext.bFilteredAggregate = true;
-			}
-			else if constexpr (std::is_same_v<T, FAngelscriptAssetDatabase>)
-			{
-				CuvissAccessContext = FDebugMessageAccessContext();
-				CuvissAccessContext.Operation = FAngelscriptModdingDebugMessageAccessGate::EOperation::AssetDatabase;
-				CuvissAccessContext.bGlobalOperation = true;
-			}
-			if (!IsDebugMessageAllowed(CuvissAccessContext, TEXT("out")))
-			{
-				return;
-			}
-		}
-
 		TArray<uint8> Body;
 		FMemoryWriter BodyWriter(Body);
 		BodyWriter << Message;
@@ -693,7 +615,6 @@ public:
 
 		TrySendingMessages(Client);
 	}
-	                                                                                               
 
 	/** Sends the debug database to all clients in ClientsThatWantDebugDatabase */
 	void BroadcastDebugDatabase();

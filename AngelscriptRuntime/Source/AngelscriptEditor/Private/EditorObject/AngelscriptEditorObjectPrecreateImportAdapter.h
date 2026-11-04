@@ -1,3 +1,4 @@
+                                                                                                        
 // SPDX-License-Identifier: MIT
 // Copyright Cuviss Studio. All Rights Reserved.
 #pragma once
@@ -65,9 +66,8 @@ struct FAngelscriptEditorObjectImportRequest
 class ANGELSCRIPTEDITOR_API FAngelscriptEditorObjectPrecreateImportAdapter
 {
 public:
-	/** Import property/subobject text into an existing editor object, including a CDO. */
-	static bool ImportObjectText(UObject* Object, const FString& Text);
-
+                                                                                                      
+                                                                                                        
 	static const TCHAR* GetMarker();
 
 	static EAngelscriptEditorObjectImportResult ValidatePreCreate(
@@ -96,3 +96,4 @@ public:
 	/** Route external native text imports only when an AS object is involved. */
 	static bool ShouldUseImportWholeText(const FImportObjectParams& Params);
 };
+                                                                                                      

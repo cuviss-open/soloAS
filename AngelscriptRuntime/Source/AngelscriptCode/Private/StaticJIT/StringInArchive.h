@@ -2,11 +2,13 @@
 #include "CoreMinimal.h"
 #include "Serialization/MemoryReader.h"
 
+                                                                                                                  
 static ANSICHAR* GetEmptyStringInArchivePtr()
 {
 	static ANSICHAR EmptyString[] = "";
 	return EmptyString;
 }
+                                                                                                                
 
 struct FMemoryReaderWithPtr : public FMemoryReader
 {
@@ -43,7 +45,9 @@ struct FStringInArchive
 	FStringInArchive()
 	{
 		Length = 0;
+                                                                                                                 
 		Ptr = GetEmptyStringInArchivePtr();
+                                                                                                               
 		bControlsAllocation = false;
 	}
 
@@ -84,7 +88,9 @@ struct FStringInArchive
 		if (NewLength == 0)
 		{
 			Length = 0;
+                                                                                                              
 			Ptr = GetEmptyStringInArchivePtr();
+                                                                                                            
 			bControlsAllocation = false;
 		}
 		else
@@ -131,7 +137,9 @@ struct FStringInArchive
 
 		Other.Length = 0;
 		Other.bControlsAllocation = false;
+                                                                                                              
 		Other.Ptr = GetEmptyStringInArchivePtr();
+                                                                                                            
 		return *this;
 	}
 
@@ -211,7 +219,9 @@ struct FStringInArchive
 			}
 			else
 			{
+                                                                                                              
 				Data.Ptr = GetEmptyStringInArchivePtr();
+                                                                                                            
 				Data.bControlsAllocation = false;
 			}
 		}

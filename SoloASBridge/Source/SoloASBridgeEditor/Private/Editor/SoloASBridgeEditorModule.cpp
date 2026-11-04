@@ -1,4 +1,8 @@
+                                                                                     
+#include "Editor/SoloASMaintenanceInternal.h"
+                                                                                   
 #include "DetailWidgetRow.h"
+#include "Compat/SoloASRuntimeCompat.h"
 #include "EditorClassUtils.h"
 #include "BlueprintEditor.h"
 #include "BlueprintEditorModule.h"
@@ -14,6 +18,7 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Misc/CoreDelegates.h"
 #include "Modules/ModuleManager.h"
+#include "SoloASEngineCompat.h"
 #include "PropertyEditorModule.h"
 #include "PropertyHandle.h"
 #include "SourceCodeNavigation.h"
@@ -22,6 +27,8 @@
 #include "Editor/SoloASScriptBlueprintEditorInternal.h"
 #include "Editor/SoloASEditorExperienceImports.h"
 #include "Editor/SoloASBridgeCoreRedirectClassificationHook.h"
+#include "Editor/SoloASBridgeMenuAlignment.h"
+#include "Editor/SoloASBridgeSceneDestroyHook.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSpacer.h"
@@ -289,7 +296,7 @@ void RegisterScriptParentSourceOverlay()
 {
     if (GScriptParentOverlayPostEngineInitHandle.IsValid())
     {
-        FCoreDelegates::GetOnPostEngineInit().Remove(
+        SoloASBridge::Compat::OnPostEngineInit().Remove(
             GScriptParentOverlayPostEngineInitHandle);
         GScriptParentOverlayPostEngineInitHandle.Reset();
     }
@@ -377,9 +384,14 @@ UClass* ResolveNavigableGameMode(const TSharedPtr<IPropertyHandle>& Handle)
 UObject* GetSingleDetailsObject(const TWeakPtr<IDetailTreeNode>& WeakNode)
 {
     const TSharedPtr<IDetailTreeNode> Node = WeakNode.Pin();
-    const TSharedPtr<IDetailsView> Details = Node.IsValid()
-        ? Node->GetNodeDetailsViewSharedPtr() : nullptr;
-    if (!Details.IsValid() || Details->GetSelectedObjects().Num() != 1)
+    // SOLOAS-COMPAT-BEGIN(<5.6) UE 5.5 exposes the existing view as a borrowed pointer [test: SoloAS.EditorCompatibility] [id: CS.Compatibility.Bridge.SoloASBridgeEditorModule.BorrowedDetailsView]
+#if SOLOAS_UE_BEFORE(5, 6)
+    IDetailsView* Details = Node.IsValid() ? Node->GetNodeDetailsView() : nullptr;
+#else
+    IDetailsView* Details = Node.IsValid() ? Node->GetNodeDetailsViewSharedPtr().Get() : nullptr;
+#endif
+    // SOLOAS-COMPAT-END
+    if (Details == nullptr || Details->GetSelectedObjects().Num() != 1)
     {
         return nullptr;
     }
@@ -619,11 +631,15 @@ class FSoloASBridgeEditorModule final : public IModuleInterface
 public:
     virtual void StartupModule() override
     {
+                                                                                             
+        SoloASBridge::Maintenance::Initialize();
+                                                                                           
                                                                                                          
         SoloASBridge::Editor::InitializeEditorExperienceImports();
                                                                                                        
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
         SoloASBridge::Editor::InitializeCoreRedirectClassificationHook();
+        SoloASBridge::Editor::InitializeSceneDestroyHook();
 #endif
         SoloASBridge::Editor::InitializeScriptBlueprintProvider();
         SoloASBridge::Editor::InitializeScriptBlueprintCompiler();
@@ -646,7 +662,7 @@ public:
             else if (!GScriptParentOverlayPostEngineInitHandle.IsValid())
             {
                 GScriptParentOverlayPostEngineInitHandle =
-                    FCoreDelegates::GetOnPostEngineInit().AddStatic(
+                    SoloASBridge::Compat::OnPostEngineInit().AddStatic(
                         &RegisterScriptParentSourceOverlay);
             }
         }
@@ -665,6 +681,11 @@ public:
 
     virtual void ShutdownModule() override
     {
+        SoloASBridge::Editor::ShutdownSceneDestroyHook();
+        SoloASBridge::Editor::ShutdownMenuSectionAlignment();
+                                                                                              
+        SoloASBridge::Maintenance::Shutdown();
+                                                                                            
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
         SoloASBridge::Editor::ShutdownCoreRedirectClassificationHook();
 #endif
@@ -678,7 +699,7 @@ public:
 #endif
         if (GScriptParentOverlayPostEngineInitHandle.IsValid())
         {
-            FCoreDelegates::GetOnPostEngineInit().Remove(
+            SoloASBridge::Compat::OnPostEngineInit().Remove(
                 GScriptParentOverlayPostEngineInitHandle);
             GScriptParentOverlayPostEngineInitHandle.Reset();
         }

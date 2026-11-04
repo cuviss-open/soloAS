@@ -1,5 +1,10 @@
 #include "Misc/DefaultValueHelper.h"
-
+                                                                                                                
+#include "SoloASEngineCompat.h"
+                                                                                                              
+                                                                                                                
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                              
 #include "AngelscriptBinds.h"
 #include "AngelscriptManager.h"
 #include "Helper_CppType.h"
@@ -93,7 +98,15 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FCollisionQueryParams_Late(FAn
 	FCollisionQueryParams_.Method("TArray<uint32> GetIgnoredActors() const",
 		[](FCollisionQueryParams* Address) -> TArray<uint32>
 		{
+                                                                                            
+                                                                                      
+#if SOLOAS_UE_BEFORE(5, 5)
+			const FCollisionQueryParams::IgnoreActorsArrayType& IgnoredActors = Address->GetIgnoredActors();
+#else
 			const FCollisionQueryParams::IgnoreActorsArrayType& IgnoredActors = Address->GetIgnoredSourceObjects();
+#endif
+// SOLOAS-COMPAT-END
+                                                                                          
 			TArray<uint32> OutArray;
 			OutArray.SetNumUninitialized(IgnoredActors.Num());
 			FMemory::Memcpy(OutArray.GetData(), IgnoredActors.GetData(), IgnoredActors.Num() * sizeof(IgnoredActors[0]));
@@ -101,7 +114,15 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FCollisionQueryParams_Late(FAn
 		});
 
 	FCollisionQueryParams_.Method("void ClearIgnoredComponents()", METHOD_TRIVIAL(FCollisionQueryParams, ClearIgnoredComponents));
+                                                                                            
+                                                                                      
+#if SOLOAS_UE_BEFORE(5, 5)
+	FCollisionQueryParams_.Method("void ClearIgnoredActors()", METHOD_TRIVIAL(FCollisionQueryParams, ClearIgnoredActors));
+#else
 	FCollisionQueryParams_.Method("void ClearIgnoredActors()", METHOD_TRIVIAL(FCollisionQueryParams, ClearIgnoredSourceObjects));
+#endif
+// SOLOAS-COMPAT-END
+                                                                                          
 	FCollisionQueryParams_.Method("void SetNumIgnoredComponents(int32 NewNum)", METHOD_TRIVIAL(FCollisionQueryParams, SetNumIgnoredComponents));
 	FCollisionQueryParams_.Method("void AddIgnoredActor(const AActor InIgnoreActor)", METHODPR_TRIVIAL(void, FCollisionQueryParams, AddIgnoredActor, (const AActor*)));
 	FCollisionQueryParams_.Method("void AddIgnoredActor(const uint32 InIgnoreActorID)", METHODPR_TRIVIAL(void, FCollisionQueryParams, AddIgnoredActor, (const uint32)));
@@ -231,7 +252,15 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FComponentQueryParams_Late(FAn
 	FComponentQueryParams_.Method("TArray<uint32> GetIgnoredActors() const",
 		[](FComponentQueryParams* Address) -> TArray<uint32>
 		{
+                                                                                            
+                                                                                      
+#if SOLOAS_UE_BEFORE(5, 5)
+			const FComponentQueryParams::IgnoreActorsArrayType& IgnoredActors = Address->GetIgnoredActors();
+#else
 			const FComponentQueryParams::IgnoreActorsArrayType& IgnoredActors = Address->GetIgnoredSourceObjects();
+#endif
+// SOLOAS-COMPAT-END
+                                                                                          
 			TArray<uint32> OutArray;
 			OutArray.SetNumUninitialized(IgnoredActors.Num());
 			FMemory::Memcpy(OutArray.GetData(), IgnoredActors.GetData(), IgnoredActors.Num() * sizeof(IgnoredActors[0]));
@@ -239,7 +268,15 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FComponentQueryParams_Late(FAn
 		});
 
 	FComponentQueryParams_.Method("void ClearIgnoredComponents()", METHOD_TRIVIAL(FComponentQueryParams, ClearIgnoredComponents));
+                                                                                            
+                                                                                      
+#if SOLOAS_UE_BEFORE(5, 5)
+	FComponentQueryParams_.Method("void ClearIgnoredActors()", METHOD_TRIVIAL(FComponentQueryParams, ClearIgnoredActors));
+#else
 	FComponentQueryParams_.Method("void ClearIgnoredActors()", METHOD_TRIVIAL(FComponentQueryParams, ClearIgnoredSourceObjects));
+#endif
+// SOLOAS-COMPAT-END
+                                                                                          
 	FComponentQueryParams_.Method("void SetNumIgnoredComponents(int32 NewNum)", METHOD_TRIVIAL(FComponentQueryParams, SetNumIgnoredComponents));
 	FComponentQueryParams_.Method("void AddIgnoredActor(const AActor InIgnoreActor)", METHODPR_TRIVIAL(void, FCollisionQueryParams, AddIgnoredActor, (const AActor*)));
 	FComponentQueryParams_.Method("void AddIgnoredActor(const uint32 InIgnoreActorID)", METHODPR_TRIVIAL(void, FCollisionQueryParams, AddIgnoredActor, (const uint32)));
@@ -374,25 +411,33 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FCollisionObjectQueryParams_La
 	SCRIPT_TRIVIAL_NATIVE_CONSTRUCTOR(FCollisionObjectQueryParams_, "FCollisionObjectQueryParams");
 
                                                                                                                   
-	FCollisionObjectQueryParams_.Constructor("void f(int64 InObjectTypesToQuery)", [](FCollisionObjectQueryParams* Address, int64 InObjectTypesToQuery)
+	FCollisionObjectQueryParams_.Constructor("void f(int32 InObjectTypesToQuery)", [](FCollisionObjectQueryParams* Address, int32 InObjectTypesToQuery)
                                                                                                                 
 	{
-		new(Address) FCollisionObjectQueryParams(InObjectTypesToQuery);
+                                                                                                   
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 collision masks use 32-bit storage [test: ASRegression]
+		new(Address) FCollisionObjectQueryParams();
+		if (!SoloASBridge::Compat::SetCollisionObjectTypes(*Address, InObjectTypesToQuery))
+			FAngelscriptManager::Throw("Collision object query mask exceeds the engine channel width");
+		Address->DoVerify();
+// SOLOAS-COMPAT-END
+                                                                                                 
 	});
 	SCRIPT_TRIVIAL_NATIVE_CONSTRUCTOR(FCollisionObjectQueryParams_, "FCollisionObjectQueryParams");
 
-                                                                                                                
-	FCollisionObjectQueryParams_.Method("int64 GetObjectTypesToQuery() const", METHOD_TRIVIAL(FCollisionObjectQueryParams, GetObjectTypesToQuery));
-	FCollisionObjectQueryParams_.Method(
-		"void SetObjectTypesToQuery(int64 InObjectTypesToQuery)",
-		METHOD_TRIVIAL(FCollisionObjectQueryParams, SetObjectTypesToQuery));
-                                                                                                              
+                                                                                                             
+	FCollisionObjectQueryParams_.Property("int32 ObjectTypesToQuery", SoloASBridge::Compat::GetCollisionObjectMaskScriptOffset());
+                                                                                                           
+                                                                                                                            
+                                                                                                                          
 	FCollisionObjectQueryParams_.Property("uint8 IgnoreMask", &FCollisionObjectQueryParams::IgnoreMask);
 
 	FCollisionObjectQueryParams_.Method("void AddObjectTypesToQuery(ECollisionChannel QueryChannel)", METHOD_TRIVIAL(FCollisionObjectQueryParams, AddObjectTypesToQuery));
 	FCollisionObjectQueryParams_.Method("void RemoveObjectTypesToQuery(ECollisionChannel QueryChannel)", METHOD_TRIVIAL(FCollisionObjectQueryParams, RemoveObjectTypesToQuery));
                                                                                                                
-	FCollisionObjectQueryParams_.Method("int64 GetQueryBitfield64() const", METHOD_TRIVIAL(FCollisionObjectQueryParams, GetQueryBitfield64));
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 collision masks use 32-bit storage [test: ASRegression]
+	FCollisionObjectQueryParams_.Method("int32 GetQueryBitfield64() const", [](const FCollisionObjectQueryParams& Params) { return static_cast<int32>(SoloASBridge::Compat::GetCollisionQueryBitfield(Params)); });
+// SOLOAS-COMPAT-END
                                                                                                              
 	FCollisionObjectQueryParams_.Method("bool IsValid() const", METHOD_TRIVIAL(FCollisionObjectQueryParams, IsValid));
 	FCollisionObjectQueryParams_.Method("void DoVerify() const", METHOD_TRIVIAL(FCollisionObjectQueryParams, DoVerify));

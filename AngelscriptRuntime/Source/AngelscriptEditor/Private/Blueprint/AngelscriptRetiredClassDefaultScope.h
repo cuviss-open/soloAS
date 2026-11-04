@@ -3,6 +3,7 @@
 #pragma once
 
 #include "ClassGenerator/ASClass.h"
+#include "Compat/SoloASRuntimeCompat.h"
 #include "UObject/StrongObjectPtr.h"
 
 /** Keeps superseded script CDOs out of stock's ordinary-archetype migration.
@@ -57,7 +58,7 @@ public:
 				}
 				// Stock replaces references in the old class too. Preserve its own default
 				// lifetime without undoing replacements in live instances or the new class.
-				Entry.Class->SetDefaultObject(Default);
+				SoloASBridge::Compat::SetClassDefaultObject(Entry.Class, Default);
 			}
 			Default->ClearFlags(RF_NewerVersionExists);
 		}

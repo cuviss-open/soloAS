@@ -1,4 +1,12 @@
 #include "ClassReloadHelper.h"
+                                                                                                        
+#include "Editor/SoloASScriptBlueprintDependencies.h"
+                                                                                                      
+                                                                                                        
+                                                                                           
+#include "Compat/SoloASRuntimeCompat.h"
+// SOLOAS-COMPAT-END
+                                                                                                      
                                                                                                             
 #include "EdGraph/EdGraphPin.h"
 #include "UObject/FieldPathProperty.h"
@@ -39,18 +47,36 @@
                                                                                                              
 #include "Blueprint/AngelscriptActorReplacementTransaction.h"
                                                                                                            
+                                                                                                                        
 #include "Elements/Framework/EngineElementsLibrary.h"
+                                                                                                                      
+                                                                                            
+                                                                                                       
+#if SOLOAS_UE_AT_LEAST(5, 7)
 #include "DataStorage/Features.h"
+#endif
+// SOLOAS-COMPAT-END
+                                                                                          
+                                                                                                        
+// SOLOAS-COMPAT-BEGIN(<5.7) The TEDS typed-element handle column is absent in UE 5.6 [test: SoloAS.CopyPropertiesEditorImports]
+#if SOLOAS_UE_AT_LEAST(5, 7)
 #include "Elements/Columns/TypedElementHandleColumn.h"
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                      
+                                                                                                                         
 #include "Elements/Interfaces/TypedElementDataStorageCompatibilityInterface.h"
 #include "Elements/Interfaces/TypedElementDataStorageInterface.h"
+                                                                                                                       
 #include "K2Node.h"
 #include "K2Node_Event.h"
 #include "K2Node_MacroInstance.h"
 #include "Kismet2/ReloadUtilities.h"
+                                                                                                                        
 #include "Selection.h"
 #include "Elements/Framework/TypedElementSelectionSet.h"
 #include "LevelEditorSubsystem.h"
+                                                                                                                      
                                                                                                           
 #include "Kismet2/KismetReinstanceUtilities.h"
 #include "Components/ActorComponent.h"
@@ -66,7 +92,6 @@
                                                                                                         
                                                                                                       
 #include "Editor/SoloASScriptBlueprintDependencies.h"
-#include "Extensions/AngelscriptExtensionHooks.h"
                                                                                                     
                                                                                                                     
 #include "Blueprint/AngelscriptInheritedComponentAttachmentRepair.h"
@@ -80,8 +105,12 @@
                                                                                                                               
 #include "Engine/DataAsset.h"
 #include "UObject/TextProperty.h"
+                                                                                                      
+#if SOLOAS_UE_AT_LEAST(5, 5)
 #include "UObject/StrProperty.h"
 #include "UObject/Utf8StrProperty.h"
+#endif
+// SOLOAS-COMPAT-END
                                                                                                                             
 
                                                                                                                                           
@@ -99,6 +128,80 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
                                                                                                                    
 namespace
 {
+// SOLOAS-COMPAT-BEGIN(<5.6) Retired derived classes lack the OldObjects exclusion until UE 5.6; roots also preserve UE 5.4 retired CDO identity [test: SoloAS.FullReloadCanonicalUnion]
+#if SOLOAS_UE_BEFORE(5, 6)
+class FRetiredClassDefaultScopePre56 final
+{
+    struct FEntry
+    {
+        UASClass* Class;
+        UASClass* ReplacementClass;
+        UObject* Default;
+        bool bWasRooted;
+    };
+    TArray<FEntry> Entries;
+    TMap<UClass*, UClass*> RetiredParents;
+public:
+    explicit FRetiredClassDefaultScopePre56(const TMap<UClass*, UClass*>& Replacements)
+    {
+        check(IsInGameThread());
+        for (const TPair<UClass*, UClass*>& Pair : Replacements)
+        {
+            UASClass* OldClass = Cast<UASClass>(Pair.Key);
+            UASClass* NewClass = Cast<UASClass>(Pair.Value);
+            if (OldClass && NewClass && OldClass != NewClass)
+            {
+                TArray<UClass*> DerivedClasses;
+                GetDerivedClasses(OldClass, DerivedClasses);
+                for (UClass* Derived : DerivedClasses)
+                    if (Derived->HasAnyClassFlags(CLASS_NewerVersionExists))
+                        RetiredParents.Add(Derived, Derived->GetSuperClass());
+            }
+            if (!OldClass || !NewClass || OldClass == NewClass
+                || !OldClass->HasValidScriptClassCarrier() || !NewClass->HasValidScriptClassCarrier()) continue;
+            UObject* Default = OldClass->GetDefaultObject(false);
+            if (!Default || Default->GetClass() != OldClass || !Default->HasAnyFlags(RF_ClassDefaultObject)
+                || Default->HasAnyFlags(RF_NewerVersionExists)) continue;
+            Entries.Add({OldClass, NewClass, Default, Default->IsRooted()});
+            if (!Default->IsRooted()) Default->AddToRoot();
+            Default->SetFlags(RF_NewerVersionExists);
+        }
+    }
+    ~FRetiredClassDefaultScopePre56()
+    {
+        // UE 5.4/5.5 reference replacement visits retired derived classes that 5.6+
+        // excludes via OldObjects. Their surviving instances still own the old layout.
+        for (const TPair<UClass*, UClass*>& Pair : RetiredParents)
+        {
+            if (Pair.Key->GetSuperClass() == Pair.Value) continue;
+            Pair.Key->SetSuperStruct(Pair.Value);
+            Pair.Key->Bind();
+            Pair.Key->ClearFunctionMapsCaches();
+            Pair.Key->StaticLink(true);
+        }
+        for (const FEntry& Entry : Entries)
+        {
+            UObject* Default = Entry.Default;
+            UObject* Current = Entry.Class->GetDefaultObject(false);
+            UObject* Replacement = Entry.ReplacementClass->GetDefaultObject(false);
+            if (!IsValid(Default) || Default->GetClass() != Entry.Class
+                || !Default->HasAnyFlags(RF_ClassDefaultObject)
+                || Default->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed))
+                UE_LOG(LogTemp, Fatal, TEXT("ASR-RETIRED-CDO-IDENTITY: held script default is no longer valid"));
+            if (Current != Default)
+            {
+                if (!Current || Current != Replacement || Replacement->GetClass() != Entry.ReplacementClass)
+                    UE_LOG(LogTemp, Fatal, TEXT("ASR-RETIRED-CDO-REFERENCE: unexpected retired class default replacement"));
+                SoloASBridge::Compat::SetClassDefaultObject(Entry.Class, Default);
+            }
+            Default->ClearFlags(RF_NewerVersionExists);
+            if (!Entry.bWasRooted) Default->RemoveFromRoot();
+        }
+    }
+};
+#endif
+// SOLOAS-COMPAT-END
+
 int32 GReloadCaptureProbe = 1;
 FAutoConsoleVariableRef CVar_ReloadCaptureProbe(
 	TEXT("soloas.ReloadCaptureProbe"), GReloadCaptureProbe,
@@ -108,7 +211,9 @@ bool AddDefaultSubobjectMappings(UObject* OldOuter, UObject* NewOuter,
 	const TMap<UClass*, UClass*>& Classes, TMap<UObject*, UObject*>& Mappings)
 {
 	TArray<UObject*> OldChildren;
-	GetObjectsWithOuter(OldOuter, OldChildren, EGetObjectsFlags::None);
+                                                                                           
+	SoloASBridge::Compat::GetDirectObjects(OldOuter, OldChildren);
+// SOLOAS-COMPAT-END
 	for (UObject* OldChild : OldChildren)
 	{
 		if (!OldChild->HasAnyFlags(RF_DefaultSubObject)) continue;
@@ -148,7 +253,7 @@ void HashSerializedPropertyLayout(uint32& Hash, const FProperty* Property)
 	Hash = HashCombine(Hash, GetTypeHash(Property->GetFName()));
 	Hash = HashCombine(Hash, GetTypeHash(Property->GetClass()->GetFName()));
 	Hash = HashCombine(Hash, GetTypeHash(Property->GetOffset_ForInternal()));
-	Hash = HashCombine(Hash, GetTypeHash(Property->GetElementSize()));
+	Hash = HashCombine(Hash, GetTypeHash(SoloASBridge::Compat::GetPropertyElementSize(Property)));
 	Hash = HashCombine(Hash, GetTypeHash(Property->ArrayDim));
 	if (const auto* Struct = CastField<FStructProperty>(Property))
 	{
@@ -265,7 +370,12 @@ bool CanSkipProbeProperty(const FProperty* Property, TSet<const FProperty*>& Vis
 {
 	if (CastField<FNumericProperty>(Property) || CastField<FBoolProperty>(Property)
 		|| CastField<FEnumProperty>(Property) || CastField<FNameProperty>(Property)
-		|| CastField<FStrProperty>(Property) || CastField<FUtf8StrProperty>(Property)
+		|| CastField<FStrProperty>(Property)
+                                                                                                     
+#if SOLOAS_UE_AT_LEAST(5, 5)
+        || CastField<FUtf8StrProperty>(Property)
+#endif
+// SOLOAS-COMPAT-END
 		|| CastField<FTextProperty>(Property)
 		|| CastField<FFieldPathProperty>(Property))
 	{
@@ -368,13 +478,13 @@ public:
 	}
 	virtual FArchive& operator<<(UObject*& Object) override
 	{
-		bContainsPreviousType |= Types.Contains(Object);
+		RecordReference(Object);
 		return *this;
 	}
 	virtual FArchive& operator<<(FObjectPtr& Object) override
 	{
 		if (Object.IsResolved())
-			bContainsPreviousType |= Types.Contains(Object.Get());
+			RecordReference(Object.Get());
 		return *this;
 	}
 	virtual void MarkScriptSerializationStart(const UObject* Object) override
@@ -415,8 +525,21 @@ public:
 	}
 
 	bool ContainsPreviousType() const { return bContainsPreviousType; }
+	FString DescribeFirstReference() const
+	{
+		return FString::Printf(TEXT("type=%s property=%s"), *GetPathNameSafe(FirstType),
+			FirstProperty ? *FirstProperty->GetPathName() : TEXT("native"));
+	}
 
 private:
+	void RecordReference(UObject* Object)
+	{
+		if (bContainsPreviousType || !Types.Contains(Object)) return;
+		bContainsPreviousType = true;
+		FirstType = Object;
+		FirstProperty = GetSerializedProperty();
+	}
+
 	const TSet<UObject*>& Types;
 	const TSet<const FProperty*>& SkippableProperties;
 	TMap<const UClass*, bool>& ClassNeedsProperties;
@@ -430,21 +553,101 @@ private:
 	TArray<FSerializationFrame> SerializationStack;
 	int64 Position = 0;
 	bool bContainsPreviousType = false;
+	const UObject* FirstType = nullptr;
+	const FProperty* FirstProperty = nullptr;
 };
 
-bool ProbeSerializedObjectForTypeReference(UObject* Object,
-	const TSet<UObject*>& PreviousTypes, const TSet<const FProperty*>& SkippableProperties,
-	TMap<const UClass*, bool>& ClassNeedsProperties)
+// The object domain of the serialized type-reference snapshots. Pre-swap payload admission
+// probes the same domain with the same filters.
+class FPreviousTypeReferenceDomain
 {
-	FHiddenTypeReferenceProbe FullProbe(PreviousTypes, SkippableProperties, ClassNeedsProperties, false);
-	Object->Serialize(FullProbe);
-	if (FullProbe.ContainsPreviousType())
-		return true;
+public:
+	explicit FPreviousTypeReferenceDomain(const TSet<UObject*>& InPreviousTypes)
+		: PreviousTypes(InPreviousTypes)
+	{
+		TArray<FString> PreviousTypePackages;
+		for (UObject* Type : PreviousTypes)
+			PreviousTypePackages.AddUnique(Type->GetOutermost()->GetName());
+		for (const FString& TypePackage : PreviousTypePackages)
+			PreviousTypePackagePaths.Add({TypePackage, TypePackage + TEXT("."), TypePackage + TEXT(":")});
+	}
 
-	FHiddenTypeReferenceProbe CollectorProbe(PreviousTypes, SkippableProperties, ClassNeedsProperties, true);
-	Object->Serialize(CollectorProbe);
-	return CollectorProbe.ContainsPreviousType();
-}
+	bool IsCandidate(UObject* Object)
+	{
+		if (!IsValid(Object) || Object->IsA<UPackage>() || Object->IsA<UStruct>()
+			|| Object->HasAnyFlags(RF_NeedInitialization | RF_NeedLoad | RF_NeedPostLoad
+				| RF_BeginDestroyed | RF_FinishDestroyed)
+			|| Object->GetClass()->HasAnyClassFlags(CLASS_NewerVersionExists)) return false;
+		if (GReloadCaptureProbe == 0) return true;
+		if (!MayPackageReferencePreviousType(Object->GetOutermost()))
+			return false;
+		AddProbeSkippableProperties(Object->GetClass(), ProbeClassesWithPrecomputedProperties,
+			ProbeSkippableProperties);
+		const UClass* Class = Object->GetClass();
+		if (Class->GetClass() == UClass::StaticClass()
+			&& SoloASBridge::HasOnlyReflectedReferences(Object))
+		{
+			bool* NeedsProperties = ProbeClassNeedsProperties.Find(Class);
+			if (NeedsProperties == nullptr)
+			{
+				bool bNeedsProperties = false;
+				for (TFieldIterator<FProperty> Property(Class); Property; ++Property)
+					bNeedsProperties |= !ProbeSkippableProperties.Contains(*Property);
+				NeedsProperties = &ProbeClassNeedsProperties.Add(Class, bNeedsProperties);
+			}
+			// Audited native serializers expose all type references through reflected properties.
+			// The per-object probe uses the same property filter for every omitted field.
+			if (!*NeedsProperties) return false;
+		}
+		return true;
+	}
+
+	bool Probe(UObject* Object, bool bObjectReferenceCollector, FString* OutReference = nullptr)
+	{
+		FHiddenTypeReferenceProbe TypeProbe(PreviousTypes, ProbeSkippableProperties, ProbeClassNeedsProperties,
+			bObjectReferenceCollector);
+		Object->Serialize(TypeProbe);
+		if (OutReference && TypeProbe.ContainsPreviousType()) *OutReference = TypeProbe.DescribeFirstReference();
+		return TypeProbe.ContainsPreviousType();
+	}
+
+private:
+	bool MayPackageReferencePreviousType(UPackage* Package)
+	{
+		// Dirty or unlinked packages have no stable import evidence, so keep probing them.
+		if (Package == nullptr || Package->IsDirty()) return true;
+		if (bool* Cached = PackageMayReferencePreviousType.Find(Package)) return *Cached;
+		FLinkerLoad* Linker = Package->GetLinker();
+		if (Linker == nullptr) return true;
+		bool bMayReferencePreviousType = false;
+		for (int32 ImportIndex = 0; ImportIndex < Linker->ImportMap.Num() && !bMayReferencePreviousType; ++ImportIndex)
+		{
+			const FString ImportPath = Linker->GetImportPathName(ImportIndex);
+			for (const FTypePackagePaths& TypePackage : PreviousTypePackagePaths)
+				if (ImportPath == TypePackage.Package || ImportPath.StartsWith(TypePackage.ObjectPrefix)
+					|| ImportPath.StartsWith(TypePackage.SubobjectPrefix))
+				{
+					bMayReferencePreviousType = true;
+					break;
+				}
+		}
+		PackageMayReferencePreviousType.Add(Package, bMayReferencePreviousType);
+		return bMayReferencePreviousType;
+	}
+
+	struct FTypePackagePaths
+	{
+		FString Package;
+		FString ObjectPrefix;
+		FString SubobjectPrefix;
+	};
+	const TSet<UObject*>& PreviousTypes;
+	TArray<FTypePackagePaths> PreviousTypePackagePaths;
+	TMap<UPackage*, bool> PackageMayReferencePreviousType;
+	TSet<const UClass*> ProbeClassesWithPrecomputedProperties;
+	TSet<const FProperty*> ProbeSkippableProperties;
+	TMap<const UClass*, bool> ProbeClassNeedsProperties;
+};
 
 bool CaptureSerializedObjectState(UObject* Object, FSerializedObjectState& OutState,
 	const TSet<UObject*>* PreviousTypes = nullptr, bool* ContainsPreviousType = nullptr)
@@ -523,78 +726,14 @@ public:
 		for (UObject* Type : PreviousTypes)
 			if (Type) RetiredObjects.Add(Type);
 		if (RetiredObjects.IsEmpty()) return;
-		TArray<FString> PreviousTypePackages;
-		for (UObject* Type : RetiredObjects)
-			PreviousTypePackages.AddUnique(Type->GetOutermost()->GetName());
-		struct FTypePackagePaths
-		{
-			FString Package;
-			FString ObjectPrefix;
-			FString SubobjectPrefix;
-		};
-		TArray<FTypePackagePaths> PreviousTypePackagePaths;
-		for (const FString& TypePackage : PreviousTypePackages)
-			PreviousTypePackagePaths.Add({TypePackage, TypePackage + TEXT("."), TypePackage + TEXT(":")});
-		TMap<UPackage*, bool> PackageMayReferencePreviousType;
-		auto MayPackageReferencePreviousType = [&](UPackage* Package)
-		{
-			// Dirty or unlinked packages have no stable import evidence, so keep probing them.
-			if (Package == nullptr || Package->IsDirty()) return true;
-			if (bool* Cached = PackageMayReferencePreviousType.Find(Package)) return *Cached;
-			FLinkerLoad* Linker = Package->GetLinker();
-			if (Linker == nullptr) return true;
-			bool bMayReferencePreviousType = false;
-			for (int32 ImportIndex = 0; ImportIndex < Linker->ImportMap.Num() && !bMayReferencePreviousType; ++ImportIndex)
-			{
-				const FString ImportPath = Linker->GetImportPathName(ImportIndex);
-				for (const FTypePackagePaths& TypePackage : PreviousTypePackagePaths)
-					if (ImportPath == TypePackage.Package || ImportPath.StartsWith(TypePackage.ObjectPrefix)
-						|| ImportPath.StartsWith(TypePackage.SubobjectPrefix))
-					{
-						bMayReferencePreviousType = true;
-						break;
-					}
-			}
-			PackageMayReferencePreviousType.Add(Package, bMayReferencePreviousType);
-			return bMayReferencePreviousType;
-		};
-		TSet<const UClass*> ProbeClassesWithPrecomputedProperties;
-		TSet<const FProperty*> ProbeSkippableProperties;
-		TMap<const UClass*, bool> ProbeClassNeedsProperties;
+		FPreviousTypeReferenceDomain Domain(RetiredObjects);
 
 		for (TObjectIterator<UObject> It; It; ++It)
 		{
 			UObject* Object = *It;
-			if (!IsValid(Object) || Object->IsA<UPackage>() || Object->IsA<UStruct>()
-				|| Object->HasAnyFlags(RF_NeedInitialization | RF_NeedLoad | RF_NeedPostLoad
-					| RF_BeginDestroyed | RF_FinishDestroyed)
-				|| Object->GetClass()->HasAnyClassFlags(CLASS_NewerVersionExists)) continue;
-			if (GReloadCaptureProbe != 0)
-			{
-				if (!MayPackageReferencePreviousType(Object->GetOutermost()))
-					continue;
-				AddProbeSkippableProperties(Object->GetClass(), ProbeClassesWithPrecomputedProperties,
-					ProbeSkippableProperties);
-				const UClass* Class = Object->GetClass();
-				if (Class->GetClass() == UClass::StaticClass()
-					&& SoloASBridge::HasOnlyReflectedReferences(Object))
-				{
-					bool* NeedsProperties = ProbeClassNeedsProperties.Find(Class);
-					if (NeedsProperties == nullptr)
-					{
-						bool bNeedsProperties = false;
-						for (TFieldIterator<FProperty> Property(Class); Property; ++Property)
-							bNeedsProperties |= !ProbeSkippableProperties.Contains(*Property);
-						NeedsProperties = &ProbeClassNeedsProperties.Add(Class, bNeedsProperties);
-					}
-					// Audited native serializers expose all type references through reflected properties.
-					// The per-object probe uses the same property filter for every omitted field.
-					if (!*NeedsProperties) continue;
-				}
-				if (!ProbeSerializedObjectForTypeReference(Object, RetiredObjects, ProbeSkippableProperties,
-					ProbeClassNeedsProperties))
-					continue;
-			}
+			if (!Domain.IsCandidate(Object)) continue;
+			if (GReloadCaptureProbe != 0 && !Domain.Probe(Object, false) && !Domain.Probe(Object, true))
+				continue;
 			FSerializedObjectState State;
 			bool ContainsPreviousType = false;
 			if (!CaptureSerializedObjectState(Object, State, &RetiredObjects, &ContainsPreviousType)
@@ -704,6 +843,14 @@ public:
 				ResolvedReplacements.Add(Pair.Key, Replacement);
 		}
 
+// SOLOAS-COMPAT-BEGIN(<5.5) Preserve reconstructed graph state when no retired reference remains [test: SoloAS.BlueprintNodesAfterScriptStructReload]
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 5
+        TSet<UObject*> RetiredReferences;
+        for (const auto& Pair : ResolvedReplacements)
+            if (Pair.Key != Pair.Value)
+                RetiredReferences.Add(Pair.Key);
+#endif
+// SOLOAS-COMPAT-END
 		const EArchiveReplaceObjectFlags Flags = EArchiveReplaceObjectFlags::DelayStart
 			| EArchiveReplaceObjectFlags::IgnoreOuterRef
 			| EArchiveReplaceObjectFlags::IgnoreArchetypeRef;
@@ -725,6 +872,19 @@ public:
 			}
 
 			FSerializedObjectState CurrentState;
+// SOLOAS-COMPAT-BEGIN(<5.5) UE54 pin serializers can select nodes for hidden-reference replay before their normal reconstruction [test: SoloAS.BlueprintNodesAfterScriptStructReload]
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 5
+            if (Object->IsA<UK2Node>())
+            {
+                bool bContainsRetiredReference = false;
+                if (!CaptureSerializedObjectState(Object, CurrentState, &RetiredReferences, &bContainsRetiredReference)) continue;
+                // The reload already rebuilt these pins. Replaying the old object
+                // bytes would undo their scalar types, defaults and connections.
+                if (!bContainsRetiredReference) continue;
+            }
+            else
+#endif
+// SOLOAS-COMPAT-END
 			if (!CaptureSerializedObjectState(Object, CurrentState)) continue;
 			if (!RestoreSerializedObjectState(Object, Snapshot.State))
 			{
@@ -767,6 +927,28 @@ void RefreshRetainedScriptTypeReferences(const TMap<UClass*, UClass*>& Classes,
 {
     SoloASBridge::RefreshRetainedScriptTypeReferences(Classes, Structs, Objects, CandidateObjects);
 }
+}
+
+// Pre-swap payload admission. The snapshots restore the full serialized stream of an object; a previous
+// script struct that the object reports only to reference collectors is outside that stream, and the
+// replacement passes can retarget such a payload type without rebuilding its memory. The carrier refuses
+// the reload before anything is swapped.
+bool FindCollectorOnlyScriptStructReference(const TSet<UObject*>& PreviousStructs, FString& OutCarrier)
+{
+	OutCarrier.Reset();
+	if (PreviousStructs.IsEmpty()) return false;
+	FPreviousTypeReferenceDomain Domain(PreviousStructs);
+	for (TObjectIterator<UObject> It; It; ++It)
+	{
+		UObject* Object = *It;
+		FString Reference;
+		if (!Domain.IsCandidate(Object) || Domain.Probe(Object, false) || !Domain.Probe(Object, true, &Reference))
+			continue;
+		OutCarrier = FString::Printf(TEXT("object=%s class=%s %s"), *Object->GetPathName(),
+			*Object->GetClass()->GetPathName(), *Reference);
+		return true;
+	}
+	return false;
 }
                                                                                                                  
                                                                                                                      
@@ -857,19 +1039,7 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
         TMap<UObject*, UObject*> PreparedBlueprintObjects;
         TSet<UObject*> OwnedBlueprintMetadata;
         TSet<UObject*> PreparedPreviousInstances;
-        if (IsAngelscriptExtensionStageRegistered(EAngelscriptExtensionStage::TypeGeneration))
-        {
-            FAngelscriptTypeGenerationContext Context;
-            Context.Point = EAngelscriptTypeGenerationPoint::RetainPreviousInstances;
-            Context.bModulesSwapped = true;
-            Context.PreviousInstancesToRetain = &PreparedPreviousInstances;
-            Context.PreparedBlueprintClasses = &PreparedBlueprintClasses;
-            Context.PreparedBlueprintObjects = &PreparedBlueprintObjects;
-            Context.OwnedBlueprintMetadata = &OwnedBlueprintMetadata;
-            FString Error;
-            if (!DispatchAngelscriptTypeGeneration(Context, Error))
-                AngelscriptReloadSafety::StopCommittedReload(TEXT("prepared-blueprint-query"), *Error);
-        }
+
         ReloadClasses.Append(PreparedBlueprintClasses);
         TMap<UObject*, UObject*> CombinedPreparedReferenceObjects;
         if (!PreparedBlueprintObjects.IsEmpty())
@@ -932,7 +1102,9 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 		{
 			FAngelscriptRuntimeReinstanceGcScope RuntimeGcScope(ReloadClasses, true);
                                                                                                            
+                                                                                                                     
 			CollectGarbage(GARBAGE_COLLECTION_KEEPFLAGS, true);
+                                                                                                                   
                                                                                                            
 		}
                                                                                                          
@@ -1262,6 +1434,7 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 		FAngelscriptInheritedComponentAttachmentRepairScope AttachmentRepairScope(ReloadClasses);
 
                                                                                                                 
+                                                                                                                             
 		// Retiring rows must release their handles before the stock replacement listener.
 		// The delegate broadcasts in reverse registration order.
 		const FDelegateHandle TypedElementReplacementHandle = FCoreUObjectDelegates::OnObjectsReplaced.AddLambda(
@@ -1277,9 +1450,12 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 							if (SelectedComponent.Get() == OldComponent) SelectedComponent = Cast<UActorComponent>(Pair.Value);
 				}
 				ClearReloadSelection();
+                                                                                                                           
+// SOLOAS-COMPAT-BEGIN(<5.7) UE 5.6 has no native TEDS handle column; ordinary selection cleanup above owns its handles [test: SoloAS.CopyPropertiesEditorImports] | CS.Runtime.CoreSurface.ClassReloadHelper.Compat1
+#if SOLOAS_UE_AT_LEAST(5, 7)
 				using namespace UE::Editor::DataStorage;
 				ICoreProvider* Storage = GetMutableDataStorageFeature<ICoreProvider>(StorageFeatureName);
-				ICompatibilityProvider* CompatibilityProvider = GetMutableDataStorageFeature<ICompatibilityProvider>(CompatibilityFeatureName);
+                ICompatibilityProvider* CompatibilityProvider = GetMutableDataStorageFeature<ICompatibilityProvider>(CompatibilityFeatureName);
 				if (!Storage || !CompatibilityProvider) return;
 				for (const TPair<UObject*, UObject*>& Pair : ReplacedObjects)
 				{
@@ -1291,11 +1467,15 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 					checkf(!Storage->HasColumns<Compatibility::FTypedElementColumn>(Row),
 						TEXT("Retiring typed-element column removal must complete before object replacement"));
 				}
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                                           
 			});
 		ON_SCOPE_EXIT
 		{
 			FCoreUObjectDelegates::OnObjectsReplaced.Remove(TypedElementReplacementHandle);
 		};
+                                                                                                                         
 
                                                                                                                      
 #if 0
@@ -1328,6 +1508,41 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 #endif
         if (!PreparedBlueprintObjects.IsEmpty())
             FCoreUObjectDelegates::OnObjectsReplaced.Broadcast(PreparedBlueprintObjects);
+// SOLOAS-COMPAT-BEGIN(<5.8) Preserve authoritative script default mappings before Stock hierarchy preparation [test: SoloAS.FullReloadCanonicalUnion]
+#if !SOLOAS_UE_AT_LEAST(5, 8)
+		TMap<UObject*, UObject*> ScriptDefaultReplacements;
+		TSet<UObject*> RetiredScriptDefaults;
+		// Shape-changing defaults remain owned by Stock; only supplement matching identities.
+		TFunction<void(UObject*, UObject*)> AddMatchingScriptDefaults = [&](UObject* OldOuter, UObject* NewOuter)
+		{
+			TArray<UObject*> OldChildren;
+			SoloASBridge::Compat::GetDirectObjects(OldOuter, OldChildren);
+			for (UObject* OldChild : OldChildren)
+			{
+				if (!OldChild->HasAnyFlags(RF_DefaultSubObject)) continue;
+				UObject* NewChild = NewOuter->GetDefaultSubobjectByName(OldChild->GetFName());
+				UClass* ExpectedClass = ReloadClasses.FindRef(OldChild->GetClass());
+				if (!ExpectedClass) ExpectedClass = OldChild->GetClass();
+				if (!NewChild || NewChild->GetOuter() != NewOuter || NewChild->GetClass() != ExpectedClass
+					|| !NewChild->HasAnyFlags(RF_DefaultSubObject)) continue;
+				ScriptDefaultReplacements.Add(OldChild, NewChild);
+				AddMatchingScriptDefaults(OldChild, NewChild);
+			}
+		};
+		for (const TPair<UClass*, UClass*>& Pair : ReloadClasses)
+		{
+			if (!Cast<UASClass>(Pair.Key) || !Cast<UASClass>(Pair.Value)) continue;
+			UObject* OldDefault = Pair.Key->GetDefaultObject(false);
+			UObject* NewDefault = Pair.Value->GetDefaultObject(false);
+			if (!OldDefault || !NewDefault) continue;
+			ScriptDefaultReplacements.Add(OldDefault, NewDefault);
+			AddMatchingScriptDefaults(OldDefault, NewDefault);
+			RetiredScriptDefaults.Add(Pair.Key);
+		}
+		for (const TPair<UObject*, UObject*>& Pair : ScriptDefaultReplacements)
+			RetiredScriptDefaults.Add(Pair.Key);
+#endif
+// SOLOAS-COMPAT-END
 		TSet<UClass*> PreReloadReinstancedScriptClasses;
 		FDelegateHandle ReinstanceHandle =
 			FCoreUObjectDelegates::OnObjectsReinstanced.AddStatic(&FClassReloadHelper::HandleObjectReinstancing);
@@ -1350,13 +1565,26 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 		{
 			if (HasOldScriptAncestor(BP))
 			{
-				FBlueprintCompilationManager::QueueForCompilation(BP);
+				SoloASBridge::Editor::QueueScriptBlueprintForCompilation(BP);
 				bQueuedOldASAncestorBPs = true;
 			}
 		}
 		if (bQueuedOldASAncestorBPs)
 		{
+// SOLOAS-COMPAT-BEGIN(<5.6) Complete copied Blueprint component references before the FullReload GC [test: SoloAS.BlueprintActorReferenceTiming.Default]
+#if SOLOAS_UE_BEFORE(5, 6)
+            const ESoloASBridgeReloadResult Result = SoloASBridge::RunWithStockCopyPropertiesScope([]()
+            {
+                FBlueprintCompilationManager::FlushCompilationQueueAndReinstance();
+            });
+            if (Result != ESoloASBridgeReloadResult::Completed)
+                UE_LOG(Angelscript, Fatal, TEXT("Script Blueprint reference completion failed: %s"),
+                    SoloASBridge::DescribeStockReloadResult(Result));
+#else
 			FBlueprintCompilationManager::FlushCompilationQueueAndReinstance();
+#endif
+// SOLOAS-COMPAT-END
+			SoloASBridge::Editor::ClearScriptBlueprintCompileOptions();
 		}
 
 		TMap<UClass*, UClass*> NonActorReloadClasses;
@@ -1394,15 +1622,7 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 		}
 
 		TSet<UObject*> PreviousInstancesToRetain = PreparedPreviousInstances;
-		if (IsAngelscriptExtensionStageRegistered(EAngelscriptExtensionStage::TypeGeneration))
-		{
-			FAngelscriptTypeGenerationContext Context;
-			Context.Point = EAngelscriptTypeGenerationPoint::RetainPreviousInstances;
-			Context.PreviousInstancesToRetain = &PreviousInstancesToRetain;
-			FString Error;
-			if (!DispatchAngelscriptTypeGeneration(Context, Error))
-				AngelscriptReloadSafety::StopCommittedReload(TEXT("retained-instance-query"), *Error);
-		}
+
 
 		TArray<TPair<UClass*, UClass*>> ReloadPairs;
 		for (const TPair<UClass*, UClass*>& ReloadClass : ReloadClasses)
@@ -1502,7 +1722,13 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 					}
 				}
 				{
+// SOLOAS-COMPAT-BEGIN(<5.6) Preserve retired hierarchy identity and immutable CDO pins [test: SoloAS.FullReloadCanonicalUnion]
+#if SOLOAS_UE_BEFORE(5, 6)
+					FRetiredClassDefaultScopePre56 RetiredDefaults(ReloadBatch);
+#else
 					FAngelscriptRetiredClassDefaultScope RetiredDefaults(ReloadBatch);
+#endif
+// SOLOAS-COMPAT-END
 					int32 HierarchyFailureDetail = 0;
 					const ESoloASBridgeReloadResult HierarchyResult = SoloASBridge::RunWithStockCopyPropertiesScope([&]()
 					{
@@ -1548,7 +1774,13 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 		}
 		if (!NonActorReloadClasses.IsEmpty())
 		{
+// SOLOAS-COMPAT-BEGIN(<5.6) Preserve retired hierarchy identity and immutable CDO pins [test: SoloAS.FullReloadCanonicalUnion]
+#if SOLOAS_UE_BEFORE(5, 6)
+			FRetiredClassDefaultScopePre56 RetiredDefaults(NonActorReloadClasses);
+#else
 			FAngelscriptRetiredClassDefaultScope RetiredDefaults(NonActorReloadClasses);
+#endif
+// SOLOAS-COMPAT-END
 			FSoloASRetiredLoadingExportRepair LoadingExports;
 			FReplaceInstancesOfClassParameters Parameters;
 			TSet<UObject*> ObjectsThatShouldUseOldStuff;
@@ -1575,6 +1807,19 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 				PreReloadReinstancedScriptClasses.Add(ReloadClass.Key);
 			}
 		}
+// SOLOAS-COMPAT-BEGIN(<5.8) Complete CDO/DSO reference replacement after the owned hierarchy call [test: SoloAS.FullReloadCanonicalUnion]
+#if !SOLOAS_UE_AT_LEAST(5, 8)
+		TArray<UObject*> PreviousScriptDefaults;
+		ScriptDefaultReplacements.GenerateKeyArray(PreviousScriptDefaults);
+		RetiredScriptDefaults.Append(PreviousInstancesToRetain);
+		for (UObject* Referencer : FReferencerFinder::GetAllReferencers(PreviousScriptDefaults, &RetiredScriptDefaults))
+		{
+			if (!IsValid(Referencer) || Referencer->GetClass()->HasAnyClassFlags(CLASS_NewerVersionExists)) continue;
+			FArchiveReplaceObjectRef<UObject> ReplaceDefaults(Referencer, ScriptDefaultReplacements,
+				EArchiveReplaceObjectFlags::IgnoreOuterRef | EArchiveReplaceObjectFlags::IgnoreArchetypeRef);
+		}
+#endif
+// SOLOAS-COMPAT-END
 		ScriptDependencyScope->RefreshTransientBlueprintDefaults();
 		FCoreUObjectDelegates::OnObjectsReinstanced.Remove(ReinstanceHandle);
                                                                                                                             
@@ -1722,10 +1967,29 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 			for (UBlueprint* BP : DependencyBPs)
 			{
 				RefreshRelevantNodesInBP(BP);
-				FBlueprintCompilationManager::QueueForCompilation(BP);
+                                                                                                                                
+				SoloASBridge::Editor::QueueScriptBlueprintForCompilation(BP);
+                                                                                                                              
 			}
 
+                                                                                                                 
+// SOLOAS-COMPAT-BEGIN(<5.6) Dependency recompilation also replaces Blueprint actor subobjects [test: SoloAS.BlueprintActorReferenceTiming.Default]
+#if SOLOAS_UE_BEFORE(5, 6)
+            const ESoloASBridgeReloadResult Result = SoloASBridge::RunWithStockCopyPropertiesScope([]()
+            {
+                FBlueprintCompilationManager::FlushCompilationQueueAndReinstance();
+            });
+            if (Result != ESoloASBridgeReloadResult::Completed)
+                UE_LOG(Angelscript, Fatal, TEXT("Script dependency reference completion failed: %s"),
+                    SoloASBridge::DescribeStockReloadResult(Result));
+#else
 			FBlueprintCompilationManager::FlushCompilationQueueAndReinstance();
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                               
+                                                                                                                                   
+			SoloASBridge::Editor::ClearScriptBlueprintCompileOptions();
+                                                                                                                                 
 
 			// Call PostEditChange on any actor instances of the recompiled blueprints.
 			// The blueprint editor does this when recompiling a blueprint, and it's needed
@@ -1769,6 +2033,7 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
         if (!PayloadReloadScope.Publish(PayloadMigrationError))
             AngelscriptReloadSafety::StopCommittedReload(TEXT("payload-publish"), *PayloadMigrationError);
                                                                                                             
+                                                                                                                          
 		TMap<UClass*, UClass*> StockReloadClasses = ReloadClasses;
 		for (const auto& PreparedClass : PreparedBlueprintClasses)
 			StockReloadClasses.Remove(PreparedClass.Key);
@@ -1778,10 +2043,13 @@ static_assert(true, "Bridge stock reload mode is unconditional.");
 		}
 		const bool bRunStockReloadGC = !StockReloadClasses.IsEmpty()
 			|| !ReloadStructs.IsEmpty() || !ReloadEnums.IsEmpty();
+                                                                                                                        
 		// Do a full-on garbage collection step to make sure old stuff is gone
 		// before we start reinstancing things we no longer need.
+                                                                                                                        
 		if (bRunStockReloadGC)
 			CollectGarbage(GARBAGE_COLLECTION_KEEPFLAGS, true);
+                                                                                                                      
 
 		// Call into unreal's standard reinstancing system to
 		// actually recreate objects using the old classes.

@@ -146,7 +146,7 @@ struct FScope::FState
 		}
 		USceneComponent* Component = Allowed[Request.ComponentIndex].Component.Get();
 		USceneComponent* CurrentParent = Component ? Component->GetAttachParent() : nullptr;
-		// Stock/Haze publish AttachParent before the reciprocal edge. A registered
+		// Stock/UE-AS fork publish AttachParent before the reciprocal edge. A registered
 		// nested native detach in that window is an illegal state (native ensure).
 		return Component && Component->IsRegistered() && CurrentParent
 			&& !CurrentParent->GetAttachChildren().Contains(Component);

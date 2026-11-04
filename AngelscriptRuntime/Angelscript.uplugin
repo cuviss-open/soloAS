@@ -1,7 +1,7 @@
 {
 	"FileVersion": 1,
-	"Version": 3,
-	"VersionName": "0.1.2+ue5.8.4",
+	"Version": 4,
+	"VersionName": "0.1.3",
 	"FriendlyName": "Angelscript",
 	"Description": "Angelscript Integration for Unreal Engine ",
 	"Category": "Scripting",
@@ -16,13 +16,23 @@
 	"Installed": false,
 
 	"Plugins": [
+		{ "Name": "StateTree", "Enabled": false, "Optional": true },
 		{
 			"Name": "SoloASBridge",
+			"Enabled": true
+		},
+		{
+			"Name": "StructUtils",
 			"Enabled": true
 		}
 	],
 
 	"Modules": [
+		{
+			"Name": "Angelscript",
+			"Type": "Editor",
+			"LoadingPhase": "None"
+		},
 		{
 			"Name": "AngelscriptCode",
 			"Type": "Runtime",

@@ -22,80 +22,45 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FAngelscriptDebugListAssets, TArray<FString
 DECLARE_MULTICAST_DELEGATE_OneParam(FAngelscriptEditorCreateBlueprint, class UASClass*);
 DECLARE_DELEGATE_RetVal_OneParam(FString, FAngelscriptEditorGetCreateBlueprintDefaultAssetPath, class UASClass*);
 
-                                                                                                       
-class FAngelscriptCodeModule : public FDefaultModuleImpl
-                                                                                                     
+class ANGELSCRIPTCODE_API FAngelscriptCodeModule : public FDefaultModuleImpl
 {
 public:
-                                                                                                                
-	virtual ANGELSCRIPTCODE_API void StartupModule() override;
-
-	virtual ANGELSCRIPTCODE_API void ShutdownModule() override;
-                                                                                                              
+	virtual void StartupModule() override;
+                                                                                                               
+	virtual void ShutdownModule() override;
+                                                                                                             
                                                                                                    
 
 	virtual bool SupportsDynamicReloading() override { return false; }
                                                                                                  
 
 	static TFunction<bool(class asCScriptFunction*)> ShouldFunctionEmitReturnInfo;
-                                                                                                                    
-	static ANGELSCRIPTCODE_API FAngelscriptGetDynamicSpawnLevel& GetDynamicSpawnLevel();
-                                                                                                                  
+	static FAngelscriptGetDynamicSpawnLevel& GetDynamicSpawnLevel();
 	static FAngelscriptVerifySpawnActor& GetVerifySpawnActor();
 	static FAngelscriptDebugCheckBreakOptions& GetDebugCheckBreakOptions();
 	static FAngelscriptGetDebugBreakFilters& GetDebugBreakFilters();
 	static FAngelscriptDebugObjectSuffix& GetDebugObjectSuffix();
 	static FAngelscriptComponentCreated& GetComponentCreated();
-                                                                                                                  
-    /**
-     * Compilation multicast delegates use UE's synchronous Broadcast directly.
-     * On the supported UE 5.8 implementation, an unchanged invocation list is
-     * visited in reverse registration order (last added first). Removal and
-     * compaction may reorder entries; do not depend on historical registration
-     * order after mutation. Callbacks added during Broadcast wait until the next
-     * broadcast. This applies to PreCompile, PostCompile, ReloadHadErrors,
-     * OnInitialCompileFinished and PostCompileClassCollection.
-     *
-     * PreCompile runs before compilation. PostCompile runs after a successful
-     * module swap; ReloadHadErrors reports failure instead. Class collection is
-     * announced by the outer compile flow after CompileModules returns success.
-     * OnInitialCompileFinished runs once initial setup has completed.
-     */
-                                                                                                                
-                                                                                                             
-	static ANGELSCRIPTCODE_API FAngelscriptCompilationDelegate& GetPreCompile();
-                                                                                                           
-                                                                                                              
-	static ANGELSCRIPTCODE_API FAngelscriptCompilationDelegate& GetPostCompile();
-                                                                                                            
-                                                                                                                  
-	static ANGELSCRIPTCODE_API FAngelscriptCompilationDelegate& GetReloadHadErrors();
-                                                                                                                
-                                                                                                                           
-	static ANGELSCRIPTCODE_API FAngelscriptCompilationDelegate& GetOnInitialCompileFinished();
-                                                                                                                         
+	static FAngelscriptCompilationDelegate& GetPreCompile();
+	static FAngelscriptCompilationDelegate& GetPostCompile();
+	static FAngelscriptCompilationDelegate& GetReloadHadErrors();
+	static FAngelscriptCompilationDelegate& GetOnInitialCompileFinished();
 	static FAngelscriptClassAnalyzeDelegate& GetClassAnalyze();
 	static FAngelscriptPreGenerateClasses& GetPreGenerateClasses();
 	static FAngelscriptPostSetupClasses& GetPostSetupClasses();
-                                                                                                                             
-	static ANGELSCRIPTCODE_API FAngelscriptPostCompileClassCollection& GetPostCompileClassCollection();
-                                                                                                                           
+	static FAngelscriptPostCompileClassCollection& GetPostCompileClassCollection();
 	static FAngelscriptLiteralAssetCreated& GetOnLiteralAssetCreated();
 	static FAngelscriptLiteralAssetCreated& GetPostLiteralAssetSetup();
+                                                                                                               
 	static FAngelscriptCompilePostLayoutTypes& GetCompilePostLayoutTypes();
-                                                                                                                  
-	static ANGELSCRIPTCODE_API FAngelscriptDebugListAssets& GetDebugListAssets();
-                                                                                                                
-                                                                                                                        
-	static ANGELSCRIPTCODE_API FAngelscriptEditorCreateBlueprint& GetEditorCreateBlueprint();
-                                                                                                                      
-                                                                                                                                           
-	static ANGELSCRIPTCODE_API FAngelscriptEditorGetCreateBlueprintDefaultAssetPath& GetEditorGetCreateBlueprintDefaultAssetPath();
-                                                                                                                                         
+                                                                                                             
+	static FAngelscriptDebugListAssets& GetDebugListAssets();
+	static FAngelscriptEditorCreateBlueprint& GetEditorCreateBlueprint();
+                                                                                                               
+                                                                                                             
+	static FAngelscriptEditorGetCreateBlueprintDefaultAssetPath& GetEditorGetCreateBlueprintDefaultAssetPath();
 
-                                                                                                                     
-	static ANGELSCRIPTCODE_API void InitializeAngelscript();
-                                                                                                                   
+	static void InitializeAngelscript();
 
 private:
 

@@ -1,8 +1,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SoloASEngineCompat.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
+#include "UObject/Package.h"
 #if WITH_EDITOR
 #include "UObject/ObjectKey.h"
 #endif
@@ -10,8 +12,9 @@
 #include "SoloASScriptBlueprint.generated.h"
 
 class FReferenceCollector;
-class FBlueprintActionDatabaseRegistrar;
 #if WITH_EDITOR
+enum class EBlueprintCompileOptions;
+
 class FSoloASBlueprintDefaultObjectScope
 {
 public:
@@ -20,16 +23,19 @@ public:
 };
 #endif
 
-UCLASS()
+UCLASS(meta = (NotInAngelscript))
 class SOLOASBRIDGE_API USoloASScriptBlueprint final : public UBlueprint
 {
     GENERATED_BODY()
 
 public:
 #if WITH_EDITOR
-    virtual void GetInstanceActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const override;
-    virtual void GetAssetRegistryTags(FAssetRegistryTagsContext Context) const override;
+                                                                                                                                                                                         
+#if SOLOAS_UE_AT_LEAST(5, 5)
     virtual EBlueprintCompileOptions GetDefaultCompileOptions() const override;
+#endif
+// SOLOAS-COMPAT-END
+    EBlueprintCompileOptions ComputeScriptDefaultCompileOptions() const;
     // True requires the whole exact current metadata/CDO group unreachable.
     bool CanOrderTerminalMetadataFinish(bool bRequireUnreachable) const;
     virtual void BeginDestroy() override;
@@ -47,7 +53,7 @@ private:
 #endif
 };
 
-UCLASS()
+UCLASS(meta = (NotInAngelscript))
 class SOLOASBRIDGE_API USoloASScriptBlueprintGeneratedClass final
     : public UBlueprintGeneratedClass
 {
@@ -61,7 +67,6 @@ public:
     virtual UObject* CreateDefaultObject() override;
     virtual void PostLoadDefaultObject(UObject* Object) override;
 #if WITH_EDITOR
-    virtual void GetAssetRegistryTags(FAssetRegistryTagsContext Context) const override;
     virtual void PreSave(FObjectPreSaveContext SaveContext) override;
     bool CanOrderTerminalMetadataFinish(bool bRequireUnreachable) const;
     virtual void BeginDestroy() override;

@@ -102,7 +102,19 @@ struct FAngelscriptMapType : public FAngelscriptType
 			Usage.SubTypes[1].EmitReferenceInfo(InnerParams);
 		}
 
-		Params.Schema->Add(UE::GC::DeclareMember(Params.Names.Top(), Params.AtOffset, UE::GC::EMemberType::StructSet, InnerSchema.Build()));
+                                                                                                           
+		Params.Schema->Add(UE::GC::DeclareMember(Params.Names.Top(), Params.AtOffset,
+                                                                                                         
+// SOLOAS-COMPAT-BEGIN(<5.7) UE 5.6 names map/set GC schema SparseStructArray [test: ASRegression] | CS.Runtime.VersionCompatibility.MapGcSchema
+#if SOLOAS_UE_BEFORE(5, 7)
+            UE::GC::EMemberType::SparseStructArray
+#else
+            UE::GC::EMemberType::StructSet
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                           
+            , InnerSchema.Build()));
+                                                                                                         
 	}
 
 	bool CanCreateProperty(const FAngelscriptTypeUsage& Usage) const override
@@ -118,7 +130,9 @@ struct FAngelscriptMapType : public FAngelscriptType
                                                                                                                       
 #if 0
                                                                                                                     
+                                                                                                           
 		auto* MapProp = new FMapProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                         
                                                                                                                
 #endif
 		auto* MapProp = CastFieldChecked<FMapProperty>(

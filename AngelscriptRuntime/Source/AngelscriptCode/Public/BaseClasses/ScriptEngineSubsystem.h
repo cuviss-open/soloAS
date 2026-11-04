@@ -1,11 +1,16 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Tickable.h"
+                                                                                                                    
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                                  
 #include "Subsystems/EngineSubsystem.h"
 #include "ScriptEngineSubsystem.generated.h"
 
 UCLASS(NotBlueprintable, Abstract, Meta = (NoBlueprintsOfChildren))
-class ANGELSCRIPTCODE_API UScriptEngineSubsystem : public UEngineSubsystem, public FTickableGameObject
+                                                                                                                 
+class ANGELSCRIPTCODE_API UScriptEngineSubsystem : public UEngineSubsystem, public FSoloASTickableGameObject
+                                                                                                               
 {
 	GENERATED_BODY()
 
@@ -13,8 +18,12 @@ public:
 
 	UScriptEngineSubsystem(const FObjectInitializer& Initializer)
 		: Super()
-		, FTickableGameObject(ETickableTickType::Never)
-	{}
+                                                                                           
+// SOLOAS-COMPAT-BEGIN(<5.7) Keep a single constructor body visible to old UHT [test: SoloAS.EngineCompat.ReflectionSurface]
+        , FSoloASTickableGameObject(ETickableTickType::Never)
+    {}
+// SOLOAS-COMPAT-END
+                                                                                         
 
 	// Enable this subsystem to tick when paused
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Engine Subsystem")

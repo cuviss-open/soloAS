@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "ClassGenerator/AngelscriptRuntimeGcMirror.h"
+#include "Compat/SoloASRuntimeCompat.h"
 #include "ClassGenerator/AngelscriptRetiredModules.h"
 #include "AngelscriptRuntimeGcLifecycle.h"
 #include "ClassGenerator/ASClass.h"
@@ -24,6 +25,9 @@
 #include "StartAngelscriptHeaders.h"
 #include "as_scriptobject.h"
 #include "EndAngelscriptHeaders.h"
+
+bool IsRemovedClassConstruction(const UObject* Object);
+bool IsRemovedRuntimeScriptClass(const UASClass* Class);
 
 namespace AngelscriptRuntimeGcMirror
 {
@@ -163,8 +167,10 @@ bool IsApprovedRuntimeScalarProperty(
 		|| OwnerClass == nullptr
 		|| !ScriptClass->IsChildOf(OwnerClass)
 		|| Property->ArrayDim != 1
-		|| Property->GetSize() != Property->GetElementSize()
-		|| !Property->IsInContainer(ScriptClass)
+                                                                                                                   
+		|| Property->GetSize() != SoloASBridge::Compat::GetPropertyElementSize(Property)
+                                                                                                                 
+		|| !SoloASBridge::Compat::IsPropertyInContainer(Property, ScriptClass)
 		|| PropertyOffset < static_cast<SIZE_T>(ScriptClass->ScriptPropertyOffset)
 		|| PropertyEnd > static_cast<SIZE_T>(ScriptClass->GetPropertiesSize())
 		|| PropertyEnd > static_cast<SIZE_T>(TypeCookie->GetSize())
@@ -182,7 +188,7 @@ bool IsApprovedRuntimeScalarProperty(
 			| CPF_NonPIEDuplicateTransient
 			| CPF_TextExportTransient
 			| CPF_SkipSerialization
-			| CPF_Virtual)
+			| SoloASBridge::Compat::VirtualPropertyFlag)
 		|| Property->ContainsInstancedObjectProperty()
 		|| Property->HasGetter()
 		|| Property->HasSetter()
@@ -197,7 +203,7 @@ bool IsApprovedRuntimeScalarProperty(
 	}
 
 	TArray<const FStructProperty*> EncounteredFinishDestroyProps;
-	if (Property->ContainsFinishDestroy(EncounteredFinishDestroyProps))
+	if (SoloASBridge::Compat::PropertyContainsFinishDestroy(Property, EncounteredFinishDestroyProps))
 		return false;
 
 	TArray<const FStructProperty*> EncounteredStructProps;
@@ -331,7 +337,9 @@ bool CaptureRuntimeScalarSnapshots(
 		Snapshot.PropertyTraits = GetAngelscriptPropertyTraits(Property);
 		Snapshot.Offset = Property->GetOffset_ForInternal();
 		Snapshot.Size = Property->GetSize();
-		Snapshot.ElementSize = Property->GetElementSize();
+                                                                                                                   
+		Snapshot.ElementSize = SoloASBridge::Compat::GetPropertyElementSize(Property);
+                                                                                                                 
 		Snapshot.ArrayDim = Property->ArrayDim;
 		Snapshot.PropertyFlags = static_cast<uint64>(
 			Property->GetPropertyFlags());
@@ -344,8 +352,8 @@ bool CaptureRuntimeScalarSnapshots(
 			Snapshot.bBoolIsNativeBool = BoolProperty->IsNativeBool();
 			Snapshot.BoolFieldMask = static_cast<uint32>(BoolProperty->GetFieldMask());
 			Snapshot.BoolByteOffset = static_cast<uint32>(BoolProperty->GetByteOffset());
-			Snapshot.BoolFieldSize = static_cast<uint32>(BoolProperty->GetBoolFieldSize());
-			Snapshot.BoolByteMask = static_cast<uint32>(BoolProperty->GetByteMask());
+			Snapshot.BoolFieldSize = static_cast<uint32>(SoloASBridge::Compat::GetBoolFieldSize(BoolProperty));
+			Snapshot.BoolByteMask = static_cast<uint32>(SoloASBridge::Compat::GetBoolByteMask(BoolProperty));
 		}
 		else if (const UEnum* Enum = GetRuntimeEnumForProperty(Property))
 		{
@@ -417,8 +425,10 @@ bool IsAdmittedRuntimeClassReferenceProperty(
 		&& ClassProperty != nullptr
 		&& Property->GetClass() == FClassProperty::StaticClass()
 		&& Property->ArrayDim == 1
-		&& Property->GetSize() == Property->GetElementSize()
-		&& Property->IsInContainer(ScriptClass)
+                                                                                                                   
+		&& Property->GetSize() == SoloASBridge::Compat::GetPropertyElementSize(Property)
+                                                                                                                 
+		&& SoloASBridge::Compat::IsPropertyInContainer(Property, ScriptClass)
 		&& PropertyOffset >= static_cast<SIZE_T>(ScriptClass->ScriptPropertyOffset)
 		&& PropertyEnd <= static_cast<SIZE_T>(ScriptClass->GetPropertiesSize())
 		&& PropertyEnd <= static_cast<SIZE_T>(TypeCookie->GetSize())
@@ -427,7 +437,7 @@ bool IsAdmittedRuntimeClassReferenceProperty(
 		&& !Property->HasAnyPropertyFlags(
 			CPF_InstancedReference | CPF_ContainsInstancedReference
 			| CPF_Transient | CPF_DuplicateTransient | CPF_NonPIEDuplicateTransient
-			| CPF_TextExportTransient | CPF_SkipSerialization | CPF_Virtual)
+			| CPF_TextExportTransient | CPF_SkipSerialization | SoloASBridge::Compat::VirtualPropertyFlag)
 		&& !Property->ContainsInstancedObjectProperty()
 		&& !Property->HasGetter()
 		&& !Property->HasSetter()
@@ -538,7 +548,9 @@ bool CaptureRuntimeClassReferenceSnapshots(
 		Snapshot.PropertyTraits = GetAngelscriptPropertyTraits(Property);
 		Snapshot.Offset = Property->GetOffset_ForInternal();
 		Snapshot.Size = Property->GetSize();
-		Snapshot.ElementSize = Property->GetElementSize();
+                                                                                                                   
+		Snapshot.ElementSize = SoloASBridge::Compat::GetPropertyElementSize(Property);
+                                                                                                                 
 		Snapshot.ArrayDim = Property->ArrayDim;
 		Snapshot.PropertyFlags = static_cast<uint64>(Property->GetPropertyFlags());
 		Snapshot.MetaClassKey = FObjectKey(ExpectedMetaClass);
@@ -724,7 +736,9 @@ bool BuildRuntimeClassReferenceRestorePlan(
 			|| GetAngelscriptPropertyTraits(CurrentProperty) != Snapshot.PropertyTraits
 			|| CurrentProperty->GetOffset_ForInternal() != Snapshot.Offset
 			|| CurrentProperty->GetSize() != Snapshot.Size
-			|| CurrentProperty->GetElementSize() != Snapshot.ElementSize
+                                                                                                                   
+			|| SoloASBridge::Compat::GetPropertyElementSize(CurrentProperty) != Snapshot.ElementSize
+                                                                                                                 
 			|| CurrentProperty->ArrayDim != Snapshot.ArrayDim
 			|| static_cast<uint64>(CurrentProperty->GetPropertyFlags())
 				!= Snapshot.PropertyFlags
@@ -1168,7 +1182,7 @@ void FinalizeReinstancedScriptPairWindow(
 
 bool IsRawReinstancedScriptPairTombstone(UObject* OldObject, UObject* NewObject)
 {
-	// This is deliberately address-only. The old pointer may already be retired.
+	                                                                                                              
 	const void* OldObjectIdentity = static_cast<const void*>(OldObject);
 	const void* NewObjectIdentity = static_cast<const void*>(NewObject);
 	FScopeLock Lock(&RuntimeTrackedObjectsMutex);
@@ -1177,11 +1191,13 @@ bool IsRawReinstancedScriptPairTombstone(UObject* OldObject, UObject* NewObject)
 	{
 		if (Pair.Value.OldObjectIdentity == OldObjectIdentity
 			&& Pair.Value.NewObjectIdentity == NewObjectIdentity
+			&& IsReinstancedScriptPairTombstoneIdentity(Pair.Value.NewKey, NewObjectIdentity)
 			&& Pair.Value.State != EReinstancedScriptPairConsumptionState::Reserved)
 		{
 			return true;
 		}
 	}
+	                                                                                                            
 	return false;
 }
 
@@ -1492,7 +1508,7 @@ bool PrepareRuntimeTrackedMirrorForLifecycle(
 	RuntimeTrackedObjects.Add(
 		Key,
 		FRuntimeTrackedObject{Key, Object, TypeCookie, ERuntimeMirrorState::Pending,
-			NextRuntimeTrackSequence++, ClassKey, bReplacementCaptureExcluded}
+			NextRuntimeTrackSequence++, ClassKey, bReplacementCaptureExcluded, FObjectKey(static_cast<UASClass*>(TypeCookie->GetUserData()))}
 	);
 	return true;
 }
@@ -2645,7 +2661,7 @@ bool BuildScriptActorAttachmentRestorePlans(
 					);
 				if (bParentWasRemoved)
 				{
-					// Haze reattaches surviving defaults according to their new template.
+					// UE-AS fork reattaches surviving defaults according to their new template.
 					auto* Template = Cast<USceneComponent>(NewComponentsByOldIdentity.FindRef(
 						ComponentSnapshot.OldObjectIdentity)->GetArchetype());
 					if (!Template || !Template->IsTemplate()) return RejectPlan(__LINE__);
@@ -3457,8 +3473,8 @@ bool HasRuntimeObjectsPendingFinishDestroyForClass(const UASClass* Class)
         const auto& Entry = Pair.Value;
         UObject* Object = Entry.Key.ResolveObjectPtrEvenIfUnreachable();
         if (!Object) continue;
-        asITypeInfo* Type = static_cast<asITypeInfo*>(Entry.SavedTypeCookie);
-        const UASClass* Owner = Type ? static_cast<UASClass*>(Type->GetUserData()) : nullptr;
+        const UASClass* Owner = Cast<UASClass>(
+            Entry.SavedTypeOwnerKey.ResolveObjectPtrEvenIfUnreachable());
         if (Object->GetClass()->IsChildOf(Class) || (Owner && Owner->IsChildOf(Class)))
             return true;
     }
@@ -3483,13 +3499,48 @@ void ReleasePublicDestroyReloadTracking(UObject* Object)
 #endif
 }
 
+bool UntrackRemovedClassDefaults(asITypeInfo* Type)
+{
+    // The rooted default objects of removed classes and their subobjects are never destructed. They are
+    // the only tracked users of a retained type that may remain; any other tracked user keeps the type.
+    if (!Type) return false;
+    TArray<UObject*> Defaults;
+    {
+        FScopeLock Lock(&RuntimeTrackedObjectsMutex);
+        for (const auto& Pair : RuntimeTrackedObjects)
+        {
+            const FRuntimeTrackedObject& Entry = Pair.Value;
+            if (Entry.SavedTypeCookie != Type) continue;
+            UObject* Object = Entry.Key.ResolveObjectPtrEvenIfUnreachable();
+            UObject* Default = Object;
+            while (Default && !Default->HasAnyFlags(RF_ClassDefaultObject)) Default = Default->GetOuter();
+            const UASClass* DefaultClass = Default ? Cast<UASClass>(Default->GetClass()) : nullptr;
+            if (!Object || Object->IsUnreachable() || !DefaultClass || !DefaultClass->IsRooted()
+                || DefaultClass->GetDefaultObject(false) != Default || !::IsRemovedRuntimeScriptClass(DefaultClass)
+                || Entry.State != ERuntimeMirrorState::Pending || Entry.RetainedModule || Entry.TerminalPlanId)
+                return false;
+            Defaults.Add(Object);
+        }
+    }
+    for (UObject* Object : Defaults)
+        if (!SoloASBridge::UntrackRuntimeObject(Object)
+            || !RemoveRuntimeTrackedMirror(Object, Type, ERuntimeMirrorState::Pending))
+        {
+            FailRuntimeMirror(TEXT("REMOVED_CLASS_DEFAULT_UNTRACK_FAILED"), Object);
+            return false;
+        }
+    return true;
+}
+
 bool TrackRuntimeObjectWithMirror(UObject* Object, asITypeInfo* TypeCookie)
 {
 	const bool bSupportedTrackingThread = IsInGameThread()
 		|| (IsInAsyncLoadingThread()
 			&& Object != nullptr
 			&& Object->HasAnyInternalFlags(
-				EInternalObjectFlags_AsyncLoading
+                                                                                                                   
+				SoloASBridge::Compat::AsyncLoadingObjectFlags
+                                                                                                                 
 			));
 	checkf(bSupportedTrackingThread, TEXT("unsupported tracking thread"));
 	if (!bSupportedTrackingThread)
@@ -3529,7 +3580,7 @@ bool TrackRuntimeObjectWithMirror(UObject* Object, asITypeInfo* TypeCookie)
 	RuntimeTrackedObjects.Add(
 		Key,
 		FRuntimeTrackedObject{Key, Object, TypeCookie, ERuntimeMirrorState::Pending,
-			TrackSequence, ClassKey, bReplacementCaptureExcluded}
+			TrackSequence, ClassKey, bReplacementCaptureExcluded, FObjectKey(static_cast<UASClass*>(TypeCookie->GetUserData()))}
 	);
 	Lock.Unlock();
 	UE_LOG(LogAngelscriptRuntimeGcLifecycle, VeryVerbose,
@@ -3867,6 +3918,11 @@ void ConsumeEngineReinstancedScriptClassPairs(
 				continue;
 			}
 			if (bUnchangedScriptActorOwnedComponent)
+			{
+				continue;
+			}
+			// An object constructed after its class was removed has no script type and was never tracked.
+			if (::IsRemovedClassConstruction(OldObject))
 			{
 				continue;
 			}
@@ -4249,9 +4305,9 @@ bool BeginRuntimeScriptReplacementCaptureWithWitnesses(
 		if (Entry.State != ERuntimeMirrorState::Pending
 			|| Object->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed)
 			|| Entry.SavedTypeCookie == nullptr
+			|| (Entry.SavedTypeCookie != OldClass->ScriptTypePtr && !HasRetiredRuntimeType(Entry, OldClass))
 			|| static_cast<asITypeInfo*>(Entry.SavedTypeCookie)->GetUserData()
 				!= OldClass
-			|| (Entry.SavedTypeCookie != OldClass->ScriptTypePtr && !HasRetiredRuntimeType(Entry, OldClass))
 			|| NewClass == nullptr)
 		{
 			UE_LOG(LogAngelscriptRuntimeGcLifecycle, Error,
@@ -4716,13 +4772,18 @@ bool DestroyTrackedRuntimeObjectExplicitlyForLifecycle(
 
 void DestroyRuntimeTrackedObjectsForClass(UClass* RemovedClass, bool bPreserveLiveObjects)
 {
-#if SOLOAS_LEGACY_TERMINAL_LIFECYCLE
 	checkf(IsAngelscriptExecutionWriterHeldByCurrentThread(),
 		TEXT("Removed-class mirror retirement requires the execution writer."));
 	if (RemovedClass == nullptr)
 	{
 		return;
 	}
+
+#if !SOLOAS_LEGACY_TERMINAL_LIFECYCLE
+    const auto* Owner = Cast<UASClass>(RemovedClass);
+    if (!Owner || (!bPreserveLiveObjects && Owner->ScriptTypePtr))
+        return;
+#endif
 
 	TArray<FRuntimeTrackedObject> RetiredEntries;
 	{
@@ -4758,6 +4819,7 @@ void DestroyRuntimeTrackedObjectsForClass(UClass* RemovedClass, bool bPreserveLi
 			// Direct AS classes keep their CDOs rooted after type replacement.
 			// Discard the obsolete mirror cookie without ending the lifetime of
 			// those still-live defaults or their owned archetype subobjects.
+#if SOLOAS_LEGACY_TERMINAL_LIFECYCLE
 			UObject* DefaultOwner = Object;
 			while (DefaultOwner != nullptr && !DefaultOwner->HasAnyFlags(RF_ClassDefaultObject))
 			{
@@ -4780,7 +4842,9 @@ void DestroyRuntimeTrackedObjectsForClass(UClass* RemovedClass, bool bPreserveLi
 			// A same-name declaration can replace an already removed class while
 			// external holders still own its old objects and module generation.
 			// Native Blueprint subclasses borrow the nearest script owner's type.
-			else if ((bPreserveLiveObjects || HasRetiredRuntimeType(Entry, Cast<UASClass>(RemovedClass)))
+			else
+#endif
+            if ((bPreserveLiveObjects || HasRetiredRuntimeType(Entry, Cast<UASClass>(RemovedClass)))
 				&& !Object->IsTemplate() && !Object->IsUnreachable()
 				&& !Object->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed))
 			{
@@ -4798,13 +4862,14 @@ void DestroyRuntimeTrackedObjectsForClass(UClass* RemovedClass, bool bPreserveLi
                 RecordRemovedRuntimeReceiver(Object, static_cast<asITypeInfo*>(Current.SavedTypeCookie),
                     Current.RetainedModule, Current.TrackSequence);
 			}
+#if SOLOAS_LEGACY_TERMINAL_LIFECYCLE
 			else
 			{
 				DestroyTrackedRuntimeObjectExplicitly(Object);
 			}
+#endif
 		}
 	}
-#endif
 }
 
 bool RuntimeDestroyObjectAdapter(UObject* Object, void* TypeCookie, uint64 Generation)
@@ -4822,12 +4887,6 @@ bool RuntimeDestroyObjectAdapter(UObject* Object, void* TypeCookie, uint64 Gener
 	}
 
 	TGuardValue<bool> CallbackGuard(bRuntimeDestroyCallbackInProgress, true);
-	if (IsRuntimeGcTraceEnabled())
-	{
-		UE_LOG(LogAngelscriptRuntimeGcLifecycle, Log,
-			TEXT("SOLOAS_GC_CALLBACK_BEGIN class=%s object=%p"),
-			*Object->GetClass()->GetName(), Object);
-	}
 	TOptional<FAngelscriptExecutionWriteScope> TypeLifetimeScope;
 	if (!IsAngelscriptExecutionWriterHeldByCurrentThread())
 	{
@@ -4848,20 +4907,7 @@ bool RuntimeDestroyObjectAdapter(UObject* Object, void* TypeCookie, uint64 Gener
 		{
 			FailRuntimeMirror(TEXT("MIRROR_DESTROY_RECOVERY_FAILED"), Object);
 		}
-		if (IsRuntimeGcTraceEnabled())
-		{
-			UE_LOG(LogAngelscriptRuntimeGcLifecycle, Log,
-				TEXT("SOLOAS_GC_CALLBACK_CALL_FAILED class=%s object=%p mirrorRecovered=%s"),
-				*Object->GetClass()->GetName(), Object,
-				bMirrorRecovered ? TEXT("true") : TEXT("false"));
-		}
 		return false;
-	}
-	if (IsRuntimeGcTraceEnabled())
-	{
-		UE_LOG(LogAngelscriptRuntimeGcLifecycle, Log,
-			TEXT("SOLOAS_GC_CALLBACK_AS_RETURNED class=%s object=%p"),
-			*Object->GetClass()->GetName(), Object);
 	}
 	const bool bRemoved = RemoveRuntimeTrackedMirror(
 		Object,
@@ -4870,12 +4916,6 @@ bool RuntimeDestroyObjectAdapter(UObject* Object, void* TypeCookie, uint64 Gener
 		true
 	);
 	verifyf(bRemoved, TEXT("MIRROR_REMOVE_FAILED"));
-	if (IsRuntimeGcTraceEnabled())
-	{
-		UE_LOG(LogAngelscriptRuntimeGcLifecycle, Log,
-			TEXT("SOLOAS_GC_CALLBACK_END class=%s object=%p removed=%s"),
-			*Object->GetClass()->GetName(), Object, bRemoved ? TEXT("true") : TEXT("false"));
-	}
 	return bRemoved;
 }
 

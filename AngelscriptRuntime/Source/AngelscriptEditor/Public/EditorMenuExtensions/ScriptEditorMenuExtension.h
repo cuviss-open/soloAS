@@ -4,6 +4,15 @@
 #include "AssetRegistry/AssetData.h"
 #include "ToolMenuDelegates.h"
 #include "ToolMenuSection.h"
+                                                                                                   
+#include "SoloASEngineCompat.h"
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 script menu alignment uses the editor Bridge layout adapter [test: SoloAS.EditorMenuSectionAlignment]
+#if SOLOAS_UE_BEFORE(5, 5)
+enum class EToolMenuSectionAlign : uint8 { Default, First, Middle, Last };
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                 
+
 #include "ScriptEditorMenuExtension.generated.h"
 
 UENUM(BlueprintType)
@@ -61,9 +70,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Menu Extension")
 	EToolMenuInsertType ToolMenuInsertType = EToolMenuInsertType::Default;
 
+                                                                                                             
+#if 0
+                                                                                                           
 	// For tool menus, the alignment of the section within the parent
 	UPROPERTY(EditDefaultsOnly, Category = "Menu Extension")
 	EToolMenuSectionAlign ToolMenuSectionAlign = EToolMenuSectionAlign::Default;
+                                                                                                 
+#endif
+    EToolMenuSectionAlign ToolMenuSectionAlign = EToolMenuSectionAlign::Default;
+                                                                                               
+
 
 	// For tool menus, which element to insert relative to
 	UPROPERTY(EditDefaultsOnly, Category = "Menu Extension")

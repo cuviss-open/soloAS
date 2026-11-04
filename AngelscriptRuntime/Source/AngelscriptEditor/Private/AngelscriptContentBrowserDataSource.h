@@ -3,8 +3,10 @@
 #include "ContentBrowserDataFilter.h"
 #include "ContentBrowserDataSource.h"
 #include "ContentBrowserDataMenuContexts.h"
+                                                                                                               
 #include "AssetRegistry/AssetData.h"
 #include "ClassGenerator/AngelscriptClassState.h"
+                                                                                                             
 #include "AngelscriptContentBrowserDataSource.generated.h"
 
                                                                                                              

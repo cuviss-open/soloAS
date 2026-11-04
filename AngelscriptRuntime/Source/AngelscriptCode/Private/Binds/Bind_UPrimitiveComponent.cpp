@@ -1,4 +1,7 @@
 #include "CoreMinimal.h"
+                                                                                               
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                             
 
 #include "GameFramework/Actor.h"
                                                                                                              
@@ -6,6 +9,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/ShapeComponent.h"
 #include "Components/SphereComponent.h"
+#include "AngelscriptDocs.h"
 #include "UObject/UnrealType.h"
                                                                                                            
 #include "Components/PrimitiveComponent.h"
@@ -21,6 +25,18 @@
                                                                                                             
 namespace
 {
+#if WITH_EDITOR
+// A: preserve the native documentation identity of a replaced reflected setter.
+void DocumentShapeSetter(UClass* Class, const TCHAR* Name)
+{
+	if (UFunction* Function = Class->FindFunctionByName(FName(Name)))
+	{
+		FAngelscriptDocs::AddUnrealDocumentation(FAngelscriptBinds::GetPreviousFunctionId(),
+			Function->GetMetaData(TEXT("ToolTip")), Function->GetMetaData(TEXT("Category")), Function);
+	}
+}
+#endif
+
 FObjectPropertyBase* GetShapeBodySetupProperty()
 {
 	static FObjectPropertyBase* Property = FindFProperty<FObjectPropertyBase>(
@@ -75,12 +91,14 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_UPrimitiveComponent([]
 
 	UPrimitiveComponent_.Method("void SetLightmapType(ELightmapType Type)", [](UPrimitiveComponent* Component, ELightmapType Type)
 	{
-		Component->SetLightmapType(Type);
+                                                                                              
+        SoloASBridge::Compat::SetPrimitiveLightmapType(*Component, Type);
+                                                                                            
 	});
 
                                                                                                                   
 	auto UBoxComponent_ = FAngelscriptBinds::ExistingClass("UBoxComponent");
-	UBoxComponent_.Method("void SetBoxExtent(FVector NewBoxExtent, bool bUpdateOverlaps = true)",
+	UBoxComponent_.Method("void SetBoxExtent(FVector InBoxExtent, bool bUpdateOverlaps = true)",
 		[](UBoxComponent* Component, const FVector& NewBoxExtent, bool bUpdateOverlaps)
 	{
 		if (Component == nullptr)
@@ -98,9 +116,12 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_UPrimitiveComponent([]
 		Component->UpdateBounds();
 		Component->MarkRenderStateDirty();
 	});
+#if WITH_EDITOR
+	DocumentShapeSetter(UBoxComponent::StaticClass(), TEXT("SetBoxExtent"));
+#endif
 
 	auto UCapsuleComponent_ = FAngelscriptBinds::ExistingClass("UCapsuleComponent");
-	UCapsuleComponent_.Method("void SetCapsuleSize(float32 NewRadius, float32 NewHalfHeight, bool bUpdateOverlaps = true)",
+	UCapsuleComponent_.Method("void SetCapsuleSize(float32 InRadius, float32 InHalfHeight, bool bUpdateOverlaps = true)",
 		[](UCapsuleComponent* Component, float NewRadius, float NewHalfHeight, bool bUpdateOverlaps)
 	{
 		if (Component == nullptr)
@@ -118,6 +139,9 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_UPrimitiveComponent([]
 		Component->UpdateBounds();
 		Component->MarkRenderStateDirty();
 	});
+#if WITH_EDITOR
+	DocumentShapeSetter(UCapsuleComponent::StaticClass(), TEXT("SetCapsuleSize"));
+#endif
 
 	auto USphereComponent_ = FAngelscriptBinds::ExistingClass("USphereComponent");
 	USphereComponent_.Method("void SetSphereRadius(float32 InSphereRadius, bool bUpdateOverlaps = true)",
@@ -138,5 +162,8 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_UPrimitiveComponent([]
 		Component->UpdateBounds();
 		Component->MarkRenderStateDirty();
 	});
+#if WITH_EDITOR
+	DocumentShapeSetter(USphereComponent::StaticClass(), TEXT("SetSphereRadius"));
+#endif
                                                                                                                 
 });

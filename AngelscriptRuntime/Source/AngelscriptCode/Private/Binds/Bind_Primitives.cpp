@@ -31,7 +31,9 @@ struct TPrimitiveAngelscriptType : public TAngelscriptPODType<NativeType>
                                                                                                                                    
 #if 0
                                                                                                                                  
+                                                                                                                 
 		auto* Property = new PropertyType(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                               
                                                                                                                             
 #endif
 		auto* Property = CastFieldChecked<PropertyType>(
@@ -200,7 +202,9 @@ struct FBoolType : TPrimitiveAngelscriptType<bool, FBoolProperty>
                                                                                                                                 
 #if 0
                                                                                                                               
+                                                                                                                 
 		auto* Property = new FBoolProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                               
                                                                                                                          
 #endif
 		auto* Property = CastFieldChecked<FBoolProperty>(
@@ -366,6 +370,8 @@ struct FFloatType : TNumericAngelscriptType<float, FFloatProperty>
 		case EAngelscriptDeclarationMode::FunctionArgument:
 		case EAngelscriptDeclarationMode::FunctionReturnValue:
 			return TEXT("float32");
+                                                                                                                 
+                                                                                                               
 		}
 
 		return Typename;
@@ -422,6 +428,8 @@ struct FDoubleType : TNumericAngelscriptType<double, FDoubleProperty>
 		case EAngelscriptDeclarationMode::FunctionArgument:
 		case EAngelscriptDeclarationMode::FunctionReturnValue:
 			return TEXT("float64");
+                                                                                                                 
+                                                                                                               
 		}
 
 		return Typename;

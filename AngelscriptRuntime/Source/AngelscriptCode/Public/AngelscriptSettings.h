@@ -51,10 +51,6 @@ public:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Angelscript", Meta = (ConfigRestartRequired = true))
 	TArray<FString> PreprocessorFlags;
 
-	/* Blueprint asset paths keyed by the short name used by import blueprint declarations. */
-	UPROPERTY(Config, EditDefaultsOnly, Category = "Angelscript")
-	TMap<FName, FString> BlueprintBindings;
-
 	/* Whether to allow any C++ function that starts with Get...() to be accessed as a property. (Requires editor restart) */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Angelscript", Meta = (ConfigRestartRequired = true))
 	bool bAllowImplicitPropertyAccessors = true;
@@ -102,15 +98,6 @@ public:
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Backwards Compatibility", Meta = (ConfigRestartRequired = true))
 	bool bAllowRawConstructorsForComponentsAndActors = false;
 
-                                                                                                                     
-	/* Project opt-in for the narrow stock-property preservation compatibility path. */
-	UPROPERTY(Config, EditDefaultsOnly, Category = "Cuviss Studio|Compatibility", Meta = (ConfigRestartRequired = true))
-	bool bEnableStockPurePropertyPreservation = false;
-
-	/* Exact owner/property keys allowed by the project compatibility path. */
-	UPROPERTY(Config, EditDefaultsOnly, Category = "Cuviss Studio|Compatibility", Meta = (ConfigRestartRequired = true))
-	TArray<FString> StockPurePropertyPreservationAllowlist;
-                                                                                                                   
 	/* Whether to allow global functions from different script files to be used when not in a namespace. When set to false, only global function in namespaces can be used outside the file they're in. */
 	UPROPERTY(Config, EditDefaultsOnly, Category = "Backwards Compatibility", Meta = (ConfigRestartRequired = true))
 	bool bExposeGlobalFunctionsToOtherScriptFiles = false;

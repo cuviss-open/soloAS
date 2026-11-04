@@ -2,13 +2,13 @@
   "files": {
     ".github/license-headers.json": {
       "mode": "0o644",
-      "sha256": "e0feccbac4e9bf44bd3b73487da666aaeb5a4145bd5551d4998a3ccf0d2b30bc",
-      "size": 71852
+      "sha256": "a2492c582d33a013dcb935d89007a913d210ed630b4c4c12c8afb5ed66490f7e",
+      "size": 69052
     },
     ".github/scripts/check_public.py": {
       "mode": "0o644",
-      "sha256": "e688b117e2ad28387c4c97809d67f0b4909846daa7de5ac4366d6a420a78d751",
-      "size": 5873
+      "sha256": "c5c3a7295493f4770b92bfc74895f9cde578882eb7f507536fde99802931f006",
+      "size": 6813
     },
     ".github/upstream.json": {
       "mode": "0o644",
@@ -22,8 +22,8 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/AngelscriptEnhancedInput.uplugin": {
       "mode": "0o644",
-      "sha256": "f6e2339d149ef5c02755ed86f7c3098a1f0fb8a794355539ff20e8d3c7ba9007",
-      "size": 650
+      "sha256": "b5a9ac8b33dffc6356c5f620101918d1bc63cdad959245dc2792fd874b60b1cc",
+      "size": 707
     },
     "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/LICENSE-MIT": {
       "mode": "0o644",
@@ -37,8 +37,8 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/AngelscriptEnhancedInput.Build.cs": {
       "mode": "0o644",
-      "sha256": "9e5e3099f9663d80e297f4d6cc9cd2f4abd5145d3fe6dfdb00b116ac9a68d5dc",
-      "size": 1025
+      "sha256": "b02bb98f30132858ea6222095dd459afc231e05f2ad21031240b1f476c911781",
+      "size": 1055
     },
     "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Private/AngelscriptEnhancedInputModule.cpp": {
       "mode": "0o644",
@@ -47,8 +47,8 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Private/Binds/Bind_FInputActionValue.cpp": {
       "mode": "0o644",
-      "sha256": "2be2be1caaa1f5b6c2267f93706a8a08cacb7c02cb5a223bbfaf7f9876be1585",
-      "size": 3629
+      "sha256": "28b3f00450b40397b323e6acaa6f09618112f3473b95faf419909ab083349358",
+      "size": 3648
     },
     "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/Source/Private/Binds/Bind_FInputBindingHandle.cpp": {
       "mode": "0o644",
@@ -77,8 +77,13 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/AngelscriptGAS.uplugin": {
       "mode": "0o644",
-      "sha256": "855b59175d46c38e77052a2e3509d07fc4b3a8194f203dd0ef6b672cd5652688",
-      "size": 727
+      "sha256": "89fe041722ec89d1bceaa45265962e5fe4de2bde6dff780a0337c028ea0bdd34",
+      "size": 784
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Config/FilterPlugin.ini": {
+      "mode": "0o644",
+      "sha256": "206f3f2b064956d9cd8ec85ee8b7fd0b96f05c39e62c9996706ae756a267b6a6",
+      "size": 30
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/LICENSE-APACHE": {
       "mode": "0o644",
@@ -102,8 +107,8 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/AngelscriptGAS.Build.cs": {
       "mode": "0o644",
-      "sha256": "73d792f5ed97d7b3202ad2b216c5a3f86a5587b4d12fd93b4c9b7542eb3f28c2",
-      "size": 1069
+      "sha256": "8efe55af609c168e522510ee3395b6979906172989526f33561ca20c32e46e65",
+      "size": 1974
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptAbilitySystemComponent.cpp": {
       "mode": "0o644",
@@ -137,8 +142,8 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptGASModule.cpp": {
       "mode": "0o644",
-      "sha256": "a52a6c700ff1fb3a1f4efe42a228f1e3325f930e320363ea092e5d4d0fa2c082",
-      "size": 2615
+      "sha256": "4a2fcdb9bd8549698d5d486ad9c034ba624e173aeb2887f19ed0677774176b5a",
+      "size": 4609
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/AngelscriptGASPawn.cpp": {
       "mode": "0o644",
@@ -154,6 +159,11 @@
       "mode": "0o644",
       "sha256": "d95c63bbafb387a6d517f4eaf2aeacbae4f32ceec8f734ea1ac7aa06fcc8aa4b",
       "size": 722
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_AbilitySystemLooseTags.cpp": {
+      "mode": "0o644",
+      "sha256": "6e27fafdb36c8af350e35cb8f78d4ec0f330b0f0a6297365785f3534945c6b71",
+      "size": 8109
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_FGameplayAbilitySpec.cpp": {
       "mode": "0o644",
@@ -177,8 +187,13 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Binds/Bind_GameplayTaskOwnership.cpp": {
       "mode": "0o644",
-      "sha256": "112699206755b021af2869d1086c9331dc54d5ca28c6898e507f11e7958ddb65",
-      "size": 1344
+      "sha256": "a2ba3cd35db50f6ddcbd3175e78d541067139a3790c2fa0e696a9d73430ba3bb",
+      "size": 1704
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/SoloASGameplayEffectAppliedTasks.cpp": {
+      "mode": "0o644",
+      "sha256": "63f3fad062adfcf1589fe46c498c036f8420af1d7d789217677326859f1da217",
+      "size": 7900
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/AngelscriptAbilitySystemComponent.h": {
       "mode": "0o644",
@@ -227,13 +242,13 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/FunctionLibraries/AngelscriptAbilityAsyncLibrary.h": {
       "mode": "0o644",
-      "sha256": "4aed029ab3b1cb853c28194b96422a73b8bd13a7797e139ef57713920eef3012",
-      "size": 2337
+      "sha256": "0cdffc01410192236c25e4f44fc603d3faaee012f5217623008da97fc70efd23",
+      "size": 3422
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/FunctionLibraries/AngelscriptAbilityTaskLibrary.h": {
       "mode": "0o644",
-      "sha256": "5915ab0a8c0fc1fd18b0bbdb09a2c568c97ff15d75cbe3e99e62a4de32960ff7",
-      "size": 26287
+      "sha256": "2c1789cdca3f70eed9f6f60e62540d30519160735a3f0d2687a6983f28e9f139",
+      "size": 30151
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/FunctionLibraries/AngelscriptGameplayCueUtils.h": {
       "mode": "0o644",
@@ -252,8 +267,8 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/AbilitySystemComponentMixinLibrary.h": {
       "mode": "0o644",
-      "sha256": "14715121f69b93f7b4a1dba86e0c08f5cb5f60d512a1b50a36cef77eeb339cf7",
-      "size": 9517
+      "sha256": "bd5f5bbd2dd58c280668337ae04a9ff7e180e0958aedae04fb931b8afa1e0399",
+      "size": 75
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/AngelscriptGameplayAttributeDataMixinLibrary.h": {
       "mode": "0o644",
@@ -312,8 +327,8 @@
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayEffectSpecMixinLibrary.h": {
       "mode": "0o644",
-      "sha256": "e932a82e74423a367ab84d5168d7627b39cb96bd1e6eb82cc0d9b877aa62532f",
-      "size": 10391
+      "sha256": "6e77e5fe5f9beae0013f9306d1ddba857b6b91c0047620534818141d5eb2be21",
+      "size": 11566
     },
     "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/Mixin/GameplayModifierEvaluatedDataMixinLibrary.h": {
       "mode": "0o644",
@@ -330,12 +345,27 @@
       "sha256": "8e9defb7b1a79af1ea77d52dfcc3be0116f8b021b4137f387819772def817475",
       "size": 682
     },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Public/SoloASGameplayEffectAppliedTasks.h": {
+      "mode": "0o644",
+      "sha256": "fb5ee8421ec83ac2fffeb59543a7fe8809b7016a1665a8800151983cacb13a4f",
+      "size": 3189
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Versioned/Legacy/Public/Mixin/AbilitySystemComponentMixinLibraryVersion.h": {
+      "mode": "0o644",
+      "sha256": "dce1dd5ac125e7baee0b3e2ada4c22f6b017ce97105ac180214fa30787b5efd6",
+      "size": 8990
+    },
+    "AngelscriptManualBindPlugins/AngelscriptGAS/Versioned/UE57/Public/Mixin/AbilitySystemComponentMixinLibraryVersion.h": {
+      "mode": "0o644",
+      "sha256": "f4b779ad9b127b9cabf744facbd7de9284aded368c58f5e7684385dee65e025b",
+      "size": 9524
+    },
     "AngelscriptRuntime/Angelscript.uplugin": {
       "mode": "0o644",
-      "sha256": "e9d0e6a0e115fdee0ed5ac6759351f56c16a6e5db521e4c083dcb4131e4ef662",
-      "size": 811
+      "sha256": "abdc98bdfc89c04fb406d83f63e75cfd76220dbea2120d368fad86e9135b45d6",
+      "size": 1002
     },
-    "AngelscriptRuntime/Config/Editor.ini": {
+    "AngelscriptRuntime/Config/BaseEditor.ini": {
       "mode": "0o644",
       "sha256": "e4a8385f9863969813adec65a49131ebffd8034e2c2563412bf8b67ab931bfa4",
       "size": 324
@@ -355,10 +385,20 @@
       "sha256": "a5fb079d23781753ba4858b0d6ba1612a97beeeadb43cde807575a46a51ffa87",
       "size": 837
     },
+    "AngelscriptRuntime/Source/Angelscript/Angelscript.Build.cs": {
+      "mode": "0o644",
+      "sha256": "6fdd525974f56db7e66d56d37f7ac6a9b4ca2a37dfd51a4cb779fa56a92e630e",
+      "size": 514
+    },
+    "AngelscriptRuntime/Source/Angelscript/Private/AngelscriptModule.cpp": {
+      "mode": "0o644",
+      "sha256": "78e30d22243acb1cc7c391a2c14ad683e170cc3ee01b9a3bf882597bbb8a177f",
+      "size": 168
+    },
     "AngelscriptRuntime/Source/AngelscriptCode/AngelscriptCode.Build.cs": {
       "mode": "0o644",
-      "sha256": "ee02bb71d016c7634c422d3fd846be0acf92678141718545a0deba2e5d4e9e4c",
-      "size": 6325
+      "sha256": "c3a83c532abaa9842e4f00537fbd71aebcfe1eaaafc06b9f4136b6d5b8e19e41",
+      "size": 6578
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptAllScriptRootsCommandlet.cpp": {
       "mode": "0o644",
@@ -370,15 +410,10 @@
       "sha256": "e4ac66c4c2e627abcdcd07d9955a2dc642012d0b869dead1635c79f9d74e0883",
       "size": 444
     },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptApiMetadata.cpp": {
-      "mode": "0o644",
-      "sha256": "111519e2560708a8ae7f89cac6222da1eef8b2f107084f498a848d7b8107b27f",
-      "size": 4321
-    },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptAttachmentCallerScope.cpp": {
       "mode": "0o644",
-      "sha256": "4a78a6c0aa005f5bb94ba765d3a62636c11a96ec750fda3e381e4226d0e7688e",
-      "size": 13601
+      "sha256": "f29e292c3f87a5117f79d6ff787568c985a406f7f712ccdac66167b484c58de0",
+      "size": 13607
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptBindDatabase.cpp": {
       "mode": "0o644",
@@ -387,13 +422,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptBinds.cpp": {
       "mode": "0o644",
-      "sha256": "fcec59f04368c7a297fd9347ecba3c4badbbfc48f6bf1cbce117a47377803deb",
-      "size": 26653
+      "sha256": "7d31fec7f83b9597231b96b3b70c2595b3b0945572d7506d6a3007ffa332b39d",
+      "size": 20509
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptCallableDispatchAdapter.cpp": {
       "mode": "0o644",
-      "sha256": "e1a3a9feae70326dd9fb1a81ede97cd0e5d60d5b4acabee1143e9ec384d2b25f",
-      "size": 20412
+      "sha256": "afffab2afc62f207be101963e420f1aa30689526111feb5ab67484bb2f0b03a5",
+      "size": 21163
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptCallableMetadataAdapter.cpp": {
       "mode": "0o644",
@@ -402,38 +437,33 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptCodeModule.cpp": {
       "mode": "0o644",
-      "sha256": "4a3ada70946a1516b2ea8de3acfce8e38be854aad321b226c7d3a805d307eff3",
-      "size": 8681
+      "sha256": "8c870c7cc6eedf24edb90012a6ac95e4487000eb27a821c335d3bada4a02cfe2",
+      "size": 8987
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptDocs.cpp": {
       "mode": "0o644",
-      "sha256": "0f93e1d35b8af1260f3349ddcb9fc9517f0d433bdabebc8a8c35dd0a30acbbcb",
-      "size": 20221
+      "sha256": "35b1fc11a32e2b7eb033b3d42510a98f5bd554a23f25771a72593ac561344fa9",
+      "size": 22567
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptExecutionQuiescence.cpp": {
       "mode": "0o644",
-      "sha256": "cbab793d76642ee5759c14df5e9766efefc4b9c75cf97ef7459308c5b9dc9581",
-      "size": 6244
+      "sha256": "fc4c3016266c5f3e3d3294e01f8d2d50d98927f665ab40e8a1716077593a474f",
+      "size": 6376
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptManager.cpp": {
       "mode": "0o644",
-      "sha256": "78ea96c8fd7e049e833b46cadcf6ce8a826a3212bfcff9574bdb287bb4f3bcdf",
-      "size": 238487
+      "sha256": "d0af65fbe67221ffd3c133429387140cf2c8342ab299021cf21c3cd591c8523a",
+      "size": 167356
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptReflectionAdapter.cpp": {
       "mode": "0o644",
-      "sha256": "3ee8781721bf48b0e9caffdf9fbca10c26a4660e81fca97377e0b6aeaeabfd8e",
-      "size": 8817
+      "sha256": "40a40851d851569381f933eb83eaae7fa1e3c86efda37ed05586c063caa34ae0",
+      "size": 10665
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptReloadSafety.cpp": {
       "mode": "0o644",
       "sha256": "0d5a8a976f0962e6080b839c6d27b4b73ee92e80b85db5dc9be6f9bcd8f86b08",
       "size": 12812
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptScriptUnit.cpp": {
-      "mode": "0o644",
-      "sha256": "858daba084ee1fa3dbe5c54fe85345f4c2c9cfbcf7aaf63d700161d055c834fe",
-      "size": 32362
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptSharedPtr.h": {
       "mode": "0o644",
@@ -457,13 +487,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptType.cpp": {
       "mode": "0o644",
-      "sha256": "31a4f1859a22214c02dd58478193471c241678ddf59872f5563e8f3e258d34a1",
-      "size": 28005
+      "sha256": "49f1a74382ded37f9d3a48e2f5ec0863bd28ce1d198393f84dce28dadb2731b6",
+      "size": 26763
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/AngelscriptInstancedStructMigration.cpp": {
       "mode": "0o644",
-      "sha256": "981d176ced933edfd3ddb412e1a572fa6651fd420f26eaf780419003e5e2cb42",
-      "size": 6915
+      "sha256": "1b0f012d00184ee4b6ec069831bc7cb583758fcf350e395ef535bf8ecbf0f082",
+      "size": 7162
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/AngelscriptInstancedStructMigration.h": {
       "mode": "0o644",
@@ -492,23 +522,18 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_BlueprintCallable.cpp": {
       "mode": "0o644",
-      "sha256": "b8a5146932d7a66def816a23d127af513fedf56759ae658106399ae4646389e7",
-      "size": 10922
+      "sha256": "f0a17f9bf65d6efee772cf30417d408edae789c463d0ead85957f6a44a99fce6",
+      "size": 12799
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_BlueprintEvent.cpp": {
       "mode": "0o644",
-      "sha256": "05816c642d2ead062f6ce6a4a816037d783cf03f4d0129a801a02760abca5261",
-      "size": 30068
+      "sha256": "acc819be25411c95e0088630ae49caacf73d28b696848d93d1ff0a401196625d",
+      "size": 25459
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_BlueprintType.cpp": {
       "mode": "0o644",
-      "sha256": "25ae989dfec0e7a2dd986b7b76a0c6afb119e94b23f0553ba5c88e5a7e30712e",
-      "size": 122168
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_CallableReferenceReturns.cpp": {
-      "mode": "0o644",
-      "sha256": "ccbb9350159292def224b290fb5ebc3adf7ca63652152abc4dc4e254405114a1",
-      "size": 2355
+      "sha256": "e18cf1920207eb9307675b15abdf28b22fce85ff1c01ed11b065272bf32f61c6",
+      "size": 105303
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_CollisionProfile.cpp": {
       "mode": "0o644",
@@ -527,8 +552,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_CoreGlobals.cpp": {
       "mode": "0o644",
-      "sha256": "a940edd680f7e4c14754e4965face4eb6576215a0922084ebb9f15f3cff8f14f",
-      "size": 695
+      "sha256": "f65d5b029fcea598ab657d91673571ce41d3fe372e6b9797175ad4a86082e27d",
+      "size": 2155
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Debugging.cpp": {
       "mode": "0o644",
@@ -542,8 +567,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Delegates.cpp": {
       "mode": "0o644",
-      "sha256": "bb4d587098eccac9b9d8896a02ffd599c9341b62ff9d56c60e9babe45007ac11",
-      "size": 52570
+      "sha256": "5b7f39a96f12e5abbca470430aaff3c93f4224be3b8b6f97ba67d56e341f124b",
+      "size": 53242
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Deprecations.cpp": {
       "mode": "0o644",
@@ -597,8 +622,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FCollisionQueryParams.cpp": {
       "mode": "0o644",
-      "sha256": "b3d29606d39549128fd3fe10d7182fd2e475a975e6cace6cb8e611451dfbbfb9",
-      "size": 24222
+      "sha256": "bd2e96faa4011aac0b1a04461df073bda109212b25d54b70189f6d96261a05f1",
+      "size": 27243
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FCollisionShape.cpp": {
       "mode": "0o644",
@@ -717,8 +742,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FName.cpp": {
       "mode": "0o644",
-      "sha256": "faf8fa8fd5fca184f4e2d57554883c7723d356a3042c2138d08052d4d10783f0",
-      "size": 6722
+      "sha256": "2f7f42a78bebafe2f07077ceb41701c11b3e578a816329f1d833a4f0a65d5df8",
+      "size": 7177
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FNumberFormattingOptions.cpp": {
       "mode": "0o644",
@@ -817,8 +842,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FText.cpp": {
       "mode": "0o644",
-      "sha256": "9df7a8e3625019710275edd315b4fcc26fa8ddea400025febc536e25fb4e2843",
-      "size": 15756
+      "sha256": "21ef3519e6ba69505236b5f76fd6c5912c96acaf812c29584d3a9526d729a51d",
+      "size": 17247
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_FTimespan.cpp": {
       "mode": "0o644",
@@ -872,13 +897,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_InputEvents.cpp": {
       "mode": "0o644",
-      "sha256": "81510db71304cb8a2fdd52dd6adcd5d37a35d110b1f5a9d0f55663e050654187",
-      "size": 23045
+      "sha256": "3980f93f55ed52087e8fb338dc8d466ca5aeb95bfd0bd02c1dd462f0182c83eb",
+      "size": 24295
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Json.cpp": {
       "mode": "0o644",
-      "sha256": "3d8702a08293f9103e41934b24a7e5f99f85b099d13c4f5fab54dbc269e1b29c",
-      "size": 23178
+      "sha256": "ef87b0fc8528a032107e4ce3bc2a5f52aa4f3a33e7a65e76c5c5189eecf55742",
+      "size": 23334
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_JsonObjectConverter.cpp": {
       "mode": "0o644",
@@ -897,8 +922,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_Primitives.cpp": {
       "mode": "0o644",
-      "sha256": "1170bd6a7c177f389fdb74c05fc25d2161d35c58103cbbbbfc127cd38e63d755",
-      "size": 34845
+      "sha256": "34f09234565d6a8884a8fa0fb1046045794685735f1db442080d454703792392",
+      "size": 35749
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_SoftObjectPath.cpp": {
       "mode": "0o644",
@@ -917,33 +942,33 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_SystemTimers.cpp": {
       "mode": "0o644",
-      "sha256": "7ce85abf91d34aec7af6cedb87cd0682fc8c45bc6c23b451c5a4054b3de9daf6",
-      "size": 1091
+      "sha256": "89ff3e906dd5d01444ee2fc3189bac5992e9332e01509fb05ba5a2a58b2ff66e",
+      "size": 1972
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TArray.cpp": {
       "mode": "0o644",
-      "sha256": "8801573e2dc6f59501aac09ad3efb4454606a22efa17420e50487ca6329d8bab",
-      "size": 62591
+      "sha256": "b3adb02a70f0751210041afcc1e92cbf2454ec1f1eb7a64dbbc60b7047503d66",
+      "size": 64562
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TMap.cpp": {
       "mode": "0o644",
-      "sha256": "06a12f07eaf2f371068a1fb07cae41e00374d1a94101b55ee882b1aa1aa37995",
-      "size": 42114
+      "sha256": "6db06c783081f61df29bed37369fefe48220fa17129bc492b3b78fe54dc091c2",
+      "size": 43038
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TOptional.cpp": {
       "mode": "0o644",
-      "sha256": "45a47bc5e529bba9e87db4fff88e583a7596d6fa210ce9b22506770d8aa46fce",
-      "size": 24228
+      "sha256": "1101b4ff6eefc7318627a2521cec1badbc904f3bb5ea2e0101cf8c024161dc04",
+      "size": 24452
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TSet.cpp": {
       "mode": "0o644",
-      "sha256": "a694e97d4fd67d27850fd4bad6c9d8edcee93377df76bd9a9aa25fdeb49a0c45",
-      "size": 24006
+      "sha256": "d07e4ccc799cb78311f5a61ebd04544de942890d5113ebd549df007035222f43",
+      "size": 25283
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_TSoftObjectPtr.cpp": {
       "mode": "0o644",
-      "sha256": "ca3bc009d35b93f6b8b0d07fbfac37535381cf4d84f4351c4b205c2f3ae7a330",
-      "size": 23653
+      "sha256": "0c3aebdab784a17cb78e7b624067b4c0fec292926c3b0c26ef53861bdab06386",
+      "size": 24121
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UActorComponent.cpp": {
       "mode": "0o644",
@@ -967,8 +992,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UEnum.cpp": {
       "mode": "0o644",
-      "sha256": "05728257f84837e2689fcc1d4459a910a3af181c40f3a1c8ada525affb68ff3c",
-      "size": 26373
+      "sha256": "6c04012ccdc2598b96c9d4cc19b246d7b93e1a673031c6537a02eb4179e59868",
+      "size": 27153
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UFXSystemComponent.cpp": {
       "mode": "0o644",
@@ -992,8 +1017,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UObject.cpp": {
       "mode": "0o644",
-      "sha256": "dd2e133f94ae3f07281f05d207a5dcaa27db9db3279a88d438eac9dd14710fdc",
-      "size": 18994
+      "sha256": "4f5d18d3713cb74ec48c0fe0535b609ff460b0cd3ace7db0a6d824f98803c9bd",
+      "size": 19627
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UPackage.cpp": {
       "mode": "0o644",
@@ -1007,8 +1032,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UPrimitiveComponent.cpp": {
       "mode": "0o644",
-      "sha256": "a5102364a162d1dc416b4f135ac59ebd211a7dceeb29ac26800182ee49710e54",
-      "size": 4811
+      "sha256": "685475be1ce5033e00f3e6aaf5692f2f795aa64d10d7ae6fb37e6cd18cc82fe7",
+      "size": 6019
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UProjectileMovementComponent.cpp": {
       "mode": "0o644",
@@ -1032,13 +1057,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UStruct.cpp": {
       "mode": "0o644",
-      "sha256": "11733941346effda954caf63b254d410f3868f89300bb7c4c116cb74d0883450",
-      "size": 56274
+      "sha256": "0f2c8e7f94ff9baf10d6663ebe8b5e613bf77eb28e0072019d22ee195cfa031e",
+      "size": 59217
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UUserWidget.cpp": {
       "mode": "0o644",
-      "sha256": "3528982d105f5382aa6072549cd6119b2454eb04b6fa9de7f603fe563dd8d2d4",
-      "size": 13897
+      "sha256": "a9e25dfd1c14e53888a8fc53d8e50db843e7ce3647fe24fbc0d8867a18528783",
+      "size": 14119
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Bind_UWorld.cpp": {
       "mode": "0o644",
@@ -1062,13 +1087,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_CppType.h": {
       "mode": "0o644",
-      "sha256": "cfaf4b3bb58e78430c00c3b689b0dc3b8abad03380ad03ddded3a54cf0ec2a95",
-      "size": 6696
+      "sha256": "96f17bd46cc0ca1013f95f3d9f33cb5afdae04e6b063d37e7d9ed04de48c7413",
+      "size": 6904
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_FunctionSignature.h": {
       "mode": "0o644",
-      "sha256": "4a9576ba8ce1e175cac58cec005f216ed9290c168564487e5d8513c22d6165c4",
-      "size": 18321
+      "sha256": "394c76d564b1a25de26d6e5e0b8368db4151bf44299335d79c904ff7b45cc4d8",
+      "size": 20899
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_GetTypeInfo.h": {
       "mode": "0o644",
@@ -1082,8 +1107,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_StructType.h": {
       "mode": "0o644",
-      "sha256": "2e7eff9216ad7be6fc657ac322d1437371333869ffd8ca129e7ceaa1be9ed6ee",
-      "size": 6481
+      "sha256": "67674464c69d4aac10cbdf23ca209abdbdf2d89fb2f3cff94d141b7a7cb49087",
+      "size": 6695
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/Helper_ToString.h": {
       "mode": "0o644",
@@ -1107,13 +1132,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Binds/UObjectTickable.h": {
       "mode": "0o644",
-      "sha256": "5963387a7b382a51a6569ffa76919a7d2240bd8b89b5aa83d19f42e9a9f64b67",
-      "size": 1287
+      "sha256": "e26fda4200b57933fd43ece764687bb4f9002e59eed65ff60181db42a1100f5d",
+      "size": 2424
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/ASClass.cpp": {
       "mode": "0o644",
-      "sha256": "9e9271ea24597f4cbc9a1ef79012f3a39c809b0d03d44bd6b3fabde5a7956e53",
-      "size": 163997
+      "sha256": "d10f08e164b3b2553d1599e1afe85cd24e031e88e3af0aab02ab72c00dbd27a6",
+      "size": 156987
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/ASEnum.cpp": {
       "mode": "0o644",
@@ -1122,8 +1147,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/ASStruct.cpp": {
       "mode": "0o644",
-      "sha256": "7a8d56e93a317f11eefb4ddef4b0145a1a5df83d786551de1b16e2b01a20bd32",
-      "size": 24873
+      "sha256": "180bbcf5bf21fa2727c27790b5152488eb76d2b1c7d6c1172c7081c3a9d424a4",
+      "size": 38331
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptActorBindingState.cpp": {
       "mode": "0o644",
@@ -1142,8 +1167,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptClassGenerator.cpp": {
       "mode": "0o644",
-      "sha256": "5150dc4f2159f1c0b09612b6485babd93374d1a4b3a9d13b8d29283ee8728e4a",
-      "size": 264629
+      "sha256": "65cdebe1ae29e8721b8ac360224a56619ff34de2d10f98cae7995844141008a1",
+      "size": 247492
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptClassLifecycleAdapter.cpp": {
       "mode": "0o644",
@@ -1152,73 +1177,43 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptClassState.cpp": {
       "mode": "0o644",
-      "sha256": "57a0215653760aeff522c273b64db0d8e5dca890d5804166a930f1a2fca5150a",
-      "size": 3599
+      "sha256": "092b58ff8bfe755b1dc3332344e27b935d387406fcb00c7f852b0ad0bcb7edb8",
+      "size": 3605
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptFieldDestruction.cpp": {
       "mode": "0o644",
-      "sha256": "088e345f2e16944f2cc33f85b4363732507d1e99548e2e804f4eb50b43a5b96b",
-      "size": 11748
+      "sha256": "9b311a7e9324e73ad4e26565a95d05f5c52565c2b03fd4cd76bac2640606d9c4",
+      "size": 12677
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptFieldDestruction.h": {
       "mode": "0o644",
       "sha256": "1a3c5033280479bb4bdefa2a03f958798b5c7548f7bbd493f318ce11136fdd1a",
       "size": 1461
     },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptGeneratedClassFunctionStateAdapter.cpp": {
-      "mode": "0o644",
-      "sha256": "3e474c47e1b01589c3474d38eeed7944dcd8c7a64074d4a68a4dac993e8a90de",
-      "size": 4962
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptGeneratedClassFunctionStateAdapter.h": {
-      "mode": "0o644",
-      "sha256": "1771f283b93cdc6c6b743760aec2598e4f7a433e99ca35004f4712adac1e8b55",
-      "size": 2318
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptInstancedSubobjectReplacementAdapter.cpp": {
-      "mode": "0o644",
-      "sha256": "650ce60ca235da738a26199fa6a5f08144604de6928199fea1ac89e647ef56d5",
-      "size": 3445
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptInstancedSubobjectReplacementAdapter.h": {
-      "mode": "0o644",
-      "sha256": "7b188ff9d394d4127ff1f481dbcc6ea79b0adfbb2b276bb6fff54e9c04de5827",
-      "size": 1336
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptObjectDestructionAdapter.cpp": {
-      "mode": "0o644",
-      "sha256": "c9907a47377bd593ad7d80893f5539fc0195db7b897699cff5f133d602814ed5",
-      "size": 2666
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptObjectDestructionAdapter.h": {
-      "mode": "0o644",
-      "sha256": "42463388654231441a2c496966d87b87b6d6221bbe5fb71798ad2e5d0404c9c1",
-      "size": 1536
-    },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptPropertyInitialization.cpp": {
       "mode": "0o644",
-      "sha256": "f6fbb2c4689b6c7b3f9dfa60d3782e3e607647c0571056a15808a07b43735c02",
-      "size": 6336
+      "sha256": "21387d5604797de8e681dbeb8dc996f0be2fe90d07b0b21b2d2221b63ce05f8f",
+      "size": 15710
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptPropertyInitialization.h": {
       "mode": "0o644",
-      "sha256": "5e276cfde08545a5f354343f5f98a8366bb76912e32488b9c763c23c6bebde26",
-      "size": 420
+      "sha256": "5289f946b196c028f9cf46c2af5da1f120cb36e9469be8d6fecc7befc9f04b8e",
+      "size": 1126
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptReplicationShadow.cpp": {
       "mode": "0o644",
-      "sha256": "9afc5b5c2311fa2e43f3a9d9d78ede1e511f82795d4a6180bba58938395ed46f",
-      "size": 17809
+      "sha256": "23bceb07ef15e0b8bf30767566f7e6fe08a1b345b8b85c100375375d1e8acdf5",
+      "size": 18974
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRetiredModules.cpp": {
       "mode": "0o644",
-      "sha256": "42950f0435578ec8c03810ddeb210118f9232a69e8d550d883c58115c503c19b",
-      "size": 4371
+      "sha256": "b0b175c2d77e173c08ed1ae9d5b32e99110886f023d6a14792a974e3847a24a1",
+      "size": 4413
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRetiredModules.h": {
       "mode": "0o644",
-      "sha256": "24a0c4715db0a002649af8a92ec55049c4dadefb8efb9b532927cd73840bace4",
-      "size": 442
+      "sha256": "1a991a1fecacedfef0c89ac653c69c6d69da8e0a3d650ecbf52f250e7e98713c",
+      "size": 695
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeFunctionDispatch.cpp": {
       "mode": "0o644",
@@ -1227,33 +1222,23 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeGcLifecycle.cpp": {
       "mode": "0o644",
-      "sha256": "dc923e8dab6672abd1bb333e7991a039891709868f1604137ce60f42c8b0578e",
-      "size": 257552
+      "sha256": "8a8dfe14e113ac9837a5356b155a39b07b8974ec4a4ce4b9f4aab2def3666096",
+      "size": 273289
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeGcMirror.cpp": {
       "mode": "0o644",
-      "sha256": "b358d55d61c4133f1a39575d97e2e23cfd68b328242f50b7d0227b855a71061c",
-      "size": 168661
+      "sha256": "0d4d8711107079e7bb72c9f4cf77aca106ce4ea5dfc1612dabec11bb65950513",
+      "size": 172003
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeGcMirror.h": {
       "mode": "0o644",
-      "sha256": "1d6908e45d48855fbf3aa7593030ce9bee0c6dd06d654a231ee38f281514adb5",
-      "size": 9533
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptScriptClassLifetimeTransitionAdapter.cpp": {
-      "mode": "0o644",
-      "sha256": "7dbe962e2c883def1f714c5a4ecc4edca145391b403cbfabe9b38633b2cc6545",
-      "size": 5674
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptScriptClassLifetimeTransitionAdapter.h": {
-      "mode": "0o644",
-      "sha256": "99b4682a5b3236e995ae55fae26317a31ae7aa3000563ad034a3dab2a0e9cfb3",
-      "size": 2441
+      "sha256": "e8e238c6c2692dfc734a9759bc636b262915b38e571e0388b008d64323be28ff",
+      "size": 9635
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptTerminalDestructorAdmission.cpp": {
       "mode": "0o644",
-      "sha256": "2879118575b974024f8b2eca5fff6e7449a0d0007e1b96df94c5ec0ec42be59b",
-      "size": 163061
+      "sha256": "9d2685e213ccd480ba67ee66eb13f0eeb057f417c8ceeed7d3335388c0ef19a3",
+      "size": 170430
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptTerminalDestructorAdmission.h": {
       "mode": "0o644",
@@ -1287,83 +1272,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Debugging/AngelscriptDebugServer.cpp": {
       "mode": "0o644",
-      "sha256": "ac59f567715acf8d29b72f919b06a104af316fd51c9c5416315f3d07bf53650e",
-      "size": 108884
+      "sha256": "c8f85425653e1533c3f47bc58724de3104e26b9541716cbfdfd7a10c842592a7",
+      "size": 83124
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Debugging/AngelscriptDebugServer.h": {
       "mode": "0o644",
-      "sha256": "95a0d79e1215db63735f3aae11a680218a8a5b7ba3764ceb3bed63984b7613ec",
-      "size": 17209
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptExtensionPipeline.cpp": {
-      "mode": "0o644",
-      "sha256": "4b849a89fb62e50c80a766df1f952742b8d97d1782342ba3926e852ac099d608",
-      "size": 14984
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptExtensionPipelineInternal.h": {
-      "mode": "0o644",
-      "sha256": "d15b08fb015eba1bd427c5a6a502a6fafce3a054e313f113b4308053aee193b2",
-      "size": 2644
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptExtensionRegistration.cpp": {
-      "mode": "0o644",
-      "sha256": "e26698a8476ae82d47bbad80583a17be6cd11c457df49f1f2b671f19edd65db0",
-      "size": 9650
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptModdingInternal.h": {
-      "mode": "0o644",
-      "sha256": "901d86300fd3323d44c90180a1e38786d9c21229634595a34ce26cbfdaf3cb01",
-      "size": 5537
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/AngelscriptModdingRegistration.cpp": {
-      "mode": "0o644",
-      "sha256": "3c4fea1eb1cf33d7a5c23adbe3834f3ed7c065b52dea2e26d6483b724ad0ed59",
-      "size": 13663
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/Cache/AngelscriptExtensionCacheCompatibility.cpp": {
-      "mode": "0o644",
-      "sha256": "140ffc2fdc720e2ae6a111e7fe423d9e48a4857b978f5313f6280754d86e4dcb",
-      "size": 5077
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/Cache/AngelscriptExtensionCacheCompatibility.h": {
-      "mode": "0o644",
-      "sha256": "e4a0505519393ce5ae1bab479475d9bea211ef98063aa11634e1226c6c38efce",
-      "size": 1660
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuper.cpp": {
-      "mode": "0o644",
-      "sha256": "7e8b778e939c6fbcad7788a22e1ec33c66712190950bd55f08d79b03eea570a6",
-      "size": 7010
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperBinding.cpp": {
-      "mode": "0o644",
-      "sha256": "46afa3beb0c06367e02db58922dd6cd711f220a0354563070c7bf2681fa72b63",
-      "size": 5048
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperDispatch.cpp": {
-      "mode": "0o644",
-      "sha256": "456481fece46548f018621a3124699de7eb7834e6650617c102afae67f092f0e",
-      "size": 6179
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperHost.h": {
-      "mode": "0o644",
-      "sha256": "f8321a953d2582187bb1abacdc6557b85c3e34bed361a97fc1b575eb6bdf5838",
-      "size": 2859
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperInternal.h": {
-      "mode": "0o644",
-      "sha256": "2bb81f46bdf3e36c2a8761f8bff8f8253a44ab0a468eb1856078707b3dffb7a0",
-      "size": 1945
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperThirdParty.cpp": {
-      "mode": "0o644",
-      "sha256": "91ac906932574558c5a7d58a17f6fae1a8bc5278db1ca360edf29dc80f8c8a31",
-      "size": 14903
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Private/Extensions/NativeEventSuper/AngelscriptNativeEventSuperThirdParty.h": {
-      "mode": "0o644",
-      "sha256": "fb7b47bf92cb7c46f77547a56b7e76a5c3b3fb621b2e4ae526ae53fb434c729f",
-      "size": 1901
+      "sha256": "adc61649df63f48b6d15ab1251d8335255aa2ade23974c37427725ec38ed0041",
+      "size": 13704
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/FunctionLibraries/AngelscriptScriptLibrary.cpp": {
       "mode": "0o644",
@@ -1372,8 +1287,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Preprocessor/AngelscriptPreprocessor.cpp": {
       "mode": "0o644",
-      "sha256": "1f8ea6ecfed26b20a3fea553ec498f8b4edc18d3fc7b26af0a4c7dd269bcb9d5",
-      "size": 142235
+      "sha256": "776b128c578eeea632dee4a181c454d82a5e7bbdd6ff2df355796950121bbebd",
+      "size": 129688
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Preprocessor/Helper_CommentFormat.h": {
       "mode": "0o644",
@@ -1382,8 +1297,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/AngelscriptBytecodes.cpp": {
       "mode": "0o644",
-      "sha256": "d3b10cff6396d225c1bcd1f5d70d877913c43cf34631dabe7fed10b9a6e051c1",
-      "size": 207840
+      "sha256": "bf3535d2f3cee544700c3a4b76cb79dbafb03dce551c06f8774a01404f04d439",
+      "size": 208540
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/AngelscriptBytecodes.h": {
       "mode": "0o644",
@@ -1392,8 +1307,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/AngelscriptStaticJIT.cpp": {
       "mode": "0o644",
-      "sha256": "9c84fed491ac687c1af74d3989acfbb5ce1227347973822ed4f643979c84b537",
-      "size": 144398
+      "sha256": "8b63cd25202bc3598d6975b62392c4478572f7d919de0d46201a5ea44b1249a7",
+      "size": 123895
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/AngelscriptStaticJIT.h": {
       "mode": "0o644",
@@ -1402,13 +1317,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/PrecompiledData.cpp": {
       "mode": "0o644",
-      "sha256": "89a7f492a8fd1c3084caa1f320129373b22358b7a59dd76c9f5d6c34ffd71453",
-      "size": 135016
+      "sha256": "d4fd628280785fb387b8639c6b2e529d35ef61d1c65f2ccdaa05359b88c33d47",
+      "size": 99058
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/PrecompiledData.h": {
       "mode": "0o644",
-      "sha256": "607afdc4b60f1220d699f7b166d0d76823377188474c9fc7aa510edef2678fb8",
-      "size": 30315
+      "sha256": "9129d42ed4436bc4c09b0496cf63b0f3aa0c157ff1e6ca9117ecbbcc015825b9",
+      "size": 26953
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/PrecompiledDataAllocator.h": {
       "mode": "0o644",
@@ -1417,23 +1332,23 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/StaticJITBinds.cpp": {
       "mode": "0o644",
-      "sha256": "c91db3f9fad24f48c2ff2af85e0bcd29060cbf74e76716580fd409740aaf9f67",
-      "size": 36615
+      "sha256": "ab2a609ec770b4cb1f477461390bdc12d5b6050ed965bb0b4cfd3cc251c25582",
+      "size": 36244
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/StaticJITHeader.cpp": {
       "mode": "0o644",
-      "sha256": "1cf737ae116a6c65956828866d61fc6b5f8d621310f314a81bfc3efb8bed9505",
-      "size": 10099
+      "sha256": "996a5b2466bef77fcff0dc227226fab0a085a1c8c2cc781f0d68c1e0749c6c2b",
+      "size": 9095
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/StaticJIT/StringInArchive.h": {
       "mode": "0o644",
-      "sha256": "e5474804d140e76623bb874de57f06ae50768ed2c4b3dc7e7f5ab43f49e6054b",
-      "size": 4611
+      "sha256": "81aaac8d05502cd28f082a6068a9fe497aa23014e5102da9ebfa026513544474",
+      "size": 5725
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/AngelscriptTest.cpp": {
       "mode": "0o644",
-      "sha256": "f89874f824da99d7235ca054bdb797f73bb80330aa7f482a2c2a5f2ca38e8f86",
-      "size": 22547
+      "sha256": "686896e7db0c77d67398b0de1522aff1dbe553318d88ec5d31b03b16aedce043",
+      "size": 22999
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/AngelscriptTest.h": {
       "mode": "0o644",
@@ -1457,8 +1372,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/IntegrationTest.cpp": {
       "mode": "0o644",
-      "sha256": "053299598138fb1377196845e05b6893904425a74dba2785e3042f6b67884a29",
-      "size": 34883
+      "sha256": "cc9e5c8ffd3da352493e448a1f27556a0c5920a65edd3c2ee8331ad83b8d0049",
+      "size": 35781
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/IntegrationTestTerminator.cpp": {
       "mode": "0o644",
@@ -1502,8 +1417,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/UnitTest.cpp": {
       "mode": "0o644",
-      "sha256": "a79c6c59f8cbda1207d4cbafac8df88096a2579407dfc5f1a7241649d2bd47be",
-      "size": 26785
+      "sha256": "0e2c5d7587826ea77b6df467729a59b0db42c99251ab203bc923915bd7155f51",
+      "size": 28650
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/UnitTest.h": {
       "mode": "0o644",
@@ -1514,11 +1429,6 @@
       "mode": "0o644",
       "sha256": "dab54aa1326869dc732572b12df293389a5296f60057f7f595ca8788bea805c5",
       "size": 650
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptApiMetadata.h": {
-      "mode": "0o644",
-      "sha256": "ac4304c11de04eb2b38c2dacd0d38f46e1d85a164806810848a3732d8bc01dce",
-      "size": 1116
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptAttachmentCallerScope.h": {
       "mode": "0o644",
@@ -1537,8 +1447,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds.h": {
       "mode": "0o644",
-      "sha256": "22c58fa82efd5d24fdfc95eb5140e48ded8e8f18f91cbe46443465cd6ca44791",
-      "size": 26325
+      "sha256": "ee1b1e51f88080dc39e92ad76b554693f1b394f99ac7e5f1e1c8e616d1ccbd7f",
+      "size": 25895
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_Actor.h": {
       "mode": "0o644",
@@ -1572,8 +1482,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TArray_Functions.h": {
       "mode": "0o644",
-      "sha256": "0fe3485c6996b61a69351afaf3a85edf2b9e3909ffd47ab2fcd77eb425af35b4",
-      "size": 14799
+      "sha256": "0374535fb892317a394ca1dc0560333509d8fc4b23a29c572362f9693a4f5e9b",
+      "size": 15167
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Bind_TArray_Structs.h": {
       "mode": "0o644",
@@ -1602,8 +1512,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptBinds/Helper_PODType.h": {
       "mode": "0o644",
-      "sha256": "f1a50b26c73d45ed62a70bb5c9ce96b9f04ba4d60462ca4b4260579ee6fc7bd7",
-      "size": 5230
+      "sha256": "c74ed6857512cce9ed7c2dcdafd8a19a8632f72ffbe52a863b4321361f824482",
+      "size": 5438
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptCallableDispatchAdapter.h": {
       "mode": "0o644",
@@ -1617,8 +1527,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptCodeModule.h": {
       "mode": "0o644",
-      "sha256": "1a63e87882732e34b741b908828b70dda16c930ea74864146ff3b85a7dd81cc5",
-      "size": 8225
+      "sha256": "1585384c9c25e53a9dcc22116fc169cacd2c8c64f06cd3c2e9feefcb86089eaa",
+      "size": 4765
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptDelegateWithPayload.h": {
       "mode": "0o644",
@@ -1632,8 +1542,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptExecutionQuiescence.h": {
       "mode": "0o644",
-      "sha256": "f1ad4559be7ca75a7554a0ba262ebe7f929b4e3d36776df2f559ac3b29f07871",
-      "size": 2505
+      "sha256": "f75ca7e9114dabc39cc82f941f36be77121e99bbf20a71525b940c408bac27ab",
+      "size": 2559
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptInclude.h": {
       "mode": "0o644",
@@ -1642,13 +1552,18 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptManager.h": {
       "mode": "0o644",
-      "sha256": "27fc596b46ccfacb7f03c5e0cbe8190b3ce172db0c5d2c4200c08515a122b943",
-      "size": 51314
+      "sha256": "1e528a99b0586601cbccf3f9fe326ebc9297c9e952f480b6dbca0b7a77ff977c",
+      "size": 42474
+    },
+    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptModulePCH.h": {
+      "mode": "0o644",
+      "sha256": "623ef0c9b1955a68ef1b975e3c73b5cb83ef40e9fd2c2a420cc96b11474a813b",
+      "size": 774
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptReflectionAdapter.h": {
       "mode": "0o644",
-      "sha256": "7e058ef855a8cfb87b0d25cdc0bc2aae8787943ba6a8b304638e66ea558d028d",
-      "size": 1418
+      "sha256": "5ec157263457cfb3ac22be25705bbb0998db70be5dfc204b1342e7bc0be0aa78",
+      "size": 1506
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptReloadSafety.h": {
       "mode": "0o644",
@@ -1662,18 +1577,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptRuntimeGcMirrorAPI.h": {
       "mode": "0o644",
-      "sha256": "747f20414c55e866e9496a4b96b3b3385e9a2c004ce3137e0be0c9f101cb9eb7",
-      "size": 4039
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptScriptUnit.h": {
-      "mode": "0o644",
-      "sha256": "30529c71da405862ca49cb941e89ca5a65ca59b4aac6f12190b66ceec3b60ed1",
-      "size": 1766
+      "sha256": "855432bcb7778ff506727befeafeacd79e569b96324f316e231f22ed225e87b7",
+      "size": 4437
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptSettings.h": {
       "mode": "0o644",
-      "sha256": "83fff3a754a42980bf56f05c836f4ccd88f2ace7fcea154bd2fbe6c1c6aba936",
-      "size": 13882
+      "sha256": "60fdc9a9a463dac1a75025474475ed8d86df6afd74cfacc5fc970f59ec8e420e",
+      "size": 12944
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptSort.h": {
       "mode": "0o644",
@@ -1687,18 +1597,18 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptType.h": {
       "mode": "0o644",
-      "sha256": "4b6dc487e879871727ae11c81c04d0672d297f6e19d2f26ccdc6182d59b4179d",
-      "size": 31900
+      "sha256": "938d4f6b8f1ec9482e91dbceefe9c12caf23745b63227255c6c027a8a4e6aa8f",
+      "size": 30904
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/BaseClasses/ScriptEngineSubsystem.h": {
       "mode": "0o644",
-      "sha256": "b32b5e15ea93bb0f2d36be3affa1251e573d83c9ae5b32223ed0a75c331d007b",
-      "size": 3016
+      "sha256": "d97ed948b231bb25b6f7e4e767ee852898ada9bfcb25e6adffac6fd60f3b123c",
+      "size": 3864
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/BaseClasses/ScriptGameInstanceSubsystem.h": {
       "mode": "0o644",
-      "sha256": "9ecabb44cb70819d4fe0b6d0b50566b06251f725a1ec6843975fb4b74d85169b",
-      "size": 2234
+      "sha256": "d55baf6aefc0354056bd711a7d2b36718708608fdc1c18c0d10392be140d295f",
+      "size": 3113
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/BaseClasses/ScriptLocalPlayerSubsystem.h": {
       "mode": "0o644",
@@ -1707,23 +1617,23 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/BaseClasses/ScriptWorldSubsystem.h": {
       "mode": "0o644",
-      "sha256": "871f073a6c895c8f10d46287f9bbb23d11a4d11b3b1d9eebe3a18b15448744e5",
-      "size": 4046
+      "sha256": "28c075f171a418cfff448512620ecb540fba0e42a21ddaed20e9f50723912f1f",
+      "size": 4888
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/ASClass.h": {
       "mode": "0o644",
-      "sha256": "e08fbfbaa0e4bf1fe94ef7938cae48df7ea3fafe65795dfa8a23b79028e3b31b",
-      "size": 24466
+      "sha256": "1d8e01a54b7b3aafaa4aa31580cc34bc9400de218d336541819c1eaf62587336",
+      "size": 24859
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/ASEnum.h": {
       "mode": "0o644",
-      "sha256": "4001b47b37d4727c017223e04eef86cc96a88bad42d3a2b6ed513074c561fea4",
-      "size": 368
+      "sha256": "e9cc531e714f5f0f8b647b23ebee61c4c1e43fe8f8a2aac82524afa56ff22767",
+      "size": 393
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/ASStruct.h": {
       "mode": "0o644",
-      "sha256": "f0fa055c76f3b4c900697302dcee4c44b30ccf3eb38e35afe785b37f39809580",
-      "size": 3835
+      "sha256": "6a51501cfebb8018ec22491cb615fd0c206c6bbe1d1c5cd66ce91623ee8f319d",
+      "size": 3589
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptActorConstruction.h": {
       "mode": "0o644",
@@ -1737,8 +1647,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptClassGenerator.h": {
       "mode": "0o644",
-      "sha256": "b111947530a0f65891ebe3bf6578ff862938246a10a9ce6d403933ca1dc40b66",
-      "size": 12419
+      "sha256": "b2247816616384cdb24966ffb7424b842b2a1fefbdc1126b24ed4ddbe3010496",
+      "size": 10064
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptClassLifecycleAdapter.h": {
       "mode": "0o644",
@@ -1752,43 +1662,18 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/ClassGenerator/AngelscriptReplicationShadow.h": {
       "mode": "0o644",
-      "sha256": "8e03dce6e92577378c2724c5a4203ac268d48d2056a78e24a2ba059cbc041b5f",
-      "size": 1593
+      "sha256": "91efd4740a42bb7d959c214c8c8e4e2ad4a358e1318d9528670923d1dc07c526",
+      "size": 1855
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/EndAngelscriptHeaders.h": {
       "mode": "0o644",
-      "sha256": "7a327048a273b44262035a5cc5d3f82ad194b7c21509dfa64cd2f859eef880ea",
-      "size": 82
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/AngelscriptExtensionHooks.h": {
-      "mode": "0o644",
-      "sha256": "cb3e78f0ed8ee040b2202fea954a2ce46309f727239afc3bb0ecff577f362d18",
-      "size": 13246
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/AngelscriptModdingRegistration.h": {
-      "mode": "0o644",
-      "sha256": "16855a6b737d92e3b16f26991df688ca426621ce6c58ac99b93d9cf29df039e9",
-      "size": 16371
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/LambdaClosure/SoloASLambdaCaptureStore.h": {
-      "mode": "0o644",
-      "sha256": "e0ef47e6e5b9521e4a4b637166eeeb16c079fe364ecde00ba56fa17ff490531d",
-      "size": 859
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/LambdaClosure/SoloASNativeLambdaBindingProvider.h": {
-      "mode": "0o644",
-      "sha256": "13d12be51f9da6aa3ad1a33a871777f2e58a9d4efbe3143f1c71223e16695691",
-      "size": 436
-    },
-    "AngelscriptRuntime/Source/AngelscriptCode/Public/Extensions/NativeEventSuper/AngelscriptNativeEventSuper.h": {
-      "mode": "0o644",
-      "sha256": "44fbadd13357cf080b10329b7548c3accf40edd203a1e36f7262b248e195bfcb",
-      "size": 354
+      "sha256": "0647142657b7bd1d5a0800f015c928da75c6db8a8a40180fe5b3274879b64b8f",
+      "size": 315
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptActorLibrary.h": {
       "mode": "0o644",
-      "sha256": "0292cae8b63154113d9c76965838a4def788cc20b5c81148df4a1fc66fb24527",
-      "size": 7919
+      "sha256": "899eca1945962568ee78a2d28f8b3d66a8af69c225cd6eff60bb6d8931abb18e",
+      "size": 8371
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/FunctionLibraries/AngelscriptComponentLibrary.h": {
       "mode": "0o644",
@@ -1887,13 +1772,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/Preprocessor/AngelscriptPreprocessor.h": {
       "mode": "0o644",
-      "sha256": "56cdaae95e78d841e67575c43ede6ac0234cbc795f2915e319727daa725f5f8a",
-      "size": 9473
+      "sha256": "cd55713a7e8004f1b063152913c6adf3a8c14b32aaaabbac1f926540ba0fd870",
+      "size": 8779
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/StartAngelscriptHeaders.h": {
       "mode": "0o644",
-      "sha256": "21f1ab4f9b6a56c4cae6ecb1bd7cb7e5a3f4f3a746bf0a91b653c740b6896197",
-      "size": 158
+      "sha256": "3c1cdc0179927873eb5535b2b029f6b1ed5b7537aaaa7e436598ebaa60b7c6c5",
+      "size": 475
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/StaticJIT/StaticJITBinds.h": {
       "mode": "0o644",
@@ -1907,8 +1792,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/StaticJIT/StaticJITHeader.h": {
       "mode": "0o644",
-      "sha256": "1141c77fd7813ddbde4fd845128f234805073ec3cc7df9929c98f651877349c4",
-      "size": 12508
+      "sha256": "8fb8cc8f17d53b306cea83b48bdabc2a3b13152dca425a8496138d0d06f1f0a2",
+      "size": 11528
     },
     "AngelscriptRuntime/Source/AngelscriptCode/Public/StaticJIT/StaticJITHelperFunctions.h": {
       "mode": "0o644",
@@ -1917,8 +1802,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/AngelscriptEditor.Build.cs": {
       "mode": "0o644",
-      "sha256": "708c4c435a341c0a0d79a98f03a4bded13b06b586798826f2aaac725955908d8",
-      "size": 4876
+      "sha256": "cbbc7062a2a5ebcd93e056eb2c14a90c5f12feb7ac928fe82912a733222bf62e",
+      "size": 4697
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptAIGraphClassProvider.cpp": {
       "mode": "0o644",
@@ -1932,13 +1817,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptBehaviorTreeGraphSchema.cpp": {
       "mode": "0o644",
-      "sha256": "ede2ef1bdc0dd3e7169339d36888a598fd76ee8244a0e232fc1860b5e04bba20",
-      "size": 20489
+      "sha256": "56e9e1b0b606f3e3b21edba80837810262f321ff3613972b79afcc776198c048",
+      "size": 21086
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptBehaviorTreeGraphSchema.h": {
       "mode": "0o644",
-      "sha256": "7ecb211180a5a8f570a42f81f9cb9bb44a6f5eb2047a29aa4d47ee8da341fad5",
-      "size": 3973
+      "sha256": "3ee795a0433907e606db2cec7c031ffa47b8ddacb524d9838c1e79037ad5b6ef",
+      "size": 4148
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/AIGraph/AngelscriptScriptNodeMenuTitle.h": {
       "mode": "0o644",
@@ -1947,13 +1832,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptContentBrowserDataSource.cpp": {
       "mode": "0o644",
-      "sha256": "67f44fdc90ac265160edfd6f3a6ef1240eba97a5270e1a0583e790c13ed32c36",
-      "size": 8419
+      "sha256": "4c8bfeb7757032da0142cba640aae11696ed729e50af53a83c016b5ec4a33652",
+      "size": 9128
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptContentBrowserDataSource.h": {
       "mode": "0o644",
-      "sha256": "06413f2ec5088bdff9158eda4505e74bb94f4b1aeca45daad85d351f61fcd715",
-      "size": 3710
+      "sha256": "71a827c6082a41639cb2630c9445ba4a67dc6e8971612379fac0bab8ea47c089",
+      "size": 3932
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptCreateBlueprintOverride.h": {
       "mode": "0o644",
@@ -1962,8 +1847,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptEditorModule.cpp": {
       "mode": "0o644",
-      "sha256": "437c77cab75093ad1f54be697c3b9469c31e17f0b8ec59ac9cfdfbea02126506",
-      "size": 47085
+      "sha256": "3050bf64fb96b38821a461f66ae7119be5354af3c072b2978e9f5aab07bdb485",
+      "size": 46039
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptEditorModule.h": {
       "mode": "0o644",
@@ -1972,68 +1857,33 @@
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptSourceCodeNavigation.cpp": {
       "mode": "0o644",
-      "sha256": "c400085e05ae9949e7bd6f2566dbdbd2bbfc05753490fd5cd848a02fd2b2a31f",
-      "size": 6707
-    },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Bind_EditorCallableReferenceReturns.cpp": {
-      "mode": "0o644",
-      "sha256": "94f4273d136db5c5e02abf8fe8b78c4508dfe661a2935a74e3370373ab167a1a",
-      "size": 769
+      "sha256": "15322cb793deece7672da8b6984594a1e474ccc91edfc23f37e6eaea1b2c4a74",
+      "size": 6173
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptActorReplacementTransaction.cpp": {
       "mode": "0o644",
-      "sha256": "5618dbc7c44aa35d161a7d52d99df19b7bdd14249901d5e2b0d83db8e17ff64e",
-      "size": 23043
+      "sha256": "7f2987c09c0f5e04aee00bdaa51d66561cc4f522b52d19eeed06ebd577b16294",
+      "size": 24588
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptActorReplacementTransaction.h": {
       "mode": "0o644",
       "sha256": "42620adb0b49f8b57bbac22aefa0555037fb2e454321ce2e3868f1c93427322f",
       "size": 332
     },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintActorComponentOrderingAdapter.cpp": {
-      "mode": "0o644",
-      "sha256": "db7ba190629fb497194bec5a95618faf1fce62eed4743411ce8289ec98eb8174",
-      "size": 4338
-    },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintActorComponentOrderingAdapter.h": {
-      "mode": "0o644",
-      "sha256": "dc5cfdd603a06be46e1b7fe85276a8239921da45aaf0b1e96d6484c8e1a71847",
-      "size": 1606
-    },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintCompilationTransactionAdapter.cpp": {
-      "mode": "0o644",
-      "sha256": "610abed3c37fbb86750e7c7f797ccef7c128187026a22211520bd85de3bf754a",
-      "size": 4919
-    },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintCompilationTransactionAdapter.h": {
-      "mode": "0o644",
-      "sha256": "3b843ac54b87630b3d1a5b6be5835fc64df450aab5b4796e5e9da4c607e8a572",
-      "size": 2268
-    },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintDefaultCopyFilterAdapter.cpp": {
       "mode": "0o644",
-      "sha256": "aeb0460135643a0efc58757c3d4447e3a9b019377c90a1e9b33556ff67f21780",
-      "size": 5037
+      "sha256": "52b3a3fe4928a6bd433439ceaafc4f9ab500656afe7d36ef9cea8df51139ded3",
+      "size": 5004
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintDefaultCopyFilterAdapter.h": {
       "mode": "0o644",
       "sha256": "f57e80b83905cbe33ddc66d54c289b4cbe550bc2e64a183a9ef3161c94c32788",
       "size": 1858
     },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintReinstancingOrchestrationAdapter.cpp": {
-      "mode": "0o644",
-      "sha256": "d41dd25197221571c4d451c6781cd10e42802012d4237695410a197800d16b3b",
-      "size": 11037
-    },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintReinstancingOrchestrationAdapter.h": {
-      "mode": "0o644",
-      "sha256": "424558f87f4ddb9403cac301f11804f38a2bc3d6af0a496552c60b5f5582f0ce",
-      "size": 4559
-    },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptInheritedComponentAttachmentRepair.cpp": {
       "mode": "0o644",
-      "sha256": "6958f4091cd09342ffe0f4cc80f47ecbd14176a328a85b4e70051cf538e02177",
-      "size": 37355
+      "sha256": "e1fb284d147f4dddedab3e420ca5d728a5c6e005275d846c278b001ba3d5490e",
+      "size": 39992
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptInheritedComponentAttachmentRepair.h": {
       "mode": "0o644",
@@ -2047,13 +1897,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptRetiredClassDefaultScope.h": {
       "mode": "0o644",
-      "sha256": "3b9078dc801e259cd82b5f2ae9f92f3d69d23fe553dc668712111e4d39f0b0e2",
-      "size": 2933
+      "sha256": "544ef1f84d06258d2158265ee1625a165cad76c370b30f18ca160379f2a62bdd",
+      "size": 3000
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadEventSignatureResolver.cpp": {
       "mode": "0o644",
-      "sha256": "d75bdf7a8ec248abb6d1ddd2129d9afde99206f4bf5f0e2f7e6dbdf9972f190d",
-      "size": 1424
+      "sha256": "26197f0a6c0f3784679117aed6497d6a0f63d993031bbd4400aa009499aebfa3",
+      "size": 1834
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadEventSignatureResolver.h": {
       "mode": "0o644",
@@ -2062,8 +1912,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadHelper.cpp": {
       "mode": "0o644",
-      "sha256": "43f1c39bd787475d68932f03934215636165e41fd26cc12616b656f8d4941774",
-      "size": 87614
+      "sha256": "15679adcd9c298bf87d755cb5b47b699ab6095b14ce2f4cd90972ad12d2c870b",
+      "size": 102022
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadHelper.h": {
       "mode": "0o644",
@@ -2079,21 +1929,6 @@
       "mode": "0o644",
       "sha256": "97ca4f7a3aaabbc9a1025c7648c100c5e97fa83dd54968f639c02fe631f41ce9",
       "size": 177
-    },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptBpgcSemanticsHooks.cpp": {
-      "mode": "0o644",
-      "sha256": "c5100c394a03b24ee76b6099624e8387efe28dc4d00288072fe003bd38d7d4e2",
-      "size": 24304
-    },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptBpgcSemanticsHooks.h": {
-      "mode": "0o644",
-      "sha256": "aefefe06da8c248cb53ada45b1a5740d6a58811cc376c6d64ae942942ffb8a38",
-      "size": 177
-    },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptBpgcSemanticsHooksTest.h": {
-      "mode": "0o644",
-      "sha256": "f2f65832543fc87a6f74642a122e6190d23e222adeb271e61da6652841ee715f",
-      "size": 467
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptDataTableRowValidationHook.cpp": {
       "mode": "0o644",
@@ -2115,25 +1950,30 @@
       "sha256": "55717815b9507bed74a1f1e156de5048d20520564b7be16e908c1647c379c746",
       "size": 182
     },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptPythonTypeRetirement.cpp": {
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptScriptClassSemanticsHooks.cpp": {
       "mode": "0o644",
-      "sha256": "7b2a8c03a14889c9b466faa6c3d82d0d57e29d658bfc2b261c7304316c5dc6d6",
-      "size": 8586
+      "sha256": "38be5ea0a19a194582677295ef40bd4c9b70c764faca2d88e44fe25ad7beacc4",
+      "size": 24890
     },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptPythonTypeRetirement.h": {
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptScriptClassSemanticsHooks.h": {
       "mode": "0o644",
-      "sha256": "8cac6d46082c5a08c680cd4853ced161e5bb4c2a50644f0471037a7e31bec8ea",
-      "size": 176
+      "sha256": "93e8462a2068d6b2711a1d1a93d42f10fc980dc1a8d9f0f0f0af2e539ee8539c",
+      "size": 184
+    },
+    "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorBinary/AngelscriptScriptClassSemanticsHooksTest.h": {
+      "mode": "0o644",
+      "sha256": "b239895bbadb585bc47044fbfa155b3bd7cf513fe3f79b2677ed8045fbe5c910",
+      "size": 474
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorObject/AngelscriptEditorObjectPrecreateImportAdapter.cpp": {
       "mode": "0o644",
-      "sha256": "2268a81d1a53a4f9d6f748e29bd317e96058d80e9d1ff92e8323af0e87f0e52b",
-      "size": 36074
+      "sha256": "d6d8b6bf1f4b90d930bd713baaca233caca91486a0dfa2a5a8c1612b217654cc",
+      "size": 42804
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/EditorObject/AngelscriptEditorObjectPrecreateImportAdapter.h": {
       "mode": "0o644",
-      "sha256": "edbfc2db5843b8f1f86ff6810c8cb783ef10e07941f00f4a72d0609c9a2534a6",
-      "size": 2827
+      "sha256": "59587d3697ed01547a0a920b2b9e7b86074959d5274cf29463163202352f66b5",
+      "size": 3085
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/FunctionLibraries/AssetToolsStatics.h": {
       "mode": "0o644",
@@ -2157,48 +1997,38 @@
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/InstancedStructReload.cpp": {
       "mode": "0o644",
-      "sha256": "37ddfc622de0ecc673d37e9b9464e695db17f75dcece85c2e7eac8b9536e40e6",
-      "size": 193878
+      "sha256": "2f9a404674e91d20712a36546ce617fa1365c6028a10b9380ea1d6db5d6bdfb0",
+      "size": 242785
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/InstancedStructReload.h": {
       "mode": "0o644",
-      "sha256": "896391977ae1319d15e38ef2c4a66fc32021f252c587cb25fb0c302301d3ef76",
-      "size": 2588
+      "sha256": "82e4400be44b859b6ccc7b1b740917f78221a129d7aef9d1a06baa775cbc1616",
+      "size": 2760
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/SoloASEditorManagement.cpp": {
       "mode": "0o644",
-      "sha256": "5dd84037ce765c97808166fd5d269b7f3689bc19feb42fd9b131e9cd698a61aa",
-      "size": 29987
+      "sha256": "819b7d289df5292b5267a835505cf902e63cf64ab56bacb2c3517e664665e70f",
+      "size": 10502
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/StateTree/AngelscriptStateTreeClassProvider.cpp": {
       "mode": "0o644",
-      "sha256": "f2b18ca84fb64a80df53ef544e4d6362247937e125fe5f72b5d1836cf836119f",
-      "size": 7636
+      "sha256": "beced939fd31be0cae8727502dfa447de56a3a87efec6880c1333fb933bbc027",
+      "size": 12131
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Private/StateTree/AngelscriptStateTreeClassProvider.h": {
       "mode": "0o644",
-      "sha256": "f17a3757f84ea9bf7260da3e736e3cf17f210886496baa2f5e0d7b0a2df565e7",
-      "size": 918
-    },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/UMG/AngelscriptListViewEntryAdapter.cpp": {
-      "mode": "0o644",
-      "sha256": "996d936a92421f2ab888ffc76d991480b97c07b1c87da3e59c64f1b3ad009baf",
-      "size": 3938
-    },
-    "AngelscriptRuntime/Source/AngelscriptEditor/Private/UMG/AngelscriptListViewEntryAdapter.h": {
-      "mode": "0o644",
-      "sha256": "cd8225662bdb9b597e22347e87757f9ed1d986c7361004b82cafe1344a02225f",
-      "size": 2082
+      "sha256": "6ccf4c833e214b56946212d8f7c7cac305bf1daa85bf68055bb02b6d68a3bd3d",
+      "size": 913
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Public/BaseClasses/ScriptEditorSubsystem.h": {
       "mode": "0o644",
-      "sha256": "d14d1e2ca83babafc9403919e1bfc3b5404c181f9b09c6ada4b0e9dfe7458895",
-      "size": 2235
+      "sha256": "3fe34b371b34a2a9372802e86694d1a221ab48d9e3f80a4472abdcce1fc3f4d2",
+      "size": 3078
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptActorMenuExtension.cpp": {
       "mode": "0o644",
-      "sha256": "429020490d900424ea3e12f12a30a9ed5df9bdf662e4dd669dcfd56c58156294",
-      "size": 3019
+      "sha256": "adcd967b3c7de734519d4114586154e9cf227642266b5d78eccc3c11a8f8ca90",
+      "size": 3249
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptActorMenuExtension.h": {
       "mode": "0o644",
@@ -2207,8 +2037,8 @@
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptAssetMenuExtension.cpp": {
       "mode": "0o644",
-      "sha256": "77fee0d6870b6d13c0c70197b13ff3c30e6c5a584e585159f454763b9d9d86fc",
-      "size": 2633
+      "sha256": "e4b832476f0fb5f82fa60e1915a44d0cae3fb8ea33df1747d2234f8ae5121245",
+      "size": 2863
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptAssetMenuExtension.h": {
       "mode": "0o644",
@@ -2217,13 +2047,13 @@
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorMenuExtension.cpp": {
       "mode": "0o644",
-      "sha256": "54874bb3cef94c54dd0b077e0738f8ebe8a0fecbdfd116365217d4b3e1902c5f",
-      "size": 56459
+      "sha256": "7af97ef93276e7e0420ff86f8cbd9486704eab61da519943dac4342a5a6cf24d",
+      "size": 58845
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorMenuExtension.h": {
       "mode": "0o644",
-      "sha256": "bbd327848e88270f3d3d1914c17d5c4831912fccf768528a65e1976fa74f6709",
-      "size": 5168
+      "sha256": "71824d8a60cd42b18297e741d068267edd98a48e918541c87a66b560affc09b4",
+      "size": 6174
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorPrompts.cpp": {
       "mode": "0o644",
@@ -2247,18 +2077,18 @@
     },
     "AngelscriptRuntime/Source/AngelscriptEditor/Public/SoloASEditorManagement.h": {
       "mode": "0o644",
-      "sha256": "97a8b263cc7511896675c701a29f6bde977274f9db643f3b1a16fac3783ce23a",
-      "size": 765
+      "sha256": "a24746f69676771da7a773097e32962baa76233584eb89d1b359f15404164bd8",
+      "size": 609
     },
     "AngelscriptRuntime/Source/AngelscriptLoader/AngelscriptLoader.Build.cs": {
       "mode": "0o644",
-      "sha256": "2b9fc21669771dc2e1991db6a2ad7f5474771194c35fc41fafd96859007b9218",
-      "size": 658
+      "sha256": "451560ef33c8862aae93248658dd11debcfb7611c44622e1f5016054a98b31f1",
+      "size": 860
     },
     "AngelscriptRuntime/Source/AngelscriptLoader/Private/AngelscriptLoaderModule.cpp": {
       "mode": "0o644",
-      "sha256": "c410bf5b79c7830b046b1403e36eedf573a1719f3184e28e984c4cd0a2ef58d2",
-      "size": 291
+      "sha256": "29eb99fb4763fabc06b97d4cb5ce837a7d3634006c2baf93d757313c5388ee5a",
+      "size": 1858
     },
     "AngelscriptRuntime/Source/AngelscriptLoader/Private/AngelscriptLoaderModule.h": {
       "mode": "0o644",
@@ -2287,8 +2117,8 @@
     },
     "AngelscriptRuntime/ThirdParty/source/as_builder.cpp": {
       "mode": "0o644",
-      "sha256": "c3b90f732f9a7cefa3cb57be341a39f24e2c6c94189f3338cf9bbfab8bf0e815",
-      "size": 202774
+      "sha256": "8870e35d55191ab7f40163c1069efe8bad2613bee6b7188c2a4c41ba6467d829",
+      "size": 199873
     },
     "AngelscriptRuntime/ThirdParty/source/as_builder.h": {
       "mode": "0o644",
@@ -2392,8 +2222,8 @@
     },
     "AngelscriptRuntime/ThirdParty/source/as_compiler.cpp": {
       "mode": "0o644",
-      "sha256": "16dc21217ab896034dff7d9fe695fb243c215c618e66d17875ab70ddbf328c3c",
-      "size": 615890
+      "sha256": "5290d212be5c1dbc70f009af9af3fbc68d159c49fec968b93e3238e65950df58",
+      "size": 614577
     },
     "AngelscriptRuntime/ThirdParty/source/as_compiler.h": {
       "mode": "0o644",
@@ -2417,13 +2247,13 @@
     },
     "AngelscriptRuntime/ThirdParty/source/as_context.cpp": {
       "mode": "0o644",
-      "sha256": "13e2f0cfd9c1645bbf7021ec96f87a252ac506fe513b41d7f6171eaca03992bf",
-      "size": 172034
+      "sha256": "244c44536e50709ff6777cb49ba4edd6695a3ff50138f948a7031ab8c9a2d25a",
+      "size": 172628
     },
     "AngelscriptRuntime/ThirdParty/source/as_context.h": {
       "mode": "0o644",
-      "sha256": "9c392bbc54267cb058af0c994cdc4fa1aaad757f799069471857cad9217f9665",
-      "size": 10528
+      "sha256": "9c5a815ce420df16c0a58c6d3ec49ff00fc3c06be70b1252791d80ef01995488",
+      "size": 10831
     },
     "AngelscriptRuntime/ThirdParty/source/as_criticalsection.h": {
       "mode": "0o644",
@@ -2492,8 +2322,8 @@
     },
     "AngelscriptRuntime/ThirdParty/source/as_module.h": {
       "mode": "0o644",
-      "sha256": "9857149c1b7b5b4316786c19732bf9b23bf6c2d821b1b6ae23a91c319f1ddfb8",
-      "size": 12591
+      "sha256": "97013ef2734f9b4284f896a94ac4d416c349b51da286e2577efda35f4673280e",
+      "size": 12297
     },
     "AngelscriptRuntime/ThirdParty/source/as_namespace.h": {
       "mode": "0o644",
@@ -2502,8 +2332,8 @@
     },
     "AngelscriptRuntime/ThirdParty/source/as_objecttype.cpp": {
       "mode": "0o644",
-      "sha256": "e58c6532310177c1a80d3e508562eaf8b32bc58405acd71390a306e5c6fae324",
-      "size": 19938
+      "sha256": "2cff370d619ae3d70afce54683e46fa696ec8a62cbce4acfdd9bfa7688419d1d",
+      "size": 19651
     },
     "AngelscriptRuntime/ThirdParty/source/as_objecttype.h": {
       "mode": "0o644",
@@ -2672,33 +2502,68 @@
     },
     "NOTICE": {
       "mode": "0o644",
-      "sha256": "10d716613c36e2ac9e6529c01e7dac56317a9afc640f20fc3f3c1a06240d5a6a",
-      "size": 3494
+      "sha256": "8d63098e0f3e89e02a76cdb34d9a8f3ee85bcc492c5c918ce8918d0f7376f2d1",
+      "size": 3659
     },
     "README.md": {
       "mode": "0o644",
-      "sha256": "04b3a78561108f033f3614ac77ff0731124b5cd0b1fa8f7b452a09609568d1a0",
-      "size": 2078
+      "sha256": "89dfb0aa218dee22bf7fbe695013af93f893c2e22ff0926d9fe9081e480bf52f",
+      "size": 2376
     },
     "README.zh-CN.md": {
       "mode": "0o644",
-      "sha256": "be52bd95f2ae4792f39120fff02d91b368d5c5fef11eb3a7fc9cf2241c0c0d20",
-      "size": 1942
+      "sha256": "9af6d344399cc69c6bd4ff7d23652f70973b49ac68eb327b5a01d0e909799147",
+      "size": 2247
     },
     "SoloASBridge/Config/EngineCompatibility.json": {
       "mode": "0o644",
-      "sha256": "6403f95d0b462683cd0245b2a327c173461252e4ead9673dec7d266a8a71ec9e",
-      "size": 163
+      "sha256": "5f604ce8d20d811e0775be76fe18ac68c177f28b0f59f4964becd943e755d1a1",
+      "size": 2540
     },
     "SoloASBridge/Config/FilterPlugin.ini": {
       "mode": "0o644",
-      "sha256": "91b0351a6ae17bc6cd83f9e7d8771d50536867288fe60e17f2b22bd74b0fd9fc",
-      "size": 81
+      "sha256": "b6ade9d3b90b50a1499e49a95265ca363f1d081a3d03bef5dc73e1d679a422f5",
+      "size": 215
     },
     "SoloASBridge/Config/Game.ini": {
       "mode": "0o644",
       "sha256": "24e73c2dc821ea0cd1f58d218c073cfb06f2403d17a27e60916d45b30669a913",
       "size": 97
+    },
+    "SoloASBridge/Config/NativeCallerModules.json": {
+      "mode": "0o644",
+      "sha256": "f672294c04760c651e3396aacc035407d6a45460ee8baf43097ae5e076254a4e",
+      "size": 40296
+    },
+    "SoloASBridge/Config/NativeCallerSkips.json": {
+      "mode": "0o644",
+      "sha256": "149ec113c3b9742dbc3a48432afa188bf77d16bf48cf86e46c8e89bad46a9999",
+      "size": 17865
+    },
+    "SoloASBridge/Config/NativeMetadata/UE54.json.gz": {
+      "mode": "0o644",
+      "sha256": "0cb6c0d2d8e6bb35ba2ceb89371d631eaf24225c2c6826b990a32a7844d3f355",
+      "size": 222385
+    },
+    "SoloASBridge/Config/NativeMetadata/UE55.json.gz": {
+      "mode": "0o644",
+      "sha256": "6abdc118738c328c984ca00511d9927085bdc9d34daf6c9a52d96cc3d7794ce5",
+      "size": 240018
+    },
+    "SoloASBridge/Config/NativeMetadata/UE56.json.gz": {
+      "mode": "0o644",
+      "sha256": "5a34be2719ba8a7825c732a1138428f4571e0c3e2e9a4fd6ddb57ccaf7890dec",
+      "size": 249039
+    },
+    "SoloASBridge/Config/NativeMetadata/UE57.json.gz": {
+      "mode": "0o644",
+      "sha256": "225b8d7d2b71b26985e083694a33a8630b0753df35149756c0a098b8d03d8e07",
+      "size": 280249
+    },
+    "SoloASBridge/Config/NativeMetadata/UE58.json.gz": {
+      "mode": "0o644",
+      "sha256": "e16bd1111782055aae6d53b010db5848b19ec4e8a15d0ffe082095020d08413b",
+      "size": 350804
     },
     "SoloASBridge/LICENSE": {
       "mode": "0o644",
@@ -2710,50 +2575,115 @@
       "sha256": "e433a779c43d54505e256cd2ed6136a5dc871733be2fd5c3e00171cc2744c691",
       "size": 1002
     },
+    "SoloASBridge/Resources/Update/Apply-SoloASUpdate.ps1": {
+      "mode": "0o644",
+      "sha256": "1e37f5b8a23f9b859fbf5271920a90e5cc8cf16d007f5bc86001331d4dfa6fea",
+      "size": 37978
+    },
+    "SoloASBridge/Resources/Update/Prepare-SoloASUpdate.ps1": {
+      "mode": "0o644",
+      "sha256": "5e272e1e24871aa5f83b4fd5e8184b1bed4b9c6b7a9fb7784c9fcd2179eb8d8d",
+      "size": 21010
+    },
     "SoloASBridge/SoloASBridge.uplugin": {
       "mode": "0o644",
-      "sha256": "2768ae12b8dc1025ac94b1dae93cbd237a7bceaa33c3e9d3e172198834a65261",
-      "size": 766
+      "sha256": "97efc5620ab9fb7f1b6e56378ed0739afa1730145663295faf26f6b6ed9bf823",
+      "size": 33976
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Compat/SoloASRuntimeCompat.cpp": {
+      "mode": "0o644",
+      "sha256": "7a3d4a7715c0bfa849159505dc277c0fca59a0733dde081a39255a6c9cfabffb",
+      "size": 13048
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Compat/SoloASWorldPartitionCompat.cpp": {
+      "mode": "0o644",
+      "sha256": "61e976d624f50aabcef6b0b2ecd63b9ea1ba382bb7736f45489b2a2dc97973eb",
+      "size": 193
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Compat/UE54/SoloASRuntimeCompat.inl": {
+      "mode": "0o644",
+      "sha256": "ed45face815c02818df7fdbac0d44943d571eae2a3c6f85c68bbba70add0e814",
+      "size": 12885
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Compat/UE54/SoloASWorldPartitionCompat.inl": {
+      "mode": "0o644",
+      "sha256": "0e7945b46b8fa75e8be2a44d90bb6d04af925c0d38a6c8747d0c761985d659de",
+      "size": 544
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Compat/UE55/SoloASRuntimeCompat.inl": {
+      "mode": "0o644",
+      "sha256": "9e9dc8a0d1f4de47c66fd05184c1fa0fdd15a4385b32fcc49dcddf2167f50300",
+      "size": 8233
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Compat/UE55/SoloASWorldPartitionCompat.inl": {
+      "mode": "0o644",
+      "sha256": "57c7b9a313391341c961c470afbdb4dc205cc0e811d7aee9652d6a3aacf6d8fc",
+      "size": 565
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Compat/UE56/SoloASRuntimeCompat.inl": {
+      "mode": "0o644",
+      "sha256": "75ec9d24d8f112e5f2fe6032e2bd60c271867eae539f0f939e3821f03a6e3e98",
+      "size": 7831
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Compat/UE56/SoloASWorldPartitionCompat.inl": {
+      "mode": "0o644",
+      "sha256": "57c7b9a313391341c961c470afbdb4dc205cc0e811d7aee9652d6a3aacf6d8fc",
+      "size": 565
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Compat/UE57/SoloASRuntimeCompat.inl": {
+      "mode": "0o644",
+      "sha256": "5e894a040ad2bddb0abd9df185cf7e00725f848507f15839f17d73c1c10926fb",
+      "size": 7066
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Compat/UE57/SoloASWorldPartitionCompat.inl": {
+      "mode": "0o644",
+      "sha256": "57c7b9a313391341c961c470afbdb4dc205cc0e811d7aee9652d6a3aacf6d8fc",
+      "size": 565
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Compat/UE58/SoloASRuntimeCompat.inl": {
+      "mode": "0o644",
+      "sha256": "6c1e0224431dd700ccf41ccd6a52e3b0903636ae8ce6d029084a976ff281229d",
+      "size": 5886
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Compat/UE58/SoloASWorldPartitionCompat.inl": {
+      "mode": "0o644",
+      "sha256": "94b3be04641542d344a8ea4f3c12a0ca4c4c25bfa172c0fc45183732d2ee105a",
+      "size": 729
     },
     "SoloASBridge/Source/SoloASBridge/Private/Editor/SoloASCopyProperties.cpp": {
       "mode": "0o644",
-      "sha256": "f8637556358315c40e9240408865724aa59fdc6866b470d6908f2dc86b47bcd2",
-      "size": 1991
+      "sha256": "c90f6d1163ff4f6f6d8ab32f4acd24fac01dbc2a0044c82fb31283392a53bb62",
+      "size": 6848
     },
     "SoloASBridge/Source/SoloASBridge/Private/Editor/SoloASEditorCopyPropertiesImports.cpp": {
       "mode": "0o644",
-      "sha256": "170e1423f7d4c11b494023aade6f68a8c839c16b3fd75a837e5c377452168085",
-      "size": 46015
+      "sha256": "8e81f4bab05274d31f5fce09c44c00ab8e7d71af6169dd23fda04d70d29134fa",
+      "size": 55523
+    },
+    "SoloASBridge/Source/SoloASBridge/Private/Editor/SoloASLegacyT3DOverrides.cpp": {
+      "mode": "0o644",
+      "sha256": "5b91dfd5438bcaa0b74689e52182cf1be6baf97323028cee17b54583fa911b12",
+      "size": 23712
     },
     "SoloASBridge/Source/SoloASBridge/Private/Editor/SoloASRetiredLoadingExportRepair.cpp": {
       "mode": "0o644",
-      "sha256": "09ceccddd51fefb7df48d30ca907f14d3150bc62b237eb6f0834491370845bc6",
-      "size": 5643
-    },
-    "SoloASBridge/Source/SoloASBridge/Private/Runtime/Extensions/SoloASInterfaceDispatch.cpp": {
-      "mode": "0o644",
-      "sha256": "1995518ddabdabd3875b7310cbc8173fc382c2af36df4b687227c88083c3a101",
-      "size": 1711
-    },
-    "SoloASBridge/Source/SoloASBridge/Private/Runtime/NativeEventSuper/SoloASBridgeNativeEventSuper.cpp": {
-      "mode": "0o644",
-      "sha256": "4180ce353b628fa229dc5ffcc1db805839ed5182e4f0a84e4a3d176eb511fc03",
-      "size": 16648
+      "sha256": "a9a138681126f06f495a32d580734b31a50f68d6905499bbbceba37a9afa8772",
+      "size": 7253
     },
     "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeCallableDispatch.cpp": {
       "mode": "0o644",
-      "sha256": "bf37d848607704ae68b562a23c213183fc47f31edd48d7e01cb7ab0303141c5f",
-      "size": 33986
+      "sha256": "d864622674c47bd7f172fb3d7d084850fc430fd89088b8ba3697cb0d70394e14",
+      "size": 41450
     },
     "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeCallableDispatchSupport.cpp": {
       "mode": "0o644",
-      "sha256": "b4d4a9c11d30d120e694ac7a991e8714481159508de7da97aef0db1ab38dcb02",
-      "size": 14021
+      "sha256": "1b1b297039b2166ef299fd172a46dcf746ecc67cbe351a8415c05d95f9edd26d",
+      "size": 15844
     },
     "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeCallableDispatchSupport.h": {
       "mode": "0o644",
-      "sha256": "d0d585864226f113758876e4e9781eb36562993e91e3317994c5eb78361c3b9d",
-      "size": 1057
+      "sha256": "41133341182f08b20936c2191224207cdc3185986f8a04aec30be7295dca91e6",
+      "size": 1090
     },
     "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeClassState.cpp": {
       "mode": "0o644",
@@ -2762,8 +2692,8 @@
     },
     "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeObjectLifecycle.cpp": {
       "mode": "0o644",
-      "sha256": "507b83969f23ad11cce1edb6cd2a39691c17e55a40eff996b8d13ab19f36da8d",
-      "size": 11353
+      "sha256": "cc297435befe25ed3eb433c26e39abde65e94bb9203762e307c1c693f471ff61",
+      "size": 11405
     },
     "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeObjectLifecycleSupport.cpp": {
       "mode": "0o644",
@@ -2777,8 +2707,8 @@
     },
     "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeScriptMetadata.cpp": {
       "mode": "0o644",
-      "sha256": "cae0dd0a0d49d679f1db5e7a1942714c1d7bed024834933ea571d30ecd51ac57",
-      "size": 10930
+      "sha256": "7040254812c07f9be186964b0bd99426f815a36cd2f1a6bb61ad246029b3c383",
+      "size": 11089
     },
     "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeScriptPropertyAliases.cpp": {
       "mode": "0o644",
@@ -2792,8 +2722,8 @@
     },
     "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASBridgeStaticCallContext.h": {
       "mode": "0o644",
-      "sha256": "9106d09474d30846cf70c847174b2957849f27f29361ca3d9a8e1851ea2392dc",
-      "size": 261
+      "sha256": "b311acb8b16ee47f622fe9e2f3e132778fb1fb1ac6f59853c57e0713578cd31c",
+      "size": 288
     },
     "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASObjectPropertyInitialization.cpp": {
       "mode": "0o644",
@@ -2802,53 +2732,38 @@
     },
     "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASSceneComponentAttachment.cpp": {
       "mode": "0o644",
-      "sha256": "0c5a9967f0079d927186d0a0acd292a480413382d239459ac638571209dab799",
-      "size": 2257
+      "sha256": "78b35421dfdaa8418d54d8d455888859be31065fd0d6adf09160f1c91e7606d2",
+      "size": 3089
     },
     "SoloASBridge/Source/SoloASBridge/Private/Runtime/SoloASScriptPackageImport.cpp": {
       "mode": "0o644",
       "sha256": "08218dcb09ccd0254e9c1489e652dc6cd3431fa1794c0894b881edd6e50c926b",
       "size": 506
     },
+    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBaseConfig.cpp": {
+      "mode": "0o644",
+      "sha256": "51227375220b61a3a33a7c84b8abff81d06d3fe9ade0faba144c984ecf1dbd0b",
+      "size": 6667
+    },
     "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBlueprintDefaultObject.cpp": {
       "mode": "0o644",
-      "sha256": "655537db39b28e6cbd970e55c67794f0b935510a1724d0023cf854a35977a936",
-      "size": 20760
-    },
-    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeExtensionCache.cpp": {
-      "mode": "0o644",
-      "sha256": "389dec96e14dd02873f7830ed7376632eddee1b5654e604d4b54e72c1cc9b619",
-      "size": 16003
-    },
-    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeExtensionCacheValidation.cpp": {
-      "mode": "0o644",
-      "sha256": "eaaec8d7df6cf1812448df34fb6bfe28819d2b01b3680b167493e6a4bded93c3",
-      "size": 4594
-    },
-    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeExtensionCacheValidation.h": {
-      "mode": "0o644",
-      "sha256": "36752b09faf11b9c5b703e4662b5b6a548facd87d23dc6565ca17bc35ee4812e",
-      "size": 682
-    },
-    "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeExtensionIdentity.cpp": {
-      "mode": "0o644",
-      "sha256": "367b7366edd9722cd623a7e29063df76b73dbb71ae74ebf8dc8b03e8f8ada2a5",
-      "size": 7509
+      "sha256": "8306dbe27d9a4cff235ec2eac459fadadeea99ac05d574bab863c031ad563e06",
+      "size": 24826
     },
     "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeModule.cpp": {
       "mode": "0o644",
-      "sha256": "a94cdd07a26c4e649e05ba4b062826084ed6304eae708da2fa0b04fa9f29bb1f",
-      "size": 2503
+      "sha256": "86d6acedc62b4c5d9fe72340b3f49dd180913940aa5165596ad69c0f19d6dc6d",
+      "size": 2795
     },
     "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeReflection.cpp": {
       "mode": "0o644",
-      "sha256": "8041db895b923e7149b9ea2a3f165c8da5f5d2ede9bf643984160ffd2913de08",
-      "size": 10060
+      "sha256": "658e6a34deca830fd58e87f4ba95fab860d2f633a1f639ad2b8203b6a020de62",
+      "size": 13004
     },
     "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeReflectionSupport.cpp": {
       "mode": "0o644",
-      "sha256": "26796421992fe491d5625d8aadb1630421184e9b0d9f01d32055811b361767d7",
-      "size": 8233
+      "sha256": "2ead3a4094166245f2f0d5a9e82ea4829e2f883285db4c1068af1eead3528f45",
+      "size": 6713
     },
     "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASBridgeReflectionSupport.h": {
       "mode": "0o644",
@@ -2862,18 +2777,28 @@
     },
     "SoloASBridge/Source/SoloASBridge/Private/Shared/SoloASScriptBlueprint.cpp": {
       "mode": "0o644",
-      "sha256": "fd5e63abf2c564bbe017ee5d6cd2a0b2fcd08adee165463c83b3f9aaf0323c3c",
-      "size": 29809
-    },
-    "SoloASBridge/Source/SoloASBridge/Private/Shared/cuviss/hooks/anchor.cpp": {
-      "mode": "0o644",
-      "sha256": "fcbcdce7f2421d25b10f411882bee5107f867726cedf6a9844ebfdab3bad3cce",
-      "size": 12356
+      "sha256": "b4b6f213f4887a2ac4e4cf31c4e03f6b0e8f7aaf35b1c395efe4eaf57cd69c64",
+      "size": 27757
     },
     "SoloASBridge/Source/SoloASBridge/Private/UHT/SoloASBridgeUhtAnchor.h": {
       "mode": "0o644",
-      "sha256": "5a6b863bf29f6fcf33f19a212bf5f0edb0b2557ddd5cf2c014a448af3f3bffb7",
-      "size": 163
+      "sha256": "1aeb59313a27a46a3a614ba74e7bea619a49b2c912ca4927401c7455a93390de",
+      "size": 188
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Compat/SoloASRuntimeCompat.h": {
+      "mode": "0o644",
+      "sha256": "bd65f350533f109bc48a1170105bde97f43405272c1e2312b1216258911c316e",
+      "size": 11267
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Compat/SoloASStructOpsCompat.h": {
+      "mode": "0o644",
+      "sha256": "10ef22f2ac08ea72106ec3b780bc0bc1d3cacfca862cca7c42e85742979c1a43",
+      "size": 4000
+    },
+    "SoloASBridge/Source/SoloASBridge/Public/Compat/UE54/StructUtils/InstancedStruct.h": {
+      "mode": "0o644",
+      "sha256": "2c06bf19cd61cf5c4b2d30dbf631361eedab7529dbaaf60bd75e4aabc275fb35",
+      "size": 261
     },
     "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASCopyProperties.h": {
       "mode": "0o644",
@@ -2882,8 +2807,8 @@
     },
     "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASEditorEntryHook.h": {
       "mode": "0o644",
-      "sha256": "dd3c0e14e5c6889cb678d6ba9cb099540aa670a05350ebe402e3a4abab1e95ab",
-      "size": 21557
+      "sha256": "06992c706761edfc551369049a1f1ec0808427da83d0b590bdf0be8ab823fdc5",
+      "size": 24971
     },
     "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASEditorFieldPathReload.h": {
       "mode": "0o644",
@@ -2892,23 +2817,23 @@
     },
     "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASEditorObjectImportProperties.h": {
       "mode": "0o644",
-      "sha256": "bc139cbf747fc31bc29a4296d2758915276c34900c654679f63af36000183466",
-      "size": 1312
+      "sha256": "430027815d0fafa54833c3a34d13183192b4954d8de51bc3aa1e232919213ed0",
+      "size": 1475
     },
     "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASRetiredLoadingExportRepair.h": {
       "mode": "0o644",
       "sha256": "7eeb47cc417a4249d0c69fb1c64064b52ebbed4ff60821e0bec5709b5e8b6ab0",
       "size": 1327
     },
-    "SoloASBridge/Source/SoloASBridge/Public/Runtime/NativeEventSuper/SoloASBridgeNativeEventSuper.h": {
+    "SoloASBridge/Source/SoloASBridge/Public/Editor/SoloASWorldPartitionCompat.h": {
       "mode": "0o644",
-      "sha256": "c3dfcc8cf7ba354421495b719c48fc77371dfb2fc0263593fe16eb0e8230251c",
-      "size": 3453
+      "sha256": "eb3b1e000787e609475f74751b6199e1a27a284e4f2cb1875be659fe371757e3",
+      "size": 427
     },
     "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeCallableDispatch.h": {
       "mode": "0o644",
-      "sha256": "28aa3fb22038cf2ad72245c8dd786322bd2336b0b67fb67a4fc518e6c2a2a6cf",
-      "size": 7381
+      "sha256": "86508eafbbe6ff66189e6874806121aec95eb7a431b8afa7c2bfd696650bc08a",
+      "size": 8361
     },
     "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASBridgeClassState.h": {
       "mode": "0o644",
@@ -2935,11 +2860,6 @@
       "sha256": "312793754e37b0853d7624a4571cab39a3fe45417a791fa23d82974c75af16dc",
       "size": 5164
     },
-    "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASInterfaceDispatch.h": {
-      "mode": "0o644",
-      "sha256": "b86df36cd53af5eba2cdeebb5f213a9899c8c5da4dc49bdc11a00f253256a5b8",
-      "size": 337
-    },
     "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASObjectPropertyInitialization.h": {
       "mode": "0o644",
       "sha256": "81cbc0d24138107d2049c5c091b6c7ce97cdd1272360f0dd58b801af4fc85ac6",
@@ -2947,23 +2867,13 @@
     },
     "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASSceneComponentAttachment.h": {
       "mode": "0o644",
-      "sha256": "af68170de859def31b9ab35debf9a5fed7075aae7a4f6daf79c6fa4d5f92bbd4",
-      "size": 341
+      "sha256": "944498cf9e34cf938dfadcddf254530378d4b7a8c3f34d41ce134e4f91fd5da4",
+      "size": 683
     },
     "SoloASBridge/Source/SoloASBridge/Public/Runtime/SoloASScriptPackageImport.h": {
       "mode": "0o644",
       "sha256": "d5d47d603e311113b77843e59a3057631ae44cb837a8a5c35fc054956b68621f",
       "size": 174
-    },
-    "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeExtensionCache.h": {
-      "mode": "0o644",
-      "sha256": "f954c4b273158b0cebb515d079a57a6f67be68a5c67daa0f94358d5fa07c6985",
-      "size": 2849
-    },
-    "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeExtensionIdentity.h": {
-      "mode": "0o644",
-      "sha256": "3840f6311f40329311020be8af9c90b970a1c9418308f083fd3b118ece88973d",
-      "size": 2423
     },
     "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeModule.h": {
       "mode": "0o644",
@@ -2972,33 +2882,123 @@
     },
     "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeReflection.h": {
       "mode": "0o644",
-      "sha256": "096305c221bd9018a944d310b18cce98696feb0dd3ecf2b6ab512dd9084c0ea3",
-      "size": 2391
+      "sha256": "6c28db24484c1fc212414555c1a562797a483f719a2a5bfe19737f1840238150",
+      "size": 2173
     },
     "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASBridgeScriptMetadataProvider.h": {
       "mode": "0o644",
-      "sha256": "b807d4e63009b5b093568f860269e64ccf6d4700b4b868077a68fb72f662529b",
-      "size": 3280
+      "sha256": "5faaec851c6d4b12c59996a6ee205d47507351d2bbb6a15cb2852bb926022a81",
+      "size": 3925
     },
     "SoloASBridge/Source/SoloASBridge/Public/Shared/SoloASScriptBlueprint.h": {
       "mode": "0o644",
-      "sha256": "d7bf1bc614b747d19af3285f1177a0eca62047cd4c25f7b09e80609e80e7bd61",
-      "size": 5049
+      "sha256": "f6779233b972935f1ee7ca58e649ca5185ef3c30604c864c1929aa7a027c0a44",
+      "size": 5191
     },
-    "SoloASBridge/Source/SoloASBridge/Public/Shared/cuviss/hooks/anchor.h": {
+    "SoloASBridge/Source/SoloASBridge/Public/SoloASEngineCompat.h": {
       "mode": "0o644",
-      "sha256": "6008f78d351f15ba2b20a5ffb5fcfa2e3a4fdfcfc94055e17b7c3f09a7748e72",
-      "size": 6765
+      "sha256": "bbe192a6992bb861f97b3070a353775a1401f6249d65e44836fd3074c5cc1ab5",
+      "size": 405
     },
     "SoloASBridge/Source/SoloASBridge/SoloASBridge.Build.cs": {
       "mode": "0o644",
-      "sha256": "4f4abaff0075f5a2c616cf2ebed2d98db447a694d345ca4c8e33472e94f955c9",
-      "size": 5703
+      "sha256": "3011034780ca784280a1ce05479e01795e65675b9452db8db92318d55876b99c",
+      "size": 16608
     },
-    "SoloASBridge/Source/SoloASBridgeEditor/Private/CoreExtensions/SoloASBlueprintChildRelink.cpp": {
+    "SoloASBridge/Source/SoloASBridgeCallers/Private/NativeCallerModules.inl": {
       "mode": "0o644",
-      "sha256": "32b9a404878f66cecb188e00fb4b50675057fbf409e067e628ead672a033078d",
-      "size": 10926
+      "sha256": "3473171dc32e71d35d6e3a505c71a9fa33d8b622ab75bd280764a48d3dfd90b6",
+      "size": 7964
+    },
+    "SoloASBridge/Source/SoloASBridgeCallers/Private/SoloASBridgeCallersModule.cpp": {
+      "mode": "0o644",
+      "sha256": "0e5018468b9f68f4feb221e719110ca4089807d8ee75c0b9742f64fc92004aa6",
+      "size": 7773
+    },
+    "SoloASBridge/Source/SoloASBridgeCallers/Private/SoloASBridgeCallersUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "8b34a8ddff8fb55a69dfbf7eb84a603badfa0050402169caec171d7ef9a076b9",
+      "size": 205
+    },
+    "SoloASBridge/Source/SoloASBridgeCallers/SoloASBridgeCallers.Build.cs": {
+      "mode": "0o644",
+      "sha256": "36fe4c1adfb5fa88bb9676c9e8c10dc03812c172c1260e81c868f3ad1962c206",
+      "size": 16371
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE54/SoloASExperienceAbi.inl": {
+      "mode": "0o644",
+      "sha256": "99452b0c9b528c52961e10dee076f6fbcebd84e739cb1c72b97a296d6ad43cc7",
+      "size": 852
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE54/SoloASExperienceThunks.inl": {
+      "mode": "0o644",
+      "sha256": "6e71a86b107dcdd064ffbc4c1a7b18682c74f870f603908d70f2318f0a5e4f79",
+      "size": 359
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE54/SoloASStateTreeCompat.inl": {
+      "mode": "0o644",
+      "sha256": "a16611718f27c9364b619575a476a5d86e925f758b11767e6b4a213bfa686ae9",
+      "size": 998
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE55/SoloASExperienceAbi.inl": {
+      "mode": "0o644",
+      "sha256": "99452b0c9b528c52961e10dee076f6fbcebd84e739cb1c72b97a296d6ad43cc7",
+      "size": 852
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE55/SoloASExperienceThunks.inl": {
+      "mode": "0o644",
+      "sha256": "6e71a86b107dcdd064ffbc4c1a7b18682c74f870f603908d70f2318f0a5e4f79",
+      "size": 359
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE55/SoloASStateTreeCompat.inl": {
+      "mode": "0o644",
+      "sha256": "a16611718f27c9364b619575a476a5d86e925f758b11767e6b4a213bfa686ae9",
+      "size": 998
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE56/SoloASExperienceAbi.inl": {
+      "mode": "0o644",
+      "sha256": "99452b0c9b528c52961e10dee076f6fbcebd84e739cb1c72b97a296d6ad43cc7",
+      "size": 852
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE56/SoloASExperienceThunks.inl": {
+      "mode": "0o644",
+      "sha256": "6e71a86b107dcdd064ffbc4c1a7b18682c74f870f603908d70f2318f0a5e4f79",
+      "size": 359
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE56/SoloASStateTreeCompat.inl": {
+      "mode": "0o644",
+      "sha256": "a16611718f27c9364b619575a476a5d86e925f758b11767e6b4a213bfa686ae9",
+      "size": 998
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE57/SoloASExperienceAbi.inl": {
+      "mode": "0o644",
+      "sha256": "7092566d4a794c16227f6f5efec55578e1ee4c5579e3eda7dc95fc34d2051bf2",
+      "size": 879
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE57/SoloASExperienceThunks.inl": {
+      "mode": "0o644",
+      "sha256": "f2e3a5d451e2bd36793b8a812ed447e04cc99cdb04f664fbf68d41411bd8dd68",
+      "size": 391
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE57/SoloASStateTreeCompat.inl": {
+      "mode": "0o644",
+      "sha256": "feaa0b4e0980900ec53f666f61cd98b1d3b930c9334bf2387be22c89d992c1ed",
+      "size": 421
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE58/SoloASExperienceAbi.inl": {
+      "mode": "0o644",
+      "sha256": "7092566d4a794c16227f6f5efec55578e1ee4c5579e3eda7dc95fc34d2051bf2",
+      "size": 879
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE58/SoloASExperienceThunks.inl": {
+      "mode": "0o644",
+      "sha256": "f2e3a5d451e2bd36793b8a812ed447e04cc99cdb04f664fbf68d41411bd8dd68",
+      "size": 391
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Compat/UE58/SoloASStateTreeCompat.inl": {
+      "mode": "0o644",
+      "sha256": "feaa0b4e0980900ec53f666f61cd98b1d3b930c9334bf2387be22c89d992c1ed",
+      "size": 421
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeColorRegionOuterAlias.cpp": {
       "mode": "0o644",
@@ -3007,8 +3007,8 @@
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeCoreRedirectClassificationHook.cpp": {
       "mode": "0o644",
-      "sha256": "9a88aad8b141ad7b3639dba09e76f33da0b4e2a429d646666c1e379be57cd574",
-      "size": 33281
+      "sha256": "bcad715c9a24661b89fd1ad94dea0dd77b622d9ff10b6e8785f8a9c6af6a0ba4",
+      "size": 34945
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeCoreRedirectClassificationHook.h": {
       "mode": "0o644",
@@ -3017,18 +3017,18 @@
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeEditorInlineHook.cpp": {
       "mode": "0o644",
-      "sha256": "eed129dc72d7c61236777a4f031f46dd017cb52a4e1b6c46fcf951cdcf24c702",
-      "size": 13664
+      "sha256": "b36a23fdb4da73f68e573a15789cab06acd6e38a4f18293aae43d2500042d5d9",
+      "size": 14152
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeEditorInlineHook.h": {
       "mode": "0o644",
-      "sha256": "cab3c08c20019612677cd4d9634e704a0f63d6d6842d3f5c7b2222d46105722b",
-      "size": 1008
+      "sha256": "2b456b9670d2d95b13f5c55a5a3dc5a302db96799283a479097ba68879fe1d10",
+      "size": 1045
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeEditorModule.cpp": {
       "mode": "0o644",
-      "sha256": "315b04cb7b36546a1dbcf50ac6245f5f43348557b7bf2866d353ed5517a8619a",
-      "size": 26097
+      "sha256": "500d3fe3304c3cee6bcb50adda20ac1d9dfd6cbc0cebb676c03bcf3354b7a938",
+      "size": 27466
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeEnumEditor.cpp": {
       "mode": "0o644",
@@ -3037,13 +3037,18 @@
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeListViewEntryClassHook.cpp": {
       "mode": "0o644",
-      "sha256": "538c6b83e511e99302c11c47e02ab99146f99fbd40e16bc304247317ada66e68",
-      "size": 7931
+      "sha256": "217e7548100a9ba0bc623aa3650fcf946214766b523db47d45353be02f747d58",
+      "size": 8246
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeListViewEntryClassHook.h": {
       "mode": "0o644",
       "sha256": "aa43f19f6b96fe47f3e20d56a02e56906f3f7caf1b7b452c50b0b9a85ea2cd5c",
       "size": 178
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeMenuAlignment.cpp": {
+      "mode": "0o644",
+      "sha256": "9509aa476244e4152630c44d9239e702799b6ddfad53a244053ad097a1db27e9",
+      "size": 5002
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeOutlinerScriptSourceLinkHook.cpp": {
       "mode": "0o644",
@@ -3057,43 +3062,53 @@
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeReload.cpp": {
       "mode": "0o644",
-      "sha256": "3990ac123f945489f84e0e0345e259f81bc1b1ea506e099238d2ce8e0881cb2c",
-      "size": 22427
+      "sha256": "1b3be4a55dd1b646f677436676d197267c19a103b79745389ad7998742890275",
+      "size": 25607
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeSceneDestroyHook.cpp": {
+      "mode": "0o644",
+      "sha256": "1d17def062faf849adf899dad75ea2a08a5764d53fa72263a85806865a4efc70",
+      "size": 2486
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeScriptFunctionSourceNavigationHook.cpp": {
       "mode": "0o644",
-      "sha256": "1e673a51e94ca9c4c14efb368e84348ff85c583e3ca42b5a5e0ebe755ce2cc39",
-      "size": 8400
+      "sha256": "df7f883a61f6c57bb596a65ce6bf57f92e8cda22946bf2d5970fd7af26da6cbe",
+      "size": 8794
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeScriptFunctionSourceNavigationHook.h": {
       "mode": "0o644",
       "sha256": "3fab0c721f1d14ce22bb532b2ee0b09a14511743ecbe167513d9520107de6bdc",
       "size": 203
     },
-    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeSourceNavigation.cpp": {
-      "mode": "0o644",
-      "sha256": "ca03cc5de2184e5cc90843a000e3b6ef87fed54ffdcfbd17a4f62978cd0ab77e",
-      "size": 1761
-    },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASBridgeStateTree.cpp": {
       "mode": "0o644",
-      "sha256": "9cfe8094d9c3bae935d185976e4f575d61fa4920db935698f43108ac8be18e98",
-      "size": 3191
+      "sha256": "5df509e30c2e8090d518e43a81250019b23a21d14e5955a8bb77b6b96738b6f9",
+      "size": 3735
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASEditorExperienceImports.cpp": {
       "mode": "0o644",
-      "sha256": "dfc3c3d842ac7be6a1095d3a6801ad1a466b064e3b2089c98f5cf2d4d0b649fc",
-      "size": 60128
+      "sha256": "ce0362d9b1924b860c464c1140045e0ef37950393d7a94e64e44f9f68ca29f1c",
+      "size": 61432
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASEditorExperienceImports.h": {
       "mode": "0o644",
       "sha256": "c9afe89eae99337fad5b7b818195a33ded4725ab107e32793dbdfe0c100ee14f",
       "size": 690
     },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASMaintenance.cpp": {
+      "mode": "0o644",
+      "sha256": "35a3e5c5afd436b7404f54bfec684fe67b11910eccb46030740c71464dd027b2",
+      "size": 23499
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASMaintenanceInternal.h": {
+      "mode": "0o644",
+      "sha256": "89e0f4db38a6f5674c72241f1261647e5f5f79b9d627261c2d98a5be2667cad0",
+      "size": 848
+    },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintCompiler.cpp": {
       "mode": "0o644",
-      "sha256": "061e4a21916bbcc102f745a0a0dddca548fab4268462627159286d810485d484",
-      "size": 11887
+      "sha256": "3a85285f9dc952c5616217e89b3b7ce3c9dd5d82faaa1172301b54582ee1bc20",
+      "size": 12727
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintDependencies.cpp": {
       "mode": "0o644",
@@ -3102,58 +3117,63 @@
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintEditorInternal.h": {
       "mode": "0o644",
-      "sha256": "5c048da64568561bd9bdd340b8cad3269914f089a693fe910e54c0952938e5e6",
-      "size": 1258
+      "sha256": "28483a26b56108b9e2aa21302c05cb3b03acdceb9873a5a8c35e6eeef76696c9",
+      "size": 1283
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintProvider.cpp": {
       "mode": "0o644",
-      "sha256": "f6d6241c0af4568f04136129dff99ca97b7ce083272efd054b427477e3d9ddec",
-      "size": 3477
+      "sha256": "f6ff62b4c72815557f64cf7408a97f5e8b45b0b26021ce439cab32e290de92e6",
+      "size": 4169
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Private/Editor/SoloASScriptBlueprintValidator.cpp": {
       "mode": "0o644",
       "sha256": "ff37fca0adc56563be6481775e71e8c78e5640dd5e71036199ffefbb5abc0d24",
       "size": 9075
     },
-    "SoloASBridge/Source/SoloASBridgeEditor/Public/CoreExtensions/SoloASBlueprintChildRelink.h": {
-      "mode": "0o644",
-      "sha256": "cef6dbcd45401ba7a6529c92fac3be897e3eb812006df1f6b5dec286ba5fa9f1",
-      "size": 585
-    },
     "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeEnumEditor.h": {
       "mode": "0o644",
       "sha256": "9f13929175480a37a16cf005dc8f1f183613f41df71041c29f54a4fbfcaa53f3",
       "size": 323
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeMenuAlignment.h": {
+      "mode": "0o644",
+      "sha256": "6b3a7ed99297c0f81c25157d33e43a22e59a8a2524b7a0b74ec17277f2d9c3c9",
+      "size": 413
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeReload.h": {
       "mode": "0o644",
       "sha256": "f1fcb2a165b7c73aa5d9c4205a50d3b4880204de99abb91ac81e40236f71f257",
       "size": 2334
     },
-    "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeSourceNavigation.h": {
+    "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeSceneDestroyHook.h": {
       "mode": "0o644",
-      "sha256": "fb21ca536010dbe265f249f743558177dfc6ff37d81581d3e09ccb53a5dd39ac",
-      "size": 544
+      "sha256": "419d5157145146d6869b891a995725705f68530e74de4d00501e3c831b003def",
+      "size": 116
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASBridgeStateTree.h": {
       "mode": "0o644",
-      "sha256": "5675b91f7406b9533890b848ab9b78f31a1badcbaf74d1696269562c33ff24ae",
-      "size": 477
+      "sha256": "416ad5713badaeac79b020b4a42513aa5f034910218c7ef3a6e6bdecd0091d3a",
+      "size": 703
+    },
+    "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASMaintenance.h": {
+      "mode": "0o644",
+      "sha256": "ea0e39de21af1649670c8db65a5f2ddfd3261f22e3539d3949984d8423ff8b4f",
+      "size": 701
     },
     "SoloASBridge/Source/SoloASBridgeEditor/Public/Editor/SoloASScriptBlueprintDependencies.h": {
       "mode": "0o644",
-      "sha256": "761952ab2a1241d8f9508de5660e70f59d6bb258a1bde0c3aa773c80916aa040",
-      "size": 665
+      "sha256": "1660ac6cdcd6a054b23ffb6b1cc08645f428d74ffcb55c90636ff42fe67d040d",
+      "size": 1399
     },
     "SoloASBridge/Source/SoloASBridgeEditor/SoloASBridgeEditor.Build.cs": {
       "mode": "0o644",
-      "sha256": "a3de7851b64c0b5c14ca91d18b8670fc6cc753733d8d3de678296cd7cc580f17",
-      "size": 1206
+      "sha256": "63b8a180d01ac6bde61a1f987d71d8e4085cc61a7e73f976745df8140cdaa8c1",
+      "size": 2306
     },
     "SoloASBridge/Source/SoloASBridgeUht/SoloASBridgeExporter.cs": {
       "mode": "0o644",
-      "sha256": "999de1bc4e76829da3ab6f540ac121434f4eeb8b80b495766da0b68d06e33c7f",
-      "size": 20865
+      "sha256": "6e9d4e37ec6a27430daee875a785c2790afa357708c7986d83840ed1a5e3f212",
+      "size": 77896
     },
     "SoloASBridge/Source/SoloASBridgeUht/SoloASBridgeExporterSupport.cs": {
       "mode": "0o644",
@@ -3167,15 +3187,1665 @@
     },
     "SoloASBridge/Source/SoloASBridgeUht/SoloASBridgeUht.ubtplugin.csproj": {
       "mode": "0o644",
-      "sha256": "355b699fb20fbb08c56548076951b92a9846585adebe133b7d6d92d31fb4922e",
-      "size": 3608
+      "sha256": "b4bad04cea1f06facd51e090c4d059f30a9c947b8c23edd5cf4e147c5070b2eb",
+      "size": 8181
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_004c0086/Private/SAC_004c0086Module.cpp": {
+      "mode": "0o644",
+      "sha256": "5f3885c6eef9b6da06fdbaeb2c8221e35a1bf98be4a4d2a37dce4ceba66b27a5",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_004c0086/Private/SAC_004c0086UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "c1af75435202f8de2e60b33a89252e2bb052b7ac6fc82b1856da0f435b840c08",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_004c0086/SAC_004c0086.Build.cs": {
+      "mode": "0o644",
+      "sha256": "8ee48f2d646e3698164c7e37faaaf13c19af1cc108656660e2ae2b34546c2127",
+      "size": 320
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_00d56167/Private/SAC_00d56167Module.cpp": {
+      "mode": "0o644",
+      "sha256": "75d639417b72c1ed93329fa2b4315e085c4f46da439e6a8e7d05f58e59800022",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_00d56167/Private/SAC_00d56167UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "1c0d0c7338ef50d05bbd8a02d75ebfa5894e6b1de8973ec1ed6bf239e8d41fe9",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_00d56167/SAC_00d56167.Build.cs": {
+      "mode": "0o644",
+      "sha256": "26ada3b761e9dba1aa9517959da96ed56d5ac86de2ead24487352a89a341b641",
+      "size": 225
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_0549f69d/Private/SAC_0549f69dModule.cpp": {
+      "mode": "0o644",
+      "sha256": "f072fe114dd4e344697f25529151dced9eaed851b903d53d124f77b9f1cf9322",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_0549f69d/Private/SAC_0549f69dUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "d75ec1649dd0f0a7e2f50b0544831255408740e4dec7f68817ecd350d28c1c12",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_0549f69d/SAC_0549f69d.Build.cs": {
+      "mode": "0o644",
+      "sha256": "961c7de037feedf819491146ab36e8ff72b1823821c5b4eb42c28b3383fc4b0a",
+      "size": 280
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_0b549976/Private/SAC_0b549976Module.cpp": {
+      "mode": "0o644",
+      "sha256": "c28d7ef53d8db280af3f60cea6919827daf82129e1f630cc3528df67c5b2a194",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_0b549976/Private/SAC_0b549976UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "216681ad8a161b4bf3644e1e64d31c8d7ed0a92a4370717f359528219d049e1d",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_0b549976/SAC_0b549976.Build.cs": {
+      "mode": "0o644",
+      "sha256": "78335d90e1c3f13aebeab5050adb69e27feb199d0a2ca1e9431d737b92983b54",
+      "size": 347
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_0be403cf/Private/SAC_0be403cfModule.cpp": {
+      "mode": "0o644",
+      "sha256": "2447f1d0587f13893ac4f62c42e6f37c66531838dce1f2465a34d26addd66ab1",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_0be403cf/Private/SAC_0be403cfUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "16f0e28b02939586851afd9b974392fe113b904ec16b2a0bf6b5fb36448bbc8e",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_0be403cf/SAC_0be403cf.Build.cs": {
+      "mode": "0o644",
+      "sha256": "f99a192a3eb6b3c3cfa3ca334120fbbcd2046deac27708d4e10ba24ddd38b60a",
+      "size": 299
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_0d092bd1/Private/SAC_0d092bd1Module.cpp": {
+      "mode": "0o644",
+      "sha256": "867f9152a851c4ae669de59ded76dbbcabdcd6c8305911d1b8d65e2335399c35",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_0d092bd1/Private/SAC_0d092bd1UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "ba4821abeae3b26c5e4353f640829344a543530ebeaf253370869e020b9a8500",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_0d092bd1/SAC_0d092bd1.Build.cs": {
+      "mode": "0o644",
+      "sha256": "4146cae06affaf756727ee20f09e7386f60daf8916ca11c4954780645fe213bc",
+      "size": 255
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_12d00590/Private/SAC_12d00590Module.cpp": {
+      "mode": "0o644",
+      "sha256": "35cd2ba235128af95b6bccf6fda68fc9b27a6c6087b7b5573dd4ac77d12f519d",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_12d00590/Private/SAC_12d00590UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "db21cae57a0484dcacb7ac2b43ad5941ff369b85f93de8636d8cbf83aeea6b50",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_12d00590/SAC_12d00590.Build.cs": {
+      "mode": "0o644",
+      "sha256": "c2d0aa3f3663638aa6a0fa1c245ced4005f5c8b5254a3cf395c0ed8c8fbffe7a",
+      "size": 215
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_193f112b/Private/SAC_193f112bModule.cpp": {
+      "mode": "0o644",
+      "sha256": "627c21b9647aae9f645544123a955f0f7b4d99a322b3ff3fffd1921f281d3cfb",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_193f112b/Private/SAC_193f112bUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "be09cb89e97a13b14fc241f44d571f7acbf97e9d5aa7a6f684506c7a3da2ebbd",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_193f112b/SAC_193f112b.Build.cs": {
+      "mode": "0o644",
+      "sha256": "cf130db9fbfedf412ab0f351f6f088ad6e305cff17751cdb743d2064d061f5b1",
+      "size": 256
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_1eecdd5c/Private/SAC_1eecdd5cModule.cpp": {
+      "mode": "0o644",
+      "sha256": "ffa954775bebb6b01353b5f0064a72ef832bd5ca67cd0d305367ddd6969a4e0d",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_1eecdd5c/Private/SAC_1eecdd5cUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "fde9135c7fc407e038c09c715a0a539f0a699fd53da3fe6fdcafd1dc4b5292f5",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_1eecdd5c/SAC_1eecdd5c.Build.cs": {
+      "mode": "0o644",
+      "sha256": "50fbedef7992efb6a4a85d0c233d04964e2313fbab65a38e9f932ba8345522c0",
+      "size": 366
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_21572214/Private/SAC_21572214Module.cpp": {
+      "mode": "0o644",
+      "sha256": "be8a5eed09c5effb7048aece3e207cbba20d3b5b3fc96009082b05b81a3199a6",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_21572214/Private/SAC_21572214UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "435ded3e305a5e0c8e2057e6921e7f2824f21108391b08d439cc8e605f35ee38",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_21572214/SAC_21572214.Build.cs": {
+      "mode": "0o644",
+      "sha256": "227c39aa9c2d2ab5ce2c69d126fd0e7b355acabb5fa301ed88d16e0e9d07bb98",
+      "size": 276
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_22b8c031/Private/SAC_22b8c031Module.cpp": {
+      "mode": "0o644",
+      "sha256": "69fcffd84efa20c21d27880dbcf63df8e28fd49421c53806855480f6e3b7e14d",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_22b8c031/Private/SAC_22b8c031UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "f23d1044c83652fd957fc6df2e69a3204f8c87d586f92026dabec0cffed7253c",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_22b8c031/SAC_22b8c031.Build.cs": {
+      "mode": "0o644",
+      "sha256": "c0a7ea4aa8771780e95586597f16512a78044f9ed808418f9283d60946a7a673",
+      "size": 235
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_2dd5364e/Private/SAC_2dd5364eModule.cpp": {
+      "mode": "0o644",
+      "sha256": "0c2cf3d7dc24ee860a84b06581f02973577e975848064d0c561f0392d1a0ad6b",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_2dd5364e/Private/SAC_2dd5364eUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "8b6e3ac9037b27f3bbf844f60553fea378cd6cb0ab4a29d05d5d3468837b6daa",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_2dd5364e/SAC_2dd5364e.Build.cs": {
+      "mode": "0o644",
+      "sha256": "60d9ed39b772576d80dba597fe9201337dc811ebbb5d6172f9aaa6976db7e163",
+      "size": 270
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_2f807e29/Private/SAC_2f807e29Module.cpp": {
+      "mode": "0o644",
+      "sha256": "ff4abe36c6a8ceb20f9b2e0c3969466862255f735b1185382462630c35625a2f",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_2f807e29/Private/SAC_2f807e29UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "e6e2bdee5d8f391e6d0f14c014ea76c1bbf29a203ffdccb2d9e6145a18547132",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_2f807e29/SAC_2f807e29.Build.cs": {
+      "mode": "0o644",
+      "sha256": "909aca88a413847ea8fb95a520bf43d5ce2c999f6aa915007366515a1777aead",
+      "size": 256
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_2fa14010/Private/SAC_2fa14010Module.cpp": {
+      "mode": "0o644",
+      "sha256": "624b29032a19b39b5a8c2cde787d6d095d9626f645d43eaad0c4e334002d5dc4",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_2fa14010/Private/SAC_2fa14010UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "3dbaaa9678dc9532c1acfc01a1363844343b157bd3b4cffd3f372c4da9eda35e",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_2fa14010/SAC_2fa14010.Build.cs": {
+      "mode": "0o644",
+      "sha256": "e4ae6995b7c273e88e9cc08fa65f84557962e322d7495a746a65746a172ae27c",
+      "size": 288
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_32f01aea/Private/SAC_32f01aeaModule.cpp": {
+      "mode": "0o644",
+      "sha256": "75016fc37e9a83768577900dddce4c08d04ec6fd6fe16748fba58c6cc2b5c99f",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_32f01aea/Private/SAC_32f01aeaUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "d4684dc092e17e9fa4c9a18029f8277a8e9b4b4fc4ef92f33e3adb51c4f850f4",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_32f01aea/SAC_32f01aea.Build.cs": {
+      "mode": "0o644",
+      "sha256": "c3add059c0168fcb08557470bc3868944e87740309cedd0b50cc17b0b10ebe50",
+      "size": 256
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_32f6b6b3/Private/SAC_32f6b6b3Module.cpp": {
+      "mode": "0o644",
+      "sha256": "dbe44a29e0d9be06e7c933db30b32f8bbd7cba8819e68d0d7ff58fd8c0f9faad",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_32f6b6b3/Private/SAC_32f6b6b3UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "8a99ecbba675faf1b7910fc2702819e5b8b4dc34fcce509f4a75283b4568a9ad",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_32f6b6b3/SAC_32f6b6b3.Build.cs": {
+      "mode": "0o644",
+      "sha256": "e7c8b953f9b7d8456434e1f81c652b21e5ce2113cc9c1863e239f471c5ee264c",
+      "size": 278
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_34745ed5/Private/SAC_34745ed5Module.cpp": {
+      "mode": "0o644",
+      "sha256": "d961698840387f9d4a635cd2f980d46c59cea974602a3a1a2ea5aa370618aa59",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_34745ed5/Private/SAC_34745ed5UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "d7eaa56ee8da59d6c480881359d19159062f99003ad8ec52a05c9f57f5087787",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_34745ed5/SAC_34745ed5.Build.cs": {
+      "mode": "0o644",
+      "sha256": "26f8a8b4d289b0a4c4dda8d1e356312257ad1fe650fcf2ca73b1bbe9a743288c",
+      "size": 235
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_34e0eb78/Private/SAC_34e0eb78Module.cpp": {
+      "mode": "0o644",
+      "sha256": "0ac3ec3fdce5e547f2ac94c354b368b5e5cd7c0b3db255e798f74163694a2437",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_34e0eb78/Private/SAC_34e0eb78UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "686911c8722e250022e01d29bf1bf048eae06695ebe3c752830359ba1c9c511b",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_34e0eb78/SAC_34e0eb78.Build.cs": {
+      "mode": "0o644",
+      "sha256": "705dcb7bdcd7170f9d625b0180aee940b0a6d0f5f11565778ddd34a61df56206",
+      "size": 290
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_37ba07da/Private/SAC_37ba07daModule.cpp": {
+      "mode": "0o644",
+      "sha256": "3dc49a3a3c04504ca786f344a534607336e55f116676997506e67d067024323d",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_37ba07da/Private/SAC_37ba07daUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "2057f5b3b01dc3e4de7ddb59e53432457efab0a3ba4d5ab785f27a7e6d7376ad",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_37ba07da/SAC_37ba07da.Build.cs": {
+      "mode": "0o644",
+      "sha256": "45f96dc5751a9a72e86bfd989e320affff897535319d9f72e8cd719ef4ca2655",
+      "size": 224
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_3809a56c/Private/SAC_3809a56cModule.cpp": {
+      "mode": "0o644",
+      "sha256": "9a5578315cd52a02d71efabed91a644966e82e6070e646fd5b380a0400a84cbb",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_3809a56c/Private/SAC_3809a56cUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "5e78fc4c7169ac8257f9359dd094cd25c20a23d0b1b40faf0eff1270eca46423",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_3809a56c/SAC_3809a56c.Build.cs": {
+      "mode": "0o644",
+      "sha256": "ff36ce20e69e3a8335b24707754f075147d482be0c38f3df06afb79b68b48ded",
+      "size": 266
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_3a7d2c6a/Private/SAC_3a7d2c6aModule.cpp": {
+      "mode": "0o644",
+      "sha256": "7636160569bc20f1c0bd6f7ced22704977c34930c8131a1e1799cc8723d50898",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_3a7d2c6a/Private/SAC_3a7d2c6aUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "ae34eabaa75b74bd9e508693fde7e9cb2f7c6459162e83d5674264bfdea414c4",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_3a7d2c6a/SAC_3a7d2c6a.Build.cs": {
+      "mode": "0o644",
+      "sha256": "1bb2fca9369a10ff49c3a9a673e25bc02924a09e349bf231605a269ae1ab15f8",
+      "size": 235
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_3c0b1b40/Private/SAC_3c0b1b40Module.cpp": {
+      "mode": "0o644",
+      "sha256": "560ef08e7b2d18c7dbc78aa13f4d658290cabc3ebfdb1408289d1111f5254db5",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_3c0b1b40/Private/SAC_3c0b1b40UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "1e06d5773db3674be38a11e142e8b13a7dfa8084c6c0fb5e0218fcc3032a496e",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_3c0b1b40/SAC_3c0b1b40.Build.cs": {
+      "mode": "0o644",
+      "sha256": "b2423ff6ed82a4ba2a1c61a7e4545199b47c737c6b3c6ada1202acc1a8d8b76f",
+      "size": 315
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_3e1d7556/Private/SAC_3e1d7556Module.cpp": {
+      "mode": "0o644",
+      "sha256": "e39871638172a2779a4f4f933fadbaa21e15f8d45f9b69206b2bbaad862831b3",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_3e1d7556/Private/SAC_3e1d7556UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "1abebc8031f5d6e2008907152e0b35f09714775df78cba2eb8e025721e2ec0cc",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_3e1d7556/SAC_3e1d7556.Build.cs": {
+      "mode": "0o644",
+      "sha256": "cb634e627947e54d83dcc6e2a29427d5aa2eb3254a8ed61cb1fea84b91245ec1",
+      "size": 274
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4448388b/Private/SAC_4448388bModule.cpp": {
+      "mode": "0o644",
+      "sha256": "25c716650c5fccf44e35aaf90f4b11ebf6375911f944e0d75740c0fcc2d9f0ec",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4448388b/Private/SAC_4448388bUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "652c396ae517c662c8c5b941ac3ac953fec52c3d5912313bcc2599dd24f56d06",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4448388b/SAC_4448388b.Build.cs": {
+      "mode": "0o644",
+      "sha256": "ed3c6ece93a0f7049629c8efce873b49d72a050335ec700c39b0d98866d8f2d6",
+      "size": 301
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4c951402/Private/SAC_4c951402Module.cpp": {
+      "mode": "0o644",
+      "sha256": "5e03fc376d5f620bd7705a073cfe4c28f4f24b8dc574267530aef59ef44d1785",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4c951402/Private/SAC_4c951402UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "7d38e9e6cebe9614423781684a786239bfcc0a5536e625f0fa5cc1a7eed30a33",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4c951402/SAC_4c951402.Build.cs": {
+      "mode": "0o644",
+      "sha256": "e9cee621079f981555f26b298d1b3a16ba0a2bb89aa3bd5a267616058e85d39b",
+      "size": 504
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4d574013/Private/SAC_4d574013Module.cpp": {
+      "mode": "0o644",
+      "sha256": "7cde0c4a362c7beb0bebafeda3b6e383abb719ae42d9894a17e9b1bad86fda0b",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4d574013/Private/SAC_4d574013UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "fe07167a92fa696564a0a7b7fca54cebe1b27153ba328ddf465fdd1b5479e0bd",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4d574013/SAC_4d574013.Build.cs": {
+      "mode": "0o644",
+      "sha256": "588ed162f37836b091ebbd030b213dc5c0d961e5a9e33af77c2b0998324a725e",
+      "size": 293
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4e506ccc/Private/SAC_4e506cccModule.cpp": {
+      "mode": "0o644",
+      "sha256": "c5d14a21e186b7c29109054f92ded88740c6bf529d5eb9db0539911387b5559a",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4e506ccc/Private/SAC_4e506cccUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "b43628148a794bd7e120ef9b2e792066cd65c8eb0eb700daf0cb33c7e07ec325",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4e506ccc/SAC_4e506ccc.Build.cs": {
+      "mode": "0o644",
+      "sha256": "f459336bd802c306b1195415a9dba71a13bc48b98788ae99927352f3282ce627",
+      "size": 292
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4f708b72/Private/SAC_4f708b72Module.cpp": {
+      "mode": "0o644",
+      "sha256": "68d56bc19a0cd31cd74d11c513d630646499d747bbd01714a115f33b42b69023",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4f708b72/Private/SAC_4f708b72UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "c15dc97dd324dab5992c34a21bd5635aa14a38cdb0c726c5a40fec1b88e94576",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_4f708b72/SAC_4f708b72.Build.cs": {
+      "mode": "0o644",
+      "sha256": "1d97a41b21df52329a4213e4075ed4c3131caafd9fb5b2c64ce342b825b9f480",
+      "size": 281
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_51b1db90/Private/SAC_51b1db90Module.cpp": {
+      "mode": "0o644",
+      "sha256": "d28b97f4606705230f0ad437a840acaaa20a2cf2b36d846e4d7656c4eb9899a7",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_51b1db90/Private/SAC_51b1db90UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "539ae7e35e8d658da16866c401ed2c6c26d449edaf6b92b963baee6f62acbe07",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_51b1db90/SAC_51b1db90.Build.cs": {
+      "mode": "0o644",
+      "sha256": "46bee222d3b89265e23c3ab918427bc918c06d8d8868728864f432f13c04cea8",
+      "size": 255
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_551a28c8/Private/SAC_551a28c8Module.cpp": {
+      "mode": "0o644",
+      "sha256": "b69636b45d67b627a314681caf7a75d79d2b0eabb956e2903ccab6c348892d53",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_551a28c8/Private/SAC_551a28c8UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "25a4d58f8d469013e0cd84fe91829f3367a80749b7f23c10a4ce296454bbecf0",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_551a28c8/SAC_551a28c8.Build.cs": {
+      "mode": "0o644",
+      "sha256": "29117453e4ebb78577f8e8488cbf380fa5c6af8f4f90227bdfe371012ae70084",
+      "size": 216
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_59250736/Private/SAC_59250736Module.cpp": {
+      "mode": "0o644",
+      "sha256": "1450b6d67d0ee83ef0c942789a6776e8467bc71fad7813eb74eef0bdcfbbde38",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_59250736/Private/SAC_59250736UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "9e19b20742fa8a453efadba93a4915e5c0dc1673a86d1323d44eb3f56f062cf7",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_59250736/SAC_59250736.Build.cs": {
+      "mode": "0o644",
+      "sha256": "582e4031b251b0f77383334a82eb51f5f9ce1ea2d7222f8ebbc01751219d1709",
+      "size": 234
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_592f1028/Private/SAC_592f1028Module.cpp": {
+      "mode": "0o644",
+      "sha256": "98e62678e4f38713ee917ab1f5db1fdbc6f9e7ef3ae089d09023affd4c00f6eb",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_592f1028/Private/SAC_592f1028UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "1c11d868eb25b2dee8f9bf1bbf3eb8af28430c91776d73190fa472a251a86204",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_592f1028/SAC_592f1028.Build.cs": {
+      "mode": "0o644",
+      "sha256": "1dc43a0648a86be9b7e2f10c28ef7f3e87176f75aafdc52a56d6778e213d324f",
+      "size": 262
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_5abcbf4e/Private/SAC_5abcbf4eModule.cpp": {
+      "mode": "0o644",
+      "sha256": "876e0b8f32b5734b093292baa0ef88a9887f0a067b2f0c22836f94b716b429a0",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_5abcbf4e/Private/SAC_5abcbf4eUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "461879e843e325353f04397c93c8c0905dd05a452e5ce19ea0b860c48a173ef3",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_5abcbf4e/SAC_5abcbf4e.Build.cs": {
+      "mode": "0o644",
+      "sha256": "bca4b217fcc454d732d332cc2adf10aa2be8052f1f031bcae1a90ac1e946af53",
+      "size": 301
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_5f0fc97b/Private/SAC_5f0fc97bModule.cpp": {
+      "mode": "0o644",
+      "sha256": "83594448b5a172c2a9a720dc44095e427d7c4945e4cc635a6d0cbe446d1ff9c7",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_5f0fc97b/Private/SAC_5f0fc97bUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "1a9910c930d94ad4b6d2c2b68ca359a4b6ad49310a0eede99d76c029393c285d",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_5f0fc97b/SAC_5f0fc97b.Build.cs": {
+      "mode": "0o644",
+      "sha256": "1fce57b804407ac63a3a4e1ed68b690b2feb2090c2ab53575953b20731038ccf",
+      "size": 305
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_5fa6903f/Private/SAC_5fa6903fModule.cpp": {
+      "mode": "0o644",
+      "sha256": "4dc86a9059b6cab5b3ed43eab3ef9e541fd66d06ce01e1d9b84be48ee164adb1",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_5fa6903f/Private/SAC_5fa6903fUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "6e3a6f06e28a1364b6a1e0bd6f5b6c7dded34648630da79620be00c9c1535f7a",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_5fa6903f/SAC_5fa6903f.Build.cs": {
+      "mode": "0o644",
+      "sha256": "b1f3040c8051751c941fe9dfeaa07ae4e2c2eb4c5991bb2ed87bf9e0c0a106ce",
+      "size": 272
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6353b4b1/Private/SAC_6353b4b1Module.cpp": {
+      "mode": "0o644",
+      "sha256": "36459f437193452eda758de4c6c535f180d9b31f18ce7723eaae46dd5d574091",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6353b4b1/Private/SAC_6353b4b1UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "e4f73ef9cb492da1c4eebfae31188601611ce5e7b28e1df7758e1e7d7f47efd9",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6353b4b1/SAC_6353b4b1.Build.cs": {
+      "mode": "0o644",
+      "sha256": "ad9736881c0c3349f6c757b1a1d9d750bcdd2a605125d6cd5123765adea9dfee",
+      "size": 238
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6624c0d3/Private/SAC_6624c0d3Module.cpp": {
+      "mode": "0o644",
+      "sha256": "3d339cd95376e166a9174a9b2d3126508e2e84000391cfe358ce5ea7a3fdbe6f",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6624c0d3/Private/SAC_6624c0d3UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "41dbb904f5a8328584fd0ddeed7ebf08dc7b71994bc52e1eaa95bc649fe96ccb",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6624c0d3/SAC_6624c0d3.Build.cs": {
+      "mode": "0o644",
+      "sha256": "671ef943ee713ae656f6b1a55a80f2b9d0d12dfaddaf754f7893b739448fa0f9",
+      "size": 237
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_66e47cd0/Private/SAC_66e47cd0Module.cpp": {
+      "mode": "0o644",
+      "sha256": "0f877a7f22a6fb3886f02e7a387908b7a8f7e3f2d44631f71712c73baf4983cc",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_66e47cd0/Private/SAC_66e47cd0UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "56104a71960c8e826ec63595b61b12c406ef42e7c23f3e2c87ea87e38c9982d5",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_66e47cd0/SAC_66e47cd0.Build.cs": {
+      "mode": "0o644",
+      "sha256": "ff688ba8c47adcf39e824c57fa2f83316cdb8eec05025b8069b2f97dbdc78fc5",
+      "size": 260
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6874da38/Private/SAC_6874da38Module.cpp": {
+      "mode": "0o644",
+      "sha256": "5e3e75e9dccf8a06b9a0c14eac2c3d316e6c3c865e9240e586c883a3acba7f0c",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6874da38/Private/SAC_6874da38UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "1f7c656af86ba69f7607c78f819662180d6eda6b059efcd85f130ac3cf8ce48e",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6874da38/SAC_6874da38.Build.cs": {
+      "mode": "0o644",
+      "sha256": "a534a295b277cdca0dda5d431daebbabce7076dc5c48b8d9cf7eba85aa8bccbd",
+      "size": 250
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6b4686db/Private/SAC_6b4686dbModule.cpp": {
+      "mode": "0o644",
+      "sha256": "3c172e1e58317110b8651aca22f417436308bac8efd28f35955716ffd3160a5c",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6b4686db/Private/SAC_6b4686dbUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "57475d38ee846af6d66b1c728fbc831f91f3d65c1e632cde86b7db57d3dbc7ce",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6b4686db/SAC_6b4686db.Build.cs": {
+      "mode": "0o644",
+      "sha256": "08122af26d1f3b35a5a9440e9aec47893068c152ea3a66664abb5e9bebeae843",
+      "size": 284
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6c8c0d47/Private/SAC_6c8c0d47Module.cpp": {
+      "mode": "0o644",
+      "sha256": "133ba89f9b7257271c15e625c977894c01ce3befcc9d881a6d6b916afad5e667",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6c8c0d47/Private/SAC_6c8c0d47UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "f51c5aa850a8906d89a93c94339e1a6867dc9f3c6735d870dc482b29123c6bcc",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6c8c0d47/SAC_6c8c0d47.Build.cs": {
+      "mode": "0o644",
+      "sha256": "a2c83e7e9dee6960806e44e39a25663f2afd81060a34daf7dc5961d0acaf6a1d",
+      "size": 300
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6d02b31d/Private/SAC_6d02b31dModule.cpp": {
+      "mode": "0o644",
+      "sha256": "bd21a19d5c86d5c90bd263c798d6f2dfa8e0df4ee9099cd7f52d43a9baa58247",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6d02b31d/Private/SAC_6d02b31dUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "ec7f2ead1bb951ddfcb4e203822a6fd67d19edd5df3e7473cb6bd5d171e57fd8",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6d02b31d/SAC_6d02b31d.Build.cs": {
+      "mode": "0o644",
+      "sha256": "9c2e062d9d1e3caebf9cdfdd5f7f719f8b4aedc361eb23a7e75c6ebd88ce9400",
+      "size": 289
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6e4c1453/Private/SAC_6e4c1453Module.cpp": {
+      "mode": "0o644",
+      "sha256": "cc4e29377dc4516ad02c30ca1d81cf58ab6df97893d2d9e1d709beca13bcefd4",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6e4c1453/Private/SAC_6e4c1453UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "ea9e1c6f61f05243a4541dfacde243720ecc909f36471b4c8e87ffb9ee9a49d0",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_6e4c1453/SAC_6e4c1453.Build.cs": {
+      "mode": "0o644",
+      "sha256": "b0b56f5d83bbb67fa6fa81448a0573de981bcfe6e8608a6f5dbc8f3f57554081",
+      "size": 219
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_71de6bed/Private/SAC_71de6bedModule.cpp": {
+      "mode": "0o644",
+      "sha256": "563e76e21d0f9721480c7264d609f843826faed287e8f40cba2c69b105eac5c0",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_71de6bed/Private/SAC_71de6bedUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "d6b270a7840dc8b451fb1259d8f89432cffc306902bd0a3d5e97ca259afac2f6",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_71de6bed/SAC_71de6bed.Build.cs": {
+      "mode": "0o644",
+      "sha256": "39a1180310235549179af26985bff56ebf423bf8d8abe102443df2ebe0080a20",
+      "size": 258
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7544c2d2/Private/SAC_7544c2d2Module.cpp": {
+      "mode": "0o644",
+      "sha256": "51e8006cd394e7f4170c0c788e839e3a39d6e715bab68e6b64ca442d5cf3684b",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7544c2d2/Private/SAC_7544c2d2UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "8856b6d271bb4f121e6601f131747ef472f23bbe90ad51b2a1c068c2584a4230",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7544c2d2/SAC_7544c2d2.Build.cs": {
+      "mode": "0o644",
+      "sha256": "c48d3fd551ce81993c81d6fd4ed8dd725ddeb556c5fac5b4680df28431afd2fc",
+      "size": 286
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_76890581/Private/SAC_76890581Module.cpp": {
+      "mode": "0o644",
+      "sha256": "51eb2b0a018b665272ed34ea66b794bd73b864321cf16179aa8de5ae9e3e85b4",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_76890581/Private/SAC_76890581UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "637468e69ba078693ae8195fe6bfe4fb2337f14123da976f7028034d833eb68a",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_76890581/SAC_76890581.Build.cs": {
+      "mode": "0o644",
+      "sha256": "e36aa4a90c8414e3e0a5ecf6f8b2176c1b2bd6ff3b729f12206fcff18b425487",
+      "size": 266
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7690dbdf/Private/SAC_7690dbdfModule.cpp": {
+      "mode": "0o644",
+      "sha256": "fde0f1ebb84237af349b60761dde95ef2edcf139801d7acce44675ac7db47866",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7690dbdf/Private/SAC_7690dbdfUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "d65b2de990e4890b0454054e96c07d90fbf7172000f561c5823ca0bfaf25aa13",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7690dbdf/SAC_7690dbdf.Build.cs": {
+      "mode": "0o644",
+      "sha256": "9dbc4cbdb82a7287a4f6149fa8a5f622578c3c8f36da43dcb7fd79e539cb696e",
+      "size": 268
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_774c043b/Private/SAC_774c043bModule.cpp": {
+      "mode": "0o644",
+      "sha256": "6717d3b3f61e505fdccd7d39c3d046761754eb255e70e2cf20b5e54847973db6",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_774c043b/Private/SAC_774c043bUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "820f124b14c157730127a0b5173e46f4c53ca5928fb944b7369bb8e24fb6fd6f",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_774c043b/SAC_774c043b.Build.cs": {
+      "mode": "0o644",
+      "sha256": "f1307db6327b89c678b51e3dba631dca0a511f57f959f8c4290a5bdc4e5ccb46",
+      "size": 264
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_79076901/Private/SAC_79076901Module.cpp": {
+      "mode": "0o644",
+      "sha256": "cb4d825be4ec64dd4a3a579f5222d40ae90ad3f55dc5269ce6d6981c5d616913",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_79076901/Private/SAC_79076901UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "057d94ebab35c610f76e6e6f0bcfd512f7f0697dd647bbe502d1d12a94563529",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_79076901/SAC_79076901.Build.cs": {
+      "mode": "0o644",
+      "sha256": "4da7b5d38975ef13e28f634de8859bc2cf14155903d9ef0edfcd4ca5073f743b",
+      "size": 223
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_79a82bb4/Private/SAC_79a82bb4Module.cpp": {
+      "mode": "0o644",
+      "sha256": "90eb76ac62c3ab682c74c9009552c00968e6f53b259b38c234f8cef4d3be7209",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_79a82bb4/Private/SAC_79a82bb4UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "4b1b07ad1714b33c012d18136bc2fb7da9a17a6694b57835fc9cd039fee3cbdf",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_79a82bb4/SAC_79a82bb4.Build.cs": {
+      "mode": "0o644",
+      "sha256": "8b11b7f43b1269a7157c027eec11e2b7c63352296c6e82fe3797c833550330c9",
+      "size": 266
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7ca7dea9/Private/SAC_7ca7dea9Module.cpp": {
+      "mode": "0o644",
+      "sha256": "f8233e46744d683d67c4824aa581adde3f52f851606c1a501638721339f68f9b",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7ca7dea9/Private/SAC_7ca7dea9UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "a765d115bfa7a184ed9521b531e530233f1254e2ff8d9688226fba93c765269a",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7ca7dea9/SAC_7ca7dea9.Build.cs": {
+      "mode": "0o644",
+      "sha256": "acc367f53744f4a1eea76c9622697bf5adcad04b2eea1106c3d2fdc393c204aa",
+      "size": 239
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7cf16a47/Private/SAC_7cf16a47Module.cpp": {
+      "mode": "0o644",
+      "sha256": "ff5634d323ec665805d46b4235290f896f63d8acf05e5f6f48df427525277777",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7cf16a47/Private/SAC_7cf16a47UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "99e5c29b18a7ce1a8b8030a24e88a1f151a8d7f835dc6a3f7399b4dea0177380",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7cf16a47/SAC_7cf16a47.Build.cs": {
+      "mode": "0o644",
+      "sha256": "0bfd65ca6198da20074216d857076d648dac40fdd59f930fb1090081fe52e7b3",
+      "size": 263
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7d068d7d/Private/SAC_7d068d7dModule.cpp": {
+      "mode": "0o644",
+      "sha256": "e48c285b7c51166d3c95ad06a71d71171bd5fd38ee035408d479f03a4a96d591",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7d068d7d/Private/SAC_7d068d7dUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "88aa0f66fcdd9a1f74d87a6e276b0468ba11b9537bf9d07296559c70a80fe68d",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7d068d7d/SAC_7d068d7d.Build.cs": {
+      "mode": "0o644",
+      "sha256": "c1caa29e8556a2abd766a20b9bb31fbdb711e026c7266c3a44b8723bd9b28858",
+      "size": 217
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7d25fadd/Private/SAC_7d25faddModule.cpp": {
+      "mode": "0o644",
+      "sha256": "5e95c53ccbd900ee142ac6608ab987a5b9001f15ab70fb7f2adad5f31f66ac93",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7d25fadd/Private/SAC_7d25faddUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "803b6bd4e57425cb76784937d0f6a67e87c0d84c750a7068a306d94939bbc09b",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7d25fadd/SAC_7d25fadd.Build.cs": {
+      "mode": "0o644",
+      "sha256": "e0abc9ea2ac1c1bd32d6613418203b1a0e9ce0182c70a6cc1eb18232f9c967bc",
+      "size": 468
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7de5a138/Private/SAC_7de5a138Module.cpp": {
+      "mode": "0o644",
+      "sha256": "f360216b84a98a1f3e21d2b8fbcb6ab668f7e12eb9d203823bf7484aac5e23d6",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7de5a138/Private/SAC_7de5a138UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "cd0ecf553f4d9f70da5d435e4cdabacb0c017e5bc07d4ee8aa0598fb33f052d3",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_7de5a138/SAC_7de5a138.Build.cs": {
+      "mode": "0o644",
+      "sha256": "b0644b40becaa78a156c73cad047bedb390d4232f03456668ebc37a4738d8bb5",
+      "size": 248
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8014fbda/Private/SAC_8014fbdaModule.cpp": {
+      "mode": "0o644",
+      "sha256": "829ab5ef76ff7aebc1bb8aa3b8c61c36836a6cba0c46ad1e636f01208e1f432e",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8014fbda/Private/SAC_8014fbdaUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "e7209cedc9a0432f0fef715d99e0709458b65752b066f54b909e40d7786e2ad5",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8014fbda/SAC_8014fbda.Build.cs": {
+      "mode": "0o644",
+      "sha256": "166fdaf6556608931566bec6891ee488f03a0be2304f3eb8718be362b88dcab1",
+      "size": 575
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8059e8ad/Private/SAC_8059e8adModule.cpp": {
+      "mode": "0o644",
+      "sha256": "5443c4aa570d90400dd1340f69b2db0ff02d8112fbf21461f3e6687e29fb77e7",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8059e8ad/Private/SAC_8059e8adUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "9242c1db15a412edb1790c9f709d270799a2a2709c3aff4f15c7347b51914de0",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8059e8ad/SAC_8059e8ad.Build.cs": {
+      "mode": "0o644",
+      "sha256": "ac86bdec443791128c89594ef6df493f92d328f1ce081d43d189549b4019c36b",
+      "size": 299
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_88f7fc40/Private/SAC_88f7fc40Module.cpp": {
+      "mode": "0o644",
+      "sha256": "ebfa95e808fc6d414ea5e79799c3ad9f44def65a58a7bfe37894323eb4b4f466",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_88f7fc40/Private/SAC_88f7fc40UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "830dcd6279195ced86d15464a7884a85c073ad3591b9b580e7e189dbb92f221b",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_88f7fc40/SAC_88f7fc40.Build.cs": {
+      "mode": "0o644",
+      "sha256": "c056e7d4067582cc5a928266e341745e80b3bae8e21eb7d05d1d30834ccaa0ec",
+      "size": 299
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8ce91f0e/Private/SAC_8ce91f0eModule.cpp": {
+      "mode": "0o644",
+      "sha256": "2ca8077d6d72e10ffe39e61f52e27997fd7d8e3c1f4db65b95e4d2ad2271aa62",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8ce91f0e/Private/SAC_8ce91f0eUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "590b4d494d08a284acf1ec1a4cba3767e1c783ef1ec6268fa3f982b2c78f1846",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8ce91f0e/SAC_8ce91f0e.Build.cs": {
+      "mode": "0o644",
+      "sha256": "f579c3d01fc3eebc4a17e08dfaf291115b28db3e0a12e4474d13e4609edc1975",
+      "size": 252
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8e358815/Private/SAC_8e358815Module.cpp": {
+      "mode": "0o644",
+      "sha256": "e341e16ea89353426cc630a203970d883f1d8be8b86d75814774e5e9aed1ed7c",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8e358815/Private/SAC_8e358815UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "79f7717c03d4b0c52bda7b021ccb504fbf843baf6f2068dddf3b60b576c40e53",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8e358815/SAC_8e358815.Build.cs": {
+      "mode": "0o644",
+      "sha256": "fe50c86848c3964c748ac536bf0cfb894196fd6e95b6d8c56a3e317f3cc46dd9",
+      "size": 252
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8e75ebbd/Private/SAC_8e75ebbdModule.cpp": {
+      "mode": "0o644",
+      "sha256": "e71882939a115b3f15ae7270446652c4127a7cd7c35a6a604f8f714ed0c8e8ea",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8e75ebbd/Private/SAC_8e75ebbdUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "1bb6288ae89d9751d9c78ba2583298e06b61f9bd7fbeb08d03e1372fd2cb11f5",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8e75ebbd/SAC_8e75ebbd.Build.cs": {
+      "mode": "0o644",
+      "sha256": "c98a49f1e730a1f36d96c40fc687f4e98711de373831b36a57bcb01a9430dd10",
+      "size": 215
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8f9cc8d6/Private/SAC_8f9cc8d6Module.cpp": {
+      "mode": "0o644",
+      "sha256": "9a9ba1385cde6e4bff0c059c44e3512eb66f52068b77f0bc82d61517e4d51950",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8f9cc8d6/Private/SAC_8f9cc8d6UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "c415551df5bc8e2c32cd4fcb66f7018a9f004f79b16bd5181a4eac5977ea7def",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_8f9cc8d6/SAC_8f9cc8d6.Build.cs": {
+      "mode": "0o644",
+      "sha256": "08553e4b0fcfd776fc675fde1f7e505d8c25eceda32e80d8ae5f3f7aa494fa4e",
+      "size": 251
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_98b27e58/Private/SAC_98b27e58Module.cpp": {
+      "mode": "0o644",
+      "sha256": "c644bdf6a3b52d7b2c561470b53ce5a086891cfe133a36c284a58e4326d959f7",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_98b27e58/Private/SAC_98b27e58UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "b7fbd27bd4dbda1fef4e7ff3fd9e076a764de7fa6a7662cfaf40da5133fc5494",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_98b27e58/SAC_98b27e58.Build.cs": {
+      "mode": "0o644",
+      "sha256": "eff69e7122a35c28eca7a93af5f35c7a54158ebffa3293e2217e7c94d4cb9517",
+      "size": 274
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_99343b85/Private/SAC_99343b85Module.cpp": {
+      "mode": "0o644",
+      "sha256": "75844248ef2aa85ae7bca0ad724681d8dfba9d19328d83cff0c5c31a4251cdf1",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_99343b85/Private/SAC_99343b85UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "34b7659a324da23b87e885e469b796df0e2ed1710ef044810a6ccdcdd2ed0d9e",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_99343b85/SAC_99343b85.Build.cs": {
+      "mode": "0o644",
+      "sha256": "b14fd218daab7948eccb191e315d70e09f8ce7650503ff7e6f97dbd3d2dc4627",
+      "size": 307
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_9a23e3de/Private/SAC_9a23e3deModule.cpp": {
+      "mode": "0o644",
+      "sha256": "eaa6b825f510174f62d9db4e23fbdb24070104ea4a71f7bc2a61e18a5f779d4f",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_9a23e3de/Private/SAC_9a23e3deUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "0d17aa5a9739b69362420fbd4fc6c3c708e2a74b6665c95eb232436512bc762c",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_9a23e3de/SAC_9a23e3de.Build.cs": {
+      "mode": "0o644",
+      "sha256": "75578abaa399729f2645c3a77908103998f87849fb39c61fab3c5e6ce132b882",
+      "size": 242
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_9d95082a/Private/SAC_9d95082aModule.cpp": {
+      "mode": "0o644",
+      "sha256": "62f5f44424cf8ba71db1737bef11788f25cf820c2e9a9e2751bd0b77a3919cca",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_9d95082a/Private/SAC_9d95082aUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "dde2be4c04806f1df85a7477469a4773e4690501e9bc4372f9319f64e6485a37",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_9d95082a/SAC_9d95082a.Build.cs": {
+      "mode": "0o644",
+      "sha256": "3b358214e2cd013921683e0b4f6bcf5870db9fe93cab0d95383d1e631ad68d7a",
+      "size": 260
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_9e7e2efd/Private/SAC_9e7e2efdModule.cpp": {
+      "mode": "0o644",
+      "sha256": "16feb7b17e55218b8a68a72e1f38bb73c589faa37090806ca9dbad377e469ce0",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_9e7e2efd/Private/SAC_9e7e2efdUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "aae823cedd0a6c8f0dc664c96c91d79b1d9527e0f7fe517289fae1a206945d24",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_9e7e2efd/SAC_9e7e2efd.Build.cs": {
+      "mode": "0o644",
+      "sha256": "560c05b20ea365f878a06fc9b37b06414026949d373a55b0d314cab84a2a11b9",
+      "size": 239
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a1a69238/Private/SAC_a1a69238Module.cpp": {
+      "mode": "0o644",
+      "sha256": "f8c38ec90584c722af5b04f0d0a3a80711f58ae0fb25b0f800c4b8eb97764c2e",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a1a69238/Private/SAC_a1a69238UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "4da7460a749ffda29b90cfd182a0136889d131aa74c132308c1cec5ab2cea827",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a1a69238/SAC_a1a69238.Build.cs": {
+      "mode": "0o644",
+      "sha256": "41ec14cca2623c3216806e47d19f1ff84c4215afc7289c968b619686b7d3426e",
+      "size": 303
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a2973c6d/Private/SAC_a2973c6dModule.cpp": {
+      "mode": "0o644",
+      "sha256": "991c15083dac78efc8bf469dea1a7df225a82aeafe57371eb5909e9c3911ee32",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a2973c6d/Private/SAC_a2973c6dUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "b6cd932cfc2ccaec4ff11d49fb4476fd13bce678492dde27b8d0953281176360",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a2973c6d/SAC_a2973c6d.Build.cs": {
+      "mode": "0o644",
+      "sha256": "5fc403398fcbf8d515918f44cbb6a8938b2b97ed2bb18ba8d2847364681e6221",
+      "size": 274
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a2a24153/Private/SAC_a2a24153Module.cpp": {
+      "mode": "0o644",
+      "sha256": "864cda94adabea2751a24b9d7ed8e7dd3e76801a091590ab8eff57d1b3ca63e7",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a2a24153/Private/SAC_a2a24153UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "f3df38e087c8f01a6cf8c4cbde6da98c582588fa7f5591bb723244dd3de96315",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a2a24153/SAC_a2a24153.Build.cs": {
+      "mode": "0o644",
+      "sha256": "295d9af6505c42459b41a7368bb4c057eab095f61bc05fb885ab83957749f448",
+      "size": 505
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a5efe256/Private/SAC_a5efe256Module.cpp": {
+      "mode": "0o644",
+      "sha256": "3cedd4678a8361ce9d178cdbb437e50ed1b4435921e9fcf6228f6ddb2a8e9d6b",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a5efe256/Private/SAC_a5efe256UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "3fe0939c31fa3332e41190fb59ce9b218c1511fd4d648fb017070a86e7a36261",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a5efe256/SAC_a5efe256.Build.cs": {
+      "mode": "0o644",
+      "sha256": "76bd86fd0ff5aa93f013e52653925fef217da0fd4c1245a31f971039ef15f8d6",
+      "size": 280
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a6e8e1c2/Private/SAC_a6e8e1c2Module.cpp": {
+      "mode": "0o644",
+      "sha256": "c8e08dfa49afc4b393046e86c993f211fc7a02d7197334b55fb32bef5fdefb78",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a6e8e1c2/Private/SAC_a6e8e1c2UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "4d7e8403440f3d77b2024471e755a5b7db27b2d568e748dfe08e53dfa02de5fe",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_a6e8e1c2/SAC_a6e8e1c2.Build.cs": {
+      "mode": "0o644",
+      "sha256": "105844768214fcf2f5719d96a82aacd39629f109fc36403a890a96ad54881162",
+      "size": 267
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ac5ec40a/Private/SAC_ac5ec40aModule.cpp": {
+      "mode": "0o644",
+      "sha256": "5b9e6f9f48fdfba4d518340ee0a13cae27e39f9d38ac2559a3577ff53a1127ee",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ac5ec40a/Private/SAC_ac5ec40aUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "a5f5e6c28bec8edc69eb14d3cf15dad4183209a9def095487b892e99e9759d80",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ac5ec40a/SAC_ac5ec40a.Build.cs": {
+      "mode": "0o644",
+      "sha256": "d6074ad44e603c172b43efe63a21d44aea92c932f52a0e7da7d9354192eb3c3c",
+      "size": 273
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ad6cd2c9/Private/SAC_ad6cd2c9Module.cpp": {
+      "mode": "0o644",
+      "sha256": "0e0f8e58b27cd579a17fa99da4986b9ea5729b2f70370da310bebbc786b3b16c",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ad6cd2c9/Private/SAC_ad6cd2c9UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "720c7b5acbbda0de9d549d5bf085419ec68aec7f334c1c84756f89cbb0a821d1",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ad6cd2c9/SAC_ad6cd2c9.Build.cs": {
+      "mode": "0o644",
+      "sha256": "1a92d390ef9d5d27c35ce25b563dcf36bc4ee10cbc9a51a1e8b8cafdb82330f2",
+      "size": 264
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ae1242a3/Private/SAC_ae1242a3Module.cpp": {
+      "mode": "0o644",
+      "sha256": "f8789408324e63be19ae061c5bf92a074a72b8d1afb614891f423446c081714c",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ae1242a3/Private/SAC_ae1242a3UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "4a162cb596a986d6a4e17881bc9870e23f99a1e013a413e5c2d7f12ed1f3af5b",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ae1242a3/SAC_ae1242a3.Build.cs": {
+      "mode": "0o644",
+      "sha256": "32f4b2f48da49bfca148d5befde0ae17551fc0f6ff74dee8202dd24d13c15d25",
+      "size": 275
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_af2715ff/Private/SAC_af2715ffModule.cpp": {
+      "mode": "0o644",
+      "sha256": "c9187a884ecb4bc20c8f34716178728113e8a64f546ccbde2e68fa86eff5b166",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_af2715ff/Private/SAC_af2715ffUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "c97a8108268405e5692ce345b54a355c6ad986bf32eb972f608291e7af31680f",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_af2715ff/SAC_af2715ff.Build.cs": {
+      "mode": "0o644",
+      "sha256": "af559e95ce1eee0a59b5469051b4efd5d777851ed8ffa80d2af23df3a51f944f",
+      "size": 245
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_b80f5d8b/Private/SAC_b80f5d8bModule.cpp": {
+      "mode": "0o644",
+      "sha256": "814a8d2956d91394bdb87f4e2dacc62ca869c1525f96b33b52d2085c8a6c82e7",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_b80f5d8b/Private/SAC_b80f5d8bUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "f4913ccdc7b1cce17cf21e30dcc2ec379a0602ed1e27bae79be8b847f354e645",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_b80f5d8b/SAC_b80f5d8b.Build.cs": {
+      "mode": "0o644",
+      "sha256": "7b8b17e3a064aea6931dc1dc43116e68a5f67c71f54b62231bf7828e44ee26c9",
+      "size": 292
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_b9d97282/Private/SAC_b9d97282Module.cpp": {
+      "mode": "0o644",
+      "sha256": "562baa4ba59b6fe93f2870a60b928aa3581148a84c6152c4b25a9e0682ad69a0",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_b9d97282/Private/SAC_b9d97282UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "8f0008406864286ac621a32fd1a1723f88014cfbc012a4c6e53a29f7f69169c7",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_b9d97282/SAC_b9d97282.Build.cs": {
+      "mode": "0o644",
+      "sha256": "f677520ac280ff0c0918ed626ce731fea0e5f00ececffb830a73dc1ff5113f8e",
+      "size": 252
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ba7a8088/Private/SAC_ba7a8088Module.cpp": {
+      "mode": "0o644",
+      "sha256": "c99053c255b1f53949e0b4411767236e167906d1f3a15bfc4a5c8cba944bba7b",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ba7a8088/Private/SAC_ba7a8088UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "bd41748fcf1f87f948bdee99c4b3e1dd52b8e9b89715da5427d93a641a786599",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ba7a8088/SAC_ba7a8088.Build.cs": {
+      "mode": "0o644",
+      "sha256": "94bc664e186373a27c5877dd4bf6e5f74ff78304f8868ab6a15fd17fc6eab9df",
+      "size": 244
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_bb437010/Private/SAC_bb437010Module.cpp": {
+      "mode": "0o644",
+      "sha256": "04cf9d6247420550429fed393f88cdd2648a995f84d66e400d1945541a4a4759",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_bb437010/Private/SAC_bb437010UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "81560eee091ceeeb5535c1f0797d91bb54383442a7150c07d9e8396442e5a0ba",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_bb437010/SAC_bb437010.Build.cs": {
+      "mode": "0o644",
+      "sha256": "a7e91a8dd25389a1be7e1aea3772afeb7c75ddc92a6fe9663809f1776d62e35d",
+      "size": 270
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_bf094c3c/Private/SAC_bf094c3cModule.cpp": {
+      "mode": "0o644",
+      "sha256": "aade7baa7a2b23912f0f4b781477c874eb6a764b35e30af8146e97e055bc61c7",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_bf094c3c/Private/SAC_bf094c3cUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "dc06ebce5860ad6685f0c4db4c353c2e45a9d28a05f8d035e3ce4c9cecb00611",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_bf094c3c/SAC_bf094c3c.Build.cs": {
+      "mode": "0o644",
+      "sha256": "5203e78bd98dd6b8b5b4eaf8c74fc1c70ba8299b236850ef0fa06432612439b1",
+      "size": 286
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c0383b9f/Private/SAC_c0383b9fModule.cpp": {
+      "mode": "0o644",
+      "sha256": "82a097943bffc6076fa16550c8f272a346e313217969d43b2ccf072b36027eb2",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c0383b9f/Private/SAC_c0383b9fUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "bdda44c7a2de01f0afe373a6e3dadb242e702a0c7ed4eb7532e6504c63aa2920",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c0383b9f/SAC_c0383b9f.Build.cs": {
+      "mode": "0o644",
+      "sha256": "9328962a3d705813da11ff6398202a9ad82a59bfe2d1cac7adabf65e70af78c6",
+      "size": 235
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c0c01674/Private/SAC_c0c01674Module.cpp": {
+      "mode": "0o644",
+      "sha256": "0601ab93d6ba5fc4df3f65d63ba326c9fc4b1869e28f4a83a12dc8a5784bb179",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c0c01674/Private/SAC_c0c01674UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "4a7164538782b223b2802bf0429f0a04dd0203c7327dbf92ff1b25afdc6c562d",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c0c01674/SAC_c0c01674.Build.cs": {
+      "mode": "0o644",
+      "sha256": "e763a9bc7fea4ef48316dd0da56a9cd187cf146b3643fb21e1a173f6fbf976b7",
+      "size": 276
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c104c5bb/Private/SAC_c104c5bbModule.cpp": {
+      "mode": "0o644",
+      "sha256": "77f4573b4faf1c549fdbddc2efa0509de521ae3376b07b370c93812eed47ba9b",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c104c5bb/Private/SAC_c104c5bbUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "239c0d6a6cdb6a53c9d2916055d256c368abd6f73fcdb48201124160f6cac4ce",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c104c5bb/SAC_c104c5bb.Build.cs": {
+      "mode": "0o644",
+      "sha256": "c0e0f70d86ae6275391796bb923b8bd34a58b9a2e2b5169aadd1534bb7d6e561",
+      "size": 272
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c403894e/Private/SAC_c403894eModule.cpp": {
+      "mode": "0o644",
+      "sha256": "6e7fd2bdf4b86302083b259d3987f7ff9c86acdf7f4c452931d51db4becbc81f",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c403894e/Private/SAC_c403894eUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "61a54c23b3bcbcf4737a0665646db00748772096d85d7d6d83d05680ec0eb729",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c403894e/SAC_c403894e.Build.cs": {
+      "mode": "0o644",
+      "sha256": "070f759df80fa59b6ed1b772b9c3adc422a6e34a9ee2df958b217ba74084db7e",
+      "size": 232
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c76a72be/Private/SAC_c76a72beModule.cpp": {
+      "mode": "0o644",
+      "sha256": "4ac4704a20af0bc561c7067635774aa719a188fcb6e3e21c2d06536baa062c01",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c76a72be/Private/SAC_c76a72beUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "4134e439c9d278f13e006a09c50f38d11d33dd7710fb24372b24db9b22bbe4b5",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_c76a72be/SAC_c76a72be.Build.cs": {
+      "mode": "0o644",
+      "sha256": "d2ef160952a89ff3209b95cb4e2473e29325730e1e621f07b02b1479a8ffe235",
+      "size": 261
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ccabc5b5/Private/SAC_ccabc5b5Module.cpp": {
+      "mode": "0o644",
+      "sha256": "6b0731a3d697be3810f06b3a3137331294a6e6a35473fc277d2b2da4c32f9de7",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ccabc5b5/Private/SAC_ccabc5b5UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "9fe3664005861fd760683ad9b335e3c433b0622adc13bee292e2b699ce616a18",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ccabc5b5/SAC_ccabc5b5.Build.cs": {
+      "mode": "0o644",
+      "sha256": "2f8be8ea750df03f9e3ec22a3ee709a085c15d835116097a879468a3fda8d82b",
+      "size": 264
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_d3e43610/Private/SAC_d3e43610Module.cpp": {
+      "mode": "0o644",
+      "sha256": "737a19f880c3630a213294f3bae16ec559c2ff38d879a9a1d72eb5d95daecfd4",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_d3e43610/Private/SAC_d3e43610UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "3393b6e27511b36f3ab00b1b537b507e51167004571bfef8d4ea08b66a5aa35c",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_d3e43610/SAC_d3e43610.Build.cs": {
+      "mode": "0o644",
+      "sha256": "7f8f8e741c9b0c813e4b85680f92407a707bce15d1a9544fce9ba2f06760dab9",
+      "size": 209
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_d4206f9e/Private/SAC_d4206f9eModule.cpp": {
+      "mode": "0o644",
+      "sha256": "74deb1739399528162d6dd3b66722b9ed541cbf40c61306e5550d26f787fa614",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_d4206f9e/Private/SAC_d4206f9eUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "b2aafb318c24710c8341e6120b45bb281b62af812273647d2d213e0e9285d2b1",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_d4206f9e/SAC_d4206f9e.Build.cs": {
+      "mode": "0o644",
+      "sha256": "c545eb3f5ffcf78bc0706704c0247c5f265b4db4521754e6c09d462ca4fda6a6",
+      "size": 273
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_d904b68b/Private/SAC_d904b68bModule.cpp": {
+      "mode": "0o644",
+      "sha256": "ff1cdf36a78e658b94dade7174b06c69cb24ec2294a172b3cd191fb20e69e57c",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_d904b68b/Private/SAC_d904b68bUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "ea07549a11e9731e6f6ee879c01ae728a9b6b2c64597980d0eee51c3b6e0000a",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_d904b68b/SAC_d904b68b.Build.cs": {
+      "mode": "0o644",
+      "sha256": "0003dcc4b1ef1c5937fb96c9da7dbc0581ab2d319460c97cc1821435049d8048",
+      "size": 316
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_e250a235/Private/SAC_e250a235Module.cpp": {
+      "mode": "0o644",
+      "sha256": "d6a8bbfc8b0cda1c2e144b00ee06b6c91bef8f214ed65223f167171716abbb07",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_e250a235/Private/SAC_e250a235UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "424072260f2972f0b5ceb5448c5c26686f741c6891df3aced2e1121dee70cb39",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_e250a235/SAC_e250a235.Build.cs": {
+      "mode": "0o644",
+      "sha256": "988308d92038109f290eb42879cebfe37bd3b35f1dba145122f27afd65caff31",
+      "size": 217
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_e3e4b06e/Private/SAC_e3e4b06eModule.cpp": {
+      "mode": "0o644",
+      "sha256": "1aab011ca391267d8992252860a34f508677ba4d503a56fcfd9bdc6ff9fa23ff",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_e3e4b06e/Private/SAC_e3e4b06eUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "241f15a28f8b7998b241caa1f52196d1bc3ecfe3bdcdb0da4a6c489c6fcb4688",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_e3e4b06e/SAC_e3e4b06e.Build.cs": {
+      "mode": "0o644",
+      "sha256": "6871a300d844de359e622632170704357ea001491c8f2d65b31c95a1707a9c2b",
+      "size": 269
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_e889b740/Private/SAC_e889b740Module.cpp": {
+      "mode": "0o644",
+      "sha256": "81086dfa18870199bbeb063655dc226c118a81b5b57b384ffab85c32b066eeb7",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_e889b740/Private/SAC_e889b740UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "ec64bb35c20c7b8370984471b13c84064bfe28d8c6b00195485c2e5775bafe39",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_e889b740/SAC_e889b740.Build.cs": {
+      "mode": "0o644",
+      "sha256": "8f6686b29aa14792012fd75f4e7719a5f5ac620d157651f36d00786ef7b44d5d",
+      "size": 290
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_eb5d0bd2/Private/SAC_eb5d0bd2Module.cpp": {
+      "mode": "0o644",
+      "sha256": "f24e9d582dd1ef6eaaf1ffe90ce8ebb8aadeeade314de0ad62cf44c5c3eca3c4",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_eb5d0bd2/Private/SAC_eb5d0bd2UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "c134f1d86841fee5d00b5dc6ce852898fe9c83cdbb7610d83bd19f14802a8cd4",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_eb5d0bd2/SAC_eb5d0bd2.Build.cs": {
+      "mode": "0o644",
+      "sha256": "bd758cfb9daa73b055084b298d79a9dd717fd8c963880d420523b988ba544380",
+      "size": 263
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ecbab458/Private/SAC_ecbab458Module.cpp": {
+      "mode": "0o644",
+      "sha256": "3c7a88566b0d7b7362c899724522aafb9cc0c079ec9c3cbd25c6ab7a9070b8fd",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ecbab458/Private/SAC_ecbab458UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "41408f1c8275e7dd9b1d9881aba86bc1d8d9c23f753debd07d37fc70c10b9d8e",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ecbab458/SAC_ecbab458.Build.cs": {
+      "mode": "0o644",
+      "sha256": "fda1a5baaa61305e3eb29aed3b9ba8cafb51f821d020a6069c2ddc7a4373c473",
+      "size": 254
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ededfda6/Private/SAC_ededfda6Module.cpp": {
+      "mode": "0o644",
+      "sha256": "a226ea6322cc2132cad6996f4815f3e1b41b8df7f23e0ad424b6aabaf7c06fa6",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ededfda6/Private/SAC_ededfda6UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "7f6be46b24ae08a61db1cd7a397f63d19b1c9f5cc91f219780cf56391070a2ac",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_ededfda6/SAC_ededfda6.Build.cs": {
+      "mode": "0o644",
+      "sha256": "a2a67543b5ff60b7c9b5088db1e90dd246f5c3d39ac1a77076510c6cbe0665f6",
+      "size": 246
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f1fb7939/Private/SAC_f1fb7939Module.cpp": {
+      "mode": "0o644",
+      "sha256": "c8819391d6d3de649c8c77611f7003e5e09c816b04c1f7e2bf60ed156529bad2",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f1fb7939/Private/SAC_f1fb7939UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "f4adf21fa42a6269dd9a4f9d3dbbdc56a8a4cdc84f52fd0b24531c7abec3ec9f",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f1fb7939/SAC_f1fb7939.Build.cs": {
+      "mode": "0o644",
+      "sha256": "3b6e61572d8387358567dedc258fbaa2ec239916af10524777db9ad8bf8c6590",
+      "size": 219
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f261f94a/Private/SAC_f261f94aModule.cpp": {
+      "mode": "0o644",
+      "sha256": "fcd265050fab903da7a47b1179ac08ccaa70d362a1a024dff9fdf9acb0a52ce6",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f261f94a/Private/SAC_f261f94aUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "8a54aa4ed53db24db9b260accf6fda411fffc771ee39e32a926fccdbe52cac5d",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f261f94a/SAC_f261f94a.Build.cs": {
+      "mode": "0o644",
+      "sha256": "8d1cc3a967dfe3bc62596a783b3e5618c97d06b2391cb771a8e0bba16ab7546e",
+      "size": 245
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f65623e7/Private/SAC_f65623e7Module.cpp": {
+      "mode": "0o644",
+      "sha256": "77c3fcd036a332b30b4a1c7a5d8567f9b82ab1ede1efa212839b2645c7fb4e15",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f65623e7/Private/SAC_f65623e7UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "147dab34eda504b07ded4453eec0770500caca59e5deea007a36a08d330a7158",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f65623e7/SAC_f65623e7.Build.cs": {
+      "mode": "0o644",
+      "sha256": "b16910617d3a35208f117b7374381b7a860c895bc0500d41aa530bc32a8daf49",
+      "size": 229
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f68e3a0f/Private/SAC_f68e3a0fModule.cpp": {
+      "mode": "0o644",
+      "sha256": "4aec971cf067cf86d4b20fed3cd24dc62c504d83f231ddcfb2e7cdf2bcbdad5f",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f68e3a0f/Private/SAC_f68e3a0fUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "22acfad83742d723412c1c78db70c78a9732eedf29a457395e96d9199f9d1cb1",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f68e3a0f/SAC_f68e3a0f.Build.cs": {
+      "mode": "0o644",
+      "sha256": "e4ea55e12d56bb87cef48a4d5efa3bb46e2ef92430a1144c1fdd632efde6f3b2",
+      "size": 252
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f6f164ad/Private/SAC_f6f164adModule.cpp": {
+      "mode": "0o644",
+      "sha256": "db7ca61085a3a2abb27303c9f97af4b3583db767c83bfd39759c3806cc4723c8",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f6f164ad/Private/SAC_f6f164adUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "3b8e3787e28055196070eabd1464703f6e681a141a918c09ae5f5043267f6536",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f6f164ad/SAC_f6f164ad.Build.cs": {
+      "mode": "0o644",
+      "sha256": "f5e5c03d2ce46d4591eb01a9ae071bb12b309c6bc740ea8bdf0cd76c91358a85",
+      "size": 261
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f7bbe1e8/Private/SAC_f7bbe1e8Module.cpp": {
+      "mode": "0o644",
+      "sha256": "d3b489f1b68357109169552cebd5162ebb8862191d0a5b87efce0b8211402252",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f7bbe1e8/Private/SAC_f7bbe1e8UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "c7edba7116831acc545a6989b51cbf1e934f53736398a57a7735b7a78e2a410a",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f7bbe1e8/SAC_f7bbe1e8.Build.cs": {
+      "mode": "0o644",
+      "sha256": "5918b015459f9972a99ed42fc1c35764a0ba1708b44dc483705e6571a21d7c80",
+      "size": 262
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f84562e9/Private/SAC_f84562e9Module.cpp": {
+      "mode": "0o644",
+      "sha256": "424e742bc6911bcfa52bf5fdb52f3edd37c16781b4466120993db6468a122201",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f84562e9/Private/SAC_f84562e9UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "b4ee2511f0f8c5ef2d24d0a280fd5f666e458c6c2da4f2cdca9922e9e522de9a",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_f84562e9/SAC_f84562e9.Build.cs": {
+      "mode": "0o644",
+      "sha256": "1066bd40513a2ebe19625cbb007a32f2eafd0e9e7d05d3fd9e3f9c01e2aa10ca",
+      "size": 250
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_fa3aad5f/Private/SAC_fa3aad5fModule.cpp": {
+      "mode": "0o644",
+      "sha256": "193c0bff86a83e435dbe0a355cfabf4f6722385766ae3c275c7670fc0480a728",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_fa3aad5f/Private/SAC_fa3aad5fUhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "555b5d2910d58fe41126f985344a8c5df56f4eb18a4bc5a1a578227f0a7e1b89",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_fa3aad5f/SAC_fa3aad5f.Build.cs": {
+      "mode": "0o644",
+      "sha256": "3f4719aacdf1e4dbd42c894cac1f1f61ce85cd50e082dd84c2113ccc84562dc9",
+      "size": 295
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_fbf34722/Private/SAC_fbf34722Module.cpp": {
+      "mode": "0o644",
+      "sha256": "ad6a04897541e10e3790e818c686660646f683a43e61042bf9c11d92f67c3a66",
+      "size": 409
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_fbf34722/Private/SAC_fbf34722UhtAnchor.h": {
+      "mode": "0o644",
+      "sha256": "1c95dc57911a0db9191593b44622d9a29fbb757d8ca8b90818258d2e644b7da9",
+      "size": 191
+    },
+    "SoloASBridge/Source/SoloASCallersPacks/SAC_fbf34722/SAC_fbf34722.Build.cs": {
+      "mode": "0o644",
+      "sha256": "4a5f817bc02bb254a44aff812e4bf2629146147a395ce2a0512fafc0c5626df2",
+      "size": 229
+    },
+    "SoloASBridge/Source/SoloASDetours/Exports.h": {
+      "mode": "0o644",
+      "sha256": "0722a22746bd92838514b2205396c4a2716072c227fab04b907fd9253437bcf0",
+      "size": 630
+    },
+    "SoloASBridge/Source/SoloASDetours/SoloASDetours.Build.cs": {
+      "mode": "0o644",
+      "sha256": "4175793d4d3909b982109b133398bfd7381afd3ae6f76652a64b2171e596e836",
+      "size": 760
+    },
+    "SoloASBridge/Source/ThirdParty/Detours/LICENSE.md": {
+      "mode": "0o644",
+      "sha256": "b301808b732cfaa60df2b4b422d78cd97d2a15058b207e7e33f0535ba5170dd6",
+      "size": 1099
+    },
+    "SoloASBridge/Source/ThirdParty/Detours/detours/detours.h": {
+      "mode": "0o644",
+      "sha256": "4ef8c4a31b2b08dba8d6506f31da80eb9d8d929124ef659e28df05301493f1d5",
+      "size": 126
+    },
+    "SoloASBridge/Source/ThirdParty/Detours/src/detours.cpp": {
+      "mode": "0o644",
+      "sha256": "df415e05f985afe88f4b03ba34d6f5abce47edda11cd66d4f72902b801113eb7",
+      "size": 79717
+    },
+    "SoloASBridge/Source/ThirdParty/Detours/src/detours.h": {
+      "mode": "0o644",
+      "sha256": "7b498657d8db4cff2d488b1e65cfeeb5b1305de7f32d23588b1fa86aaa46fcf7",
+      "size": 37571
+    },
+    "SoloASBridge/Source/ThirdParty/Detours/src/detver.h": {
+      "mode": "0o644",
+      "sha256": "1324bbf731d202a37d2f9874279e1b5e2e47118c62662c0372208d4a88342549",
+      "size": 720
+    },
+    "SoloASBridge/Source/ThirdParty/Detours/src/disasm.cpp": {
+      "mode": "0o644",
+      "sha256": "737221c34cd53b14cc97e7e895ffb07558e48cc3abff499056d8ae4791131aef",
+      "size": 162724
+    },
+    "SoloASBridge/Source/ThirdParty/Detours/src/modules.cpp": {
+      "mode": "0o644",
+      "sha256": "4a3f970eb539a4379996eb17e14bd75902fe4f34d566cfd19682ff19315cbc6f",
+      "size": 32397
+    },
+    "SoloASBridge/THIRD_PARTY.md": {
+      "mode": "0o644",
+      "sha256": "fb2ee39efa95c6b1b010e8b6f3dfaf4a09d47d0f5527ae44857e2a9260f13df7",
+      "size": 471
+    },
+    "SoloASBridge/Tools/generate-companions.py": {
+      "mode": "0o644",
+      "sha256": "d9b243a0073c116569c3c56a0cd72df53b5049a3caa4ecc595eb3ed14029cb5c",
+      "size": 10176
+    },
+    "SoloASBridge/Versioned/LegacyDetours/CompileDetours.cpp": {
+      "mode": "0o644",
+      "sha256": "522f3085ba8c47ede692d8f2d77ae186464ed997da8a7cf7a40155e7a761eafe",
+      "size": 747
+    },
+    "SoloASBridge/Versioned/LegacyDetours/CompileDisasm.cpp": {
+      "mode": "0o644",
+      "sha256": "36732035fddec8445813c00a69a54ae76f0b7fc9ed9b1d39903940675aeb597c",
+      "size": 745
+    },
+    "SoloASBridge/Versioned/LegacyDetours/CompileModules.cpp": {
+      "mode": "0o644",
+      "sha256": "e64036bd79312c1afc4c17b7c3f1f9e9d3f2749daf3eeed49382dbb99428f462",
+      "size": 747
     },
     "UPSTREAM.md": {
       "mode": "0o644",
-      "sha256": "91dfb1a8762be3239920927a2a159a8553bdb1a7e7e33dc4a53b8e9e9440f217",
-      "size": 1762
+      "sha256": "11e15a377012110b4c10ad7d7907cded9ba4d15f1f9c4d41dff7f8f786fb3575",
+      "size": 2001
+    },
+    "engine-feature-requirements.json": {
+      "mode": "0o644",
+      "sha256": "93fdec3b4da79aafed742fa6f1feed5e90e636400df0a906a8d5a87b06c18cce",
+      "size": 611
     }
   },
   "schema": 1,
-  "super_commit": "176099794d94cfac4963dbdee11a8e876f037fcc"
+  "super_commit": "cc7d8e90a3829c87e3306134510865da6c3b12a1"
 }

@@ -2,7 +2,11 @@
 // Copyright Cuviss Studio. All Rights Reserved.
 
 #include "ClassGenerator/AngelscriptFieldDestruction.h"
+                                                                                                                          
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                                        
 
+#include "Compat/SoloASRuntimeCompat.h"
 #include "AngelscriptManager.h"
 #include "AngelscriptExecutionQuiescence.h"
 #include "AngelscriptType.h"
@@ -106,9 +110,11 @@ void ValidateAngelscriptFieldDestruction(UASClass* Class, asITypeInfo* ScriptTyp
         if (Property == nullptr || Property->GetOwnerStruct() != Class || Property->ArrayDim != 1
             || Property->Struct != FInstancedStruct::StaticStruct() || !IsDelayedDestroyValue(*Member)
             || Property->GetOffset_ForInternal() != Member->byteOffset
-            || Property->GetElementSize() != static_cast<int32>(sizeof(FInstancedStruct))
+                                                                                                                    
+            || SoloASBridge::Compat::GetPropertyElementSize(Property) != static_cast<int32>(sizeof(FInstancedStruct))
+                                                                                                                  
             || Member->type.GetSizeInMemoryBytes() != static_cast<int32>(sizeof(FInstancedStruct))
-            || !Property->ContainsFinishDestroy(Encountered))
+            || !SoloASBridge::Compat::PropertyContainsFinishDestroy(Property, Encountered))
         {
             UE_LOG(Angelscript, Fatal, TEXT("ASR-SCRIPT-FIELD-OWNER-MISMATCH: %s:%s"),
                 *Class->GetPathName(), ANSI_TO_TCHAR(Member->name.AddressOf()));
@@ -142,7 +148,7 @@ namespace
 bool SameReconstructionObjectItem(int32 Index, int32 Serial, const UObject* Object)
 {
     const FUObjectItem* Item = Index >= 0 ? GUObjectArray.IndexToObject(Index) : nullptr;
-    return Serial != 0 && Item && Item->GetSerialNumber() == Serial && Item->GetObject() == Object;
+    return Serial != 0 && Item && Item->GetSerialNumber() == Serial && SoloASBridge::Compat::ObjectFromItem(Item) == Object;
 }
 
 bool SameReconstructionField(const FSameCookieReconstructionField& Left, const FSameCookieReconstructionField& Right)
@@ -201,12 +207,14 @@ bool CaptureSameCookieReconstructionFields(UObject* Object, UASClass* Class,
             TArray<const FStructProperty*> Encountered;
             if (!Property || Property->GetOwnerStruct() != Owner || !Owner->UeDelayedDestroyFields.Contains(Property)
                 || !IsDelayedDestroyValue(*Member) || Property->Struct != FInstancedStruct::StaticStruct()
-                || Property->ArrayDim != 1 || Property->GetElementSize() != int32(sizeof(FInstancedStruct))
+                                                                                                                    
+                || Property->ArrayDim != 1 || SoloASBridge::Compat::GetPropertyElementSize(Property) != int32(sizeof(FInstancedStruct))
+                                                                                                                  
                 || Property->GetSize() != int32(sizeof(FInstancedStruct))
                 || Member->type.GetSizeInMemoryBytes() != int32(sizeof(FInstancedStruct))
                 || Property->GetOffset_ForInternal() != Member->byteOffset
                 || Property->GetOffset_ForInternal() < Owner->ScriptPropertyOffset
-                || !Property->ContainsFinishDestroy(Encountered) || SeenOwned.Contains(Property)
+                || !SoloASBridge::Compat::PropertyContainsFinishDestroy(Property, Encountered) || SeenOwned.Contains(Property)
                 || !SeenChain.Contains(Property)) return false;
             const int32 Offset = Property->GetOffset_ForInternal();
             if (Offset < 0 || Offset > Plan.ActualClass->GetPropertiesSize() - int32(sizeof(FInstancedStruct))

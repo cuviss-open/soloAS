@@ -1,4 +1,7 @@
 #include "Engine/Engine.h"
+                                                                                               
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                             
 
 #include "UObject/LinkerLoad.h"
 #include "UObject/Package.h"
@@ -145,12 +148,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_UObject_Base((int32)FAngelscri
 		// The cast is valid if the script type we're casting to
 		// has a UClass associated with it that is one of the
 		// parent classes of our UObject.
-                                                                                                
-        const bool bInterfaceView = (ScriptType->GetFlags() & asOBJ_IMPLICIT_HANDLE) != 0
-            && AssociatedClass->HasAnyClassFlags(CLASS_Interface)
-            && Object->GetClass()->ImplementsInterface(AssociatedClass);
-		if (Object->IsA(AssociatedClass) || bInterfaceView)
-                                                                                              
+		if (Object->IsA(AssociatedClass))
 		{
 			*(UObject**)OutAddress = Object;
 		}
@@ -486,6 +484,13 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_UObject_Operations((int32)FAng
 			if (Redirector == nullptr)
 				Redirector = NewObject<UObjectRedirector>(ScriptPackage, *RedirectorName, RF_Standalone | RF_Public);
 			Redirector->DestinationObject = ExistingObject;
+                                                                                                   
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 Cook rejects any asset redirector in the default GameMode package [test: Shipping.SourceCookLiteralAsset]
+#if SOLOAS_UE_BEFORE(5, 5)
+			Redirector->SetFlags(RF_Transient);
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                 
 
 			// Add metadata so the script can be located
 			FString Filename;
@@ -493,8 +498,12 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_UObject_Operations((int32)FAng
 
 			FAngelscriptManager::GetAngelscriptExecutionFileAndLine(Filename, LineNumber);
 
-			AssetsPackage->GetMetaData().SetValue(ExistingObject, TEXT("ScriptAssetFilename"), *Filename);
-			AssetsPackage->GetMetaData().SetValue(ExistingObject, TEXT("ScriptAssetLineNumber"), *FString::Printf(TEXT("%d"), LineNumber));
+                                                                                             
+			SoloASBridge::Compat::SetPackageMetadata(AssetsPackage, ExistingObject, TEXT("ScriptAssetFilename"), *Filename);
+                                                                                           
+                                                                                             
+			SoloASBridge::Compat::SetPackageMetadata(AssetsPackage, ExistingObject, TEXT("ScriptAssetLineNumber"), *FString::Printf(TEXT("%d"), LineNumber));
+                                                                                           
 #endif
 
 #if AS_CAN_HOTRELOAD

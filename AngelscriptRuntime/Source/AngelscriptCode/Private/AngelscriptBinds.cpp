@@ -8,17 +8,6 @@
 #include "as_property.h"
 #include "as_scriptfunction.h"
 
-#if WITH_EDITOR
-#include "Misc/Paths.h"
-#if PLATFORM_WINDOWS
-#include "Windows/AllowWindowsPlatformTypes.h"
-#include <Windows.h>
-#include "Windows/HideWindowsPlatformTypes.h"
-#elif PLATFORM_LINUX || PLATFORM_MAC
-#include <dlfcn.h>
-#endif
-#endif
-
 #include "StartAngelscriptHeaders.h"
 #include "as_scriptfunction.h"
 #include "as_objecttype.h"
@@ -29,9 +18,6 @@ struct FBindFunction
 {
 	int32 BindOrder;
 	TFunction<void()> Function;
-	#if WITH_EDITOR
-	FString RegistrationModule;
-	#endif
 
 	bool operator<(const FBindFunction& Other) const
 	{
@@ -45,220 +31,22 @@ static TArray<FBindFunction>& GetBindArray()
 	return BindArray;
 }
 
-#if WITH_EDITOR
-namespace
-{
-	FString CurrentRegistrationModule;
-	TMap<const void*, FString>& GetRegistrationModuleNames()
-	{
-		static TMap<const void*, FString> NamesByModule;
-		return NamesByModule;
-	}
-	TMap<int32, FString>& GetFunctionRegistrationModules()
-	{
-		static TMap<int32, FString> ModulesById;
-		return ModulesById;
-	}
-	TMap<int32, FString>& GetTypeRegistrationModules()
-	{
-		static TMap<int32, FString> ModulesById;
-		return ModulesById;
-	}
-	TMap<int32, FString>& GetGlobalPropertyRegistrationModules()
-	{
-		static TMap<int32, FString> ModulesById;
-		return ModulesById;
-	}
-	TMap<FString, FString>& GetPropertyRegistrationModules()
-	{
-		static TMap<FString, FString> ModulesByKey;
-		return ModulesByKey;
-	}
-	FString MakePropertyRegistrationKey(int32 TypeId, const FString& PropertyName)
-	{
-		return FString::Printf(TEXT("%d:%d:%s"), TypeId, PropertyName.Len(), *PropertyName);
-	}
-	void RecordPropertyRegistrationModule(FBindString ClassName, FBindString Signature)
-	{
-		if (CurrentRegistrationModule.IsEmpty())
-		{
-			return;
-		}
-		auto& Manager = FAngelscriptManager::Get();
-		asITypeInfo* Type = Manager.Engine->GetTypeInfoByName(ClassName.ToCString());
-		if (Type == nullptr)
-		{
-			return;
-		}
-		FString Declaration = UTF8_TO_TCHAR(Signature.ToCString());
-		Declaration.TrimStartAndEndInline();
-		int32 Separator = INDEX_NONE;
-		if (!Declaration.FindLastChar(TEXT(' '), Separator) || Separator == INDEX_NONE)
-		{
-			return;
-		}
-		FString PropertyName = Declaration.Mid(Separator + 1).TrimStartAndEnd();
-		if (PropertyName.IsEmpty())
-		{
-			return;
-		}
-		GetPropertyRegistrationModules().Add(MakePropertyRegistrationKey(Type->GetTypeId(), PropertyName), CurrentRegistrationModule);
-	}
-
-	FString NormalizeRegistrationModuleName(const FString& ModulePath)
-	{
-		FString Name = FPaths::GetBaseFilename(ModulePath);
-		Name.RemoveFromStart(TEXT("lib"), ESearchCase::IgnoreCase);
-		for (const TCHAR* Prefix : {TEXT("UnrealEditor-"), TEXT("UE4Editor-"), TEXT("UE5Editor-")})
-		{
-			if (Name.RemoveFromStart(Prefix, ESearchCase::CaseSensitive))
-			{
-				break;
-			}
-		}
-		return Name;
-	}
-
-	FString ResolveRegistrationModuleName(const void* Address)
-	{
-		if (Address == nullptr)
-		{
-			return FString();
-		}
-		const void* ModuleKey = nullptr;
-		FString ModulePath;
-#if PLATFORM_WINDOWS
-		HMODULE ModuleHandle = nullptr;
-		const DWORD Flags = GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT;
-		if (!GetModuleHandleEx(Flags, reinterpret_cast<LPCTSTR>(Address), &ModuleHandle))
-		{
-			return FString();
-		}
-		TCHAR Path[MAX_PATH] = {};
-		const DWORD PathLength = GetModuleFileName(ModuleHandle, Path, UE_ARRAY_COUNT(Path));
-		if (PathLength == 0 || PathLength >= UE_ARRAY_COUNT(Path))
-		{
-			return FString();
-		}
-		ModuleKey = ModuleHandle;
-		ModulePath = Path;
-#elif PLATFORM_LINUX || PLATFORM_MAC
-		Dl_info Info = {};
-		if (dladdr(Address, &Info) == 0 || Info.dli_fname == nullptr || Info.dli_fbase == nullptr)
-		{
-			return FString();
-		}
-		ModuleKey = Info.dli_fbase;
-		ModulePath = UTF8_TO_TCHAR(Info.dli_fname);
-#else
-		return FString();
-#endif
-		TMap<const void*, FString>& CachedNames = GetRegistrationModuleNames();
-		if (const FString* Cached = CachedNames.Find(ModuleKey))
-		{
-			return *Cached;
-		}
-		FString Name = NormalizeRegistrationModuleName(ModulePath);
-		if (!Name.IsEmpty())
-		{
-			CachedNames.Add(ModuleKey, Name);
-		}
-		return Name;
-	}
-
-	void RecordRegistrationModule(FAngelscriptBinds::ERegistrationObjectKind Kind, int32 ObjectId)
-	{
-		if (CurrentRegistrationModule.IsEmpty() || ObjectId < 0)
-		{
-			return;
-		}
-		TMap<int32, FString>* ModulesById = nullptr;
-		switch (Kind)
-		{
-		case FAngelscriptBinds::ERegistrationObjectKind::Function:
-			ModulesById = &GetFunctionRegistrationModules();
-			break;
-		case FAngelscriptBinds::ERegistrationObjectKind::Type:
-			ModulesById = &GetTypeRegistrationModules();
-			break;
-		case FAngelscriptBinds::ERegistrationObjectKind::GlobalProperty:
-			ModulesById = &GetGlobalPropertyRegistrationModules();
-			break;
-		case FAngelscriptBinds::ERegistrationObjectKind::Property:
-			break;
-		}
-		if (ModulesById != nullptr)
-		{
-			ModulesById->Add(ObjectId, CurrentRegistrationModule);
-		}
-	}
-}
-
-bool FAngelscriptBinds::TryGetRegistrationModule(
-	ERegistrationObjectKind Kind,
-	int32 ObjectId,
-	FString& OutModule,
-	const FString& ObjectName)
-{
-	OutModule.Reset();
-	if (Kind == ERegistrationObjectKind::Property)
-	{
-		const FString* Module = GetPropertyRegistrationModules().Find(MakePropertyRegistrationKey(ObjectId, ObjectName));
-		if (Module == nullptr)
-		{
-			return false;
-		}
-		OutModule = *Module;
-		return true;
-	}
-	const TMap<int32, FString>* ModulesById = nullptr;
-	switch (Kind)
-	{
-	case ERegistrationObjectKind::Function:
-		ModulesById = &GetFunctionRegistrationModules();
-		break;
-	case ERegistrationObjectKind::Type:
-		ModulesById = &GetTypeRegistrationModules();
-		break;
-	case ERegistrationObjectKind::GlobalProperty:
-		ModulesById = &GetGlobalPropertyRegistrationModules();
-		break;
-	case ERegistrationObjectKind::Property:
-		break;
-	}
-	const FString* Module = ModulesById != nullptr ? ModulesById->Find(ObjectId) : nullptr;
-	if (Module == nullptr)
-	{
-		return false;
-	}
-	OutModule = *Module;
-	return true;
-}
-
-void FAngelscriptBinds::RegisterBinds(int32 BindOrder, TFunction<void()> Function, const void* RegistrationObjectAddress)
-{
-	GetBindArray().Add({BindOrder, Function, ResolveRegistrationModuleName(RegistrationObjectAddress)});
-}
-#else
 void FAngelscriptBinds::RegisterBinds(int32 BindOrder, TFunction<void()> Function)
 {
 	GetBindArray().Add({BindOrder, Function});
 }
-#endif
 
 void FAngelscriptBinds::CallBinds()
 {
 	GetBindArray().Sort();
 	for (auto& Function : GetBindArray())
+                                                                                                                  
 	{
-		#if WITH_EDITOR
-		CurrentRegistrationModule = Function.RegistrationModule;
-		#endif
+                                                                                                                
 		Function.Function();
+                                                                                                                  
 	}
-	#if WITH_EDITOR
-	CurrentRegistrationModule.Reset();
-	#endif
+                                                                                                                
 }
 
 FAngelscriptBinds FAngelscriptBinds::ReferenceClass(FBindString Name, UClass* UnrealClass)
@@ -315,12 +103,6 @@ FAngelscriptBinds::FAngelscriptBinds(FBindString Name, int32 Flags, int32 Size)
 	else
 	{
 		ScriptType = Manager.Engine->GetTypeInfoById(TypeId);
-		#if WITH_EDITOR
-		if (ScriptType != nullptr)
-		{
-			RecordRegistrationModule(ERegistrationObjectKind::Type, ScriptType->GetTypeId());
-		}
-		#endif
 	}
 
 	ensure(ScriptType != nullptr || ((Flags & asOBJ_TEMPLATE) != 0));
@@ -471,9 +253,6 @@ void FAngelscriptBinds::PreviousBindPassScriptObjectTypeAsFirstParam()
 
 void FAngelscriptBinds::OnBind(int FunctionId, void* UserData, const FAngelscriptType::FBindParams* BindParams)
 {
-	#if WITH_EDITOR
-	RecordRegistrationModule(ERegistrationObjectKind::Function, FunctionId);
-	#endif
 	auto& Manager = FAngelscriptManager::Get();
 	asCScriptFunction* ScriptFunction = (asCScriptFunction*)Manager.Engine->GetFunctionById(FunctionId);
 	if (ScriptFunction != nullptr)
@@ -640,9 +419,6 @@ void FAngelscriptBinds::BindProperty(FBindString Signature, size_t Offset)
 {
 	auto& Manager = FAngelscriptManager::Get();
 	Manager.Engine->RegisterObjectProperty(ClassName.ToCString(), Signature.ToCString(), Offset);
-	#if WITH_EDITOR
-	RecordPropertyRegistrationModule(ClassName, Signature);
-	#endif
 	PreviouslyBoundPropertyOffset = (int)Offset;
 }
 
@@ -651,9 +427,6 @@ void FAngelscriptBinds::BindProperty(FBindString Signature, size_t Offset, const
 	auto& Manager = FAngelscriptManager::Get();
 	const asUINT Access = asCObjectProperty::GenerateExposedType(BindParams.bCanEdit, BindParams.bCanRead, BindParams.bCanWrite);
 	Manager.Engine->RegisterObjectProperty(ClassName.ToCString(), Signature.ToCString(), Offset, 0, false, Access, BindParams.bProtected);
-	#if WITH_EDITOR
-	RecordPropertyRegistrationModule(ClassName, Signature);
-	#endif
 	PreviouslyBoundPropertyOffset = (int)Offset;
 }
 
@@ -688,9 +461,6 @@ void FAngelscriptBinds::BindGlobalVariable(FBindString Signature, const void* Ad
 {
 	auto& Manager = FAngelscriptManager::Get();
 	PreviouslyBoundGlobalProperty = Manager.Engine->RegisterGlobalProperty(Signature.ToCString(), (void*)Address);
-	#if WITH_EDITOR
-	RecordRegistrationModule(ERegistrationObjectKind::GlobalProperty, PreviouslyBoundGlobalProperty);
-	#endif
 }
 
 void FAngelscriptBinds::SetPreviousBoundPropertyPureConstant(asQWORD ConstantValue)
@@ -709,12 +479,6 @@ FAngelscriptBinds::FEnumBind::FEnumBind(FBindString Name)
 	auto* PrevNamespace = Manager.Engine->GetDefaultNamespace();
 
 	TypeId = Manager.Engine->RegisterEnum(Name.ToCString());
-	#if WITH_EDITOR
-	if (TypeId >= 0 && TypeId != asALREADY_REGISTERED)
-	{
-		RecordRegistrationModule(ERegistrationObjectKind::Type, TypeId);
-	}
-	#endif
 }
 
 asITypeInfo* FAngelscriptBinds::FEnumBind::GetTypeInfo()

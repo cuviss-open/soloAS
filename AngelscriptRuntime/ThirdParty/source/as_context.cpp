@@ -1007,6 +1007,13 @@ int asCContext::Execute()
 #else
 			// Reference receivers use UObject identity, never an address-only struct record.
 			asCObjectType *objType = (asCObjectType*)GetAngelscriptClassScriptType(((UObject*)obj)->GetClass());
+			// An object whose script class was removed has no type to dispatch through; the fork dereferences
+			// the missing type here and crashes.
+			if( objType == 0 )
+			{
+				SetInternalException(TXT_NULL_POINTER_ACCESS);
+				return asEXECUTION_EXCEPTION;
+			}
 #endif
                                                                                                       
 			asCScriptFunction *realFunc = 0;
@@ -1534,6 +1541,7 @@ bool asCContext::ReserveStackSpace(asUINT size)
 // internal
 void asCContext::CallScriptFunction(asCScriptFunction *func)
 {
+
 	// Try to call the JIT function directly
 	auto* jitFunction = func->jitFunction;
 	if (jitFunction != nullptr)
@@ -1645,6 +1653,15 @@ bool asCContext::CallInterfaceMethod(asCScriptFunction *func)
 #else
 	// Reference receivers use UObject identity, never an address-only struct record.
 	asCObjectType *objType = (asCObjectType*)GetAngelscriptClassScriptType(((UObject*)obj)->GetClass());
+	// An object whose script class was removed has no type to dispatch through; the fork dereferences
+	// the missing type here and crashes.
+	if( objType == 0 )
+	{
+		// Tell the exception handler to clean up the arguments to this method
+		m_needToCleanupArgs = true;
+		SetInternalException(TXT_NULL_POINTER_ACCESS);
+		return false;
+	}
 #endif
                                                                                                            
 

@@ -201,7 +201,9 @@ struct FSoftObjectPtrType : public FBaseSoftReferenceType
                                                                                                                                       
 #if 0
                                                                                                                                     
+                                                                                                                     
 		auto* ObjectProp = new FSoftObjectProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                                   
                                                                                                                                
 #endif
 		auto* ObjectProp = CastFieldChecked<FSoftObjectProperty>(
@@ -264,7 +266,9 @@ struct FSoftClassPtrType : public FBaseSoftReferenceType
                                                                                                                                      
 #if 0
                                                                                                                                    
+                                                                                                                     
 		auto* ClassProp = new FSoftClassProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                                   
                                                                                                                               
 #endif
 		auto* ClassProp = CastFieldChecked<FSoftClassProperty>(

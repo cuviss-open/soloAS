@@ -60,7 +60,7 @@ public:
 	}
 
                                                                                                                              
-	// Stock UE 5.8.3 has no UScriptStruct::GetNewestVersion virtual. Haze adds it
+	// Stock UE 5.8.3 has no UScriptStruct::GetNewestVersion virtual. UE-AS fork adds it
 	// for its InstancedStruct migration seam. Omitting
 	// `override` keeps this declaration source-compatible with both layouts.
 	virtual UScriptStruct* GetNewestVersion()
@@ -76,10 +76,6 @@ public:
 	}
 
 	void SetGuid(FName FromName);
-
-                                                                                                           
-	int32 GetLiveInstanceCount() const;
-                                                                                                         
 
 	UASStruct(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 

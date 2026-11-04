@@ -1,5 +1,7 @@
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "CoreMinimal.h"
+#include "SoloASEngineCompat.h"
+#include "Compat/SoloASRuntimeCompat.h"
 
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
 #include "Editor/SoloASCopyProperties.h"
@@ -11,11 +13,15 @@
 #include "Editor/SoloASRetiredLoadingExportRepair.h"
 #include "Shared/SoloASScriptBlueprint.h"
 #include "Editor.h"
+#include "Factories.h"
+#include "Misc/Parse.h"
+#include "Misc/FeedbackContext.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "UObject/UnrealType.h"
 #include "HAL/IConsoleManager.h"
 #include "Misc/ScopeExit.h"
 #include "Misc/ScopeLock.h"
+#include "Misc/EngineVersion.h"
 #include "Modules/ModuleManager.h"
 #include "Misc/Paths.h"
 #include "UObject/UObjectHash.h"
@@ -60,6 +66,138 @@ static TAutoConsoleVariable<int32> CVarEditorFieldPathReloadCache(
 // Make the friend declaration visible for the exact native function address.
 COREUOBJECT_API FArchive& operator<<(FArchive&, FFieldPath&);
 
+namespace SoloASBridge::Editor
+{
+namespace
+{
+FCriticalSection InstallationLock;
+TArray<FEditorHookInstallation>& InstallationRecords()
+{
+    static TArray<FEditorHookInstallation> Records;
+    return Records;
+}
+}
+
+bool IsEditorHookJumpTo(const void* Address, const void* Replacement)
+{
+    if (!Address || !Replacement) return false;
+    auto Read = [](const void* Source, void* Destination, SIZE_T Size)
+    {
+#if PLATFORM_WINDOWS
+        SIZE_T ReadSize = 0;
+        return ReadProcessMemory(GetCurrentProcess(), Source, Destination, Size, &ReadSize) && ReadSize == Size;
+#else
+        mach_vm_size_t ReadSize = 0;
+        return mach_vm_read_overwrite(mach_task_self(), reinterpret_cast<mach_vm_address_t>(Source),
+            Size, reinterpret_cast<mach_vm_address_t>(Destination), &ReadSize) == KERN_SUCCESS && ReadSize == Size;
+#endif
+    };
+    const auto* Cursor = static_cast<const uint8*>(Address);
+    // Detours x64 uses a relative jump to an adjacent indirect relay.
+    for (int32 Step = 0; Step < 3; ++Step)
+    {
+        if (Cursor == Replacement) return true;
+        uint8 Bytes[16];
+        if (!Read(Cursor, Bytes, sizeof(Bytes))) return false;
+#if PLATFORM_WINDOWS || defined(__x86_64__)
+        if (Bytes[0] == 0xE9)
+        {
+            int32 Offset;
+            FMemory::Memcpy(&Offset, Bytes + 1, sizeof(Offset));
+            Cursor += 5 + Offset;
+        }
+        else if (Bytes[0] == 0xFF && Bytes[1] == 0x25)
+        {
+            int32 Offset;
+            FMemory::Memcpy(&Offset, Bytes + 2, sizeof(Offset));
+            const uint8* Next;
+            if (!Read(Cursor + 6 + Offset, &Next, sizeof(Next))) return false;
+            Cursor = Next;
+        }
+        else return false;
+#else
+        uint32 Instructions[2];
+        FMemory::Memcpy(Instructions, Bytes, sizeof(Instructions));
+        if (Instructions[0] != 0x58000050u || Instructions[1] != 0xD61F0200u) return false;
+        FMemory::Memcpy(&Cursor, Bytes + 8, sizeof(Cursor));
+#endif
+        if (!Cursor) return false;
+    }
+    return Cursor == Replacement;
+}
+
+void RecordEditorHookInstallation(const TCHAR* Target, const TCHAR* Module, const TCHAR* Mode,
+    void* Address, void* Original, void* Replacement, void** Slot)
+{
+    FScopeLock Lock(&InstallationLock);
+    auto& Records = InstallationRecords();
+    FEditorHookInstallation* Existing = Records.FindByPredicate([&](const auto& Record)
+    { return Record.Target == Target && Record.Address == Address && Record.Slot == Slot; });
+    FEditorHookInstallation& Record = Existing ? *Existing : Records.AddDefaulted_GetRef();
+    Record.Target = Target;
+    Record.Module = Module;
+#if PLATFORM_WINDOWS
+    MEMORY_BASIC_INFORMATION Info{};
+    if (VirtualQuery(Slot ? static_cast<void*>(Slot) : Address, &Info, sizeof(Info)) == sizeof(Info))
+    {
+        TCHAR Path[MAX_PATH]{};
+        if (GetModuleFileNameW(static_cast<HMODULE>(Info.AllocationBase), Path, UE_ARRAY_COUNT(Path)))
+            Record.Module = FPaths::GetCleanFilename(Path);
+    }
+#else
+    Dl_info Info{};
+    if (dladdr(Slot ? static_cast<void*>(Slot) : Address, &Info) && Info.dli_fname)
+        Record.Module = FPaths::GetCleanFilename(UTF8_TO_TCHAR(Info.dli_fname));
+#endif
+    Record.Mode = Mode;
+    Record.Address = Address;
+    Record.Original = Original;
+    Record.Replacement = Replacement;
+    Record.Slot = Slot;
+    Record.bResolved = Address != nullptr;
+    Record.bInstalled = Record.bResolved && Record.Original && (Slot ? *Slot == Replacement : IsEditorHookJumpTo(Address, Replacement));
+    if (!Slot)
+        UE_LOG(LogSoloASEditorImports, Display, TEXT("Editor hook target=%s module=%s mode=%s Changelist=%u CompatibleChangelist=%u resolved=%d installed=%d"),
+            Target, *Record.Module, Mode, FEngineVersion::Current().GetChangelist(),
+            FEngineVersion::CompatibleWith().GetChangelist(), Record.bResolved, Record.bInstalled);
+}
+
+void ForgetEditorHookInstallation(const void* Address, const TCHAR* Target)
+{
+    if (!Address && !Target) return;
+    FScopeLock Lock(&InstallationLock);
+    InstallationRecords().RemoveAll([&](const auto& Record)
+    { return (Record.Slot ? Record.Slot == Address : Record.Address == Address)
+        && (!Target || Record.Target == Target); });
+}
+
+void ForgetEditorHookModule(FName ModuleName)
+{
+    FScopeLock Lock(&InstallationLock);
+    const FString Image = TEXT("UnrealEditor-") + ModuleName.ToString();
+    InstallationRecords().RemoveAll([&](const auto& Record)
+    {
+        FString Name = Record.Module;
+        Name.RemoveFromStart(TEXT("lib"));
+        Name.RemoveFromEnd(TEXT(".dll"));
+        Name.RemoveFromEnd(TEXT(".dylib"));
+        return Name == Image;
+    });
+}
+
+TArray<FEditorHookInstallation> GetEditorHookInstallations()
+{
+    FScopeLock Lock(&InstallationLock);
+    auto Result = InstallationRecords();
+    for (auto& Record : Result)
+    {
+        Record.bInstalled = Record.bResolved && Record.Original && (Record.Slot
+            ? *Record.Slot == Record.Replacement : IsEditorHookJumpTo(Record.Address, Record.Replacement));
+    }
+    return Result;
+}
+}
+
 namespace
 {
 using FFieldPathSerialize = FArchive& (*)(FArchive&, FFieldPath&);
@@ -95,7 +233,13 @@ using FBoundary = UClass* (*)(UClass*);
 using FConstBoundary = const UClass* (*)(const UClass*);
 using FSignature = bool (*)(const UFunction*);
 FBoundary EngineBoundary = static_cast<FBoundary>(&FBlueprintEditorUtils::FindFirstNativeClass);
+// SOLOAS-COMPAT-BEGIN(<5.6) UE 5.5 has no const boundary export [test: SoloAS.EditorHookInstallation] [id: CS.Compatibility.Bridge.SoloASEditorCopyPropertiesImports.ConstNativeBoundaryExport]
+#if SOLOAS_UE_BEFORE(5, 6)
+FConstBoundary EngineConstBoundary = nullptr;
+#else
 FConstBoundary EngineConstBoundary = static_cast<FConstBoundary>(&FBlueprintEditorUtils::FindFirstNativeClass);
+#endif
+// SOLOAS-COMPAT-END
 FSignature EngineSignature = &FBlueprintEditorUtils::IsNativeSignature;
 bool bBoundaryResolved = false;
 TSet<const void*> ScannedBoundaryImages;
@@ -124,7 +268,13 @@ const UClass* ConstBoundary(const UClass* Class)
             if (SoloASBridge::IsRegisteredScriptClass(Cursor)) return Cursor;
         }
     }
+// SOLOAS-COMPAT-BEGIN(<5.6) The const API uses the existing mutable lookup before 5.6 [test: SoloAS.ScriptClassNativeBoundaryResidual] [id: CS.Compatibility.Bridge.SoloASEditorCopyPropertiesImports.ConstNativeBoundaryForwarding]
+#if SOLOAS_UE_BEFORE(5, 6)
+    return EngineBoundary(const_cast<UClass*>(Class));
+#else
     return EngineConstBoundary(Class);
+#endif
+// SOLOAS-COMPAT-END
 }
 
 bool Signature(const UFunction* Function)
@@ -351,9 +501,24 @@ UObject* FindBlueprintCDORoot(UObject* Object)
 bool IsCompilerGeneratedDefaultCopy(UObject* Old, UObject* New,
     const UEngine::FCopyPropertiesForUnrelatedObjectsParams& Params)
 {
-    if (!IsInGameThread() || !Params.bOnlyHandleDirectSubObjects
-        || !Params.bReplaceInternalReferenceUponRead || !Params.OptionalReplacementMappings)
-        return false;
+    if (!IsInGameThread()) return false;
+                                                                                                              
+// SOLOAS-COMPAT-BEGIN(<5.5) Recognize the legacy root-only PostDuplicateBlueprint copy [test: SoloAS.BlueprintDuplicateGeneratedDefaults.ScriptParentPersistWrite]
+#if SOLOAS_UE_BEFORE(5, 5)
+    // UE54 PostDuplicateBlueprint copies the root CDO with default params;
+    // UE55 precreates subobjects and supplies a replacement map instead.
+    const bool bLegacyDuplicateRoot = Old->HasAnyFlags(RF_ClassDefaultObject)
+        && New->HasAnyFlags(RF_ClassDefaultObject)
+        && !Params.bOnlyHandleDirectSubObjects && !Params.bReplaceInternalReferenceUponRead
+        && !Params.OptionalReplacementMappings && !Params.OptionalOldToNewClassMappings;
+    if (!bLegacyDuplicateRoot && (!Params.bOnlyHandleDirectSubObjects
+        || !Params.bReplaceInternalReferenceUponRead || !Params.OptionalReplacementMappings)) return false;
+#else
+    if (!Params.bOnlyHandleDirectSubObjects
+        || !Params.bReplaceInternalReferenceUponRead || !Params.OptionalReplacementMappings) return false;
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                            
     UObject* OldCDO = FindBlueprintCDORoot(Old);
     UObject* NewCDO = FindBlueprintCDORoot(New);
     if (!OldCDO || !NewCDO || OldCDO == NewCDO || OldCDO->GetClass() == NewCDO->GetClass()
@@ -371,7 +536,7 @@ public:
         if (!Source) return;
         TArray<UObject*> Objects;
         Objects.Add(Source);
-        GetObjectsWithOuter(Source, Objects, EGetObjectsFlags::IncludeNestedObjects);
+        SoloASBridge::Compat::GetNestedObjects(Source, Objects);
         TSet<FProperty*> Seen;
         for (UObject* Object : Objects)
         {
@@ -455,6 +620,15 @@ const TCHAR* ImportObject(FImportObjectParams& Params)
     bInsideImportObject = true;
     ON_SCOPE_EXIT { bInsideImportObject = false; };
     return Adapter(Params);
+}
+
+const TCHAR* ImportTargetName(void* Redirect)
+{
+    if (Redirect == reinterpret_cast<void*>(&Copy)) return TEXT("CopyPropertiesForUnrelatedObjects");
+    if (Redirect == reinterpret_cast<void*>(&ImportObject)) return TEXT("ImportObjectProperties");
+    if (Redirect == reinterpret_cast<void*>(&Boundary)) return TEXT("FindFirstNativeClass@FBlueprintEditorUtils@@SAPEAV");
+    if (Redirect == reinterpret_cast<void*>(&ConstBoundary)) return TEXT("FindFirstNativeClass@FBlueprintEditorUtils@@SAPEBV");
+    return TEXT("IsNativeSignature");
 }
 
 bool IsProduct(const TCHAR* Image)
@@ -566,6 +740,10 @@ int32 RebindImage(uint8* Base, bool bRestore, const char* Symbol, void* Native, 
             void** Slot = reinterpret_cast<void**>(Base + SlotRva);
             void* Expected = bRestore ? Redirect : Native;
             void* Value = bRestore ? Native : Redirect;
+            if (!bRestore)
+                SoloASBridge::Editor::RecordEditorHookInstallation(ImportTargetName(Redirect), TEXT("editor consumer"),
+                    bDelay ? TEXT("delay-IAT") : TEXT("IAT"), Native, Native, Redirect, Slot);
+            else SoloASBridge::Editor::ForgetEditorHookInstallation(Slot);
             if (*Slot == Value) continue;
             // A not-yet-bound delay slot points to its own image's helper thunk.
             const uintptr_t Address = reinterpret_cast<uintptr_t>(*Slot);
@@ -747,6 +925,10 @@ int32 RebindImage(const mach_header_64* Header, intptr_t Slide, bool bRestore,
                     if (StringIndex >= Symtab->strsize || Length > Symtab->strsize - StringIndex
                         || FCStringAnsi::Strncmp(Strings + StringIndex, Symbol, Length) != 0) continue;
                     void* Value = bRestore ? Native : Redirect;
+                    if (!bRestore)
+                        SoloASBridge::Editor::RecordEditorHookInstallation(ImportTargetName(Redirect), TEXT("editor consumer"),
+                            Type == S_LAZY_SYMBOL_POINTERS ? TEXT("lazy") : TEXT("GOT"), Native, Native, Redirect, &Pointers[K]);
+                    else SoloASBridge::Editor::ForgetEditorHookInstallation(&Pointers[K]);
                     if (Pointers[K] == Value || (bRestore && Pointers[K] != Redirect)) continue;
                     if (!bRestore && Type != S_LAZY_SYMBOL_POINTERS && Pointers[K] != Native)
                     { Warn(TEXT("editor symbol pointer already owned by another redirector")); continue; }
@@ -790,9 +972,10 @@ void Scan(bool bRestore, int32 Kind)
             const auto* ImageHeader = reinterpret_cast<const mach_header_64*>(Header);
             const intptr_t Slide = _dyld_get_image_vmaddr_slide(I);
             Changed += RebindImage(ImageHeader, Slide, bRestore, BoundarySymbol, reinterpret_cast<void*>(EngineBoundary), reinterpret_cast<void*>(&Boundary));
-            Changed += RebindImage(
-                ImageHeader, Slide, bRestore, ConstBoundarySymbol,
-                reinterpret_cast<void*>(EngineConstBoundary), reinterpret_cast<void*>(&ConstBoundary));
+            if (EngineConstBoundary != nullptr)
+                Changed += RebindImage(
+                    ImageHeader, Slide, bRestore, ConstBoundarySymbol,
+                    reinterpret_cast<void*>(EngineConstBoundary), reinterpret_cast<void*>(&ConstBoundary));
             Changed += RebindImage(
                 ImageHeader, Slide, bRestore, SignatureSymbol,
                 reinterpret_cast<void*>(EngineSignature), reinterpret_cast<void*>(&Signature));
@@ -884,6 +1067,30 @@ namespace SoloASBridge
 FEditorFieldPathReloadScope::FEditorFieldPathReloadScope() { ++FieldPathReloadDepth; }
 FEditorFieldPathReloadScope::~FEditorFieldPathReloadScope() { check(FieldPathReloadDepth != 0); --FieldPathReloadDepth; }
 
+bool HasUnsupportedT3DOverrideTokens(const TCHAR* Text)
+{
+    if (!Text) return false;
+    const TCHAR* Cursor = Text;
+    FString Line;
+    while (FParse::Line(&Cursor, Line))
+    {
+        const FString Trimmed = Line.TrimStartAndEnd();
+        const TCHAR* Header = *Trimmed;
+        const bool ObjectHeader = FParse::Command(&Header, TEXT("BEGIN")) && FParse::Command(&Header, TEXT("OBJECT"));
+        if ((ObjectHeader && (FCString::Strifind(Header, TEXT("OverriddenOperation="))
+                || FCString::Strifind(Header, TEXT("SubObjectsShadow"))))
+            || Trimmed.StartsWith(TEXT("OverriddenOperation="), ESearchCase::IgnoreCase)
+            || Trimmed.StartsWith(TEXT("SubObjectsShadow"), ESearchCase::IgnoreCase)
+            || Trimmed.StartsWith(TEXT("T3DOverrides="), ESearchCase::IgnoreCase)) return true;
+    }
+    return false;
+}
+const TCHAR* ImportObjectPropertiesNative(FImportObjectParams& Params)
+{
+
+    return EngineImportObject(Params);
+}
+
 void SetEditorObjectImportPropertiesAdapter(FEditorObjectImportPredicate Predicate,
 	FEditorObjectImportAdapter Adapter)
 {
@@ -906,6 +1113,9 @@ void CopyPropertiesForUnrelatedObjectsOriginal(UObject* Old, UObject* New, UEngi
 {
     OriginalCopy(Old, New, Params);
 }
+
+void InitializeLegacyT3DOverrides();
+void ShutdownLegacyT3DOverrides();
 
 void InitializeEditorCopyPropertiesImports()
 {
@@ -954,7 +1164,7 @@ void InitializeEditorCopyPropertiesImports()
     }
     else Warn(TEXT("CoreUObject FieldPath serialization export name or ABI not found"));
     bBoundaryResolved = ResolveBoundary(reinterpret_cast<void*>(EngineBoundary), BoundarySymbol)
-        && ResolveBoundary(reinterpret_cast<void*>(EngineConstBoundary), ConstBoundarySymbol)
+        && (EngineConstBoundary == nullptr || ResolveBoundary(reinterpret_cast<void*>(EngineConstBoundary), ConstBoundarySymbol))
         && ResolveBoundary(reinterpret_cast<void*>(EngineSignature), SignatureSymbol);
     if (bBoundaryResolved)
     {
@@ -979,6 +1189,7 @@ void InitializeEditorCopyPropertiesImports()
     }
     else
         Warn(TEXT("UnrealEd ImportObjectProperties export name or ABI not found"));
+    InitializeLegacyT3DOverrides();
     ModulesChangedHandle = FModuleManager::Get().OnModulesChanged().AddLambda(
         [](FName ModuleName, EModuleChangeReason Reason)
         {
@@ -993,6 +1204,7 @@ void InitializeEditorCopyPropertiesImports()
             if (Reason == EModuleChangeReason::ModuleUnloaded)
             {
                 FScopeLock Lock(&ImagesLock);
+                SoloASBridge::Editor::ForgetEditorHookModule(ModuleName);
                 ScannedImages.Reset();
                 ScannedImportImages.Reset();
                 ScannedBoundaryImages.Reset();
@@ -1013,6 +1225,7 @@ void InitializeEditorCopyPropertiesImports()
 
 void ShutdownEditorCopyPropertiesImports()
 {
+    ShutdownLegacyT3DOverrides();
     // The Bridge does not support dynamic reload; keep this CoreUObject entry and
     // its trampoline resident until process exit, forwarding before other state is torn down.
     FieldPathPassThrough.store(true, std::memory_order_release);

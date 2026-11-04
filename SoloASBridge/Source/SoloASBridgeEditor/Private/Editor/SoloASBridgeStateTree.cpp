@@ -1,6 +1,11 @@
+// category=A; basis=UE-AS fork StateTreeNodeClassCache::CacheClasses script-node discovery; StateTree remains optional.
+#if SOLOAS_WITH_STATETREE
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "Editor/SoloASBridgeStateTree.h"
 #include "StateTreeNodeClassCache.h"
+#include "StateTreeEditorModule.h"
+#include "Modules/ModuleManager.h"
+#include "SoloASEngineCompat.h"
 #include "UObject/Class.h"
 #include <functional>
 #include <type_traits>
@@ -27,6 +32,8 @@ decltype(auto) CallStatic(Args&&... Arguments)
     return std::invoke(Resolve(Tag{}), std::forward<Args>(Arguments)...);
 }
 
+#include "SoloASStateTreeCompat.inl"
+
 struct FStateTreeScriptClasses
 {
     using Type = void (*)(FStateTreeNodeClassCache&, const TArray<UClass*>&, const TSet<FTopLevelAssetPath>&);
@@ -37,7 +44,7 @@ struct FStateTreeScriptClasses
     {
         for (auto& Root : Cache.*Member)
         {
-            const UClass* Base = Cast<UClass>(Root.BaseStruct.Get());
+            auto* Base = Cast<UClass>(Root.BaseStruct.Get());
             if (!Base) continue;
             if (!Root.bUpdated && !Classes.ContainsByPredicate([Base](UClass* Class)
             {
@@ -48,19 +55,18 @@ struct FStateTreeScriptClasses
             Cache.GetClasses(Base, NativeData);
             Root.ClassData.RemoveAll([&](const auto& Data)
             {
-                return Data.IsValid() && PreviousScriptPaths.Contains(Data->GetStructPath());
+                return Data.IsValid() && PreviousScriptPaths.Contains(StateTreeDataPath(*Data));
             });
             TSet<FTopLevelAssetPath> Seen;
             for (const auto& Data : Root.ClassData)
-                if (Data.IsValid()) Seen.Add(Data->GetStructPath());
+                if (Data.IsValid()) Seen.Add(StateTreeDataPath(*Data));
             for (UClass* Class : Classes)
             {
                 if (!IsValid(Class) || !Class->IsChildOf(Base)
-                    || Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated | CLASS_NewerVersionExists
-                        | CLASS_Hidden | CLASS_HideDropDown) || Class->HasMetaData(TEXT("Hidden"))) continue;
+                    || Class->HasAnyClassFlags(CLASS_NewerVersionExists)) continue;
                 if (!Seen.Contains(Class->GetClassPathName()))
                 {
-                    Root.ClassData.Add(MakeShared<FStateTreeNodeClassData>(TNotNull<UStruct*>(Class)));
+                    Root.ClassData.Add(MakeStateTreeData(Class));
                     Seen.Add(Class->GetClassPathName());
                 }
             }
@@ -76,3 +82,16 @@ void SoloASBridge::Editor::SynchronizeStateTreeScriptClasses(FStateTreeNodeClass
     check(IsInGameThread());
     PrivateAccess::CallStatic<PrivateAccess::FStateTreeScriptClasses>(Cache, Classes, PreviousScriptPaths);
 }
+
+FStateTreeEditorModule& SoloASBridge::Editor::GetStateTreeEditorModule()
+{
+                                                                                                                                      
+#if SOLOAS_UE_BEFORE(5, 6)
+    return FModuleManager::LoadModuleChecked<FStateTreeEditorModule>(TEXT("StateTreeEditorModule"));
+#else
+    return FStateTreeEditorModule::GetModule();
+#endif
+// SOLOAS-COMPAT-END
+}
+
+#endif

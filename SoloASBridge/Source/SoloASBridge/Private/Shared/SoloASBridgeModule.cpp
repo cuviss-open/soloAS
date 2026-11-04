@@ -9,6 +9,9 @@
 
 namespace SoloASBridge::Private
 {
+void InitializeReflectedReturnCopies();
+void ShutdownReflectedReturnCopies();
+void InitializeBaseConfigLayers();
 void PruneClassStates();
 void ClearAllClassStates();
 void PruneScriptClasses();
@@ -50,6 +53,8 @@ void PruneBridgeRegistries()
 
 void FSoloASBridgeModule::StartupModule()
 {
+    SoloASBridge::Private::InitializeReflectedReturnCopies();
+    SoloASBridge::Private::InitializeBaseConfigLayers();
     SoloASBridge::InitializeScriptMetadata();
     SoloASBridge::InitializeReflectionTraits();
     SoloASBridge::Private::InitializeObjectLifecycle();
@@ -65,6 +70,7 @@ void FSoloASBridgeModule::StartupModule()
 
 void FSoloASBridgeModule::ShutdownModule()
 {
+    SoloASBridge::Private::ShutdownReflectedReturnCopies();
     SoloASBridge::ShutdownScriptMetadata();
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
     SoloASBridge::Private::ShutdownEditorCopyPropertiesImports();

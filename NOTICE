@@ -15,36 +15,36 @@ Source identities and retained standalone license hashes:
 {
   "products": [
     {
-      "category": "Haze fork bindings",
-      "commit": "fc5cdb0d5f96e6c21ea812f6aa76395165f8aa68",
+      "category": "UE-AS fork bindings",
+      "commit": "fd8711b6c5142bafe40e0204b5bddce4ade9a412",
       "license_scope": "Plugin source and Cuviss contributions: MIT.",
       "name": "AngelscriptEnhancedInput",
       "path": "AngelscriptManualBindPlugins/AngelscriptEnhancedInput",
-      "tree": "9bea14672662a2f5637741a7cdf5f9730595a5d0"
+      "tree": "361b53aa85c256517950e8bad7c564b324c5ba35"
     },
     {
-      "category": "Haze fork bindings",
-      "commit": "6a49e737075b84f344785d009e7513f14c595edd",
+      "category": "UE-AS fork bindings",
+      "commit": "228a6ae5c067f650445e3fc35981a3ee1c75ee19",
       "license_scope": "Plugin source and Cuviss contributions: Apache-2.0 OR MIT.",
       "name": "AngelscriptGAS",
       "path": "AngelscriptManualBindPlugins/AngelscriptGAS",
-      "tree": "09d760e6aa3475cbd390fdc22c55580b1450784c"
+      "tree": "0d7433d0f3de842edd16b83a72133e291e68ebd7"
     },
     {
       "category": "core",
-      "commit": "4590a24640a7e38778db1c54efc726d14fe6f78b",
+      "commit": "3c22031382c0a7656576a1162832a5c9d46a301b",
       "license_scope": "Plugin source and Cuviss contributions: MIT. Embedded AngelScript library and its modifications: zlib.",
       "name": "AngelscriptRuntime",
       "path": "AngelscriptRuntime",
-      "tree": "e23c081eea1fcaa770917158283b2843f1737d5a"
+      "tree": "debea87a9f1488c0e3760fd1b2183701f543af31"
     },
     {
       "category": "core",
-      "commit": "5e1326c828379ffd7ed461f31c1eff65f63bb6b0",
+      "commit": "392f4ec5da56fc1e8dd45b7a940bfee426c55920",
       "license_scope": "Cuviss original code and modifications are under MPL-2.0.",
       "name": "SoloASBridge",
       "path": "SoloASBridge",
-      "tree": "4fae4e9a6d493865d30b13331b955eff18d350a5"
+      "tree": "38cee36e5755db9dcb084a8155b2b2a6d383472f"
     }
   ],
   "retained_license_files": [
@@ -83,6 +83,10 @@ Source identities and retained standalone license hashes:
     {
       "path": "SoloASBridge/LICENSE",
       "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+    },
+    {
+      "path": "SoloASBridge/Source/ThirdParty/Detours/LICENSE.md",
+      "sha256": "b301808b732cfaa60df2b4b422d78cd97d2a15058b207e7e33f0535ba5170dd6"
     }
   ]
 }

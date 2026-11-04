@@ -1,5 +1,9 @@
 #pragma once
 #include "CoreMinimal.h"
+                                                                                                               
+#include "SoloASEngineCompat.h"
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                             
 #include "Containers/ScriptArray.h"
 #include "AngelscriptBinds/Bind_TArray_Structs.h"
 
@@ -45,7 +49,7 @@ struct ANGELSCRIPTCODE_API FArrayOperations
                                                                                                                      
 #endif
 		if ((SIZE_T)Addr >= (SIZE_T)Arr.GetData()
-			&& (SIZE_T)Addr < ((SIZE_T)Arr.GetData() + (SIZE_T)Arr.Max() * Ops->NumBytesPerElement))
+			&& (SIZE_T)Addr < ((SIZE_T)Arr.GetData() + (SIZE_T)SoloASBridge::Compat::ScriptArrayCapacity(Arr) * Ops->NumBytesPerElement))
                                                                                                                    
 		{
 			FAngelscriptManager::Throw("Attempting to use a container element which already comes from the container being modified.");
@@ -103,7 +107,7 @@ struct ANGELSCRIPTCODE_API FArrayOperations
 		return Arr.ArrayMax;
                                                                                                             
 #endif
-		return Arr.Max();
+		return SoloASBridge::Compat::ScriptArrayCapacity(Arr);
                                                                                                           
 	}
 

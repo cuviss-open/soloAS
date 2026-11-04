@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: (Apache-2.0 OR MIT)
 // Copyright Cuviss Studio.
 #include "AngelscriptBinds.h"
+#include "AngelscriptDocs.h"
 #include "AngelscriptManager.h"
 #include "Mixin/GameplayTaskMixinLibrary.h"
 #include "Shared/SoloASBridgeReflection.h"
@@ -27,5 +28,12 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_GameplayTaskActivation(
     {
         auto Task = FAngelscriptBinds::ExistingClass("UGameplayTask");
         Task.Method("void ReadyForActivation()", &UGameplayTask::ReadyForActivation);
+#if WITH_EDITOR
+        UFunction* Function = UGameplayTaskMixinLibrary::StaticClass()->FindFunctionByName(
+            TEXT("ReadyForActivation"));
+        check(Function);
+        FAngelscriptDocs::AddUnrealDocumentation(FAngelscriptBinds::GetPreviousFunctionId(),
+            TEXT(""), TEXT("Gameplay Tasks"), Function);
+#endif
     }
 });

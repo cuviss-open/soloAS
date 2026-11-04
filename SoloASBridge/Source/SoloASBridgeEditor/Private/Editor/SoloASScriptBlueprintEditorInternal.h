@@ -7,7 +7,7 @@
 
 class UBlueprint;
 
-UCLASS()
+UCLASS(meta = (NotInAngelscript))
 class SOLOASBRIDGEEDITOR_API USoloASScriptBlueprintValidator final : public UEditorValidatorBase
 {
     GENERATED_BODY()

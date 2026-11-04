@@ -1,5 +1,11 @@
 #include "ScriptEditorMenuExtension.h"
 #include "AngelscriptManager.h"
+                                                                                                       
+#include "AngelscriptBinds.h"
+#include "Editor/SoloASBridgeMenuAlignment.h"
+#include "AngelscriptDocs.h"
+                                                                                                     
+
 #include "ClassGenerator/AngelscriptClassGenerator.h"
 #include "ClassGenerator/ASClass.h"
                                                                                                                             
@@ -1287,7 +1293,17 @@ void UScriptEditorMenuExtension::RegisterExtension(UASClass* ScriptClass)
 		InsertPosition.Name = CDO->ToolMenuInsertPosition;
 
 		FToolMenuSection& Section = Menu->AddSection(Registered.SectionName, SectionHeader, InsertPosition);
+                                                                                                 
+// SOLOAS-COMPAT-BEGIN(<5.5) Adapt UE 5.4 toolbars; UE 5.5 has native section alignment [test: SoloAS.EditorMenuSectionAlignment]
+#if SOLOAS_UE_BEFORE(5, 5)
+        SoloASBridge::Editor::SetMenuSectionAlignment(Registered.ExtensionPoint, Registered.SectionName,
+            static_cast<uint8>(CDO->ToolMenuSectionAlign));
+#else
 		Section.Alignment = CDO->ToolMenuSectionAlign;
+#endif
+// SOLOAS-COMPAT-END
+                                                                                               
+
                                                                                                                 
 		#if 0
                                                                                                               
@@ -1481,6 +1497,9 @@ void UScriptEditorMenuExtension::UnregisterExtension(FRegisteredExtender& Extens
 	{
 		auto* Menu = UToolMenus::Get()->ExtendMenu(Extension.ExtensionPoint);
 		Menu->RemoveSection(Extension.SectionName);
+                                                                                                      
+        SoloASBridge::Editor::SetMenuSectionAlignment(Extension.ExtensionPoint, Extension.SectionName, 0);
+                                                                                                    
 	}
 	break;
 	}
@@ -1525,3 +1544,28 @@ void UScriptEditorMenuExtension::RefreshExtensionRegistration()
 		}
 	}
 }
+
+                                                                                                
+
+AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_EditorMenuSectionAlignment(FAngelscriptBinds::EOrder::Late, []
+{
+    if (!FAngelscriptManager::bUseEditorScripts) return;
+// SOLOAS-COMPAT-BEGIN(<5.5) Bind the missing UE 5.4 enum with the same script name and values [test: SoloAS.EditorMenuSectionAlignment]
+#if SOLOAS_UE_BEFORE(5, 5)
+    auto Alignment = FAngelscriptBinds::Enum("EToolMenuSectionAlign");
+    Alignment["Default"] = 0;
+    Alignment["First"] = 1;
+    Alignment["Middle"] = 2;
+    Alignment["Last"] = 3;
+#endif
+// SOLOAS-COMPAT-END
+    auto Binds = FAngelscriptBinds::ExistingClass("UScriptEditorMenuExtension");
+    FAngelscriptType::FBindParams Params;
+    Params.bCanRead = false;
+    Params.bCanWrite = false;
+    Params.bCanEdit = true;
+    Binds.Property("EToolMenuSectionAlign ToolMenuSectionAlign",
+        STRUCT_OFFSET(UScriptEditorMenuExtension, ToolMenuSectionAlign), Params);
+    SCRIPT_PROPERTY_DOCUMENTATION(Binds, "For tool menus, the alignment of the section within the parent");
+});
+                                                                                              

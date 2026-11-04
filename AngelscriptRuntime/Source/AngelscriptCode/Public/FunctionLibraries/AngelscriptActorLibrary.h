@@ -177,8 +177,11 @@ public:
 	UFUNCTION(ScriptCallable)
 	static void RerunConstructionScripts(AActor* Actor)
 	{
+                                                                                                                 
 		const FTransform PreviousTransform = Actor->GetActorTransform();
+                                                                                                               
 		Actor->RerunConstructionScripts();
+                                                                                                                 
 		if (USceneComponent* Root = Actor->GetRootComponent())
 		{
 			if (Root->CreationMethod == EComponentCreationMethod::UserConstructionScript)
@@ -186,6 +189,7 @@ public:
 				Root->SetWorldTransform(PreviousTransform);
 			}
 		}
+                                                                                                               
 	}
 #endif
 

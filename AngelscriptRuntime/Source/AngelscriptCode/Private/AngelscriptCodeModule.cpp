@@ -232,6 +232,9 @@ void FAngelscriptCodeModule::InitializeAngelscript()
 	if (bInitialized)
 		return;
 
+                                                                                                           
+    FModuleManager::Get().LoadModuleChecked<IModuleInterface>(TEXT("SoloASBridgeCallers"));
+                                                                                                         
 	bInitialized = true;
 	FModuleManager::Get().LoadModuleChecked(TEXT("AngelscriptCode"));
 	FAngelscriptManager::GetOrCreate().Initialize();

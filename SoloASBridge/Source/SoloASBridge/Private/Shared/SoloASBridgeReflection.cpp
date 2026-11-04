@@ -1,5 +1,6 @@
 #include "Shared/SoloASBridgeReflection.h"
 #include "HAL/CriticalSection.h"
+#include "Runtime/SoloASBridgeScriptMetadata.h"
 #include "Shared/SoloASBridgeReflectionSupport.h"
 namespace SoloASBridge
 {
@@ -129,6 +130,71 @@ bool SetPropertyTraits(
     );
     return true;
 }
+ESoloASBridgePropertyTrait GetNativePropertyTraits(const FProperty* Property)
+{
+    if (Property == nullptr)
+        return ESoloASBridgePropertyTrait::None;
+    ESoloASBridgePropertyTrait Traits = ESoloASBridgePropertyTrait::None;
+    if (Cast<UFunction>(Property->GetOwnerStruct()))
+    {
+        if (Property->HasAllPropertyFlags(CPF_Parm | CPF_OutParm)
+            && !Property->HasAnyPropertyFlags(CPF_ReturnParm | CPF_ConstParm | CPF_ReferenceParm))
+        {
+            // Pure output parameters are C++ references. UPARAM(ref) alone does not
+            // prove one: SetPolygonVertex declares a by-value Polygon with that tag.
+            Traits |= ESoloASBridgePropertyTrait::CppRef;
+        }
+    }
+    else
+    {
+        const UStruct* Owner = Property->GetOwnerStruct();
+        const FProperty* Root = Property;
+        FString Suffix;
+        while (const FProperty* Parent = Root->GetOwner<FProperty>())
+        {
+            if (CastField<FArrayProperty>(Parent))
+                Suffix = TEXT("/Inner") + Suffix;
+            else if (const FMapProperty* Map = CastField<FMapProperty>(Parent))
+                Suffix = (Map->KeyProp == Root ? TEXT("/Key") : TEXT("/Value")) + Suffix;
+            else if (CastField<FSetProperty>(Parent))
+                Suffix = TEXT("/Element") + Suffix;
+            Root = Parent;
+        }
+        const FString Path = Root->GetName() + Suffix;
+        if (Owner != nullptr)
+        {
+            const FString OwnerName = FString(Owner->GetPrefixCPP()) + Owner->GetName();
+            const auto Metadata = GetScriptMetadata();
+            const auto& Rows = Metadata->PropertyTraits;
+            int32 First = 0, Last = Rows.Num();
+            while (First < Last)
+            {
+                const int32 Middle = First + (Last - First) / 2;
+                const auto& Row = Rows[Middle];
+                int32 Order = OwnerName.Compare(ANSI_TO_TCHAR(Row.OwnerName), ESearchCase::CaseSensitive);
+                if (Order == 0) Order = FString().Compare(ANSI_TO_TCHAR(Row.FunctionName), ESearchCase::CaseSensitive);
+                if (Order == 0 && Row.ParameterOrdinal != 0) Order = -1;
+                if (Order == 0) Order = Path.Compare(ANSI_TO_TCHAR(Row.PropertyName), ESearchCase::CaseSensitive);
+                if (Order == 0)
+                {
+                    Traits |= Row.Traits;
+                    break;
+                }
+                if (Order < 0) Last = Middle;
+                else First = Middle + 1;
+            }
+        }
+#if WITH_METADATA
+        // Installed-engine fields retain these declaration traits as metadata.
+        if (Property->HasMetaData(TEXT("NativeConst")))
+            Traits |= ESoloASBridgePropertyTrait::CppConst;
+        if (Property->HasMetaData(TEXT("NativeConstTemplateArg")))
+            Traits |= ESoloASBridgePropertyTrait::ConstTemplateArg;
+#endif
+    }
+    return Traits;
+}
+
 bool GetPropertyTraits(
     const FProperty* Property,
     ESoloASBridgePropertyTrait& OutTraits

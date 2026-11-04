@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "InstancedStructReload.h"
+                                                                                                                                                  
+#include "Compat/SoloASRuntimeCompat.h"
+// SOLOAS-COMPAT-END
 
 #include "AngelscriptManager.h"
 #include "AngelscriptInclude.h"
@@ -13,6 +16,8 @@
 #include "ClassGenerator/ASClass.h"
 #include "ClassGenerator/ASEnum.h"
 #include "Engine/DataTable.h"
+#include "Engine/Blueprint.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "Serialization/ObjectReader.h"
@@ -21,11 +26,21 @@
 #include "Serialization/MemoryReader.h"
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
+#include "Serialization/ArchiveUObject.h"
 #include "Misc/ScopeExit.h"
 #include "StructUtils/InstancedStruct.h"
+#include "Misc/EngineVersionComparison.h"
+                                                                                                                                               
+#if UE_VERSION_OLDER_THAN(5, 5, 0)
+#include "InstancedStructContainer.h"
+#else
+#include "StructUtils/InstancedStructContainer.h"
+#endif
+// SOLOAS-COMPAT-END
 #include "UObject/StrongObjectPtr.h"
 #include "UObject/PropertyOptional.h"
 #include "UObject/UObjectIterator.h"
+#include "UObject/UObjectHash.h"
 #include "UObject/UnrealType.h"
 #include "UObject/EnumProperty.h"
 #include "UObject/UObjectArray.h"
@@ -40,10 +55,14 @@ bool HasSchemaReferences(const UStruct* Struct)
     if (const UScriptStruct* Script = Cast<UScriptStruct>(Struct))
         if (const UScriptStruct::ICppStructOps* Ops = Script->GetCppStructOps())
             if (Ops->HasAddStructReferencedObjects()
-                || Ops->HasSerializerObjectReferences(EPropertyObjectReferenceType_Any)) return true;
+                                                                                                                                                  
+                || Ops->HasSerializerObjectReferences(SoloASBridge::Compat::AnyObjectReferences)) return true;
+// SOLOAS-COMPAT-END
     TArray<const FStructProperty*> Encountered;
     for (TFieldIterator<FProperty> It(Struct); It; ++It)
-        if (It->ContainsObjectReference(Encountered, EPropertyObjectReferenceType_Any)) return true;
+                                                                                                                                                  
+        if (It->ContainsObjectReference(Encountered, SoloASBridge::Compat::AnyObjectReferences)) return true;
+// SOLOAS-COMPAT-END
     return false;
 }
 
@@ -55,8 +74,11 @@ bool IsStrongObjectProperty(const FProperty* Property)
 
 bool IsQuietNativeEnumShape(const FProperty* Property)
 {
-#if UE_WITH_REMOTE_OBJECT_HANDLE || !UE_WITH_OBJECT_HANDLE_LATE_RESOLVE || !UE_WITH_OBJECT_HANDLE_TRACKING \
-    || !UE_WITH_OBJECT_HANDLE_TYPE_SAFETY || UE_WITH_CONSTINIT_UOBJECT
+// SOLOAS-COMPAT-BEGIN(<5.6) UE 5.5 does not define remote-handle or constinit capability macros [test: SoloAS.RuntimePayloadNativeEnumQuietWitness] | CS.Runtime.CoreSurface.InstancedStructReload.Compat4
+// UE 5.4 defaults TYPE_SAFETY to 0; ObjectPtr.h:565-574/181 and EnumProperty.cpp:410-413 compare raw handles without resolving.
+#if (defined(UE_WITH_REMOTE_OBJECT_HANDLE) && UE_WITH_REMOTE_OBJECT_HANDLE) || !UE_WITH_OBJECT_HANDLE_LATE_RESOLVE || !UE_WITH_OBJECT_HANDLE_TRACKING \
+    || (SOLOAS_UE_AT_LEAST(5, 5) && !UE_WITH_OBJECT_HANDLE_TYPE_SAFETY) || (defined(UE_WITH_CONSTINIT_UOBJECT) && UE_WITH_CONSTINIT_UOBJECT)
+// SOLOAS-COMPAT-END
     return false;
 #else
     if (Property->GetClass() != FEnumProperty::StaticClass() || Property->ArrayDim != 1
@@ -64,7 +86,9 @@ bool IsQuietNativeEnumShape(const FProperty* Property)
     const FNumericProperty* Inner = CastFieldChecked<FEnumProperty>(Property)->GetUnderlyingProperty();
     // Bind_UEnum's native scoped-enum factory uses an unassociated uint8 inner.
     if (!Inner || Inner->GetClass() != FByteProperty::StaticClass() || Inner->ArrayDim != 1
-        || Inner->GetElementSize() != 1 || Property->GetElementSize() != 1
+                                                                                                              
+        || SoloASBridge::Compat::GetPropertyElementSize(Inner) != 1 || SoloASBridge::Compat::GetPropertyElementSize(Property) != 1
+                                                                                                            
         || Inner->GetOwnerVariant() != FFieldVariant(const_cast<FProperty*>(Property))
         || Inner->HasGetter() || Inner->HasSetter()) return false;
     const auto& ByteEnum = CastFieldChecked<FByteProperty>(Inner)->Enum;
@@ -75,15 +99,22 @@ bool IsQuietNativeEnumShape(const FProperty* Property)
 
 bool IsQuietScriptEnumShape(const FProperty* Property)
 {
-#if UE_WITH_REMOTE_OBJECT_HANDLE || !UE_WITH_OBJECT_HANDLE_LATE_RESOLVE || !UE_WITH_OBJECT_HANDLE_TRACKING \
-    || !UE_WITH_OBJECT_HANDLE_TYPE_SAFETY || UE_WITH_CONSTINIT_UOBJECT
+// SOLOAS-COMPAT-BEGIN(<5.6) UE 5.5 does not define remote-handle or constinit capability macros [test: SoloAS.RuntimePayloadNativeEnumQuietWitness] | CS.Runtime.CoreSurface.InstancedStructReload.Compat5
+// UE 5.4 defaults TYPE_SAFETY to 0; ObjectPtr.h:565-574/181 and EnumProperty.cpp:410-413 compare raw handles without resolving.
+#if (defined(UE_WITH_REMOTE_OBJECT_HANDLE) && UE_WITH_REMOTE_OBJECT_HANDLE) || !UE_WITH_OBJECT_HANDLE_LATE_RESOLVE || !UE_WITH_OBJECT_HANDLE_TRACKING \
+    || (SOLOAS_UE_AT_LEAST(5, 5) && !UE_WITH_OBJECT_HANDLE_TYPE_SAFETY) || (defined(UE_WITH_CONSTINIT_UOBJECT) && UE_WITH_CONSTINIT_UOBJECT)
+// SOLOAS-COMPAT-END
     return false;
 #else
     if (Property->GetClass() != FEnumProperty::StaticClass() || Property->ArrayDim != 1
-        || Property->GetElementSize() != 1 || Property->HasGetter() || Property->HasSetter()) return false;
+                                                                                                              
+        || SoloASBridge::Compat::GetPropertyElementSize(Property) != 1 || Property->HasGetter() || Property->HasSetter()) return false;
+                                                                                                            
     const FNumericProperty* Inner = CastFieldChecked<FEnumProperty>(Property)->GetUnderlyingProperty();
     return Inner && Inner->GetClass() == FInt8Property::StaticClass() && Inner->ArrayDim == 1
-        && Inner->GetElementSize() == 1 && !Inner->HasGetter() && !Inner->HasSetter()
+                                                                                                              
+        && SoloASBridge::Compat::GetPropertyElementSize(Inner) == 1 && !Inner->HasGetter() && !Inner->HasSetter()
+                                                                                                            
         && Inner->GetOwnerVariant() == FFieldVariant(const_cast<FProperty*>(Property));
 #endif
 }
@@ -263,13 +294,15 @@ struct FScriptEnumReloadBinding
     {
         if (!Root.IsResolved() || Root.GetHandle() != Handle || Index < 0 || Serial <= 0) return false;
         const FUObjectItem* Slot = GUObjectArray.IndexToObject(Index);
-        if (!Slot || Slot->GetSerialNumber() != Serial || Slot->GetObject() != Identity
+        if (!Slot || Slot->GetSerialNumber() != Serial || SoloASBridge::Compat::ObjectFromItem(Slot) != Identity
             || Slot->HasAnyFlags(EInternalObjectFlags::Garbage | EInternalObjectFlags::Unreachable)) return false;
         if (Identity->GetClass() != UASEnum::StaticClass() || Identity->GetFName() != Name || Identity->GetOuter() != Outer
             || Identity->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed)
             || Identity->HasAnyEnumFlags(EEnumFlags::Flags | EEnumFlags::NewerVersionExists)
             || Identity->GetCppForm() != UEnum::ECppForm::EnumClass
-            || Identity->GetUnderlyingType() != UEnum::EUnderlyingType::int8 || Identity->NumEnums() != Definition.Num()) return false;
+                                                                                                                                                  
+            || SoloASBridge::Compat::EnumStorageForBinding(Identity, SoloASBridge::Compat::EEnumStorage::int8) != SoloASBridge::Compat::EEnumStorage::int8 || Identity->NumEnums() != Definition.Num()) return false;
+// SOLOAS-COMPAT-END
         for (int32 I = 0; I < Definition.Num(); ++I)
             if (Identity->GetNameByIndex(I) != Definition[I].Key || Identity->GetValueByIndex(I) != Definition[I].Value) return false;
         return true;
@@ -375,7 +408,9 @@ struct FNativeEnumTypeWitness
     FName EnumName;
     const UObject* EnumOuter = nullptr;
     bool bFlags = false;
-    UEnum::EUnderlyingType UnderlyingKind = UEnum::EUnderlyingType::uint8;
+                                                                                                                                                  
+    SoloASBridge::Compat::EEnumStorage UnderlyingKind = SoloASBridge::Compat::EEnumStorage::uint8;
+// SOLOAS-COMPAT-END
     const FNumericProperty* Inner = nullptr;
     FFieldVariant InnerOwner;
     const FFieldClass* InnerClass = nullptr;
@@ -422,14 +457,16 @@ struct FNativeEnumTypeWitness
         if (!Scope || Scope->Epoch != Epoch || Index < 0 || Serial <= 0 || !Root.IsResolved()
             || Root.GetHandle() != Handle) return false;
         const FUObjectItem* Slot = GUObjectArray.IndexToObject(Index);
-        if (!Slot || Slot->GetSerialNumber() != Serial || Slot->GetObject() != Identity
+        if (!Slot || Slot->GetSerialNumber() != Serial || SoloASBridge::Compat::ObjectFromItem(Slot) != Identity
             || Slot->HasAnyFlags(EInternalObjectFlags::Garbage | EInternalObjectFlags::Unreachable)) return false;
         // Identity is safe to inspect only after the public slot/serial/address proof above.
         if (Identity->GetClass() != UEnum::StaticClass()
             || Identity->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed)
             || Identity->HasAnyEnumFlags(EEnumFlags::NewerVersionExists)
             || Identity->GetFName() != EnumName || Identity->GetOuter() != EnumOuter
-            || Identity->GetCppForm() != UEnum::ECppForm::EnumClass || Identity->GetUnderlyingType() != UnderlyingKind
+                                                                                                                                                  
+            || Identity->GetCppForm() != UEnum::ECppForm::EnumClass || SoloASBridge::Compat::EnumStorageForBinding(Identity, SoloASBridge::Compat::EEnumStorage::uint8) != UnderlyingKind
+// SOLOAS-COMPAT-END
             || Identity->HasAnyEnumFlags(EEnumFlags::Flags) != bFlags || Identity->NumEnums() != Definition.Num()) return false;
         for (int32 I = 0; I < Definition.Num(); ++I)
             if (Identity->GetNameByIndex(I) != Definition[I].Key || Identity->GetValueByIndex(I) != Definition[I].Value) return false;
@@ -444,7 +481,9 @@ struct FNativeEnumTypeWitness
         const FNumericProperty* Current = EnumField->GetUnderlyingProperty();
         if (Current != Inner || Current->GetOwnerVariant() != InnerOwner || Current->GetClass() != InnerClass
             || Current->GetFName() != InnerName || Current->GetPropertyFlags() != InnerFlags
-            || Current->ArrayDim != InnerArrayDim || Current->GetElementSize() != InnerSize
+                                                                                                              
+            || Current->ArrayDim != InnerArrayDim || SoloASBridge::Compat::GetPropertyElementSize(Current) != InnerSize
+                                                                                                            
             || Current->GetOffset_ForInternal() != InnerOffset) return false;
         if (!ScriptBinding.IsValid())
         {
@@ -502,14 +541,18 @@ struct FNativeEnumTypeWitness
                 || Identity->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed)
                 || Identity->HasAnyEnumFlags(EEnumFlags::NewerVersionExists)
                 || Identity->GetCppForm() != UEnum::ECppForm::EnumClass
-                || Identity->GetUnderlyingType() != UEnum::EUnderlyingType::uint8) return false;
+                                                                                                                                                  
+                || SoloASBridge::Compat::EnumStorageForBinding(Identity, SoloASBridge::Compat::EEnumStorage::uint8) != SoloASBridge::Compat::EEnumStorage::uint8) return false;
+// SOLOAS-COMPAT-END
             Index = GUObjectArray.ObjectToIndex(Identity);
             Serial = GUObjectArray.AllocateSerialNumber(Index);
             Handle = Root.GetHandle();
             EnumName = Identity->GetFName();
             EnumOuter = Identity->GetOuter();
             bFlags = Identity->HasAnyEnumFlags(EEnumFlags::Flags);
-            UnderlyingKind = Identity->GetUnderlyingType();
+                                                                                                                                                   
+            UnderlyingKind = SoloASBridge::Compat::EnumStorageForBinding(Identity, SoloASBridge::Compat::EEnumStorage::uint8);
+// SOLOAS-COMPAT-END
             for (int32 I = 0; I < Identity->NumEnums(); ++I)
                 Definition.Emplace(Identity->GetNameByIndex(I), Identity->GetValueByIndex(I));
             for (asUINT I = 0; I < Cookie->GetEnumValueCount(); ++I)
@@ -541,7 +584,9 @@ struct FNativeEnumTypeWitness
         InnerClass = Inner->GetClass();
         InnerName = Inner->GetFName();
         InnerFlags = Inner->GetPropertyFlags();
-        InnerSize = Inner->GetElementSize();
+                                                                                                              
+        InnerSize = SoloASBridge::Compat::GetPropertyElementSize(Inner);
+                                                                                                            
         InnerArrayDim = Inner->ArrayDim;
         InnerOffset = Inner->GetOffset_ForInternal();
         if (!ScriptBinding.IsValid()) InnerEnumHandle = CastFieldChecked<FByteProperty>(Inner)->Enum.GetHandle();
@@ -562,7 +607,9 @@ struct FNativeEnumTypeWitness
 bool IsQuietStringShape(const FProperty* Property)
 {
     return Property && Property->GetClass() == FStrProperty::StaticClass() && Property->ArrayDim == 1
-        && !Property->HasGetter() && !Property->HasSetter() && Property->GetElementSize() == sizeof(FString)
+                                                                                                              
+        && !Property->HasGetter() && !Property->HasSetter() && SoloASBridge::Compat::GetPropertyElementSize(Property) == sizeof(FString)
+                                                                                                            
         && Property->GetOffset_ForInternal() % alignof(FString) == 0;
 }
 
@@ -655,7 +702,9 @@ struct FNativeStringTypeWitness
         if (Cookie) return false;
         const auto* Scope = AngelscriptReloadSafety::GetPreparedPayloadReloadScope();
         if (!Scope) return false;
-        Shadow = MakeUnique<FStrProperty>(FFieldVariant(), NAME_None);
+                                                                                                                                                                   
+        Shadow = MakeUnique<FStrProperty>(FFieldVariant(), NAME_None, RF_NoFlags);
+// SOLOAS-COMPAT-END
         Type = CanonicalStringType(*Shadow);
         FAngelscriptTypeUsage Usage;
         Usage.Type = Type;
@@ -675,14 +724,18 @@ const FObjectProperty* QuietReferenceArrayLeaf(const FProperty* Property)
 {
     if (!Property || Property->GetClass() != FArrayProperty::StaticClass()
         || Property->ArrayDim != 1 || Property->HasGetter() || Property->HasSetter()
-        || Property->GetElementSize() != sizeof(FScriptArray)) return nullptr;
+                                                                                                              
+        || SoloASBridge::Compat::GetPropertyElementSize(Property) != sizeof(FScriptArray)) return nullptr;
+                                                                                                            
     const FArrayProperty* Array = CastFieldChecked<FArrayProperty>(Property);
     if (Array->ArrayFlags != EArrayPropertyFlags::None) return nullptr;
     const FProperty* Inner = Array->Inner;
     if (!Inner || Inner->GetClass() != FObjectProperty::StaticClass() || Inner->ArrayDim != 1
         || Inner->GetOwnerVariant() != FFieldVariant(const_cast<FProperty*>(Property))
         || Inner->GetOffset_ForInternal() != 0 || Inner->HasGetter() || Inner->HasSetter()
-        || Inner->GetElementSize() != sizeof(TObjectPtr<UObject>)
+                                                                                                              
+        || SoloASBridge::Compat::GetPropertyElementSize(Inner) != sizeof(TObjectPtr<UObject>)
+                                                                                                            
         || Inner->GetMinAlignment() != alignof(TObjectPtr<UObject>)
         || Inner->HasAnyPropertyFlags(CPF_SkipSerialization | CPF_Deprecated)) return nullptr;
     return CastFieldChecked<FObjectProperty>(Inner);
@@ -693,8 +746,8 @@ bool IsQuietReferenceArrayStorage(const FProperty* Property, const void* Address
     if (!QuietReferenceArrayLeaf(Property) || !Address
         || reinterpret_cast<UPTRINT>(Address) % alignof(FScriptArray) != 0) return false;
     const FScriptArray& Array = *static_cast<const FScriptArray*>(Address);
-    const int32 Count = Array.NumUnchecked();
-    return Count >= 0 && Array.Max() >= Count
+    const int32 Count = SoloASBridge::Compat::ScriptArrayNumUnchecked(Array);
+    return Count >= 0 && SoloASBridge::Compat::ScriptArrayCapacity(Array) >= Count
         && (!Count || (Array.GetData()
             && reinterpret_cast<UPTRINT>(Array.GetData()) % alignof(TObjectPtr<UObject>) == 0));
 }
@@ -714,12 +767,18 @@ bool IsQuietPayloadField(const FProperty* Property)
     if (!bNumeric && Class != FBoolProperty::StaticClass()
         && Class != FObjectProperty::StaticClass()) return false;
     if (Property->ArrayDim != 1 || Property->HasGetter() || Property->HasSetter()
-        || Property->GetElementSize() <= 0 || Property->GetElementSize() > 8) return false;
-    if (Class == FObjectProperty::StaticClass()) return Property->GetElementSize() == sizeof(TObjectPtr<UObject>);
+                                                                                                              
+        || SoloASBridge::Compat::GetPropertyElementSize(Property) <= 0 || SoloASBridge::Compat::GetPropertyElementSize(Property) > 8) return false;
+                                                                                                            
+                                                                                                               
+    if (Class == FObjectProperty::StaticClass()) return SoloASBridge::Compat::GetPropertyElementSize(Property) == sizeof(TObjectPtr<UObject>);
+                                                                                                             
     if (Class == FBoolProperty::StaticClass())
     {
         const FBoolProperty* Bool = CastFieldChecked<FBoolProperty>(Property);
-        return Bool->GetBoolFieldSize() && Bool->GetFieldMask() && Bool->GetByteOffset() < Property->GetElementSize();
+                                                                                                               
+        return SoloASBridge::Compat::GetBoolFieldSize(Bool) && Bool->GetFieldMask() && Bool->GetByteOffset() < SoloASBridge::Compat::GetPropertyElementSize(Property);
+                                                                                                             
     }
     return true;
 }
@@ -779,6 +838,312 @@ bool IsStableNativeObject(const UObject* Object, const TSet<const UClass*>& Repl
     return Object != nullptr;
 }
 
+
+bool IsRetiredPayloadDefault(const UObject* Object, const TSet<const UClass*>& ReplacementClasses)
+{
+    if (!Object->HasAnyFlags(RF_ClassDefaultObject)) return false;
+    const UClass* Class = Object->GetClass();
+    if (Class->GetDefaultObject(false) != Object || Class->HasAnyClassFlags(CLASS_NewerVersionExists)) return true;
+    const UBlueprint* Blueprint = Cast<UBlueprint>(Class->ClassGeneratedBy);
+    if (Blueprint && Blueprint->GeneratedClass != Class) return true;
+    return Cast<UASClass>(Class) && ReplacementClasses.Contains(Class);
+}
+
+bool IsBlueprintPayloadDefault(const UObject* Object)
+{
+    return Object && Object->HasAnyFlags(RF_ClassDefaultObject)
+        && Cast<UBlueprint>(Object->GetClass()->ClassGeneratedBy) != nullptr;
+}
+
+// Finds what can put a Blueprint on the reload's recompile list: a script field (type, function,
+// struct or enum) or another Blueprint whose own dependencies may be recompiled.
+class FBlueprintDependencyScan final : public FArchiveUObject
+{
+public:
+    using FArchiveUObject::operator<<;
+
+    explicit FBlueprintDependencyScan(UBlueprint* InBlueprint) : Blueprint(InBlueprint)
+    {
+        ArIsObjectReferenceCollector = true;
+        ArIgnoreOuterRef = true;
+        ArIgnoreArchetypeRef = true;
+        // Pin types report their type object only to archives that may rewrite references, as the reload's own
+        // dependency pass does. The pointer overloads below only read: no weak, soft or lazy pointer is resolved
+        // or written back, and a pin type stores back the object it has just read.
+        ArIsModifyingWeakAndStrongReferences = true;
+        TArray<UObject*> Objects;
+        GetObjectsWithOuter(InBlueprint, Objects, true);
+        InBlueprint->Serialize(*this);
+        for (UObject* Object : Objects)
+            if (!bDependent) Object->Serialize(*this);
+    }
+
+    virtual FArchive& operator<<(UObject*& Object) override
+    {
+        if (!Object || bDependent) return *this;
+        const UClass* Class = Cast<UClass>(Object);
+        bDependent = (Cast<UField>(Object) && Object->GetOutermost() == FAngelscriptManager::GetPackage())
+            || (Cast<UBlueprint>(Object) && Object != Blueprint)
+            || (Class && Class->ClassGeneratedBy && Class->ClassGeneratedBy.Get() != Blueprint);
+        return *this;
+    }
+
+    virtual FArchive& operator<<(FObjectPtr& Value) override
+    {
+        // An unresolved handle is not resolved here; it may name any dependency, so it counts as one.
+        if (!Value.IsResolved()) { bDependent = true; return *this; }
+        UObject* Object = Value.Get();
+        return *this << Object;
+    }
+
+    virtual FArchive& operator<<(FWeakObjectPtr& Value) override
+    {
+        UObject* Object = Value.Get(true);
+        return *this << Object;
+    }
+
+    virtual FArchive& operator<<(FSoftObjectPtr& Value) override
+    {
+        UObject* Object = Value.Get();
+        return *this << Object;
+    }
+
+    virtual FArchive& operator<<(FLazyObjectPtr& Value) override
+    {
+        UObject* Object = Value.Get();
+        return *this << Object;
+    }
+
+    // A path names no loaded field; the reload's own dependency pass does not follow it either.
+    virtual FArchive& operator<<(FSoftObjectPath&) override { return *this; }
+
+    bool bDependent = false;
+
+private:
+    const UBlueprint* Blueprint = nullptr;
+};
+
+// The Blueprints this reload may recompile. The reload compiles each Blueprint with a script field dependency or a
+// script or replaced ancestor, and its flush of the global compilation queue also compiles every Blueprint already
+// queued there. The engine then compiles, transitively:
+// - every Blueprint recorded as a dependent of one it compiles. UE only adds to that record
+//   (UBlueprint::CachedDependents), so it keeps a Blueprint whose reference was removed; a reference scan of that
+//   Blueprint alone cannot see it;
+// - every BS_Dirty Blueprint among the dependencies of one it compiles (UE 5.5+ out-of-date dependency pass, which
+//   reads UBlueprint::CachedDependencies, regathered when stale, with each macro library's dependencies);
+// - every Blueprint whose parent Blueprint it compiles.
+// Conservative: every scanned dependency counts, the cached record and a fresh gather both count, the dirty pass is
+// also assumed for UE 5.4 and for every compiled Blueprint, and the pass's filter for transient Blueprints is not applied.
+class FBlueprintRecompileSet
+{
+public:
+    // Why a Blueprint may be recompiled: the state of the Blueprint the reload compiles first, and each edge on the
+    // path from it.
+    enum EReason : uint8 { Direct = 1, Queued = 2, Recorded = 4, Dirty = 8, Parent = 16 };
+
+    explicit FBlueprintRecompileSet(const TSet<const UClass*>& InReplacementClasses) : ReplacementClasses(InReplacementClasses) {}
+
+    // A class generated by such a Blueprint, or derived from one, is reinstanced with its default.
+    bool MayRecompile(const UClass* Class)
+    {
+        UBlueprint* Nearest = nullptr;
+        for (const UClass* Cursor = Class; Cursor && !Nearest; Cursor = Cursor->GetSuperClass())
+            Nearest = Cast<UBlueprint>(Cursor->ClassGeneratedBy);
+        if (!Nearest) return false;
+        for (const UClass* Cursor = Class; Cursor; Cursor = Cursor->GetSuperClass())
+            if (IsReplacedOrScript(Cursor)) { Observed |= Direct; return true; }
+        return MayRecompile(Nearest);
+    }
+
+    bool MayRecompile(UBlueprint* Target)
+    {
+        const uint8 Reasons = FindReasons(Target);
+        Observed |= Reasons;
+        return Reasons != 0;
+    }
+
+    // The reasons of every positive answer so far.
+    uint8 ObservedReasons() const { return Observed; }
+
+private:
+    uint8 FindReasons(UBlueprint* Target)
+    {
+        if (const uint8* Known = Results.Find(Target)) return *Known;
+        if (!bIndexed) BuildIndex();
+        // Each pending Blueprint carries the edges of its path from Target.
+        TArray<TPair<UBlueprint*, uint8>> Pending;
+        Pending.Emplace(Target, uint8(0));
+        TSet<UBlueprint*> Seen{Target};
+        uint8 Reasons = 0;
+        for (int32 Index = 0; Index < Pending.Num() && !Reasons; ++Index)
+        {
+            UBlueprint* const Cursor = Pending[Index].Key;
+            const uint8 Path = Pending[Index].Value;
+            if (const uint8* Known = Results.Find(Cursor))
+            {
+                if (*Known) Reasons = uint8(Path | *Known);
+                continue; // A known negative already covers everything that leads to it.
+            }
+            if (const uint8 CursorReasons = OwnReasons(Cursor)) { Reasons = uint8(Path | CursorReasons); break; }
+            auto Follow = [&](UBlueprint* Source, uint8 Edge)
+            {
+                if (Source && !Seen.Contains(Source)) { Seen.Add(Source); Pending.Emplace(Source, uint8(Path | Edge)); }
+            };
+            for (const TPair<UBlueprint*, uint8>& Source : RecompiledBefore.FindRef(Cursor)) Follow(Source.Key, Source.Value);
+            for (const UClass* ParentClass = Cursor->ParentClass; ParentClass; ParentClass = ParentClass->GetSuperClass())
+                if (UBlueprint* ParentBlueprint = Cast<UBlueprint>(ParentClass->ClassGeneratedBy)) { Follow(ParentBlueprint, Parent); break; }
+        }
+        if (Reasons) Results.Add(Target, Reasons);
+        else for (UBlueprint* Cleared : Seen) Results.Add(Cleared, 0);
+        return Reasons;
+    }
+
+    // Edges from a Blueprint the engine compiles to one it compiles with it, inverted once per admission.
+    void BuildIndex()
+    {
+        bIndexed = true;
+        TArray<UBlueprint*> Blueprints;
+        bool bAnyDirty = false;
+        for (TObjectIterator<UBlueprint> It; It; ++It)
+        {
+            UBlueprint* Source = *It;
+            Blueprints.Add(Source);
+            bAnyDirty |= Source->Status == BS_Dirty;
+            // The same record the reload's dependency pass reads.
+            TArray<UBlueprint*> Dependents;
+            FBlueprintEditorUtils::GetDependentBlueprints(Source, Dependents);
+            for (UBlueprint* Dependent : Dependents)
+                if (Dependent && Dependent != Source) RecompiledBefore.FindOrAdd(Dependent).AddUnique(TPair<UBlueprint*, uint8>(Source, Recorded));
+        }
+        if (!bAnyDirty) return;
+        // The out-of-date dependency pass fully compiles each dirty dependency of a Blueprint it compiles.
+        for (UBlueprint* Source : Blueprints)
+            for (UBlueprint* Dependency : CompileDependencies(Source))
+                if (Dependency != Source && Dependency->Status == BS_Dirty)
+                    RecompiledBefore.FindOrAdd(Dependency).AddUnique(TPair<UBlueprint*, uint8>(Source, Dirty));
+    }
+
+    // The dependencies the out-of-date pass may read for a Blueprint, with each macro library's own dependencies.
+    TSet<UBlueprint*> CompileDependencies(UBlueprint* Blueprint)
+    {
+        TSet<UBlueprint*> Result;
+        TArray<UBlueprint*> Pending{Blueprint};
+        TSet<UBlueprint*> Expanded{Blueprint};
+        for (int32 Index = 0; Index < Pending.Num(); ++Index)
+            for (UBlueprint* Dependency : RecordedOrGathered(Pending[Index]))
+            {
+                Result.Add(Dependency);
+                if (Dependency->BlueprintType == BPTYPE_MacroLibrary && !Expanded.Contains(Dependency))
+                {
+                    Expanded.Add(Dependency);
+                    Pending.Add(Dependency);
+                }
+            }
+        return Result;
+    }
+
+    // The cached record and, for a loaded Blueprint, the same dependencies gathered afresh into a local set; the
+    // Blueprint's dependency cache and its status are left unchanged.
+    const TArray<UBlueprint*>& RecordedOrGathered(UBlueprint* Blueprint)
+    {
+        if (const TArray<UBlueprint*>* Known = Dependencies.Find(Blueprint)) return *Known;
+        TSet<TWeakObjectPtr<UBlueprint>> Gathered;
+        if (IsValid(Blueprint) && !Blueprint->IsUnreachable()
+            && !Blueprint->HasAnyFlags(RF_NeedLoad | RF_NeedPostLoad | RF_BeginDestroyed | RF_FinishDestroyed))
+        {
+            TSet<TWeakObjectPtr<UStruct>> Structs;
+            FBlueprintEditorUtils::GatherDependencies(Blueprint, Gathered, Structs);
+        }
+        TArray<UBlueprint*> Result;
+        for (const TSet<TWeakObjectPtr<UBlueprint>>* Record : {&Blueprint->CachedDependencies, &Gathered})
+            for (const TWeakObjectPtr<UBlueprint>& Weak : *Record)
+                if (UBlueprint* Dependency = Weak.Get()) Result.AddUnique(Dependency);
+        return Dependencies.Add(Blueprint, MoveTemp(Result));
+    }
+
+    bool IsReplacedOrScript(const UClass* Class) const
+    {
+        return Cast<UASClass>(Class) || ReplacementClasses.Contains(Class) || Class->HasAnyClassFlags(CLASS_NewerVersionExists);
+    }
+
+    // Read once per Blueprint and admission: a dependency the reload itself compiles, or an earlier queued compilation.
+    uint8 OwnReasons(UBlueprint* Blueprint)
+    {
+        if (const uint8* Known = Own.Find(Blueprint)) return *Known;
+        bool bDependent = false;
+        for (const UClass* Cursor = Blueprint->GeneratedClass ? Blueprint->GeneratedClass.Get() : Blueprint->ParentClass.Get();
+            Cursor && !bDependent; Cursor = Cursor->GetSuperClass())
+            bDependent = IsReplacedOrScript(Cursor);
+        if (!bDependent) bDependent = FBlueprintDependencyScan(Blueprint).bDependent;
+        const uint8 Reasons = uint8((bDependent ? Direct : 0) | (Blueprint->bQueuedForCompilation ? Queued : 0));
+        Own.Add(Blueprint, Reasons);
+        return Reasons;
+    }
+
+    const TSet<const UClass*>& ReplacementClasses;
+    TMap<UBlueprint*, TArray<TPair<UBlueprint*, uint8>>> RecompiledBefore;
+    TMap<UBlueprint*, TArray<UBlueprint*>> Dependencies;
+    TMap<UBlueprint*, uint8> Own;
+    TMap<UBlueprint*, uint8> Results;
+    uint8 Observed = 0;
+    bool bIndexed = false;
+};
+
+// Conservative: a script ancestor, a replaced ancestor, any script/Blueprint dependency, a queued compilation, or a
+// recorded dependent, dirty dependency or child edge from a Blueprint with one counts.
+bool MayRecompileBlueprintDefault(const UObject* Object, FBlueprintRecompileSet& Recompiles)
+{
+    return IsBlueprintPayloadDefault(Object) && Recompiles.MayRecompile(Object->GetClass());
+}
+
+// Blueprint compilation reinstances objects of a recompiled class, the templates its generated class owns
+// and the Blueprint's own objects; a stable identity inside any of them cannot be followed.
+bool MayRecompileOuter(const UObject* Outer, FBlueprintRecompileSet& Recompiles)
+{
+    if (Recompiles.MayRecompile(Outer->GetClass())) return true;
+    if (const UClass* Class = Cast<UClass>(Outer)) return Recompiles.MayRecompile(Class);
+    if (const UBlueprint* Blueprint = Cast<UBlueprint>(Outer)) return Recompiles.MayRecompile(const_cast<UBlueprint*>(Blueprint));
+    return false;
+}
+
+bool IsStablePayloadOwner(const UObject* Object, const TSet<const UClass*>& ReplacementClasses)
+{
+    if (!Object || !Object->HasAnyFlags(RF_ClassDefaultObject))
+        return IsStableNativeObject(Object, ReplacementClasses);
+    if (!IsValid(Object) || Object->IsUnreachable()
+        || Object->HasAnyFlags(RF_NeedInitialization | RF_NeedLoad | RF_NeedPostLoad | RF_BeginDestroyed | RF_FinishDestroyed)) return false;
+    const UClass* Class = Object->GetClass();
+    if (Class->GetDefaultObject(false) != Object) return false;
+    // A current Blueprint default is published and released when the lease attaches, before the
+    // engine recompiles it against a replaced script ancestor. Other defaults stay outside that domain.
+    const UBlueprint* Blueprint = Cast<UBlueprint>(Class->ClassGeneratedBy);
+    const bool bBlueprintDefault = Blueprint != nullptr;
+    if (Blueprint && Blueprint->GeneratedClass != Class) return false;
+    for (const UClass* Cursor = Class; Cursor; Cursor = Cursor->GetSuperClass())
+    {
+        const bool bReplacedAncestor = bBlueprintDefault && Cursor != Class && ReplacementClasses.Contains(Cursor);
+        if (!bReplacedAncestor && (ReplacementClasses.Contains(Cursor) || Cursor->HasAnyClassFlags(CLASS_NewerVersionExists)))
+            return false;
+    }
+    return true;
+}
+
+UClass* FindSoftPayloadOwnerClass(const UObject* Owner, const void*& Cookie)
+{
+    Cookie = nullptr;
+    if (!Owner || !Owner->HasAnyFlags(RF_ClassDefaultObject)) return nullptr;
+    for (UClass* Class = Owner->GetClass(); Class; Class = Class->GetSuperClass())
+        if (Cast<UASClass>(Class))
+        {
+            // Soft reconstruction recreates every default whose script object is this nearest script type.
+            const auto* Plan = AngelscriptReloadSafety::FindScriptObjectReloadPlan(Class);
+            if (!Plan || Plan->Kind != AngelscriptRuntimeGcMirror::EScriptObjectReloadPlan::SoftReconstruction) return nullptr;
+            Cookie = Plan->ExpectedCookie;
+            return Class;
+        }
+    return nullptr;
+}
+
 class FPayloadAdmission
 {
 public:
@@ -796,6 +1161,7 @@ public:
     bool Type(const FAngelscriptTypeUsage& Usage, bool bAllowDirectReferences = false)
     {
         if (!Usage.Type.IsValid()) return Reject(TEXT("Unresolved candidate payload type"));
+
         if (Usage.Type->IsObjectPointer() || Usage.Type->IsUnresolvedObjectPointer() || Usage.GetClass())
         {
             const FAngelscriptClassDesc* const* Candidate =
@@ -892,7 +1258,9 @@ public:
                                 && !Enum->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed)
                                 && Info->GetModule() == nullptr
                                 && (Enum->GetCppForm() != UEnum::ECppForm::EnumClass
-                                    || Enum->GetUnderlyingType() == UEnum::EUnderlyingType::uint8)) bQuietByteEnum = true;
+                                                                                                                                                   
+                                    || SoloASBridge::Compat::EnumStorageForBinding(*Enum, SoloASBridge::Compat::EEnumStorage::uint8) == SoloASBridge::Compat::EEnumStorage::uint8)) bQuietByteEnum = true;
+// SOLOAS-COMPAT-END
                     if (!bQuietByteEnum && !FindScriptEnumInput(const_cast<asITypeInfo*>(Info)))
                         return Reject(TEXT("Reference payload enum field has no complete quiet type identity"));
                 }
@@ -924,6 +1292,92 @@ public:
         return false;
     }
 
+    bool AdmitPayload(FConstStructView Payload, const FAngelscriptClassDesc& Candidate, UObject* Owner, bool bDirect)
+    {
+        const bool bReferenceRoute = ReferenceRoute(Payload.GetScriptStruct(), Candidate);
+        if (bReferenceRoute)
+        {
+            if (!Owner || !bDirect || !IsStablePayloadOwner(Owner, ReplacementClasses))
+                return Reject(TEXT("Reference payload reload requires a direct stable native owner"));
+            if (!ArePayloadFieldsSerializable(Payload.GetScriptStruct()))
+                return Reject(TEXT("Existing reference payload fields are not completely serializable"));
+            FString SchemaError;
+            if (!IsReferencePayloadSchema(Payload.GetScriptStruct(), &SchemaError))
+                return Reject(*(TEXT("Reference payload schema requires scalar or direct strong object fields: ") + SchemaError));
+            if (!Schema(Candidate, true)) return false;
+            for (TFieldIterator<FProperty> Field(Payload.GetScriptStruct()); Field; ++Field)
+            {
+                const FObjectProperty* Leaf = Field->GetClass() == FObjectProperty::StaticClass()
+                    ? CastFieldChecked<FObjectProperty>(*Field) : QuietReferenceArrayLeaf(*Field);
+                if (!Leaf) continue;
+                const FAngelscriptPropertyDesc* NewField = nullptr;
+                for (const auto& Property : Candidate.Properties)
+                {
+                    const FString& Name = Property->UnrealPropertyNameOverride.IsSet()
+                        ? Property->UnrealPropertyNameOverride.GetValue() : Property->PropertyName;
+                    if (FName(*Name) == Field->GetFName()) { NewField = &Property.Get(); break; }
+                }
+                if (!NewField) return Reject(TEXT("Reference payload reload must retain every old reference field"));
+                const FAngelscriptTypeUsage* Usage = &NewField->PropertyType;
+                if (Field->GetClass() == FArrayProperty::StaticClass())
+                {
+                    if (!Usage->Type.IsValid() || Usage->Type->GetAngelscriptTypeName(*Usage) != TEXT("TArray")
+                        || Usage->SubTypes.Num() != 1)
+                        return Reject(TEXT("Reference payload reload must retain the object array field shape"));
+                    Usage = &Usage->SubTypes[0];
+                }
+                if (!Usage->Type.IsValid() || !Usage->Type->IsObjectPointer()
+                    || Usage->Type->IsUnresolvedObjectPointer() || !Usage->SubTypes.IsEmpty())
+                    return Reject(TEXT("Reference payload reload must retain every strong object leaf"));
+                UClass* ExpectedClass = Usage->GetClass();
+                auto AdmitReference = [&](UObject* Reference)
+                {
+                    if (!Reference) return true;
+                    if (!IsValid(Reference) || Reference->IsUnreachable()
+                        || Reference->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed))
+                        return Reject(TEXT("Payload reference is not a live object identity"));
+                    if (ExpectedClass && !Reference->IsA(ExpectedClass))
+                        return Reject(TEXT("Reference payload candidate class is incompatible with the saved identity"));
+                    const UASClass* ScriptClass = Cast<UASClass>(Reference->GetClass());
+                    if (ScriptClass && ReplacementClasses.Contains(ScriptClass)
+                        && !Reference->IsTemplate() && !Reference->HasAnyFlags(
+                            RF_ClassDefaultObject | RF_ArchetypeObject | RF_DefaultSubObject)) return true;
+                    if (ScriptClass)
+                    {
+                        const auto* Scope = AngelscriptReloadSafety::GetPreparedPayloadReloadScope();
+                        const auto* Plan = AngelscriptReloadSafety::FindScriptObjectReloadPlan(Reference->GetClass());
+                        AngelscriptRuntimeGcMirror::FLiveScriptReferenceWitness Witness;
+                        return Scope && Plan && AngelscriptRuntimeGcMirror::CaptureLiveScriptReferenceWitness(
+                            Reference, *Plan, Scope->Epoch, Witness, Error);
+                    }
+                    return IsStableNativeObject(Reference, ReplacementClasses)
+                        || Reject(TEXT("Payload reference has no stable native or ordinary replacement identity"));
+                };
+                if (Field->GetClass() == FArrayProperty::StaticClass())
+                {
+                    const FArrayProperty* Array = CastFieldChecked<FArrayProperty>(*Field);
+                    if (!IsQuietReferenceArrayStorage(Array, Array->ContainerPtrToValuePtr<void>(Payload.GetMemory())))
+                        return Reject(TEXT("Payload reference array has invalid storage"));
+                    FScriptArrayHelper Values(Array, Array->ContainerPtrToValuePtr<void>(Payload.GetMemory()));
+                    const int32 Count = Values.Num();
+                    if (Count < 0) return Reject(TEXT("Payload reference array has invalid storage"));
+                    for (int32 Element = 0; Element < Count; ++Element)
+                    {
+                        if (!IsQuietReferenceArrayStorage(Array, Array->ContainerPtrToValuePtr<void>(Payload.GetMemory())))
+                            return Reject(TEXT("Payload reference array storage changed during admission"));
+                        FScriptArrayHelper Current(Array, Array->ContainerPtrToValuePtr<void>(Payload.GetMemory()));
+                        if (Current.Num() != Count) return Reject(TEXT("Payload reference array length changed during admission"));
+                        if (!AdmitReference(Leaf->GetObjectPropertyValue(Current.GetRawPtr(Element))))
+                            return false;
+                    }
+                }
+                else if (!AdmitReference(Leaf->GetObjectPropertyValue_InContainer(Payload.GetMemory()))) return false;
+            }
+        }
+        else if (!Schema(Candidate)) return false;
+        return true;
+    }
+
     bool Storage(const UStruct* Struct, const void* Data, UObject* Owner = nullptr)
     {
         if (ActiveStorage.Contains(Data)) return Reject(TEXT("Cyclic dynamic payload storage before module swap"));
@@ -931,96 +1385,45 @@ public:
         ON_SCOPE_EXIT { ActiveStorage.Remove(Data); };
         for (FPropertyValueIterator It(FStructProperty::StaticClass(), Struct, Data); It; ++It)
         {
-            if (CastFieldChecked<FStructProperty>(It.Key())->Struct != FInstancedStruct::StaticStruct()) continue;
+            const UScriptStruct* StorageType = CastFieldChecked<FStructProperty>(It.Key())->Struct;
+            if (StorageType == FInstancedStructContainer::StaticStruct())
+            {
+                It.SkipRecursiveProperty();
+                const FInstancedStructContainer& Container = *static_cast<const FInstancedStructContainer*>(It.Value());
+                bool bReferenceRoot = false;
+                for (int32 Index = 0; Index < Container.Num(); ++Index)
+                    if (const auto* Candidate = Replaced.Find(Container[Index].GetScriptStruct()))
+                        bReferenceRoot |= ReferenceRoute(Container[Index].GetScriptStruct(), **Candidate);
+                TArray<const FProperty*> Chain;
+                It.GetPropertyChain(Chain);
+                const bool bDirect = Chain.Num() == 1 && Chain.Last()->ArrayDim == 1;
+                if (bReferenceRoot && (!Owner || !Owner->HasAnyFlags(RF_ClassDefaultObject)
+                    || !bDirect || !IsStablePayloadOwner(Owner, ReplacementClasses)))
+                    return Reject(TEXT("Reference container reload requires a direct stable default owner"));
+                for (int32 Index = 0; Index < Container.Num(); ++Index)
+                {
+                    const FConstStructView Slot = Container[Index];
+                    if (!Slot.IsValid()) continue;
+                    if (const FAngelscriptClassDesc* const* Candidate = Replaced.Find(Slot.GetScriptStruct()))
+                    {
+                        if (bReferenceRoot && (!IsReferencePayloadSchema(Slot.GetScriptStruct()) || !Schema(**Candidate, true)))
+                            return Reject(TEXT("Reference container reload requires quiet affected slot schemas"));
+                        if (!AdmitPayload(Slot, **Candidate, Owner, bDirect)) return false;
+                    }
+                    if (!Storage(Slot.GetScriptStruct(), Slot.GetMemory())) return false;
+                }
+                continue;
+            }
+            if (StorageType != FInstancedStruct::StaticStruct()) continue;
             It.SkipRecursiveProperty();
             const FInstancedStruct& Payload = *static_cast<const FInstancedStruct*>(It.Value());
             if (!Payload.IsValid()) continue;
             if (const FAngelscriptClassDesc* const* Candidate = Replaced.Find(Payload.GetScriptStruct()))
             {
-                const bool bReferenceRoute = ReferenceRoute(Payload.GetScriptStruct(), **Candidate);
-                if (bReferenceRoute)
-                {
-                    TArray<const FProperty*> Chain;
-                    It.GetPropertyChain(Chain);
-                    if (!Owner || Chain.Num() != 1 || Chain.Last()->ArrayDim != 1
-                        || !IsStableNativeObject(Owner, ReplacementClasses))
-                        return Reject(TEXT("Reference payload reload requires a direct stable native owner"));
-                    if (!ArePayloadFieldsSerializable(Payload.GetScriptStruct()))
-                        return Reject(TEXT("Existing reference payload fields are not completely serializable"));
-                    FString SchemaError;
-                    if (!IsReferencePayloadSchema(Payload.GetScriptStruct(), &SchemaError))
-                        return Reject(*(TEXT("Reference payload schema requires scalar or direct strong object fields: ") + SchemaError));
-                    if (!Schema(**Candidate, true)) return false;
-                    for (TFieldIterator<FProperty> Field(Payload.GetScriptStruct()); Field; ++Field)
-                    {
-                        const FObjectProperty* Leaf = Field->GetClass() == FObjectProperty::StaticClass()
-                            ? CastFieldChecked<FObjectProperty>(*Field) : QuietReferenceArrayLeaf(*Field);
-                        if (!Leaf) continue;
-                        const FAngelscriptPropertyDesc* NewField = nullptr;
-                        for (const auto& Property : (*Candidate)->Properties)
-                        {
-                            const FString& Name = Property->UnrealPropertyNameOverride.IsSet()
-                                ? Property->UnrealPropertyNameOverride.GetValue() : Property->PropertyName;
-                            if (FName(*Name) == Field->GetFName()) { NewField = &Property.Get(); break; }
-                        }
-                        if (!NewField) return Reject(TEXT("Reference payload reload must retain every old reference field"));
-                        const FAngelscriptTypeUsage* Usage = &NewField->PropertyType;
-                        if (Field->GetClass() == FArrayProperty::StaticClass())
-                        {
-                            if (!Usage->Type.IsValid() || Usage->Type->GetAngelscriptTypeName(*Usage) != TEXT("TArray")
-                                || Usage->SubTypes.Num() != 1)
-                                return Reject(TEXT("Reference payload reload must retain the object array field shape"));
-                            Usage = &Usage->SubTypes[0];
-                        }
-                        if (!Usage->Type.IsValid() || !Usage->Type->IsObjectPointer()
-                            || Usage->Type->IsUnresolvedObjectPointer() || !Usage->SubTypes.IsEmpty())
-                            return Reject(TEXT("Reference payload reload must retain every strong object leaf"));
-                        UClass* ExpectedClass = Usage->GetClass();
-                        auto AdmitReference = [&](UObject* Reference)
-                        {
-                            if (!Reference) return true;
-                            if (!IsValid(Reference) || Reference->IsUnreachable()
-                                || Reference->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed))
-                                return Reject(TEXT("Payload reference is not a live object identity"));
-                            if (ExpectedClass && !Reference->IsA(ExpectedClass))
-                                return Reject(TEXT("Reference payload candidate class is incompatible with the saved identity"));
-                            const UASClass* ScriptClass = Cast<UASClass>(Reference->GetClass());
-                            if (ScriptClass && ReplacementClasses.Contains(ScriptClass)
-                                && !Reference->IsTemplate() && !Reference->HasAnyFlags(
-                                    RF_ClassDefaultObject | RF_ArchetypeObject | RF_DefaultSubObject)) return true;
-                            if (ScriptClass)
-                            {
-                                const auto* Scope = AngelscriptReloadSafety::GetPreparedPayloadReloadScope();
-                                const auto* Plan = AngelscriptReloadSafety::FindScriptObjectReloadPlan(Reference->GetClass());
-                                AngelscriptRuntimeGcMirror::FLiveScriptReferenceWitness Witness;
-                                return Scope && Plan && AngelscriptRuntimeGcMirror::CaptureLiveScriptReferenceWitness(
-                                    Reference, *Plan, Scope->Epoch, Witness, Error);
-                            }
-                            return IsStableNativeObject(Reference, ReplacementClasses)
-                                || Reject(TEXT("Payload reference has no stable native or ordinary replacement identity"));
-                        };
-                        if (Field->GetClass() == FArrayProperty::StaticClass())
-                        {
-                            const FArrayProperty* Array = CastFieldChecked<FArrayProperty>(*Field);
-                            if (!IsQuietReferenceArrayStorage(Array, Array->ContainerPtrToValuePtr<void>(Payload.GetMemory())))
-                                return Reject(TEXT("Payload reference array has invalid storage"));
-                            FScriptArrayHelper Values(Array, Array->ContainerPtrToValuePtr<void>(Payload.GetMemory()));
-                            const int32 Count = Values.Num();
-                            if (Count < 0) return Reject(TEXT("Payload reference array has invalid storage"));
-                            for (int32 Element = 0; Element < Count; ++Element)
-                            {
-                                if (!IsQuietReferenceArrayStorage(Array, Array->ContainerPtrToValuePtr<void>(Payload.GetMemory())))
-                                    return Reject(TEXT("Payload reference array storage changed during admission"));
-                                FScriptArrayHelper Current(Array, Array->ContainerPtrToValuePtr<void>(Payload.GetMemory()));
-                                if (Current.Num() != Count) return Reject(TEXT("Payload reference array length changed during admission"));
-                                if (!AdmitReference(Leaf->GetObjectPropertyValue(Current.GetRawPtr(Element))))
-                                    return false;
-                            }
-                        }
-                        else if (!AdmitReference(Leaf->GetObjectPropertyValue_InContainer(Payload.GetMemory()))) return false;
-                    }
-                }
-                else if (!Schema(**Candidate)) return false;
+                TArray<const FProperty*> Chain;
+                It.GetPropertyChain(Chain);
+                if (!AdmitPayload(FConstStructView(Payload), **Candidate, Owner,
+                    Chain.Num() == 1 && Chain.Last()->ArrayDim == 1)) return false;
             }
             if (!Storage(Payload.GetScriptStruct(), Payload.GetMemory())) return false;
         }
@@ -1035,9 +1438,30 @@ bool ContainsReloadPayload(const UStruct* Struct, const void* Data,
     Active.Add(Data);
     ON_SCOPE_EXIT { Active.Remove(Data); };
     bool Found = false;
+    if (Struct == FInstancedStructContainer::StaticStruct())
+    {
+        const FInstancedStructContainer& Container = *static_cast<const FInstancedStructContainer*>(Data);
+        for (int32 Index = 0; Index < Container.Num(); ++Index)
+        {
+            const FConstStructView Slot = Container[Index];
+            if (!Slot.IsValid()) continue;
+            Found |= Replacements.Contains(const_cast<UScriptStruct*>(Slot.GetScriptStruct()));
+            Found |= ContainsReloadPayload(Slot.GetScriptStruct(), Slot.GetMemory(), Replacements, Active, Error);
+            if (!Error.IsEmpty()) return false;
+        }
+        return Found;
+    }
     for (FPropertyValueIterator It(FStructProperty::StaticClass(), Struct, Data); It; ++It)
     {
-        if (CastFieldChecked<FStructProperty>(It.Key())->Struct != FInstancedStruct::StaticStruct()) continue;
+        const UScriptStruct* StorageType = CastFieldChecked<FStructProperty>(It.Key())->Struct;
+        if (StorageType == FInstancedStructContainer::StaticStruct())
+        {
+            It.SkipRecursiveProperty();
+            Found |= ContainsReloadPayload(StorageType, It.Value(), Replacements, Active, Error);
+            if (!Error.IsEmpty()) return false;
+            continue;
+        }
+        if (StorageType != FInstancedStruct::StaticStruct()) continue;
         It.SkipRecursiveProperty();
         const FInstancedStruct& Payload = *static_cast<const FInstancedStruct*>(It.Value());
         if (!Payload.IsValid()) continue;
@@ -1081,43 +1505,21 @@ public:
     {
         if (const FStructProperty* Field = CastField<FStructProperty>(Property))
         {
-            if (Field->Struct != FInstancedStruct::StaticStruct()) return Struct(Field->Struct, Data);
-            FInstancedStruct& Payload = *static_cast<FInstancedStruct*>(Data);
-            if (!Payload.IsValid()) return true;
-            if (ActivePayloads.Contains(Data)) return Fail(TEXT("Cyclic prepared script payload storage"));
-            ActivePayloads.Add(Data);
-            ON_SCOPE_EXIT { ActivePayloads.Remove(Data); };
-            UScriptStruct* Old = const_cast<UScriptStruct*>(Payload.GetScriptStruct());
-            if (UScriptStruct* const* Target = Replacements.Find(Old))
+            if (Field->Struct == FInstancedStructContainer::StaticStruct())
             {
-                UASStruct* OldScript = Cast<UASStruct>(Old);
-                UASStruct* NewScript = Cast<UASStruct>(*Target);
-                if (!OldScript || !NewScript || OldScript == NewScript || OldScript->NewerVersion != NewScript
-                    || NewScript->ResolveNewestStruct() != NewScript)
-                    return Fail(TEXT("Invalid script payload replacement chain"));
-                TArray<const FStructProperty*> Encountered;
-                for (TFieldIterator<FProperty> It(Old); It; ++It)
-                    if (It->ContainsObjectReference(Encountered, EPropertyObjectReferenceType_Any))
-                        return Fail(TEXT("Reference-bearing payload migration requires a validated instance replacement route"));
-                Encountered.Reset();
-                for (TFieldIterator<FProperty> It(NewScript); It; ++It)
-                    if (It->ContainsObjectReference(Encountered, EPropertyObjectReferenceType_Any))
-                        return Fail(TEXT("Reference-bearing replacement payload is not admitted"));
-                TArray<uint8> Bytes;
-                FMemoryWriter Writer(Bytes, false);
-                FObjectAndNameAsStringProxyArchive Save(Writer, false);
-                Save.ArNoDelta = true;
-                Old->SerializeTaggedProperties(Save, Payload.GetMutableMemory(), nullptr, nullptr);
-                if (Save.IsError()) return Fail(TEXT("Script payload tagged save failed"));
-                FInstancedStruct Replacement;
-                Replacement.InitializeAs(NewScript);
-                FMemoryReader Reader(Bytes, false);
-                FObjectAndNameAsStringProxyArchive Load(Reader, false);
-                NewScript->SerializeTaggedProperties(Load, Replacement.GetMutableMemory(), nullptr, nullptr);
-                if (Load.IsError() || Reader.Tell() != Bytes.Num()) return Fail(TEXT("Script payload tagged load failed"));
-                Payload = MoveTemp(Replacement);
+                FInstancedStructContainer& Container = *static_cast<FInstancedStructContainer*>(Data);
+                TArray<FInstancedStruct> Values;
+                Values.Reserve(Container.Num());
+                for (int32 Index = 0; Index < Container.Num(); ++Index)
+                {
+                    FInstancedStruct& Slot = Values.Emplace_GetRef(FConstStructView(Container[Index]));
+                    if (!Payload(Slot)) return false;
+                }
+                Container = MakeArrayView(Values);
+                return true;
             }
-            return Struct(Payload.GetScriptStruct(), Payload.GetMutableMemory());
+            if (Field->Struct != FInstancedStruct::StaticStruct()) return Struct(Field->Struct, Data);
+            return Payload(*static_cast<FInstancedStruct*>(Data));
         }
         if (const FOptionalProperty* Optional = CastField<FOptionalProperty>(Property))
         {
@@ -1168,9 +1570,55 @@ public:
         return true;
     }
 
+    bool Payload(FInstancedStruct& Payload)
+    {
+        if (!Payload.IsValid()) return true;
+        if (ActivePayloads.Contains(&Payload)) return Fail(TEXT("Cyclic prepared script payload storage"));
+        ActivePayloads.Add(&Payload);
+        ON_SCOPE_EXIT { ActivePayloads.Remove(&Payload); };
+        UScriptStruct* Old = const_cast<UScriptStruct*>(Payload.GetScriptStruct());
+        if (UScriptStruct* const* Target = Replacements.Find(Old))
+        {
+            UASStruct* OldScript = Cast<UASStruct>(Old);
+            UASStruct* NewScript = Cast<UASStruct>(*Target);
+            if (!OldScript || !NewScript || OldScript == NewScript || OldScript->NewerVersion != NewScript
+                || NewScript->ResolveNewestStruct() != NewScript)
+                return Fail(TEXT("Invalid script payload replacement chain"));
+            TArray<const FStructProperty*> Encountered;
+            for (TFieldIterator<FProperty> It(Old); It; ++It)
+                                                                                                                                                   
+                if (It->ContainsObjectReference(Encountered, SoloASBridge::Compat::AnyObjectReferences))
+// SOLOAS-COMPAT-END
+                    return Fail(TEXT("Reference-bearing payload migration requires a validated instance replacement route"));
+            Encountered.Reset();
+            for (TFieldIterator<FProperty> It(NewScript); It; ++It)
+                                                                                                                                                   
+                if (It->ContainsObjectReference(Encountered, SoloASBridge::Compat::AnyObjectReferences))
+// SOLOAS-COMPAT-END
+                    return Fail(TEXT("Reference-bearing replacement payload is not admitted"));
+            TArray<uint8> Bytes;
+            FMemoryWriter Writer(Bytes, false);
+            FObjectAndNameAsStringProxyArchive Save(Writer, false);
+            Save.ArNoDelta = true;
+            Old->SerializeTaggedProperties(Save, Payload.GetMutableMemory(), nullptr, nullptr);
+            if (Save.IsError()) return Fail(TEXT("Script payload tagged save failed"));
+            FInstancedStruct Replacement;
+            Replacement.InitializeAs(NewScript);
+            FMemoryReader Reader(Bytes, false);
+            FObjectAndNameAsStringProxyArchive Load(Reader, false);
+            NewScript->SerializeTaggedProperties(Load, Replacement.GetMutableMemory(), nullptr, nullptr);
+            if (Load.IsError() || Reader.Tell() != Bytes.Num()) return Fail(TEXT("Script payload tagged load failed"));
+            Payload = MoveTemp(Replacement);
+        }
+        return Struct(Payload.GetScriptStruct(), Payload.GetMutableMemory());
+    }
+
     bool Fail(const TCHAR* Message) { Error = Message; return false; }
 };
 }
+
+// Defined with the serialized type-reference snapshots in ClassReloadHelper.cpp.
+bool FindCollectorOnlyScriptStructReference(const TSet<UObject*>& PreviousStructs, FString& OutCarrier);
 
 bool ValidateInstancedStructReload(const TArray<FAngelscriptPayloadReloadType>& Types, FString& Error)
 {
@@ -1186,9 +1634,10 @@ bool ValidateInstancedStructReload(const TArray<FAngelscriptPayloadReloadType>& 
         if (Type.bWillReplaceObjectClass) Admission.ReplacementClasses.Add(Type.PreviousObjectClass);
     }
     if (Admission.Replaced.IsEmpty()) return true;
-    for (TObjectIterator<UObject> It; It; ++It)
+    for (TObjectIterator<UObject> It(RF_NoFlags); It; ++It)
     {
         UObject* Owner = *It;
+        if (IsRetiredPayloadDefault(Owner, Admission.ReplacementClasses)) continue;
         if (Owner->IsUnreachable() || Owner->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed)) continue;
         if (const UDataTable* Table = Cast<UDataTable>(Owner))
         {
@@ -1202,6 +1651,12 @@ bool ValidateInstancedStructReload(const TArray<FAngelscriptPayloadReloadType>& 
         }
         if (!Admission.Storage(Owner->GetClass(), Owner, Owner)) return false;
     }
+    TSet<UObject*> PreviousStructs;
+    for (const TPair<const UScriptStruct*, const FAngelscriptClassDesc*>& Replaced : Admission.Replaced)
+        PreviousStructs.Add(const_cast<UScriptStruct*>(Replaced.Key));
+    FString Carrier;
+    if (FindCollectorOnlyScriptStructReference(PreviousStructs, Carrier))
+        return Admission.Reject(*(TEXT("Collector-only script payload reference is not admitted: ") + Carrier));
     return FInstancedStructReloadScope::CaptureAdmission(Types, Error);
 }
 
@@ -1211,24 +1666,55 @@ bool MigrateInstancedStructsForReload(const TMap<UScriptStruct*, UScriptStruct*>
     if (Replacements.IsEmpty()) return true;
     if (!IsInGameThread()) { Error = TEXT("Script payload migration requires the game thread"); return false; }
     TArray<TUniquePtr<FPreparedProperty>> Prepared;
-    FPayloadMigration Migration{Replacements, Error, {}};
-    for (TObjectIterator<UObject> It; It; ++It)
+    TMap<UScriptStruct*, UScriptStruct*> ScalarReplacements;
+    for (const auto& Pair : Replacements)
+        if (!HasSchemaReferences(Pair.Key) && !HasSchemaReferences(Pair.Value))
+            ScalarReplacements.Add(Pair.Key, Pair.Value);
+    TMap<UScriptStruct*, UScriptStruct*> ReferenceReplacements;
+    for (const auto& Pair : Replacements)
+        if (!ScalarReplacements.Contains(Pair.Key)) ReferenceReplacements.Add(Pair.Key, Pair.Value);
+    FPayloadMigration InstanceMigration{Replacements, Error, {}};
+    FPayloadMigration DefaultMigration{ScalarReplacements, Error, {}};
+    for (TObjectIterator<UObject> It(RF_NoFlags); It; ++It)
     {
         UObject* Owner = *It;
+        // Retired script defaults belong to the class replacement transaction.
+        // Stable native/Blueprint defaults must migrate with ordinary reflected owners.
+        if (IsRetiredPayloadDefault(Owner, {})) continue;
         if (Owner->IsUnreachable() || Owner->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed)) continue;
+        FPayloadMigration& Migration = Owner->HasAnyFlags(RF_ClassDefaultObject)
+            ? DefaultMigration : InstanceMigration;
+        const auto& OwnerReplacements = Migration.Replacements;
         TSet<const FProperty*> Roots;
         for (FPropertyValueIterator Value(FStructProperty::StaticClass(), Owner->GetClass(), Owner); Value; ++Value)
         {
-            if (CastFieldChecked<FStructProperty>(Value.Key())->Struct != FInstancedStruct::StaticStruct()) continue;
+            const UScriptStruct* StorageType = CastFieldChecked<FStructProperty>(Value.Key())->Struct;
+            if (StorageType == FInstancedStructContainer::StaticStruct())
+            {
+                Value.SkipRecursiveProperty();
+                TSet<const void*> Active;
+                if (Owner->HasAnyFlags(RF_ClassDefaultObject)
+                    && ContainsReloadPayload(StorageType, Value.Value(), ReferenceReplacements, Active, Error)) continue;
+                const bool Affected = ContainsReloadPayload(StorageType, Value.Value(), OwnerReplacements, Active, Error);
+                if (!Error.IsEmpty()) return false;
+                if (Affected)
+                {
+                    TArray<const FProperty*> Chain;
+                    Value.GetPropertyChain(Chain);
+                    Roots.Add(Chain.Last());
+                }
+                continue;
+            }
+            if (StorageType != FInstancedStruct::StaticStruct()) continue;
             Value.SkipRecursiveProperty();
             const FInstancedStruct& Payload = *static_cast<const FInstancedStruct*>(Value.Value());
             if (!Payload.IsValid()) continue;
-            if (UScriptStruct* const* Target = Replacements.Find(const_cast<UScriptStruct*>(Payload.GetScriptStruct())))
+            if (UScriptStruct* const* Target = OwnerReplacements.Find(const_cast<UScriptStruct*>(Payload.GetScriptStruct())))
                 if (HasSchemaReferences(Payload.GetScriptStruct()) || HasSchemaReferences(*Target)) continue;
             TSet<const void*> Active;
-            const bool Nested = ContainsReloadPayload(Payload.GetScriptStruct(), Payload.GetMemory(), Replacements, Active, Error);
+            const bool Nested = ContainsReloadPayload(Payload.GetScriptStruct(), Payload.GetMemory(), OwnerReplacements, Active, Error);
             if (!Error.IsEmpty()) return false;
-            if (!Replacements.Contains(const_cast<UScriptStruct*>(Payload.GetScriptStruct())) && !Nested) continue;
+            if (!OwnerReplacements.Contains(const_cast<UScriptStruct*>(Payload.GetScriptStruct())) && !Nested) continue;
             TArray<const FProperty*> Chain;
             Value.GetPropertyChain(Chain);
             Roots.Add(Chain.Last());
@@ -1237,7 +1723,9 @@ bool MigrateInstancedStructsForReload(const TMap<UScriptStruct*, UScriptStruct*>
         {
             TUniquePtr<FPreparedProperty> Item = MakeUnique<FPreparedProperty>(Owner, Property);
             for (int32 Index = 0; Index < Property->ArrayDim; ++Index)
-                if (!Migration.Value(Property, static_cast<uint8*>(Item->Value) + Index * Property->GetElementSize()))
+                                                                                                               
+                if (!Migration.Value(Property, static_cast<uint8*>(Item->Value) + Index * SoloASBridge::Compat::GetPropertyElementSize(Property)))
+                                                                                                             
                 {
                     Error = Owner->GetPathName() + TEXT(".") + Property->GetName() + TEXT(": ") + Error;
                     return false;
@@ -1329,7 +1817,9 @@ struct FPayloadFieldSnapshot
         Name = Field->GetFName();
         Flags = Field->GetPropertyFlags();
         Offset = Field->GetOffset_ForInternal();
-        Size = Field->GetElementSize();
+                                                                                                               
+        Size = SoloASBridge::Compat::GetPropertyElementSize(Field);
+                                                                                                             
         if (Class == FStrProperty::StaticClass())
         {
             if (!InStringWitness.IsValid() || !InStringWitness->Matches()) return false;
@@ -1347,7 +1837,9 @@ struct FPayloadFieldSnapshot
             if (!ArrayInner) return false;
             ArrayInnerFlags = ArrayInner->GetPropertyFlags();
             ArrayInnerName = ArrayInner->GetFName();
-            ArrayInnerSize = ArrayInner->GetElementSize();
+                                                                                                               
+            ArrayInnerSize = SoloASBridge::Compat::GetPropertyElementSize(ArrayInner);
+                                                                                                             
             ObjectClass = ArrayInner->PropertyClass;
             if (!ObjectClass.IsResolved()) return false;
             ObjectClassHandle = ObjectClass.GetHandle();
@@ -1369,8 +1861,8 @@ struct FPayloadFieldSnapshot
             const FBoolProperty* Bool = CastFieldChecked<FBoolProperty>(Field);
             BoolMask = Bool->GetFieldMask();
             BoolOffset = Bool->GetByteOffset();
-            BoolByteMask = Bool->GetByteMask();
-            BoolSize = Bool->GetBoolFieldSize();
+            BoolByteMask = SoloASBridge::Compat::GetBoolByteMask(Bool);
+            BoolSize = SoloASBridge::Compat::GetBoolFieldSize(Bool);
         }
         return true;
     }
@@ -1379,14 +1871,18 @@ struct FPayloadFieldSnapshot
     {
         if (Field != Property || !IsQuietPayloadField(Field) || Field->GetOwnerStruct() != Owner
             || Field->GetClass() != Class || Field->GetFName() != Name || Field->GetPropertyFlags() != Flags
-            || Field->GetOffset_ForInternal() != Offset || Field->GetElementSize() != Size) return false;
+                                                                                                               
+            || Field->GetOffset_ForInternal() != Offset || SoloASBridge::Compat::GetPropertyElementSize(Field) != Size) return false;
+                                                                                                             
         if (Class == FStrProperty::StaticClass()) return StringWitness.IsValid() && StringWitness->Matches();
         if (Class == FEnumProperty::StaticClass()) return EnumWitness.IsValid() && EnumWitness->Matches(Field);
         if (Class == FArrayProperty::StaticClass())
         {
             const FObjectProperty* Inner = QuietReferenceArrayLeaf(Field);
             return Inner == ArrayInner && Inner->GetFName() == ArrayInnerName
-                && Inner->GetPropertyFlags() == ArrayInnerFlags && Inner->GetElementSize() == ArrayInnerSize
+                                                                                                               
+                && Inner->GetPropertyFlags() == ArrayInnerFlags && SoloASBridge::Compat::GetPropertyElementSize(Inner) == ArrayInnerSize
+                                                                                                             
                 && Inner->PropertyClass.IsResolved() && IsObjectHandleResolved(ObjectClassHandle)
                 && Inner->PropertyClass.GetHandle() == ObjectClassHandle;
         }
@@ -1406,7 +1902,7 @@ struct FPayloadFieldSnapshot
         {
             const FBoolProperty* Bool = CastFieldChecked<FBoolProperty>(Field);
             return Bool->GetFieldMask() == BoolMask && Bool->GetByteOffset() == BoolOffset
-                && Bool->GetByteMask() == BoolByteMask && Bool->GetBoolFieldSize() == BoolSize;
+                && SoloASBridge::Compat::GetBoolByteMask(Bool) == BoolByteMask && SoloASBridge::Compat::GetBoolFieldSize(Bool) == BoolSize;
         }
         return true;
     }
@@ -1545,7 +2041,12 @@ struct FReferencePayload
 {
     UObject* Owner = nullptr;
     FObjectKey OwnerKey;
+    bool bRecompiledDefault = false;
+    UClass* SoftOwnerClass = nullptr;
+    const void* SoftOwnerCookie = nullptr;
+    bool bReconstructedHolder = false;
     const FStructProperty* Property = nullptr;
+    int32 ContainerIndex = INDEX_NONE;
     UScriptStruct* OldStruct = nullptr;
     UScriptStruct* NewStruct = nullptr;
     const void* OldMemory = nullptr;
@@ -1560,11 +2061,34 @@ struct FReferencePayload
     bool bCandidateReady = false;
     FInstancedStruct Candidate;
     FInstancedStruct Retirement;
+    TArray<const UObject*> StableLeaves;
 
-    FInstancedStruct& Live() const
+    FConstStructView Live() const
     {
-        return *Property->ContainerPtrToValuePtr<FInstancedStruct>(Owner);
+        if (ContainerIndex == INDEX_NONE)
+            return FConstStructView(*Property->ContainerPtrToValuePtr<FInstancedStruct>(Owner));
+        // A shortened root fails its container check; a stale index never reaches the container assertion.
+        const FInstancedStructContainer& Container = *Property->ContainerPtrToValuePtr<FInstancedStructContainer>(Owner);
+        return Container.IsValidIndex(ContainerIndex) ? Container[ContainerIndex] : FConstStructView();
     }
+};
+
+struct FReferencePayloadContainer
+{
+    UObject* Owner = nullptr;
+    FObjectKey OwnerKey;
+    bool bRecompiledDefault = false;
+    UClass* SoftOwnerClass = nullptr;
+    const void* SoftOwnerCookie = nullptr;
+    const FStructProperty* Property = nullptr;
+    TArray<TPair<const UScriptStruct*, const void*>> Before;
+    TArray<TPair<const UScriptStruct*, const void*>> After;
+    TArray<FInstancedStruct> Values;
+    FInstancedStructContainer Candidate;
+    FInstancedStructContainer Retirement;
+    bool bCandidateReady = false;
+
+    FInstancedStructContainer& Live() const { return *Property->ContainerPtrToValuePtr<FInstancedStructContainer>(Owner); }
 };
 
 class FPayloadIdentityWriter final : public FObjectWriter
@@ -1668,6 +2192,7 @@ public:
         for (FReferencePayload& Item : Payloads)
         {
             Collector.AddReferencedObject(Item.Owner);
+            Collector.AddReferencedObject(Item.SoftOwnerClass);
             Collector.AddReferencedObject(Item.OldStruct);
             Collector.AddReferencedObject(Item.NewStruct);
             for (FPayloadReferenceIdentity& Reference : Item.References)
@@ -1687,6 +2212,17 @@ public:
             for (FReferencePayloadField& Field : Item.Fields)
                 if (Field.Before.EnumWitness.IsValid()) Collector.AddReferencedObject(Field.Before.EnumWitness->Root);
         }
+        // A root is created with the first item of its owner and property and is released together with all of them
+        // (early publication and soft release); it reports its owner as well, so it never relies on those items.
+        for (FReferencePayloadContainer& Root : Containers)
+        {
+            Collector.AddReferencedObject(Root.Owner);
+            Collector.AddReferencedObject(Root.SoftOwnerClass);
+            for (FInstancedStruct& Value : Root.Values)
+                Collector.AddPropertyReferencesWithStructARO(FInstancedStruct::StaticStruct(), &Value);
+            if (Root.bCandidateReady)
+                Collector.AddPropertyReferencesWithStructARO(FInstancedStructContainer::StaticStruct(), &Root.Candidate);
+        }
         for (TPair<const void*, UObject*>& Value : LiveMapValues)
             Collector.AddReferencedObject(Value.Value);
     }
@@ -1694,14 +2230,18 @@ public:
     bool Prepare(FString& Error)
     {
         if (!IsInGameThread()) return Reject(Error, TEXT("Reference payload capture requires the game thread"));
+        // One read-only snapshot of the Blueprints this reload may recompile serves every holder and live outer.
+        FBlueprintRecompileSet RecompileSet(ReplacementClasses);
+        TGuardValue<FBlueprintRecompileSet*> RecompileGuard(Recompiles, &RecompileSet);
         for (const TPair<UScriptStruct*, UScriptStruct*>& Pair : Replacements)
-            if (Pair.Key && (bBeforeSwap || HasSchemaReferences(Pair.Key) || HasSchemaReferences(Pair.Value)))
+            if (Pair.Key && (bBeforeSwap ? ReferenceTypes.Contains(Pair.Key)
+                : HasSchemaReferences(Pair.Key) || HasSchemaReferences(Pair.Value)))
             {
                 ReferenceReplacements.Add(Pair.Key, Pair.Value);
                 DomainSchemas.Add(Pair.Key);
             }
         if (!VisitAffectedPayloads([&](UObject* Owner, const FStructProperty* Property,
-            const FInstancedStruct& Payload, UScriptStruct* Old, UScriptStruct* Target)
+            FConstStructView Payload, int32 ContainerIndex, UScriptStruct* Old, UScriptStruct* Target)
         {
             UASStruct* OldScript = Cast<UASStruct>(Old);
             UASStruct* NewScript = Cast<UASStruct>(Target);
@@ -1710,17 +2250,31 @@ public:
                 || !IsReferencePayloadSchema(Old) || (!bBeforeSwap && !IsReferencePayloadSchema(NewScript)))
                 return Reject(Error, TEXT("Reference payload replacement schema or identity is unsupported"));
             for (const FReferencePayload& Existing : Payloads)
-                if (&Existing.Live() == &Payload)
+                if (Existing.Live().GetMemory() == Payload.GetMemory())
                     return Reject(Error, TEXT("Captured payload domain aliases a slot"));
             FReferencePayload& Item = Payloads.AddDefaulted_GetRef();
             Item.Owner = Owner;
             Item.OwnerKey = FObjectKey(Owner);
+            Item.bRecompiledDefault = MayRecompileBlueprintDefault(Owner, *Recompiles);
+            Item.SoftOwnerClass = FindSoftPayloadOwnerClass(Owner, Item.SoftOwnerCookie);
             Item.Property = Property;
+            Item.ContainerIndex = ContainerIndex;
+            if (ContainerIndex != INDEX_NONE && !Containers.ContainsByPredicate([&](const auto& Root) { return Root.Owner == Owner && Root.Property == Property; }))
+            {
+                auto& Root = Containers.AddDefaulted_GetRef();
+                Root.Owner = Owner; Root.OwnerKey = FObjectKey(Owner); Root.Property = Property;
+                Root.bRecompiledDefault = Item.bRecompiledDefault;
+                Root.SoftOwnerClass = Item.SoftOwnerClass;
+                Root.SoftOwnerCookie = Item.SoftOwnerCookie;
+                for (int32 Index = 0; Index < Root.Live().Num(); ++Index)
+                    Root.Before.Add({Root.Live()[Index].GetScriptStruct(), Root.Live()[Index].GetMemory()});
+            }
             Item.OldStruct = Old;
             Item.NewStruct = bBeforeSwap ? nullptr : NewScript;
             Item.OldMemory = Payload.GetMemory();
             Item.ExpectedSchemaCookie = ExpectedSchemaCookies.FindRef(Old);
-            AddStableDomain(Owner);
+            // Recompiled Blueprint defaults leave the lease at attachment; later Blueprint reinstancing owns their identity.
+            if (!Item.bRecompiledDefault) AddStableDomain(Owner);
             for (TFieldIterator<FProperty> Field(Old); Field; ++Field)
             {
                 const FProperty* NewField = FindFProperty<FProperty>(NewScript, Field->GetFName());
@@ -1848,6 +2402,17 @@ public:
                 return Reject(Error, TEXT("Reference payload identity-tagged capture failed"));
             return true;
         }, Error)) return false;
+        if (const uint8 Reasons = RecompileSet.ObservedReasons())
+            UE_LOG(Angelscript, Display, TEXT("SCRIPT_PAYLOAD_BLUEPRINT_RECOMPILE_PREDICTED direct=%d queued=%d recorded=%d dirty=%d parent=%d"),
+                !!(Reasons & FBlueprintRecompileSet::Direct), !!(Reasons & FBlueprintRecompileSet::Queued),
+                !!(Reasons & FBlueprintRecompileSet::Recorded), !!(Reasons & FBlueprintRecompileSet::Dirty),
+                !!(Reasons & FBlueprintRecompileSet::Parent));
+        // Recompiled Blueprint defaults publish at attachment, before replaced script objects have successors.
+        if (Payloads.ContainsByPredicate([](const FReferencePayload& Item) { return Item.bRecompiledDefault; }))
+            for (const FReferencePayload& Item : Payloads)
+                for (const FPayloadReferenceIdentity& Reference : Item.References)
+                    if (Reference.bRequiresReplacement)
+                        return Reject(Error, TEXT("Recompiled Blueprint default reference payloads cannot share a reload with replaced script object references"));
         const auto* Scope = AngelscriptReloadSafety::GetPreparedPayloadReloadScope();
         if (!Scope || !Scope->Epoch || CopyState.IsValid()) return Reject(Error, TEXT("Copy map consumer has no unique reload owner"));
         CopyScope = Scope;
@@ -1877,8 +2442,9 @@ public:
                 ReplacementClasses.Add(Plan.Class);
         FPayloadAdmission Admission(Error);
         for (const auto& Type : Types)
-            if (Type.bWillReplace && Admission.ReferenceRoute(Type.Previous, *Type.Candidate))
+            if (Type.bWillReplace)
             {
+                if (Admission.ReferenceRoute(Type.Previous, *Type.Candidate)) ReferenceTypes.Add(Type.Previous);
                 Replacements.Add(Type.Previous, Type.Previous);
                 ExpectedSchemaCookies.Add(Type.Previous, Type.Candidate->ScriptType);
                 SchemaCandidates.Add(Type.Previous, Type.Candidate);
@@ -1916,7 +2482,7 @@ public:
             bAttached = true;
             return Prepare(Error);
         }
-        if (!ValidateHolders(Error)) return false;
+        if (!RefreshSoftHolders(Error) || !ValidateHolders(Error)) return false;
         for (const auto& Binding : ScriptEnumBindings)
             if (!Binding->Complete()) return Reject(Error, TEXT("Script enum binding did not consume its planned operation"));
         Replacements = InStructs;
@@ -1963,7 +2529,9 @@ public:
             {
                 const FProperty* Property = FindFProperty<FProperty>(New, Field.Name);
                 if (!Property || Property->ArrayDim != 1 || Property->GetClass() != Field.NewProperty->GetClass()
-                    || Property->GetElementSize() != Field.Before.Size)
+                                                                                                               
+                    || SoloASBridge::Compat::GetPropertyElementSize(Property) != Field.Before.Size)
+                                                                                                             
                     return Reject(Error, TEXT("Prepared payload target changed an old field type"));
                 if (Field.Before.Class == FArrayProperty::StaticClass() && !QuietReferenceArrayLeaf(Property))
                     return Reject(Error, TEXT("Prepared payload target changed a strong object array leaf"));
@@ -2007,6 +2575,18 @@ public:
                     Current.Revision, Current.CommittedRevision, Before.ClaimCount, Current.ClaimCount,
                     uint64(reinterpret_cast<UPTRINT>(Before.PreviousCookie)), uint64(reinterpret_cast<UPTRINT>(Before.ExpectedCookie)));
             }
+        if (!ValidateAfterCallout(Error)) return false;
+        if (!Payloads.ContainsByPredicate([](const FReferencePayload& Item) { return Item.bRecompiledDefault; })) return true;
+        // Blueprint compilation may reinstance these defaults later in this reload and copy their
+        // current values. Publish while every admitted identity is current, then leave those values
+        // to the engine's ordinary Blueprint default copy instead of following the replaced default.
+        if (!Publish(Error)) return false;
+        bEarlyPublished = true;
+        const int32 Released = Payloads.RemoveAll([](const FReferencePayload& Item) { return Item.bRecompiledDefault; });
+        Containers.RemoveAll([](const FReferencePayloadContainer& Root) { return Root.bRecompiledDefault; });
+        RebuildStableDomain();
+        UE_LOG(Angelscript, Display, TEXT("SCRIPT_PAYLOAD_BLUEPRINT_DEFAULTS_PUBLISHED released=%d retained=%d phase=attach"),
+            Released, Payloads.Num());
         return ValidateAfterCallout(Error);
     }
 
@@ -2044,6 +2624,12 @@ public:
     {
         if (bPublishing) return Reject(Error, TEXT("Reentrant reference payload publication"));
         TGuardValue<bool> PublishGuard(bPublishing, true);
+        if (bEarlyPublished && IsInGameThread() && bAttached && bPublished)
+        {
+            // Attachment already published this lease; the ordinary publication point only revalidates it.
+            bEarlyPublished = false;
+            return ValidateAfterCallout(Error);
+        }
         if (!IsInGameThread() || !bAttached || bPublished)
             return Reject(Error, TEXT("Invalid reference payload publication state"));
         if (!ValidateAfterCallout(Error)) return false;
@@ -2138,6 +2724,7 @@ public:
                                 *Field->GetFName().ToString(), Element);
                             return false;
                         }
+                        Item.StableLeaves.Add(Object);
                         AddStableDomain(Object);
                     }
                     return ValidateAfterCallout(Error);
@@ -2171,19 +2758,82 @@ public:
                     return Reject(Error, TEXT("Reference payload prepared identity changed before publication"));
             }
         if (!ValidateAfterCallout(Error)) return false;
+        // Build contiguous roots with the public API before replacing any live value.
+        for (FReferencePayloadContainer& Root : Containers)
+        {
+            Root.Values.Reserve(Root.Before.Num());
+            for (int32 Index = 0; Index < Root.Before.Num(); ++Index)
+            {
+                const FReferencePayload* Item = Payloads.FindByPredicate([&](const auto& Value)
+                { return Value.Owner == Root.Owner && Value.Property == Root.Property && Value.ContainerIndex == Index; });
+                Root.Values.Emplace(Item ? FConstStructView(Item->Candidate) : FConstStructView(Root.Live()[Index]));
+                if (!Item && Root.Values.Last().IsValid())
+                {
+                    // Ordinary scalar migration skips roots that hold reference payloads; their other
+                    // slots, top-level or nested, take the scalar schema in this same publication.
+                    TMap<UScriptStruct*, UScriptStruct*> Scalars;
+                    for (const auto& Pair : Replacements)
+                        if (!HasSchemaReferences(Pair.Key) && !HasSchemaReferences(Pair.Value)) Scalars.Add(Pair.Key, Pair.Value);
+                    FPayloadMigration Migration{Scalars, Error, {}};
+                    if (!Migration.Payload(Root.Values.Last())) return false;
+                }
+                if (!ValidateAfterCallout(Error)) return false;
+            }
+            Root.Candidate = MakeArrayView(Root.Values);
+            Root.bCandidateReady = true;
+            if (!ValidateAfterCallout(Error)) return false;
+            for (int32 Index = 0; Index < Root.Candidate.Num(); ++Index)
+                Root.After.Add({Root.Candidate[Index].GetScriptStruct(), Root.Candidate[Index].GetMemory()});
+            for (FReferencePayload& Item : Payloads)
+            {
+                if (Item.Owner != Root.Owner || Item.Property != Root.Property) continue;
+                const FConstStructView Slot = Root.Candidate[Item.ContainerIndex];
+                for (const FPayloadFieldSnapshot& Field : Item.ExpectedFields)
+                    if (!Field.Matches(Field.Property, Slot.GetMemory()))
+                        return Reject(Error, TEXT("Reference container copy changed a prepared field"));
+                Item.PublishedMemory = Slot.GetMemory();
+            }
+        }
         // All allocation, constructors, tagged replay and identity checks precede these empty-slot moves.
         // Game-thread readers observe the batch after every live slot has received its candidate.
         for (FReferencePayload& Item : Payloads)
         {
-            Item.PublishedMemory = Item.CandidateMemory;
-            Item.Retirement = MoveTemp(Item.Live());
-            Item.Live() = MoveTemp(Item.Candidate);
+            if (Item.ContainerIndex == INDEX_NONE)
+            {
+                Item.PublishedMemory = Item.CandidateMemory;
+                FInstancedStruct& Live = *Item.Property->ContainerPtrToValuePtr<FInstancedStruct>(Item.Owner);
+                Item.Retirement = MoveTemp(Live);
+                Live = MoveTemp(Item.Candidate);
+            }
             Item.bCandidateReady = false;
+        }
+        for (FReferencePayloadContainer& Root : Containers)
+        {
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 container move assignment stores the byte size as the item count [test: SoloAS.InstancedStructMixedContainerReload] [id: CS.Compatibility.Runtime.InstancedStructReload.ContainerMoveAssign]
+#if UE_VERSION_OLDER_THAN(5, 5, 0)
+            // Bitwise swaps carry each root's exact fields; the empty retirement and candidate take the other side.
+            Swap(Root.Retirement, Root.Live());
+            Swap(Root.Live(), Root.Candidate);
+#else
+            Root.Retirement = MoveTemp(Root.Live());
+            Root.Live() = MoveTemp(Root.Candidate);
+#endif
+// SOLOAS-COMPAT-END
+            Root.bCandidateReady = false;
         }
         bPublished = true;
         for (FReferencePayload& Item : Payloads)
         {
             Item.Retirement.Reset();
+            if (!ValidateAfterCallout(Error)) return false;
+            if (Item.ContainerIndex != INDEX_NONE) Item.Candidate.Reset();
+            if (!ValidateAfterCallout(Error)) return false;
+        }
+        for (FReferencePayloadContainer& Root : Containers)
+        {
+            Root.Values.Reset();
+            if (!ValidateAfterCallout(Error)) return false;
+            Root.Retirement.Empty();
             if (!ValidateAfterCallout(Error)) return false;
         }
         return ValidateAfterCallout(Error);
@@ -2192,6 +2842,8 @@ public:
 private:
     TMap<UScriptStruct*, UScriptStruct*> Replacements;
     TMap<UScriptStruct*, UScriptStruct*> ReferenceReplacements;
+    TSet<const UScriptStruct*> ReferenceTypes;
+    TArray<FReferencePayloadContainer> Containers;
     TArray<UScriptStruct*> DomainSchemas;
     TMap<UScriptStruct*, const void*> ExpectedSchemaCookies;
     TMap<UScriptStruct*, TSharedPtr<FAngelscriptClassDesc>> SchemaCandidates;
@@ -2201,6 +2853,7 @@ private:
     bool bScriptEnumCompletion = false;
     TArray<AngelscriptRuntimeGcMirror::FRuntimeScriptReplacementWitness> Witnesses;
     TSet<const UClass*> ReplacementClasses;
+    FBlueprintRecompileSet* Recompiles = nullptr;
     TSet<const void*> StableDomain;
     TArray<FReferencePayload> Payloads;
     TMap<const void*, const void*> Edges;
@@ -2209,6 +2862,7 @@ private:
     TMap<FObjectKey, AngelscriptRuntimeGcMirror::FReinstancedScriptPairReplayToken> TokensByNewKey;
     FDelegateHandle Listener;
     bool bPublished = false;
+    bool bEarlyPublished = false;
     bool bBeforeSwap = false;
     bool bAttached = false;
     bool bAttaching = false;
@@ -2242,6 +2896,7 @@ private:
         ScriptEnumBindings.Add(Binding);
         StableDomain.Add(Binding->Identity);
         return Binding;
+
     }
 
     bool ObserveScriptEnumTransition(const AngelscriptReloadSafety::FPreparedScriptEnumReloadTransition& Event, FString& Error)
@@ -2307,6 +2962,20 @@ private:
         return false;
     }
 
+    void RebuildStableDomain()
+    {
+        // Released holders leave the lease with their identities; retained holders and enum bindings keep theirs.
+        StableDomain.Reset();
+        for (const auto& Binding : ScriptEnumBindings) StableDomain.Add(Binding->Identity);
+        for (const FReferencePayload& Item : Payloads)
+        {
+            if (!Item.bRecompiledDefault) AddStableDomain(Item.Owner);
+            for (const FPayloadReferenceIdentity& Reference : Item.References)
+                if (Reference.Stable) AddStableDomain(Reference.Stable);
+            for (const UObject* Leaf : Item.StableLeaves) AddStableDomain(Leaf);
+        }
+    }
+
     void AddStableDomain(const UObject* Object)
     {
         for (const UObject* Cursor = Object; Cursor; Cursor = Cursor->GetOuter())
@@ -2322,9 +2991,16 @@ private:
     {
         // An empty captured slot set still scans whenever an affected reference schema exists.
         if (ReferenceReplacements.IsEmpty()) return true;
-        for (TObjectIterator<UObject> It; It; ++It)
+        for (TObjectIterator<UObject> It(RF_NoFlags); It; ++It)
         {
             UObject* Owner = *It;
+            if (IsRetiredPayloadDefault(Owner, ReplacementClasses)) continue;
+            // Soft reload diffs defaults against a discarded transient script archetype; it is never a holder.
+            // The generator creates it in PrepareSoftReload and marks it garbage when DoSoftReload ends; no lease
+            // scan runs in between (admission precedes generation, script enum transitions precede
+            // PrepareSoftReload, attachment follows soft reload). A scan there would refuse it as a new holder.
+            if (Owner->HasAnyFlags(RF_ArchetypeObject) && !Owner->HasAnyFlags(RF_ClassDefaultObject) && !IsValid(Owner)
+                && Owner->GetOuter() == GetTransientPackage() && Cast<UASClass>(Owner->GetClass())) continue;
             if (Owner->IsUnreachable() || Owner->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed)) continue;
             if (const UDataTable* Table = Cast<UDataTable>(Owner))
             {
@@ -2342,6 +3018,28 @@ private:
             for (FPropertyValueIterator Value(FStructProperty::StaticClass(), Owner->GetClass(), Owner); Value; ++Value)
             {
                 const FStructProperty* Property = CastFieldChecked<FStructProperty>(Value.Key());
+                if (Property->Struct == FInstancedStructContainer::StaticStruct())
+                {
+                    Value.SkipRecursiveProperty();
+                    const auto& Container = *static_cast<const FInstancedStructContainer*>(Value.Value());
+                    bool bReferenceRoot = false;
+                    for (int32 Index = 0; Index < Container.Num(); ++Index)
+                        bReferenceRoot |= ReferenceReplacements.Contains(const_cast<UScriptStruct*>(Container[Index].GetScriptStruct()));
+                    if (!bReferenceRoot) continue;
+                    TArray<const FProperty*> Chain;
+                    Value.GetPropertyChain(Chain);
+                    if (!Owner->HasAnyFlags(RF_ClassDefaultObject) || Chain.Num() != 1 || Property->ArrayDim != 1
+                        || !IsStablePayloadOwner(Owner, ReplacementClasses))
+                        return Reject(Error, TEXT("Reference container capture requires a direct stable default owner"));
+                    for (int32 Index = 0; Index < Container.Num(); ++Index)
+                    {
+                        const FConstStructView Slot = Container[Index];
+                        UScriptStruct* Previous = const_cast<UScriptStruct*>(Slot.GetScriptStruct());
+                        if (UScriptStruct* const* Target = Replacements.Find(Previous))
+                            if (!Visit(Owner, Property, Slot, Index, Previous, *Target)) return false;
+                    }
+                    continue;
+                }
                 if (Property->Struct != FInstancedStruct::StaticStruct()) continue;
                 Value.SkipRecursiveProperty();
                 const FInstancedStruct& Payload = *static_cast<const FInstancedStruct*>(Value.Value());
@@ -2351,9 +3049,9 @@ private:
                 if (!Target) continue;
                 TArray<const FProperty*> Chain;
                 Value.GetPropertyChain(Chain);
-                if (Chain.Num() != 1 || Property->ArrayDim != 1 || !IsStableNativeObject(Owner, ReplacementClasses))
+                if (Chain.Num() != 1 || Property->ArrayDim != 1 || !IsStablePayloadOwner(Owner, ReplacementClasses))
                     return Reject(Error, TEXT("Reference payload capture requires a direct stable native owner"));
-                if (!Visit(Owner, Property, Payload, Old, *Target)) return false;
+                if (!Visit(Owner, Property, FConstStructView(Payload), INDEX_NONE, Old, *Target)) return false;
             }
         }
         return true;
@@ -2381,6 +3079,16 @@ private:
                 Object, *Plan, Scope->Epoch, Reference.LiveWitness, Error)) return false;
             if (!Reference.bRequiresReplacement)
             {
+                if (!Recompiles) return Reject(Error, TEXT("Live script reference capture has no recompile snapshot"));
+                for (const UObject* Outer = Object->GetOuter(); Outer; Outer = Outer->GetOuter())
+                {
+                    for (const UClass* Class = Outer->GetClass(); Class; Class = Class->GetSuperClass())
+                        if (ReplacementClasses.Contains(Class) || Class->HasAnyClassFlags(CLASS_NewerVersionExists))
+                            return Reject(Error, TEXT("Live script reference is owned by an object this reload replaces"));
+                    // The stable domain holds every outer; Blueprint compilation in this reload would replace it.
+                    if (MayRecompileOuter(Outer, *Recompiles))
+                        return Reject(Error, TEXT("Live script reference is owned by an object this reload may recompile"));
+                }
                 Reference.bLiveAS = true;
                 Reference.Stable = Object;
                 StableDomain.Add(Object);
@@ -2409,6 +3117,77 @@ private:
         return true;
     }
 
+    bool RefreshSoftHolders(FString& Error)
+    {
+        // Soft reconstruction recreates script-owned default storage before attachment. The owner, class and
+        // admitted script type stay fixed. A holder that kept the admitted schema follows its new storage and
+        // publishes from the pre-swap capture; any other reconstructed value is the soft-reload result and
+        // leaves the lease, as an ordinary scalar default would.
+        auto Refresh = [&](UObject* Owner, const FObjectKey& OwnerKey, UClass* SoftClass, const void* Cookie,
+            const FStructProperty*& Property) -> bool
+        {
+            const FStructProperty* Current = FindFProperty<FStructProperty>(Owner->GetClass(), Property->GetFName());
+            if (!IsStablePayloadOwner(Owner, ReplacementClasses) || FObjectKey(Owner) != OwnerKey || !Owner->IsA(SoftClass)
+                || CastChecked<UASClass>(SoftClass)->ScriptTypePtr != Cookie
+                || !Current || Current->Struct != Property->Struct || Current->ArrayDim != 1)
+                return Reject(Error, TEXT("Soft default reconstruction differs from its admitted class plan"));
+            Property = Current;
+            return true;
+        };
+        auto HoldsOldPayload = [&](const FConstStructView& Slot)
+        {
+            return ReferenceReplacements.Contains(const_cast<UScriptStruct*>(Slot.GetScriptStruct()));
+        };
+        int32 Released = 0;
+        // Roots first: their items index into the root and must not be read past a shortened container.
+        for (int32 RootIndex = Containers.Num() - 1; RootIndex >= 0; --RootIndex)
+        {
+            FReferencePayloadContainer& Root = Containers[RootIndex];
+            if (!Root.SoftOwnerClass) continue;
+            const FStructProperty* const Admitted = Root.Property;
+            if (!Refresh(Root.Owner, Root.OwnerKey, Root.SoftOwnerClass, Root.SoftOwnerCookie, Root.Property)) return false;
+            const FInstancedStructContainer& Live = Root.Live();
+            bool bSameShape = Live.Num() == Root.Before.Num();
+            for (int32 Index = 0; bSameShape && Index < Live.Num(); ++Index)
+                bSameShape = Live[Index].GetScriptStruct() == Root.Before[Index].Key;
+            if (bSameShape)
+            {
+                for (int32 Index = 0; Index < Live.Num(); ++Index) Root.Before[Index].Value = Live[Index].GetMemory();
+                continue;
+            }
+            for (int32 Index = 0; Index < Live.Num(); ++Index)
+                if (HoldsOldPayload(Live[Index]))
+                    return Reject(Error, TEXT("Soft default reconstruction changed a container that still holds old payloads"));
+            const UObject* const Owner = Root.Owner;
+            Released += Payloads.RemoveAll([&](const FReferencePayload& Item)
+            { return Item.Owner == Owner && Item.Property == Admitted && Item.ContainerIndex != INDEX_NONE; });
+            Containers.RemoveAt(RootIndex);
+        }
+        for (int32 ItemIndex = Payloads.Num() - 1; ItemIndex >= 0; --ItemIndex)
+        {
+            FReferencePayload& Item = Payloads[ItemIndex];
+            if (!Item.SoftOwnerClass) continue;
+            if (!Refresh(Item.Owner, Item.OwnerKey, Item.SoftOwnerClass, Item.SoftOwnerCookie, Item.Property)) return false;
+            const FConstStructView Live = Item.Live();
+            if (Live.GetScriptStruct() != Item.OldStruct)
+            {
+                if (HoldsOldPayload(Live))
+                    return Reject(Error, TEXT("Soft default reconstruction changed the payload schema"));
+                Payloads.RemoveAt(ItemIndex);
+                ++Released;
+                continue;
+            }
+            if (Live.GetMemory() == Item.OldMemory) continue;
+            Item.OldMemory = Live.GetMemory();
+            Item.bReconstructedHolder = true;
+        }
+        if (!Released) return true;
+        RebuildStableDomain();
+        UE_LOG(Angelscript, Display, TEXT("SCRIPT_PAYLOAD_SOFT_DEFAULTS_RELEASED released=%d retained=%d phase=attach"),
+            Released, Payloads.Num());
+        return true;
+    }
+
     bool ValidateHolders(FString& Error) const
     {
         if (bOwnScriptEnumHandler && (!AngelscriptReloadSafety::GetPreparedScriptEnumReloadTransition().IsBoundToObject(this)
@@ -2416,14 +3195,24 @@ private:
             return Reject(Error, TEXT("Script enum channel ownership changed"));
         for (const auto& Binding : ScriptEnumBindings)
             if (!Binding->Matches()) return Reject(Error, TEXT("Script enum binding or fixed definition changed"));
+        for (const FReferencePayloadContainer& Root : Containers)
+        {
+            const auto& Expected = bPublished ? Root.After : Root.Before;
+            if (!IsStablePayloadOwner(Root.Owner, ReplacementClasses) || FObjectKey(Root.Owner) != Root.OwnerKey
+                || Root.Live().Num() != Expected.Num()) return Reject(Error, TEXT("Reference container root changed during replacement"));
+            for (int32 Index = 0; Index < Expected.Num(); ++Index)
+                if (Root.Live()[Index].GetScriptStruct() != Expected[Index].Key || Root.Live()[Index].GetMemory() != Expected[Index].Value)
+                    return Reject(Error, TEXT("Reference container slot changed during replacement"));
+        }
         for (const FReferencePayload& Item : Payloads)
         {
             if (Item.StringBinding.IsValid() && !Item.StringBinding->Matches())
                 return Reject(Error, TEXT("Native string binding changed during replacement"));
-            if (!IsStableNativeObject(Item.Owner, ReplacementClasses) || FObjectKey(Item.Owner) != Item.OwnerKey
+            if (!IsStablePayloadOwner(Item.Owner, ReplacementClasses) || FObjectKey(Item.Owner) != Item.OwnerKey
                 || Item.Live().GetScriptStruct() != (bPublished ? Item.NewStruct : Item.OldStruct)
                 || Item.Live().GetMemory() != (bPublished ? Item.PublishedMemory : Item.OldMemory))
                 return Reject(Error, TEXT("Reference payload holder changed during replacement"));
+            if (!bPublished && Item.bReconstructedHolder) continue;
             int32 Index = 0;
             const UScriptStruct* Schema = bPublished ? Item.NewStruct : Item.OldStruct;
             for (TFieldIterator<FProperty> Field(Schema, EFieldIterationFlags::IncludeDeprecated); Field; ++Field, ++Index)
@@ -2449,13 +3238,13 @@ private:
         }
         int32 OldSlots = 0;
         if (!VisitAffectedPayloads([&](UObject* Owner, const FStructProperty* Property,
-            const FInstancedStruct& Payload, UScriptStruct* Old, UScriptStruct*)
+            FConstStructView Payload, int32 ContainerIndex, UScriptStruct* Old, UScriptStruct*)
         {
             if (bPublished) return Reject(Error, TEXT("Affected old payload remains after publication"));
             int32 Matches = 0;
             for (const FReferencePayload& Item : Payloads)
                 if (Item.Owner == Owner && Item.OwnerKey == FObjectKey(Owner) && Item.Property == Property
-                    && Item.OldStruct == Old && Item.OldMemory == Payload.GetMemory()) ++Matches;
+                    && Item.ContainerIndex == ContainerIndex && Item.OldStruct == Old && Item.OldMemory == Payload.GetMemory()) ++Matches;
             if (Matches != 1) return Reject(Error, TEXT("Affected old payload domain gained or reused a slot"));
             ++OldSlots;
             return true;
@@ -3034,8 +3823,7 @@ bool FRuntimePayloadNativeEnumQuietWitness::RunTest(const FString& Parameters)
     TArray<TPair<FName, int64>> Definition;
     Definition.Emplace(FName(*(EnumName + TEXT("::First"))), 0);
     Definition.Emplace(FName(*(EnumName + TEXT("::Second"))), 1);
-    if (!TestTrue(TEXT("Self-owned native scoped uint8 definition"), Enum->SetEnums(Definition,
-        UEnum::ECppForm::EnumClass, UEnum::EUnderlyingType::uint8, EEnumFlags::None, UEnum::EAddMaxKeyIfMissing::No))) return false;
+    if (!TestTrue(TEXT("Self-owned native scoped uint8 definition"), SoloASBridge::Compat::SetEnumValues(Enum.Get(), Definition, SoloASBridge::Compat::EEnumStorage::uint8, EEnumFlags::None, false))) return false;
     TArray<TPair<FName, int64>> OriginalDefinition;
     for (int32 Index = 0; Index < Enum->NumEnums(); ++Index)
         OriginalDefinition.Emplace(Enum->GetNameByIndex(Index), Enum->GetValueByIndex(Index));
@@ -3043,8 +3831,7 @@ bool FRuntimePayloadNativeEnumQuietWitness::RunTest(const FString& Parameters)
     const auto SetDefinition = [&](const TArray<TPair<FName, int64>>& Values)
     {
         TArray<TPair<FName, int64>> Copy = Values;
-        return Enum->SetEnums(Copy, UEnum::ECppForm::EnumClass, UEnum::EUnderlyingType::uint8,
-            EEnumFlags::None, UEnum::EAddMaxKeyIfMissing::No);
+        return SoloASBridge::Compat::SetEnumValues(Enum.Get(), Copy, SoloASBridge::Compat::EEnumStorage::uint8, EEnumFlags::None, false);
     };
 
     const FTCHARToUTF8 NativeName(*EnumName);
@@ -3064,7 +3851,9 @@ bool FRuntimePayloadNativeEnumQuietWitness::RunTest(const FString& Parameters)
     FByteProperty* Inner = CastFieldChecked<FByteProperty>(
         FByteProperty::StaticClass()->Construct(Field.Get(), FName(TEXT("UnderlyingType"))));
     Field->AddCppProperty(Inner);
-    Field->SetElementSize(Inner->GetElementSize());
+                                                                                                               
+    SoloASBridge::Compat::SetPropertyElementSize(Field.Get(), SoloASBridge::Compat::GetPropertyElementSize(Inner));
+                                                                                                             
     const EPropertyFlags OriginalInnerFlags = Inner->GetPropertyFlags();
 
     const uint32 TestThread = FPlatformTLS::GetCurrentThreadId();
@@ -3182,9 +3971,7 @@ bool FRuntimePayloadNativeEnumQuietWitness::RunTest(const FString& Parameters)
             TArray<TPair<FName, int64>> ForeignDefinition;
             ForeignDefinition.Emplace(FName(*(ForeignName + TEXT("::First"))), 0);
             ForeignDefinition.Emplace(FName(*(ForeignName + TEXT("::Second"))), 1);
-            if (!TestTrue(TEXT("Self-owned foreign enum definition"), Foreign->SetEnums(ForeignDefinition,
-                UEnum::ECppForm::EnumClass, UEnum::EUnderlyingType::uint8,
-                EEnumFlags::None, UEnum::EAddMaxKeyIfMissing::No))) return false;
+            if (!TestTrue(TEXT("Self-owned foreign enum definition"), SoloASBridge::Compat::SetEnumValues(Foreign.Get(), ForeignDefinition, SoloASBridge::Compat::EEnumStorage::uint8, EEnumFlags::None, false))) return false;
             Cookie->SetUserData(Foreign.Get());
             TestTrue(TEXT("Own cookie userdata really changed"), Cookie->GetUserData() == Foreign.Get());
             CheckMatch(*Witness, TEXT("userdata-drift"), false);
@@ -3198,7 +3985,9 @@ bool FRuntimePayloadNativeEnumQuietWitness::RunTest(const FString& Parameters)
             FByteProperty* ForeignInner = CastFieldChecked<FByteProperty>(
                 FByteProperty::StaticClass()->Construct(ForeignField.Get(), FName(TEXT("UnderlyingType"))));
             ForeignField->AddCppProperty(ForeignInner);
-            ForeignField->SetElementSize(ForeignInner->GetElementSize());
+                                                                                                               
+            SoloASBridge::Compat::SetPropertyElementSize(ForeignField.Get(), SoloASBridge::Compat::GetPropertyElementSize(ForeignInner));
+                                                                                                             
             TestTrue(TEXT("Foreign field has the same admitted builtin shape"), IsQuietNativeEnumShape(ForeignField.Get()));
             {
                 FNativeEnumTypeWitness ForeignWitness;
@@ -3279,7 +4068,7 @@ bool FRuntimePayloadScriptEnumQuietWitness::RunTest(const FString& Parameters)
             && Cookie->GetSize() == 1 && Cookie->GetUserData() == Enum
             && (Cookie->GetFlags() & asOBJ_SHARED) == 0
             && Enum->GetCppForm() == UEnum::ECppForm::EnumClass
-            && Enum->GetUnderlyingType() == UEnum::EUnderlyingType::int8
+            && SoloASBridge::Compat::EnumStorageForBinding(Enum, SoloASBridge::Compat::EEnumStorage::int8) == SoloASBridge::Compat::EEnumStorage::int8
             && !Enum->HasAnyEnumFlags(EEnumFlags::Flags | EEnumFlags::NewerVersionExists))) return false;
     TStrongObjectPtr<UASEnum> KeepEnum(Enum);
     TArray<TPair<FName, int64>> OriginalDefinition;
@@ -3291,10 +4080,9 @@ bool FRuntimePayloadScriptEnumQuietWitness::RunTest(const FString& Parameters)
         TArray<TPair<FName, int64>> Copy = Values;
         // The virtual UUserDefinedEnum setter always appends MAX, even when Copy already contains it.
         // The public base setter with No preserves the complete captured table, including its MAX row.
-        if (!Enum->UEnum::SetEnums(Copy, UEnum::ECppForm::EnumClass, UEnum::EUnderlyingType::int8,
-            EEnumFlags::None, UEnum::EAddMaxKeyIfMissing::No)) return false;
+        if (!SoloASBridge::Compat::SetEnumValues(Enum, Copy, SoloASBridge::Compat::EEnumStorage::int8, EEnumFlags::None, false)) return false;
         if (Enum->GetCppForm() != UEnum::ECppForm::EnumClass
-            || Enum->GetUnderlyingType() != UEnum::EUnderlyingType::int8
+            || SoloASBridge::Compat::EnumStorageForBinding(Enum, SoloASBridge::Compat::EEnumStorage::int8) != SoloASBridge::Compat::EEnumStorage::int8
             || Enum->HasAnyEnumFlags(EEnumFlags::Flags | EEnumFlags::NewerVersionExists)
             || Enum->NumEnums() != Values.Num()) return false;
         for (int32 I = 0; I < Values.Num(); ++I)
@@ -3310,7 +4098,9 @@ bool FRuntimePayloadScriptEnumQuietWitness::RunTest(const FString& Parameters)
     FInt8Property* Inner = CastFieldChecked<FInt8Property>(
         FInt8Property::StaticClass()->Construct(Field.Get(), FName(TEXT("UnderlyingType"))));
     Field->AddCppProperty(Inner);
-    Field->SetElementSize(Inner->GetElementSize());
+                                                                                                               
+    SoloASBridge::Compat::SetPropertyElementSize(Field.Get(), SoloASBridge::Compat::GetPropertyElementSize(Inner));
+                                                                                                             
     const EPropertyFlags OriginalInnerFlags = Inner->GetPropertyFlags();
 
     const uint32 TestThread = FPlatformTLS::GetCurrentThreadId();
@@ -3482,7 +4272,9 @@ bool FRuntimePayloadScriptEnumQuietWitness::RunTest(const FString& Parameters)
             FInt8Property* ForeignInner = CastFieldChecked<FInt8Property>(
                 FInt8Property::StaticClass()->Construct(ForeignField.Get(), FName(TEXT("UnderlyingType"))));
             ForeignField->AddCppProperty(ForeignInner);
-            ForeignField->SetElementSize(ForeignInner->GetElementSize());
+                                                                                                               
+            SoloASBridge::Compat::SetPropertyElementSize(ForeignField.Get(), SoloASBridge::Compat::GetPropertyElementSize(ForeignInner));
+                                                                                                             
             TestTrue(TEXT("Foreign field has the admitted signed-byte shape"), IsQuietScriptEnumShape(ForeignField.Get()));
             {
                 FNativeEnumTypeWitness ForeignWitness;

@@ -1,0 +1,10 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "SAC_79076901UhtAnchor.generated.h"
+
+UCLASS(meta = (NotInAngelscript))
+class USAC_79076901UhtAnchor : public UObject
+{
+    GENERATED_BODY()
+};

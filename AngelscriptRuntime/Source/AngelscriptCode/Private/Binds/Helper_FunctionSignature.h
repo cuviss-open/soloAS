@@ -1,12 +1,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
+                                                                                                       
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                     
 #include "UObject/UnrealType.h"
 
 #include "AngelscriptManager.h"
 #include "AngelscriptType.h"
 #include "AngelscriptDocs.h"
 #include "AngelscriptBindDatabase.h"
+                                                                                                            
+#include "Runtime/SoloASBridgeScriptMetadata.h"
+                                                                                                          
 
 #include "StartAngelscriptHeaders.h"
 #include "as_scriptfunction.h"
@@ -192,11 +198,27 @@ struct FAngelscriptFunctionSignature
 	{
 		Function = InFunction;
 
+                                                                                                    
+		const auto NativeMetadata = SoloASBridge::GetScriptMetadata();
+		const UClass* NativeOwner = Function->GetOuterUClass();
+		const FString NativeOwnerName = FString(NativeOwner->GetPrefixCPP()) + NativeOwner->GetName();
+		const FString NativeFunctionName = Function->GetName();
+                                                                                                  
+
 		// Map all properties in the UFunction to FAngelscriptTypes
 		for( TFieldIterator<FProperty> It(Function); It && (It->PropertyFlags & CPF_Parm); ++It )
 		{
 			FProperty* Property = *It;
 			FAngelscriptTypeUsage Type = FAngelscriptTypeUsage::FromProperty(Property);
+
+                                                                                                         
+			// Stock UHT retains const references with OutParm or ReferenceParm (RPCs).
+			// Return references require a native caller and are handled separately.
+			if (!Property->HasAnyPropertyFlags(CPF_ReturnParm)
+				&& Property->HasAnyPropertyFlags(CPF_ConstParm)
+				&& Property->HasAnyPropertyFlags(CPF_OutParm | CPF_ReferenceParm))
+				Type.bIsReference = true;
+                                                                                                       
 
 			if (!Type.IsValid())
 			{
@@ -227,7 +249,20 @@ struct FAngelscriptFunctionSignature
 				}
 				else
 				{
-					ArgumentDefaults.Add(TEXT("-"));
+                                                                                                           
+					const uint32 Ordinal = uint32(ArgumentTypes.Num() - 1);
+					const auto* Default = NativeMetadata->DefaultArguments.FindByPredicate([&](const auto& Row)
+					{
+						return Row.ParameterOrdinal == Ordinal
+							&& NativeOwnerName == ANSI_TO_TCHAR(Row.OwnerName)
+							&& NativeFunctionName == ANSI_TO_TCHAR(Row.FunctionName)
+							&& Property->GetName() == ANSI_TO_TCHAR(Row.ParameterName);
+					});
+					FString DefaultText = Default ? FString(ANSI_TO_TCHAR(Default->DefaultValueText)) : TEXT("-");
+					if (DefaultText == TEXT("None"))
+						DefaultText.Empty();
+					ArgumentDefaults.Add(DefaultText);
+                                                                                                         
 				}
 			}
 		}
@@ -380,7 +415,9 @@ struct FAngelscriptFunctionSignature
 
 		// Build the declaration for the function
 		Declaration = FAngelscriptType::BuildFunctionDeclaration(ReturnType, ScriptName, ArgumentTypes, ArgumentNames, ArgumentDefaults,
-			(Function->HasAnyFunctionFlags(FUNC_Const) && !bStaticInScript) || bForceConst);
+			                                                                                                           
+			(SoloASBridge::Compat::IsScriptMethodConst(Function) && !bStaticInScript) || bForceConst);
+                                                                                                         
 
 		// Add no-discard modifier if we want to
 		if (ReturnType.IsValid())

@@ -6,6 +6,11 @@
   <Import Project="$(EngineDir)\Source\Programs\Shared\UnrealEngine.csproj.props" />
 
   <PropertyGroup>
+    <!-- UE 5.4 uses net6.0; UhtModule and the net8.0 host arrived in UE 5.5.
+         Newer engine shared props supply their own framework. Keep this fallback
+         limited to Exists so UBT's project-file parser can evaluate it. -->
+    <TargetFramework Condition="'$(TargetFramework)' == '' and Exists('$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Types\UhtModule.cs')">net8.0</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">net6.0</TargetFramework>
     <Configuration Condition=" '$(Configuration)' == '' ">Development</Configuration>
     <OutputType>Library</OutputType>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -27,19 +32,59 @@
     <SoloASUhtFunctionSpecifierFile>$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Specifiers\UhtFunctionSpecifiers.cs</SoloASUhtFunctionSpecifierFile>
     <SoloASUhtPropertyMemberSpecifierFile>$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Specifiers\UhtPropertyMemberSpecifiers.cs</SoloASUhtPropertyMemberSpecifierFile>
   </PropertyGroup>
-  <PropertyGroup Condition="Exists('$(SoloASUhtFunctionSpecifierFile)') and $([System.IO.File]::ReadAllText('$(SoloASUhtFunctionSpecifierFile)').Contains('ScriptCallableSpecifier'))">
-    <DefineConstants>$(DefineConstants);SOLOAS_UHT_BUILTIN_SCRIPT_CALLABLE</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="Exists('$(SoloASUhtPropertyMemberSpecifierFile)') and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptReadOnlySpecifier')) and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptReadOnly'))">
-    <DefineConstants>$(DefineConstants);SOLOAS_UHT_BUILTIN_SCRIPT_READ_ONLY</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="Exists('$(SoloASUhtPropertyMemberSpecifierFile)') and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptReadWriteSpecifier')) and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptReadWrite'))">
-    <DefineConstants>$(DefineConstants);SOLOAS_UHT_BUILTIN_SCRIPT_READ_WRITE</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="Exists('$(SoloASUhtPropertyMemberSpecifierFile)') and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptEditOnlySpecifier')) and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptEditOnly'))">
-    <DefineConstants>$(DefineConstants);SOLOAS_UHT_BUILTIN_SCRIPT_EDIT_ONLY</DefineConstants>
-  </PropertyGroup>
+  <!-- UBT project generation cannot evaluate MSBuild property functions. -->
+  <Target Name="SoloASResolveUhtCapabilities" BeforeTargets="CoreCompile">
+    <PropertyGroup Condition="Exists('$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Types\UhtNamespace.cs')">
+      <DefineConstants>$(DefineConstants);SOLOAS_UHT_NAMESPACES</DefineConstants>
+    </PropertyGroup>
+    <!-- UE 5.4-5.5 native codegen uses IncludeBase; 5.6+ exposes shortest-include lookup. -->
+    <PropertyGroup Condition="!$([System.IO.File]::ReadAllText('$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Utils\UhtExport.cs').Contains('GetModuleShortestIncludePath'))">
+      <DefineConstants>$(DefineConstants);SOLOAS_UHT_LEGACY_INCLUDE_PATH</DefineConstants>
+    </PropertyGroup>
+    <!-- UE-365552: UE 5.7 places UE_EXPERIMENTAL before the class keyword. -->
+    <!-- SOLOAS-COMPAT-BEGIN(5.7) Select the installed engine API and build dependencies [test: EngineVersionCompatibility] [id: CS.Compatibility.SoloASBridge.SoloASBridgeUht_ubtplugin_csproj.ExperimentalKeyword] -->
+    <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($([System.IO.File]::ReadAllText('$(EngineDir)\Build\Build.version')), '&quot;MinorVersion&quot;\s*:\s*7\s*,'))">
+      <DefineConstants>$(DefineConstants);SOLOAS_UHT_UE57</DefineConstants>
+    </PropertyGroup>
+    <!-- SOLOAS-COMPAT-END -->
+    <!-- UE 5.5 inline mesh accessors call a template that the installed Engine does not export. -->
+    <!-- SOLOAS-COMPAT-BEGIN(5.5) Select the installed engine API and build dependencies [test: EngineVersionCompatibility] [id: CS.Compatibility.SoloASBridge.SoloASBridgeUht_ubtplugin_csproj.MeshAccessorExports] -->
+    <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($([System.IO.File]::ReadAllText('$(EngineDir)\Build\Build.version')), '&quot;MinorVersion&quot;\s*:\s*5\s*,'))">
+      <DefineConstants>$(DefineConstants);SOLOAS_UHT_UE55</DefineConstants>
+    </PropertyGroup>
+    <!-- SOLOAS-COMPAT-END -->
+    <!-- UE 5.4-5.6 drops defaults for functions without BlueprintCallable/Exec. -->
+    <!-- SOLOAS-COMPAT-BEGIN(5.4-5.6) Select the installed engine API and build dependencies [test: EngineVersionCompatibility] [id: CS.Compatibility.SoloASBridge.SoloASBridgeUht_ubtplugin_csproj.LegacyDeclarationTraits] -->
+    <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($([System.IO.File]::ReadAllText('$(EngineDir)\Build\Build.version')), '&quot;MinorVersion&quot;\s*:\s*[456]\s*,'))">
+      <DefineConstants>$(DefineConstants);SOLOAS_UHT_LEGACY_SCRIPT_DEFAULTS;SOLOAS_UHT_LEGACY_DECLARATION_TRAITS</DefineConstants>
+    </PropertyGroup>
+    <!-- SOLOAS-COMPAT-END -->
+    <PropertyGroup Condition="Exists('$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Utils\UhtTypeTokens.cs') and $([System.IO.File]::ReadAllText('$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Utils\UhtTypeTokens.cs').Contains('DeclarationTokens'))">
+      <DefineConstants>$(DefineConstants);SOLOAS_UHT_TYPE_TOKENS</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="Exists('$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Utils\UhtTypeTokens.cs') and !$([System.IO.File]::ReadAllText('$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Utils\UhtTypeTokens.cs').Contains('DeclarationTokens'))">
+      <DefineConstants>$(DefineConstants);SOLOAS_UHT_SEGMENT_TOKENS</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="Exists('$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Tokenizer\UhtTokenReplayReader.cs') and $([System.IO.File]::ReadAllText('$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Tokenizer\UhtTokenReplayReader.cs').Contains('struct UhtTokenReplayReaderBorrower'))">
+      <DefineConstants>$(DefineConstants);SOLOAS_UHT_REPLAY_READER_BORROWER</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="Exists('$(SoloASUhtFunctionSpecifierFile)') and $([System.IO.File]::ReadAllText('$(SoloASUhtFunctionSpecifierFile)').Contains('ScriptCallableSpecifier'))">
+      <DefineConstants>$(DefineConstants);SOLOAS_UHT_BUILTIN_SCRIPT_CALLABLE</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="Exists('$(SoloASUhtPropertyMemberSpecifierFile)') and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptReadOnlySpecifier')) and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptReadOnly'))">
+      <DefineConstants>$(DefineConstants);SOLOAS_UHT_BUILTIN_SCRIPT_READ_ONLY</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="Exists('$(SoloASUhtPropertyMemberSpecifierFile)') and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptReadWriteSpecifier')) and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptReadWrite'))">
+      <DefineConstants>$(DefineConstants);SOLOAS_UHT_BUILTIN_SCRIPT_READ_WRITE</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="Exists('$(SoloASUhtPropertyMemberSpecifierFile)') and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptEditOnlySpecifier')) and $([System.IO.File]::ReadAllText('$(SoloASUhtPropertyMemberSpecifierFile)').Contains('ScriptEditOnly'))">
+      <DefineConstants>$(DefineConstants);SOLOAS_UHT_BUILTIN_SCRIPT_EDIT_ONLY</DefineConstants>
+    </PropertyGroup>
+  </Target>
 
+  <PropertyGroup Condition="!Exists('$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Types\UhtModule.cs')">
+    <DefineConstants>$(DefineConstants);SOLOAS_UHT_UE54</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="EpicGames.Core">
       <HintPath>$(EngineDir)\Binaries\DotNET\UnrealBuildTool\EpicGames.Core.dll</HintPath>

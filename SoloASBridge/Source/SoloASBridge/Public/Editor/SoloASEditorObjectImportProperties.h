@@ -10,6 +10,8 @@ namespace SoloASBridge
 {
 using FEditorObjectImportPredicate = bool (*)(const FImportObjectParams&);
 using FEditorObjectImportAdapter = const TCHAR* (*)(FImportObjectParams&);
+SOLOASBRIDGE_API bool HasUnsupportedT3DOverrideTokens(const TCHAR* Text);
+SOLOASBRIDGE_API const TCHAR* ImportObjectPropertiesNative(FImportObjectParams& Params);
 
 SOLOASBRIDGE_API void SetEditorObjectImportPropertiesAdapter(
 	FEditorObjectImportPredicate Predicate,

@@ -4,6 +4,9 @@
 #include "AngelscriptType.h"
 #include "AngelscriptBindDatabase.h"
 
+                                                                                                    
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                  
 #include "UObject/UObjectIterator.h"
 #include "UObject/UnrealType.h"
 #include "UObject/ScriptMacros.h"
@@ -107,6 +110,7 @@ struct FEnumType : FAngelscriptType
 				FInt8Property::StaticClass()->Construct(EnumProp, NAME_ENUM_UnderlyingType));
 			EnumProp->SetEnum(UsedEnum);
 			EnumProp->AddCppProperty(Int8Prop);
+			SoloASBridge::Compat::ObserveEnumPropertyStorage(UsedEnum, Int8Prop);
 			return EnumProp;
 		}
                                                                                              
@@ -116,14 +120,17 @@ struct FEnumType : FAngelscriptType
                                                                                                                            
 #if 0
                                                                                                                          
+                                                                                                            
 			auto* EnumProp = new FEnumProperty(Params.Outer, Params.PropertyName, RF_Public);
 			auto* ByteProp = new FByteProperty(EnumProp, NAME_ENUM_UnderlyingType, RF_Public);
+                                                                                                          
                                                                                                                     
 #endif
 			auto* EnumProp = CastFieldChecked<FEnumProperty>(
 				FEnumProperty::StaticClass()->Construct(Params.Outer, Params.PropertyName));
 			auto* ByteProp = CastFieldChecked<FByteProperty>(
 				FByteProperty::StaticClass()->Construct(EnumProp, NAME_ENUM_UnderlyingType));
+			SoloASBridge::Compat::ObserveEnumPropertyStorage(UsedEnum, ByteProp);
                                                                                                                   
 
 			EnumProp->SetEnum(UsedEnum);
@@ -136,7 +143,9 @@ struct FEnumType : FAngelscriptType
                                                                                                                            
 #if 0
                                                                                                                          
+                                                                                                            
 			auto* ByteProp = new FByteProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                          
                                                                                                                     
 #endif
 			auto* ByteProp = CastFieldChecked<FByteProperty>(
@@ -498,12 +507,8 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Enums((int32)FAngelscriptBinds
 			EnumBind[Name] = Enum->GetValueByIndex(Index);
                                                                                                           
 #endif
-			const int64 EnumValue = Enum->GetValueByIndex(Index);
-			if (EnumValue < MIN_int8 || EnumValue > MAX_int8)
-			{
-				continue;
-			}
-			EnumBind[Name] = static_cast<int8>(EnumValue);
+			// Enum declarations use the VM's int32 registration API, independently of property storage.
+			EnumBind[Name] = Enum->GetValueByIndex(Index);
                                                                                                         
 		}
 

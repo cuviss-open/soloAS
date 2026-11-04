@@ -1,0 +1,1190 @@
+{
+  "schemaVersion": 1,
+  "sdk": "5.8.4",
+  "modules": [
+    {
+      "plugin": "ActorModifierCore",
+      "type": "Runtime",
+      "source": "Plugins/VirtualProduction/ActorModifierCore/Source/ActorModifierCore",
+      "module": "ActorModifierCore",
+      "callerModule": "SAC_e889b740"
+    },
+    {
+      "plugin": "ActorModifier",
+      "type": "Runtime",
+      "source": "Plugins/VirtualProduction/ActorModifier/Source/ActorModifierLayout",
+      "module": "ActorModifierLayout",
+      "callerModule": "SAC_bf094c3c"
+    },
+    {
+      "plugin": "AnimGen",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/Animation/AnimGen/Source/AnimGen",
+      "module": "AnimGen",
+      "callerModule": "SAC_0d092bd1"
+    },
+    {
+      "plugin": "",
+      "type": "Editor",
+      "source": "Source/Editor/AnimGraph",
+      "module": "AnimGraph",
+      "callerModule": "SAC_f1fb7939"
+    },
+    {
+      "plugin": "",
+      "type": "Editor",
+      "source": "Source/Editor/AnimationBlueprintLibrary",
+      "module": "AnimationBlueprintLibrary",
+      "callerModule": "SAC_8f9cc8d6"
+    },
+    {
+      "plugin": "AudioGameplay",
+      "type": "Runtime",
+      "source": "Plugins/AudioGameplay/Source/AudioGameplay",
+      "module": "AudioGameplay",
+      "callerModule": "SAC_193f112b"
+    },
+    {
+      "plugin": "AudioMotorSim",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/AudioMotorSim/Source/AudioMotorSim",
+      "module": "AudioMotorSim",
+      "callerModule": "SAC_ccabc5b5"
+    },
+    {
+      "plugin": "",
+      "type": "Runtime",
+      "source": "Source/Runtime/AugmentedReality",
+      "module": "AugmentedReality",
+      "callerModule": "SAC_c0383b9f"
+    },
+    {
+      "plugin": "Avalanche",
+      "type": "Runtime",
+      "source": "Plugins/VirtualProduction/Avalanche/Source/AvalancheModifiers",
+      "module": "AvalancheModifiers",
+      "callerModule": "SAC_21572214"
+    },
+    {
+      "plugin": "Avalanche",
+      "type": "Runtime",
+      "source": "Plugins/VirtualProduction/Avalanche/Source/AvalancheSequence",
+      "module": "AvalancheSequence",
+      "callerModule": "SAC_a2973c6d"
+    },
+    {
+      "plugin": "Avalanche",
+      "type": "RuntimeAndProgram",
+      "source": "Plugins/VirtualProduction/Avalanche/Source/AvalancheShapes",
+      "module": "AvalancheShapes",
+      "callerModule": "SAC_0549f69d"
+    },
+    {
+      "plugin": "BinkMedia",
+      "type": "Runtime",
+      "source": "Plugins/Media/BinkMedia/Source/BinkMediaPlayer",
+      "module": "BinkMediaPlayer",
+      "callerModule": "SAC_71de6bed"
+    },
+    {
+      "plugin": "",
+      "type": "Editor",
+      "source": "Source/Editor/Blutility",
+      "module": "Blutility",
+      "callerModule": "SAC_6e4c1453"
+    },
+    {
+      "plugin": "ChaosClothAsset",
+      "type": "Runtime",
+      "source": "Plugins/ChaosClothAsset/Source/ChaosClothAssetEngine",
+      "module": "ChaosClothAssetEngine",
+      "callerModule": "SAC_c0c01674"
+    },
+    {
+      "plugin": "ChaosMover",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/ChaosMover/Source/ChaosMover",
+      "module": "ChaosMover",
+      "includePaths": [
+        {
+          "engineMinor": 6,
+          "relativePath": "Private"
+        }
+      ],
+      "callerModule": "SAC_8014fbda"
+    },
+    {
+      "plugin": "ChaosVehiclesPlugin",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/ChaosVehiclesPlugin/Source/ChaosVehicles",
+      "module": "ChaosVehicles",
+      "callerModule": "SAC_4f708b72"
+    },
+    {
+      "plugin": "ClonerEffector",
+      "type": "Runtime",
+      "source": "Plugins/VirtualProduction/ClonerEffector/Source/ClonerEffector",
+      "module": "ClonerEffector",
+      "callerModule": "SAC_32f6b6b3"
+    },
+    {
+      "plugin": "CommonUI",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/CommonUI/Source/CommonInput",
+      "module": "CommonInput",
+      "callerModule": "SAC_f84562e9"
+    },
+    {
+      "plugin": "CommonUI",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/CommonUI/Source/CommonUI",
+      "module": "CommonUI",
+      "callerModule": "SAC_ba7a8088"
+    },
+    {
+      "plugin": "Composite",
+      "type": "Runtime",
+      "source": "Plugins/Compositing/Composite/Source/Composite",
+      "module": "Composite",
+      "callerModule": "SAC_8e358815"
+    },
+    {
+      "plugin": "Composure",
+      "type": "Runtime",
+      "source": "Plugins/Compositing/Composure/Source/Composure",
+      "module": "Composure",
+      "callerModule": "SAC_f68e3a0f"
+    },
+    {
+      "plugin": "ConcertReplicationScripting",
+      "type": "Runtime",
+      "source": "Plugins/Developer/Concert/ConcertScripting/ConcertReplicationScripting/Source/ConcertReplicationScripting",
+      "module": "ConcertReplicationScripting",
+      "callerModule": "SAC_0b549976"
+    },
+    {
+      "plugin": "ConsoleVariables",
+      "type": "Runtime",
+      "source": "Plugins/Editor/ConsoleVariablesEditor/Source/ConsoleVariablesEditorRuntime",
+      "module": "ConsoleVariablesEditorRuntime",
+      "callerModule": "SAC_99343b85"
+    },
+    {
+      "plugin": "ContextualAnimation",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/Animation/ContextualAnimation/Source/ContextualAnimation",
+      "module": "ContextualAnimation",
+      "callerModule": "SAC_a1a69238"
+    },
+    {
+      "plugin": "Mutable",
+      "type": "Runtime",
+      "source": "Plugins/Mutable/Source/CustomizableObject",
+      "module": "CustomizableObject",
+      "callerModule": "SAC_ecbab458"
+    },
+    {
+      "plugin": "DataprepEditor",
+      "type": "Editor",
+      "source": "Plugins/Enterprise/DataprepEditor/Source/DataprepCore",
+      "module": "DataprepCore",
+      "callerModule": "SAC_79a82bb4"
+    },
+    {
+      "plugin": "DynamicMaterial",
+      "type": "RuntimeAndProgram",
+      "source": "Plugins/VirtualProduction/DynamicMaterial/Source/DynamicMaterial",
+      "module": "DynamicMaterial",
+      "callerModule": "SAC_b80f5d8b"
+    },
+    {
+      "plugin": "DynamicMaterial",
+      "type": "Editor",
+      "source": "Plugins/VirtualProduction/DynamicMaterial/Source/DynamicMaterialEditor",
+      "module": "DynamicMaterialEditor",
+      "callerModule": "SAC_4d574013"
+    },
+    {
+      "plugin": "",
+      "type": "Runtime",
+      "source": "Source/Runtime/Engine",
+      "module": "Engine",
+      "callerModule": "SAC_8e75ebbd"
+    },
+    {
+      "plugin": "EnhancedInput",
+      "type": "Runtime",
+      "source": "Plugins/EnhancedInput/Source/EnhancedInput",
+      "module": "EnhancedInput",
+      "callerModule": "SAC_32f01aea"
+    },
+    {
+      "plugin": "GameInput",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/GameInput/Source/GameInputBase",
+      "module": "GameInputBase",
+      "callerModule": "SAC_2f807e29"
+    },
+    {
+      "plugin": "GameplayAbilities",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities",
+      "module": "GameplayAbilities",
+      "callerModule": "SAC_a5efe256"
+    },
+    {
+      "plugin": "GeneSplicer",
+      "type": "Runtime",
+      "source": "Plugins/Animation/GeneSplicer/Source/GeneSplicerModule",
+      "module": "GeneSplicerModule",
+      "callerModule": "SAC_2dd5364e"
+    },
+    {
+      "plugin": "GeoReferencing",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/GeoReferencing/Source/GeoReferencing",
+      "module": "GeoReferencing",
+      "callerModule": "SAC_7690dbdf"
+    },
+    {
+      "plugin": "HairStrands",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/HairStrands/Source/HairStrandsCore",
+      "module": "HairStrandsCore",
+      "callerModule": "SAC_ad6cd2c9"
+    },
+    {
+      "plugin": "Harmonix",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/Harmonix/Source/HarmonixMetasound",
+      "module": "HarmonixMetasound",
+      "callerModule": "SAC_f7bbe1e8"
+    },
+    {
+      "plugin": "HttpBlueprint",
+      "type": "Runtime",
+      "source": "Plugins/Web/HttpBlueprint/Source/HttpBlueprint",
+      "module": "HttpBlueprint",
+      "callerModule": "SAC_9d95082a"
+    },
+    {
+      "plugin": "IKRig",
+      "type": "Editor",
+      "source": "Plugins/Animation/IKRig/Source/IKRigEditor",
+      "module": "IKRigEditor",
+      "callerModule": "SAC_f261f94a"
+    },
+    {
+      "plugin": "InteractionInterface",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/InteractionInterface/Source/InteractableInterface",
+      "module": "InteractableInterface",
+      "callerModule": "SAC_0be403cf"
+    },
+    {
+      "plugin": "",
+      "type": "Runtime",
+      "source": "Source/Runtime/Interchange/Core",
+      "module": "InterchangeCore",
+      "callerModule": "SAC_59250736"
+    },
+    {
+      "plugin": "",
+      "type": "Runtime",
+      "source": "Source/Runtime/Interchange/Engine",
+      "module": "InterchangeEngine",
+      "callerModule": "SAC_6353b4b1"
+    },
+    {
+      "plugin": "Interchange",
+      "type": "Runtime",
+      "source": "Plugins/Interchange/Runtime/Source/Pipelines",
+      "module": "InterchangePipelines",
+      "callerModule": "SAC_eb5d0bd2"
+    },
+    {
+      "plugin": "LandscapePatch",
+      "type": "Runtime",
+      "source": "Plugins/Editor/LandscapePatch/Source/LandscapePatch",
+      "module": "LandscapePatch",
+      "callerModule": "SAC_a6e8e1c2"
+    },
+    {
+      "plugin": "LearningAgents",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/LearningAgents/Source/LearningAgents",
+      "module": "LearningAgents",
+      "callerModule": "SAC_ac5ec40a"
+    },
+    {
+      "plugin": "LensComponent",
+      "type": "Runtime",
+      "source": "Plugins/VirtualProduction/LensComponent/Source/LensComponent",
+      "module": "LensComponent",
+      "callerModule": "SAC_98b27e58"
+    },
+    {
+      "plugin": "",
+      "type": "Runtime",
+      "source": "Source/Runtime/LevelSequence",
+      "module": "LevelSequence",
+      "callerModule": "SAC_f65623e7"
+    },
+    {
+      "plugin": "LidarPointCloud",
+      "type": "Runtime",
+      "source": "Plugins/Enterprise/LidarPointCloud/Source/LidarPointCloudRuntime",
+      "module": "LidarPointCloudRuntime",
+      "callerModule": "SAC_6d02b31d"
+    },
+    {
+      "plugin": "CaptureManagerApp",
+      "type": "Editor",
+      "source": "Plugins/VirtualProduction/CaptureManager/CaptureManagerApp/Source/LiveLinkCapabilities",
+      "module": "LiveLinkCapabilities",
+      "callerModule": "SAC_a2a24153"
+    },
+    {
+      "plugin": "MLDeformerFramework",
+      "type": "Runtime",
+      "source": "Plugins/Animation/MLDeformer/MLDeformerFramework/Source/MLDeformerFramework",
+      "module": "MLDeformerFramework",
+      "callerModule": "SAC_5abcbf4e"
+    },
+    {
+      "plugin": "",
+      "type": "Runtime",
+      "source": "Source/Runtime/MRMesh",
+      "module": "MRMesh",
+      "callerModule": "SAC_12d00590"
+    },
+    {
+      "plugin": "MaterialValidation",
+      "type": "Editor",
+      "source": "Plugins/Editor/MaterialValidation/Source",
+      "module": "MaterialValidation",
+      "callerModule": "SAC_7cf16a47"
+    },
+    {
+      "plugin": "",
+      "type": "Runtime",
+      "source": "Source/Runtime/MediaAssets",
+      "module": "MediaAssets",
+      "callerModule": "SAC_00d56167"
+    },
+    {
+      "plugin": "MediaStream",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/MediaStream/Source/MediaStream",
+      "module": "MediaStream",
+      "callerModule": "SAC_f6f164ad"
+    },
+    {
+      "plugin": "MeshLODToolset",
+      "type": "Editor",
+      "source": "Plugins/Editor/MeshLODToolset/Source/MeshLODToolset",
+      "module": "MeshLODToolset",
+      "callerModule": "SAC_76890581"
+    },
+    {
+      "plugin": "MeshModelingToolset",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/MeshModelingToolset/Source/MeshModelingTools",
+      "module": "MeshModelingTools",
+      "callerModule": "SAC_6b4686db"
+    },
+    {
+      "plugin": "MeshModelingToolsetExp",
+      "type": "Editor",
+      "source": "Plugins/Experimental/MeshModelingToolsetExp/Source/MeshModelingToolsEditorOnlyExp",
+      "module": "MeshModelingToolsEditorOnlyExp",
+      "callerModule": "SAC_004c0086"
+    },
+    {
+      "plugin": "MeshModelingToolsetExp",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/MeshModelingToolsetExp/Source/MeshModelingToolsExp",
+      "module": "MeshModelingToolsExp",
+      "callerModule": "SAC_4448388b"
+    },
+    {
+      "plugin": "MeshPartition",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/MeshPartition/Source/MeshPartition",
+      "module": "MeshPartition",
+      "callerModule": "SAC_e3e4b06e"
+    },
+    {
+      "plugin": "MetaHumanCharacter",
+      "type": "Runtime",
+      "source": "Plugins/MetaHuman/MetaHumanCharacter/Source/MetaHumanCharacterPalette",
+      "module": "MetaHumanCharacterPalette",
+      "callerModule": "SAC_6c8c0d47"
+    },
+    {
+      "plugin": "MetaHumanCharacter",
+      "type": "Editor",
+      "source": "Plugins/MetaHuman/MetaHumanCharacter/Source/MetaHumanDefaultEditorPipeline",
+      "module": "MetaHumanDefaultEditorPipeline",
+      "callerModule": "SAC_4c951402"
+    },
+    {
+      "plugin": "MetaHuman",
+      "type": "Editor",
+      "source": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanIdentity",
+      "module": "MetaHumanIdentity",
+      "callerModule": "SAC_7d25fadd"
+    },
+    {
+      "plugin": "MetaHumanSDK",
+      "type": "Editor",
+      "source": "Plugins/MetaHuman/MetaHumanSDK/Source/MetaHumanSDKEditor",
+      "module": "MetaHumanSDKEditor",
+      "callerModule": "SAC_d4206f9e"
+    },
+    {
+      "plugin": "ModelViewViewModel",
+      "type": "Editor",
+      "source": "Plugins/Runtime/ModelViewViewModel/Source/ModelViewViewModelEditor",
+      "module": "ModelViewViewModelEditor",
+      "callerModule": "SAC_fa3aad5f"
+    },
+    {
+      "plugin": "MeshModelingToolset",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/MeshModelingToolset/Source/ModelingComponents",
+      "module": "ModelingComponents",
+      "callerModule": "SAC_7544c2d2"
+    },
+    {
+      "plugin": "Mover",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/Mover/Source/Mover",
+      "module": "Mover",
+      "callerModule": "SAC_6624c0d3"
+    },
+    {
+      "plugin": "MovieRenderPipeline",
+      "type": "Runtime",
+      "source": "Plugins/MovieScene/MovieRenderPipeline/Source/MovieRenderPipelineCore",
+      "module": "MovieRenderPipelineCore",
+      "callerModule": "SAC_8059e8ad"
+    },
+    {
+      "plugin": "",
+      "type": "Runtime",
+      "source": "Source/Runtime/MovieScene",
+      "module": "MovieScene",
+      "callerModule": "SAC_79076901"
+    },
+    {
+      "plugin": "",
+      "type": "Runtime",
+      "source": "Source/Runtime/MovieSceneTracks",
+      "module": "MovieSceneTracks",
+      "callerModule": "SAC_34745ed5"
+    },
+    {
+      "plugin": "NamingTokens",
+      "type": "Runtime",
+      "source": "Plugins/Developer/NamingTokens/Source/NamingTokensUI",
+      "module": "NamingTokensUI",
+      "callerModule": "SAC_3809a56c"
+    },
+    {
+      "plugin": "NaniteAssemblyEditorUtils",
+      "type": "Editor",
+      "source": "Plugins/Experimental/NaniteAssemblyEditorUtils/Source/NaniteAssemblyEditorUtils",
+      "module": "NaniteAssemblyEditorUtils",
+      "callerModule": "SAC_d904b68b"
+    },
+    {
+      "plugin": "NearestNeighborModel",
+      "type": "Runtime",
+      "source": "Plugins/Animation/MLDeformer/NearestNeighborModel/Source/NearestNeighborModel",
+      "module": "NearestNeighborModel",
+      "callerModule": "SAC_5f0fc97b"
+    },
+    {
+      "plugin": "Niagara",
+      "type": "Runtime",
+      "source": "Plugins/FX/Niagara/Source/Niagara",
+      "module": "Niagara",
+      "callerModule": "SAC_3a7d2c6a"
+    },
+    {
+      "plugin": "OSC",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/OSC/Source/OSC",
+      "module": "OSC",
+      "callerModule": "SAC_37ba07da"
+    },
+    {
+      "plugin": "OpenColorIO",
+      "type": "Runtime",
+      "source": "Plugins/Compositing/OpenColorIO/Source/OpenColorIO",
+      "module": "OpenColorIO",
+      "callerModule": "SAC_66e47cd0"
+    },
+    {
+      "plugin": "DeformerGraph",
+      "type": "Runtime",
+      "source": "Plugins/Animation/DeformerGraph/Source/OptimusCore",
+      "module": "OptimusCore",
+      "callerModule": "SAC_592f1028"
+    },
+    {
+      "plugin": "PCG",
+      "type": "Runtime",
+      "source": "Plugins/PCG/Source/PCG",
+      "module": "PCG",
+      "callerModule": "SAC_551a28c8"
+    },
+    {
+      "plugin": "PCGExternalDataInterop",
+      "type": "Editor",
+      "source": "Plugins/PCGInterops/PCGExternalDataInterop/Source/PCGExternalDataInteropEditor",
+      "module": "PCGExternalDataInteropEditor",
+      "callerModule": "SAC_3c0b1b40"
+    },
+    {
+      "plugin": "PSDImporter",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/PSDImporter/Source/PSDImporter",
+      "module": "PSDImporter",
+      "callerModule": "SAC_c76a72be"
+    },
+    {
+      "plugin": "PhysicsControl",
+      "type": "Runtime",
+      "source": "Plugins/Animation/PhysicsControl/Source/PhysicsControl",
+      "module": "PhysicsControl",
+      "callerModule": "SAC_bb437010"
+    },
+    {
+      "module": "PythonScriptPlugin",
+      "plugin": "PythonScriptPlugin",
+      "type": "Editor",
+      "source": "Plugins/Experimental/PythonScriptPlugin/Source/PythonScriptPlugin",
+      "callerModule": "SAC_2fa14010"
+    },
+    {
+      "plugin": "RelativeIKOp",
+      "type": "Editor",
+      "source": "Plugins/Experimental/Animation/RelativeIKOp/Source/RelativeBodyAnimUtils",
+      "module": "RelativeBodyAnimUtils",
+      "callerModule": "SAC_4e506ccc"
+    },
+    {
+      "plugin": "RigVM",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/RigVM/Source/RigVM",
+      "module": "RigVM",
+      "callerModule": "SAC_c403894e"
+    },
+    {
+      "plugin": "RigVM",
+      "type": "UncookedOnly",
+      "source": "Plugins/Runtime/RigVM/Source/RigVMDeveloper",
+      "module": "RigVMDeveloper",
+      "callerModule": "SAC_51b1db90"
+    },
+    {
+      "plugin": "SkeletalMeshMorphTargetEditingTools",
+      "type": "Editor",
+      "source": "Plugins/Experimental/Animation/SkeletalMeshMorphTargetEditingTools/Source/SkeletalMeshMorphTargetEditingTools",
+      "module": "SkeletalMeshMorphTargetEditingTools",
+      "callerModule": "SAC_1eecdd5c"
+    },
+    {
+      "plugin": "",
+      "type": "Runtime",
+      "source": "Source/Runtime/SlateRHIRenderer",
+      "module": "SlateRHIRenderer",
+      "callerModule": "SAC_22b8c031"
+    },
+    {
+      "plugin": "SmartObjects",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/SmartObjects/Source/SmartObjectsModule",
+      "module": "SmartObjectsModule",
+      "callerModule": "SAC_5fa6903f"
+    },
+    {
+      "plugin": "Synthesis",
+      "type": "Runtime",
+      "source": "Plugins/Runtime/Synthesis/Source/Synthesis",
+      "module": "Synthesis",
+      "callerModule": "SAC_7de5a138"
+    },
+    {
+      "plugin": "Takes",
+      "type": "Runtime",
+      "source": "Plugins/VirtualProduction/Takes/Source/TakesCore",
+      "module": "TakesCore",
+      "callerModule": "SAC_6874da38"
+    },
+    {
+      "plugin": "Text3D",
+      "type": "Runtime",
+      "source": "Plugins/VirtualProduction/Text3D/Source/Text3D",
+      "module": "Text3D",
+      "callerModule": "SAC_ededfda6"
+    },
+    {
+      "plugin": "TextureGraph",
+      "type": "Runtime",
+      "source": "Plugins/TextureGraph/Source/TextureGraph",
+      "module": "TextureGraph",
+      "callerModule": "SAC_b9d97282"
+    },
+    {
+      "plugin": "TextureGraph",
+      "type": "Runtime",
+      "source": "Plugins/TextureGraph/Source/TextureGraphEngine",
+      "module": "TextureGraphEngine",
+      "callerModule": "SAC_774c043b"
+    },
+    {
+      "plugin": "",
+      "type": "Developer",
+      "source": "Source/Developer/ToolWidgets",
+      "module": "ToolWidgets",
+      "callerModule": "SAC_fbf34722"
+    },
+    {
+      "plugin": "CameraCalibration",
+      "type": "Runtime",
+      "source": "Plugins/VirtualProduction/CameraCalibration/Source/TrackingAlignment",
+      "module": "TrackingAlignment",
+      "callerModule": "SAC_34e0eb78"
+    },
+    {
+      "plugin": "",
+      "type": "Runtime",
+      "source": "Source/Runtime/UMG",
+      "module": "UMG",
+      "callerModule": "SAC_d3e43610"
+    },
+    {
+      "plugin": "UMGWidgetPreview",
+      "type": "Editor",
+      "source": "Plugins/Editor/UMGWidgetPreview/Source/UMGWidgetPreview",
+      "module": "UMGWidgetPreview",
+      "callerModule": "SAC_3e1d7556"
+    },
+    {
+      "plugin": "UVEditor",
+      "type": "Editor",
+      "source": "Plugins/Editor/UVEditor/Source/UVEditor",
+      "module": "UVEditor",
+      "callerModule": "SAC_9a23e3de"
+    },
+    {
+      "plugin": "UVEditor",
+      "type": "Editor",
+      "source": "Plugins/Editor/UVEditor/Source/UVEditorTools",
+      "module": "UVEditorTools",
+      "callerModule": "SAC_8ce91f0e"
+    },
+    {
+      "plugin": "",
+      "type": "Editor",
+      "source": "Source/Editor/UnrealEd",
+      "module": "UnrealEd",
+      "callerModule": "SAC_7d068d7d"
+    },
+    {
+      "plugin": "VirtualCameraCore",
+      "type": "Runtime",
+      "source": "Plugins/VirtualProduction/VirtualCameraCore/Source/VCamCore",
+      "module": "VCamCore",
+      "callerModule": "SAC_c104c5bb"
+    },
+    {
+      "plugin": "",
+      "type": "Editor",
+      "source": "Source/Editor/VREditor",
+      "module": "VREditor",
+      "callerModule": "SAC_e250a235"
+    },
+    {
+      "plugin": "VariantManagerContent",
+      "type": "Runtime",
+      "source": "Plugins/Enterprise/VariantManagerContent/Source/VariantManagerContent",
+      "module": "VariantManagerContent",
+      "callerModule": "SAC_88f7fc40"
+    },
+    {
+      "plugin": "",
+      "type": "Editor",
+      "source": "Source/Editor/ViewportInteraction",
+      "module": "ViewportInteraction",
+      "callerModule": "SAC_9e7e2efd"
+    },
+    {
+      "plugin": "Water",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/Water/Source/Runtime",
+      "module": "Water",
+      "callerModule": "SAC_7ca7dea9"
+    },
+    {
+      "plugin": "WebAPI",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/Web/WebAPI/Source/WebAPI",
+      "module": "WebAPI",
+      "callerModule": "SAC_af2715ff"
+    },
+    {
+      "plugin": "XRCreativeFramework",
+      "type": "Runtime",
+      "source": "Plugins/Experimental/XRCreativeFramework/Source/XRCreative",
+      "module": "XRCreative",
+      "callerModule": "SAC_ae1242a3"
+    }
+  ],
+  "sourceBuildPolicies": [
+    {
+      "engineMinor": 4,
+      "rulesSha256": "bb505555856fc44900a780226301df5c5b7b6031b914c697fcae6aedb4233884",
+      "sourceBuildModules": [],
+      "skippedModules": []
+    },
+    {
+      "engineMinor": 5,
+      "rulesSha256": "1a500a77da8b10cb7cfa7c33a49a3295035fbb6a65ff1aa6252bce1c9a40c4dc",
+      "sourceBuildModules": [
+        {
+          "module": "CaptureDataUtils",
+          "path": "Plugins/VirtualProduction/CaptureData/Source/CaptureDataUtils/CaptureDataUtils.Build.cs",
+          "sha256": "aecb31db60cf14ad29b7040169944f4bf257c11928de0e39451370fd464a9f38"
+        }
+      ],
+      "skippedModules": []
+    },
+    {
+      "engineMinor": 6,
+      "rulesSha256": "e977742493188b3dbe40b18a37425a778bab5570cef4d3d005cb533a795fb349",
+      "sourceBuildModules": [
+        {
+          "module": "CaptureDataUtils",
+          "path": "Plugins/VirtualProduction/CaptureData/Source/CaptureDataUtils/CaptureDataUtils.Build.cs",
+          "sha256": "3850b9573fadd26c194ec97622819e217781fa2c212a07b86d64190606b5abd7"
+        },
+        {
+          "module": "CaptureProtocolStack",
+          "path": "Plugins/VirtualProduction/CaptureManager/CaptureManagerCore/Source/CaptureProtocolStack/CaptureProtocolStack.Build.cs",
+          "sha256": "706297e3b3e8d8c563484a993bac8cb12e3e687f8f018abbf7964cf01b7977dc"
+        },
+        {
+          "module": "MetaHumanBatchProcessor",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanBatchProcessor/MetaHumanBatchProcessor.build.cs",
+          "sha256": "0c2b5c565e262e0509c9450a4bffbdb3b4e23d303c30b60ddb44ebc79dd3ebc8"
+        },
+        {
+          "module": "MetaHumanCalibrationGenerator",
+          "path": "Plugins/MetaHuman/MetaHumanCalibrationProcessing/Source/MetaHumanCalibrationGenerator/MetaHumanCalibrationGenerator.Build.cs",
+          "sha256": "bf753e83d4a2f345a57ec78c172041e6a64c11d68463ffaf4858aa0ab2e75832"
+        },
+        {
+          "module": "MetaHumanCalibrationLib",
+          "path": "Plugins/MetaHuman/MetaHumanCalibrationProcessing/Source/MetaHumanCalibrationLib/MetaHumanCalibrationLib.Build.cs",
+          "sha256": "eb0270b71e5328f2d46d418cb644aed83c122d079434241c260eca7bc6bd0bec"
+        },
+        {
+          "module": "MetaHumanCaptureData",
+          "path": "Plugins/MetaHuman/MetaHumanCoreTechLib/Source/MetaHumanCaptureData/MetaHumanCaptureData.Build.cs",
+          "sha256": "96f1573d38882a45442ea3ecceeda27f2d5d21f62405de06427def3c8a941b56"
+        },
+        {
+          "module": "MetaHumanCaptureDataEditor",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanCaptureDataEditor/MetaHumanCaptureDataEditor.Build.cs",
+          "sha256": "b3f6b59d54b416a4869feaefdc4b1fbf08c671497f30ca1be45ee93e69b9cb7e"
+        },
+        {
+          "module": "MetaHumanCaptureProtocolStack",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanCaptureProtocolStack/MetaHumanCaptureProtocolStack.Build.cs",
+          "sha256": "b9fabe362ea59fa6c40574fbed108fa56d6691ef743607dea8704b480231e427"
+        },
+        {
+          "module": "MetaHumanCaptureSource",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanCaptureSource/MetaHumanCaptureSource.Build.cs",
+          "sha256": "f63483479c190473829e855b386c93b42d9cb4fc586382b9a1c62bef3b5743f3"
+        },
+        {
+          "module": "MetaHumanCaptureUtils",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanCaptureUtils/MetaHumanCaptureUtils.Build.cs",
+          "sha256": "231f9c1c43af1f427c1132f061f43eb0dc7d50bea6f94e3a165d99ec8e607dbc"
+        },
+        {
+          "module": "MetaHumanConfig",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanConfig/MetaHumanConfig.Build.cs",
+          "sha256": "abe658aa5596c83081b41532a92cf73ec8ac052b1e7893a0df57d6df40e4a5fd"
+        },
+        {
+          "module": "MetaHumanConfigEditor",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanConfigEditor/MetaHumanConfigEditor.Build.cs",
+          "sha256": "124b15bc87b35941e37004b438c119729bda272d7b6df79f3b5770cc9110cb39"
+        },
+        {
+          "module": "MetaHumanControlsConversionTest",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanControlsConversionTest/MetaHumanControlsConversionTest.Build.cs",
+          "sha256": "003e135c783eb70a2c64321f47aec952f1d696bbcac01e1fe90534cd04f4010f"
+        },
+        {
+          "module": "MetaHumanCore",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanCore/MetaHumanCore.Build.cs",
+          "sha256": "d977a4d3168579e8e9e2222849f5ce2844ec0a602e47e87d2cfd3bee835d92c2"
+        },
+        {
+          "module": "MetaHumanCoreEditor",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanCoreEditor/MetaHumanCoreEditor.Build.cs",
+          "sha256": "e21f82b161af0dfd6ebb746a42dc4c1b95193ad8d89d1d65cc380a08f0da42b8"
+        },
+        {
+          "module": "MetaHumanCoreTech",
+          "path": "Plugins/MetaHuman/MetaHumanCoreTechLib/Source/MetaHumanCoreTech/MetaHumanCoreTech.Build.cs",
+          "sha256": "1325afa38115fd5a9e2a9008d97cc577f622b778a443d111885a5301bbd760ee"
+        },
+        {
+          "module": "MetaHumanCoreTechLib",
+          "path": "Plugins/MetaHuman/MetaHumanCoreTechLib/Source/MetaHumanCoreTechLib/MetaHumanCoreTechLib.Build.cs",
+          "sha256": "e6e6770216f9e7d5e0bbbc0c8fb742e82d91f3b5d048fc95b6fcd9784e5ee90c"
+        },
+        {
+          "module": "MetaHumanDepthGenerator",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanDepthGenerator/MetaHumanDepthGenerator.Build.cs",
+          "sha256": "e9f61c93d571c92329e77149c9c9c7d0f13e98230c3490091200732cd8f7d243"
+        },
+        {
+          "module": "MetaHumanFaceAnimationSolver",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanFaceAnimationSolver/MetaHumanFaceAnimationSolver.Build.cs",
+          "sha256": "662372bb1547be79100aa5de9955bb887d6f5f9466941b83bb976eb5a45f1b25"
+        },
+        {
+          "module": "MetaHumanFaceAnimationSolverEditor",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanFaceAnimationSolverEditor/MetaHumanFaceAnimationSolverEditor.Build.cs",
+          "sha256": "1457ef9e7fff012e42d15659fb165d1db6c810b8a990dd3a897b0d0dba5cff2e"
+        },
+        {
+          "module": "MetaHumanFaceContourTracker",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanFaceContourTracker/MetaHumanFaceContourTracker.Build.cs",
+          "sha256": "9f4a18ffb1c4f6810081c22243336bdf5b121bd36fc49258c789cc5d55bede18"
+        },
+        {
+          "module": "MetaHumanFaceContourTrackerEditor",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanFaceContourTrackerEditor/MetaHumanFaceContourTrackerEditor.Build.cs",
+          "sha256": "441573923d6e8e0e2f7019cd6ad489baccc0bb6028ec9538b6ee30d908a4c688"
+        },
+        {
+          "module": "MetaHumanFaceFittingSolver",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanFaceFittingSolver/MetaHumanFaceFittingSolver.Build.cs",
+          "sha256": "1f364b1edcadf55737c63b8b9a341cfa779fddc10b4cefd3396c0fe624c3ee1c"
+        },
+        {
+          "module": "MetaHumanFaceFittingSolverEditor",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanFaceFittingSolverEditor/MetaHumanFaceFittingSolverEditor.Build.cs",
+          "sha256": "d5cf89aedaa5ce4329aba8dc17d7cc7bab8bea44f083e05b012b68c7c4af389d"
+        },
+        {
+          "module": "MetaHumanFootageIngest",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanFootageIngest/MetaHumanFootageIngest.Build.cs",
+          "sha256": "b0726c1304f4f9d7cdf92f267947e6bd5bb3128c899275dd9e6b46f125a9b579"
+        },
+        {
+          "module": "MetaHumanIdentity",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanIdentity/MetaHumanIdentity.Build.cs",
+          "sha256": "7d3efcf354458d66ea734e0205741409c3409d25f67f9acea29afd1fe33dc12b"
+        },
+        {
+          "module": "MetaHumanIdentityEditor",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanIdentityEditor/MetaHumanIdentityEditor.Build.cs",
+          "sha256": "f8f28ef5470b5f38226577b99849e6122f76a33eff20384e90e68cc91928c97d"
+        },
+        {
+          "module": "MetaHumanImageViewer",
+          "path": "Plugins/MetaHuman/MetaHumanCoreTechLib/Source/MetaHumanImageViewer/MetaHumanImageViewer.Build.cs",
+          "sha256": "10fdca781a071a31ceb4730c474f8567f48260058d43b0d4d7e156d4da91d07d"
+        },
+        {
+          "module": "MetaHumanImageViewerEditor",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanImageViewerEditor/MetaHumanImageViewerEditor.Build.cs",
+          "sha256": "1f97cd20f43f57d8f9953d6b6378a3ddcd76adb13eb77f68527350567cfb8b2a"
+        },
+        {
+          "module": "MetaHumanPerformance",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanPerformance/MetaHumanPerformance.Build.cs",
+          "sha256": "d0a49e87485a389649e0a915da329b591c4919c2215a3f4469378438c547e238"
+        },
+        {
+          "module": "MetaHumanPipeline",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanPipeline/MetaHumanPipeline.Build.cs",
+          "sha256": "b0926a80d5b18901f872f4b24f14cf20fdb4fdbbb1c72281cddbfb53cd2e0409"
+        },
+        {
+          "module": "MetaHumanPipelineCore",
+          "path": "Plugins/MetaHuman/MetaHumanCoreTechLib/Source/MetaHumanPipelineCore/MetaHumanPipelineCore.Build.cs",
+          "sha256": "6a34997fb5177d786fbb64866c302d4de9a3f7a8026e91fc211a66badef41a11"
+        },
+        {
+          "module": "MetaHumanPlatform",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanPlatform/MetaHumanPlatform.Build.cs",
+          "sha256": "d3a5c3531d7a9489908b378eaa8405407f54b7d256e2d84622debcdb3e2dc055"
+        },
+        {
+          "module": "MetaHumanSequencer",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanSequencer/MetaHumanSequencer.Build.cs",
+          "sha256": "6bdeef442fb557ada577238f499fb1e34000440314817a15400d61fd5ec2d568"
+        },
+        {
+          "module": "MetaHumanSpeech2Face",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanSpeech2Face/MetaHumanSpeech2Face.Build.cs",
+          "sha256": "3873426e495f68592d087cf63143cd6309d2219bda69fa5454939d73937546c0"
+        },
+        {
+          "module": "MetaHumanToolkit",
+          "path": "Plugins/MetaHuman/MetaHumanAnimator/Source/MetaHumanToolkit/MetaHumanToolkit.Build.cs",
+          "sha256": "9b0c169c71d093c0f83e48a5ddcc0c2b34d403bdcd39bd5799411493347f0067"
+        }
+      ],
+      "skippedModules": [
+        {
+          "module": "LiveLinkCapabilities",
+          "dependencyPaths": [
+            [
+              "LiveLinkCapabilities",
+              "LiveLinkHubCaptureMessaging",
+              "CaptureProtocolStack"
+            ],
+            [
+              "LiveLinkCapabilities",
+              "CaptureManagerMediaRW",
+              "DataIngestCore",
+              "CaptureDataCore",
+              "CaptureDataUtils"
+            ]
+          ],
+          "functions": [
+            {
+              "owner": "UIngestCapability_ProcessHandle",
+              "function": "OnProcessFinishReporterDynamic"
+            },
+            {
+              "owner": "UIngestCapability_ProcessHandle",
+              "function": "OnProcessProgressReporterDynamic"
+            }
+          ],
+          "callerSourceSha256": "ab80c30400d70637f011a298b3c195d16c4af6c42b75f296a6d21df2e835680c"
+        },
+        {
+          "module": "MetaHumanDefaultEditorPipeline",
+          "dependencyPaths": [
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCoreTechLib"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanConfig"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanCore"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanIdentity"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanPipeline"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCoreTechLib",
+              "MetaHumanCoreTech"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanConfig",
+              "MetaHumanCaptureData"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanIdentity",
+              "MetaHumanCaptureDataEditor"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanIdentity",
+              "MetaHumanFaceAnimationSolver"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanIdentity",
+              "MetaHumanFaceContourTracker"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanIdentity",
+              "MetaHumanFaceFittingSolver"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanIdentity",
+              "MetaHumanPipelineCore"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanPipeline",
+              "MetaHumanPlatform"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanPipeline",
+              "MetaHumanSpeech2Face"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCoreTechLib",
+              "CaptureDataCore",
+              "CaptureDataUtils"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanConfig",
+              "MetaHumanCaptureData",
+              "MetaHumanImageViewer"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanIdentity",
+              "MetaHumanCaptureDataEditor",
+              "MetaHumanCoreEditor"
+            ],
+            [
+              "MetaHumanDefaultEditorPipeline",
+              "MetaHumanCharacterEditor",
+              "MetaHumanIdentity",
+              "MetaHumanCaptureDataEditor",
+              "MetaHumanImageViewerEditor"
+            ]
+          ],
+          "functions": [],
+          "callerSourceSha256": "cfd97b42063de9a5c3f9edd90cdf8e9efaf256cf3ae69364d7909c9e091130ef"
+        },
+        {
+          "module": "MetaHumanIdentity",
+          "dependencyPaths": [
+            [
+              "MetaHumanIdentity"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanCaptureData"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanCaptureDataEditor"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanConfig"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanCore"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanCoreTech"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanCoreTechLib"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanFaceAnimationSolver"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanFaceContourTracker"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanFaceFittingSolver"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanPipeline"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanPipelineCore"
+            ],
+            [
+              "MetaHumanIdentity",
+              "CaptureDataCore",
+              "CaptureDataUtils"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanCaptureData",
+              "MetaHumanImageViewer"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanCaptureDataEditor",
+              "MetaHumanCoreEditor"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanCaptureDataEditor",
+              "MetaHumanImageViewerEditor"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanPipeline",
+              "MetaHumanPlatform"
+            ],
+            [
+              "MetaHumanIdentity",
+              "MetaHumanPipeline",
+              "MetaHumanSpeech2Face"
+            ]
+          ],
+          "functions": [],
+          "callerSourceSha256": "dd90f6b34e0e8d5a729967a00af10e3cf586341bac7a4e5056230ba82ac62585"
+        }
+      ]
+    },
+    {
+      "engineMinor": 7,
+      "rulesSha256": "bd164cde2c074b262b8c06636fdfc03f6b3f27d60bde247951fa11a70794dc8d",
+      "sourceBuildModules": [],
+      "skippedModules": []
+    },
+    {
+      "engineMinor": 8,
+      "rulesSha256": "e55a9e63feb13962378fa96e92168c8d4e5205cbcd8bf98c8a74f2c36b09d2bf",
+      "sourceBuildModules": [],
+      "skippedModules": []
+    }
+  ]
+}

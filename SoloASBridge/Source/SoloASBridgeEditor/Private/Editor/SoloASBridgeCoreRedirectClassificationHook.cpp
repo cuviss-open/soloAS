@@ -1,6 +1,7 @@
 #include "Editor/SoloASBridgeCoreRedirectClassificationHook.h"
 #include "CoreMinimal.h"
 #include "HAL/IConsoleManager.h"
+#include "SoloASEngineCompat.h"
 
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
 
@@ -11,6 +12,11 @@
 #include "Editor/SoloASBridgeEditorInlineHook.h"
 #include "UObject/Class.h"
 #include "UObject/CoreRedirects.h"
+// SOLOAS-COMPAT-BEGIN(<5.6) Native member redirect initialization is game-thread-only [test: SoloAS.AsyncDefaultCallableReopen] [id: CS.Bridge.Pre56.MemberRedirectHeader]
+#if SOLOAS_UE_BEFORE(5, 6)
+#include "Engine/MemberReference.h"
+#endif
+// SOLOAS-COMPAT-END
 
 #if PLATFORM_WINDOWS
 #include "Windows/AllowWindowsPlatformTypes.h"
@@ -85,6 +91,12 @@ FString NormalizeImageName(const TCHAR* ImageName)
         ImageName == nullptr ? TEXT("") : ImageName);
     Result.RemoveFromEnd(TEXT(".dll"), ESearchCase::IgnoreCase);
     Result.RemoveFromEnd(TEXT(".dylib"), ESearchCase::IgnoreCase);
+                                                                                                                                                         
+#if PLATFORM_MAC && ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 8
+    // UE 5.8 macOS editor images include the lib prefix; UE 5.7 and Windows do not.
+    Result.RemoveFromStart(TEXT("lib"), ESearchCase::CaseSensitive);
+#endif
+// SOLOAS-COMPAT-END
     return Result;
 }
 
@@ -226,8 +238,11 @@ bool WritePointer(void** Slot, void* Value)
 }
 
 bool ApplySlot(const FString& ImageName, void** Slot,
-    void* Original, void* Replacement, bool bUnboundLazySlot)
+    void* Original, void* Replacement, bool bUnboundLazySlot, const TCHAR* Mode)
 {
+    RecordEditorHookInstallation(Replacement == reinterpret_cast<void*>(&ImportedGetFlagsForTypeClass)
+        ? TEXT("GetFlagsForTypeClass") : TEXT("GetFlagsForTypeName"), *ImageName, Mode,
+        Original, Original, Replacement, Slot);
     if (FInstalledImport* Existing = InstalledImports.Find(Slot))
     {
         return *Slot == Existing->Replacement;
@@ -343,7 +358,7 @@ int32 ScanWindowsThunks(uint8* Base, const FString& ImageName,
         const bool bUnboundLazySlot = bDelayImport
             && Current >= ImageStart && Current < ImageStart + ImageSize;
         Changed += ApplySlot(ImageName, Slot, Original, Replacement,
-            bUnboundLazySlot) ? 1 : 0;
+            bUnboundLazySlot, bDelayImport ? TEXT("delay-IAT") : TEXT("IAT")) ? 1 : 0;
     }
     return Changed;
 }
@@ -412,7 +427,7 @@ int32 RebindWindowsImage(uint8* Base, const FString& ImageName)
                     {
                         Changed += ApplySlot(ImageName,
                             reinterpret_cast<void**>(Slot), Original,
-                            Replacement, false) ? 1 : 0;
+                            Replacement, false, TEXT("IAT")) ? 1 : 0;
                     }
                 }
                 continue;
@@ -670,7 +685,7 @@ int32 RebindMachImage(const mach_header_64* Header, intptr_t Slide,
                     const bool bUnboundLazySlot = SectionType == S_LAZY_SYMBOL_POINTERS
                         && Current >= ImageStart && Current < ImageEnd;
                     Changed += ApplySlot(ImageName, Slot, Original, Replacement,
-                        bUnboundLazySlot) ? 1 : 0;
+                        bUnboundLazySlot, SectionType == S_LAZY_SYMBOL_POINTERS ? TEXT("lazy") : TEXT("GOT")) ? 1 : 0;
                 }
             }
         }
@@ -730,6 +745,7 @@ void RestoreAllImports()
                 continue;
             }
         }
+        ForgetEditorHookInstallation(It.Value().Slot);
         It.RemoveCurrent();
     }
 }
@@ -750,7 +766,8 @@ void OnModulesChanged(FName ModuleName, EModuleChangeReason Reason)
             if (It.Value().ImageName == ImageName)
             {
                 // The image is unloading; never dereference its import slots.
-                It.RemoveCurrent();
+                ForgetEditorHookInstallation(It.Value().Slot);
+        It.RemoveCurrent();
             }
         }
     }
@@ -873,6 +890,13 @@ void InitializeCoreRedirectClassificationHookInternal()
         return;
     }
     bCoreRedirectClassificationInitialized = true;
+// SOLOAS-COMPAT-BEGIN(<5.6) Preinitialize native member redirects before async Blueprint loading [test: SoloAS.AsyncDefaultCallableReopen] [id: CS.Bridge.Pre56.MemberRedirectInitialization]
+#if SOLOAS_UE_BEFORE(5, 6)
+    // Native Blueprint member resolution lazily writes redirects during async loading.
+    // Older CoreRedirects checks the game thread even after it has initialized.
+    FMemberReference::InitFieldRedirectMap();
+#endif
+// SOLOAS-COMPAT-END
     if (!ResolveTargetAndCallerRange())
     {
         WarnOnce(TEXT("the CoreUObject classifier export or image range could not be resolved"));

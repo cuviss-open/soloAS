@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "ClassGenerator/AngelscriptReplicationShadow.h"
+#include "SoloASEngineCompat.h"
 #include "ClassGenerator/AngelscriptClassGenerator.h"
 #include "Engine/PackageMapClient.h"
 #include "ClassGenerator/ASClass.h"
 #include "Components/ActorComponent.h"
 #include "Engine/NetDriver.h"
+#include "Compat/SoloASRuntimeCompat.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "Net/RepLayout.h"
@@ -66,13 +68,21 @@ struct FDescriptorsTag
             if (Map.Contains(Key)) return false;
             auto& Entry = Map.FindOrAdd(Key);
             Entry.WeakPtrForPruning = Source;
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 registry has no OwnerKey; the field-variant key is the defaults identity [test: SoloAS.ReplicationShadow] | CS.Runtime.CoreSurface.AngelscriptReplicationShadow.Compat1
+#if SOLOAS_UE_AT_LEAST(5, 5)
             Entry.OwnerKey = FObjectKey(Defaults);
+#endif
+// SOLOAS-COMPAT-END
             Entry.Descriptors = Descriptors;
             return true;
         }
         const auto* Entry = Map.Find(Key);
-        if (!Entry || Entry->WeakPtrForPruning.Get() != Source
-            || Entry->OwnerKey != FObjectKey(Defaults) || !Entry->OwnerKey.ResolveObjectPtr()) return false;
+        if (!Entry || Entry->WeakPtrForPruning.Get() != Source) return false;
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 map lookup already matches the live defaults object [test: SoloAS.ReplicationShadow] | CS.Runtime.CoreSurface.AngelscriptReplicationShadow.Compat2
+#if SOLOAS_UE_AT_LEAST(5, 5)
+        if (Entry->OwnerKey != FObjectKey(Defaults) || !Entry->OwnerKey.ResolveObjectPtr()) return false;
+#endif
+// SOLOAS-COMPAT-END
         Descriptors = Entry->Descriptors;
         return true;
     }
@@ -231,8 +241,14 @@ public:
         if (!Shadow) return false;
         UE::Net::FReplicationStateDescriptorBuilder::FParameters Parameters;
         Parameters.DescriptorRegistry = nullptr;
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 builder has no per-system parameter and takes a mutable defaults pointer [test: SoloAS.ReplicationShadow] | CS.Runtime.CoreSurface.AngelscriptReplicationShadow.Compat3
+#if SOLOAS_UE_BEFORE(5, 5)
+        Parameters.DefaultStateSource = const_cast<UObject*>(Defaults);
+#else
         Parameters.ReplicationSystem = System;
-        Parameters.DefaultStateSource = Defaults;
+        Parameters.DefaultStateSource = const_cast<UObject*>(Defaults);
+#endif
+// SOLOAS-COMPAT-END
         FDescriptors Descriptors;
         UE::Net::FReplicationStateDescriptorBuilder::CreateDescriptorsForClass(Descriptors, Shadow, Parameters);
         if (!Resolve(FDescriptorsTag{})(*Registry, Source, Defaults, Descriptors, true))
@@ -258,7 +274,7 @@ public:
     {
         for (TObjectIterator<UNetDriver> Driver; Driver; ++Driver)
         {
-            const TSharedPtr<FNetGUIDCache>& Cache = Driver->GetNetGuidCache();
+            const TSharedPtr<FNetGUIDCache>& Cache = SoloASBridge::Compat::GetNetGuidCache(**Driver);
             if (!Cache) continue;
             for (auto& Pair : Cache->ObjectLookup)
             {
@@ -297,11 +313,15 @@ TUniquePtr<FShadowClasses> Shadows;
 }
 
 void USoloASReplicationLayoutClass::Bind() { UClass::Bind(); }
+                                                                                                                                             
+#if SOLOAS_UE_AT_LEAST(5, 7)
 EStructPropertyLinkFlags USoloASReplicationLayoutClass::GetPropertyLinkFlags(UStruct* Container, FProperty* Property) const
 {
     const UASClass* Source = SourceClass.Get();
     return Source ? Source->GetPropertyLinkFlags(Container, Property) : UClass::GetPropertyLinkFlags(Container, Property);
 }
+#endif
+// SOLOAS-COMPAT-END
 bool USoloASReplicationLayoutClass::IsFunctionImplementedInScript(FName Name) const
 {
     const UASClass* Source = SourceClass.Get();

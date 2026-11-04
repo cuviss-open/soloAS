@@ -33,7 +33,9 @@ struct TAngelscriptCoreStructType : public TAngelscriptCppType<NativeType>
                                                                                                                                   
 #if 0
                                                                                                                                 
+                                                                                                           
 		auto* StructProp = new FStructProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                         
                                                                                                                            
 #endif
 		auto* StructProp = CreateAngelscriptStructProperty(Params.Outer, Params.PropertyName);

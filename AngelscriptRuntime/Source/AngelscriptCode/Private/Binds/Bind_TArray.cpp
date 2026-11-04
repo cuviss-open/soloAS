@@ -1,9 +1,22 @@
 #include "AngelscriptBinds/Bind_TArray.h"
+                                                                                                 
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                               
                                                                                                                    
 #include "ClassGenerator/AngelscriptPropertyInitialization.h"
                                                                                                                  
 
 #include "AngelscriptBinds.h"
+                                                                                                             
+#include "SoloASEngineCompat.h"
+                                                                                                           
+                                                                                       
+// SOLOAS-COMPAT-BEGIN(<5.7) UE 5.6 has FORCEINLINE but no inline-hint spelling [test: ASRegression]
+#if SOLOAS_UE_BEFORE(5, 7)
+#define UE_FORCEINLINE_HINT FORCEINLINE
+#endif
+// SOLOAS-COMPAT-END
+                                                                                     
 #include "AngelscriptDocs.h"
 #include "AngelscriptManager.h"
 
@@ -94,7 +107,9 @@ FProperty* FAngelscriptArrayType::CreateProperty(const FAngelscriptTypeUsage& Us
                                                                                                                         
 #if 0
                                                                                                                       
+                                                                                                             
 	auto* ArrayProp = new FArrayProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                           
                                                                                                                  
 #endif
 	auto* ArrayProp = CastFieldChecked<FArrayProperty>(
@@ -1364,7 +1379,9 @@ void FArrayOperations::Sort(FScriptArray& Arr, asCObjectType* Meta, bool bDescen
 		FAngelscriptContext Context;
 
 		bool bDerefPointer = Ops->bIsObjectPointer;
-		AlgoImpl::IntroSortInternal(
+		                                                                                            
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 IntroSort accepts pointers only [test: ASRegression]
+		SoloASBridge::Compat::IntroSort(
 			Iterator,
 			Arr.Num(),
 			FIdentityFunctor(),
@@ -1396,6 +1413,8 @@ void FArrayOperations::Sort(FScriptArray& Arr, asCObjectType* Meta, bool bDescen
 					return bDescendingOrder;
 			}
 		);
+// SOLOAS-COMPAT-END
+                                                                                          
 
 		return;
 	}
@@ -1496,7 +1515,9 @@ void FArrayOperations::Sort(FScriptArray& Arr, asCObjectType* Meta, bool bDescen
 	}
 
 	// Fall back to sorting using FAngelscriptType.CompareOrder()
-	AlgoImpl::IntroSortInternal(
+	                                                                                            
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 IntroSort accepts pointers only [test: ASRegression]
+	SoloASBridge::Compat::IntroSort(
 		Iterator,
 		Arr.Num(),
 		FIdentityFunctor(),
@@ -1512,6 +1533,8 @@ void FArrayOperations::Sort(FScriptArray& Arr, asCObjectType* Meta, bool bDescen
 				return bDescendingOrder;
 		}
 	);
+// SOLOAS-COMPAT-END
+                                                                                          
 }
 
 
@@ -1562,7 +1585,9 @@ void FArrayOperations::SortByProperty(FScriptArray& Arr, asCObjectType* Meta, co
 
 	auto PerformSort = [&]<typename NativeType>()
 	{
-		AlgoImpl::IntroSortInternal(
+		                                                                                            
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 IntroSort accepts pointers only [test: ASRegression]
+		SoloASBridge::Compat::IntroSort(
 			Iterator,
 			Arr.Num(),
 			FIdentityFunctor(),
@@ -1585,6 +1610,8 @@ void FArrayOperations::SortByProperty(FScriptArray& Arr, asCObjectType* Meta, co
 				return (*(NativeType*)((SIZE_T)AElem + PropertyOffset) < *(NativeType*)((SIZE_T)BElem + PropertyOffset)) != bDescendingOrder;
 			}
 		);
+// SOLOAS-COMPAT-END
+                                                                                          
 	};
 
 	if (Property->IsA<FDoubleProperty>())

@@ -5,6 +5,10 @@
 #include "Helper_ToString.h"
 
 #include "InputCoreTypes.h"
+                                                                                                                  
+#include "SoloASEngineCompat.h"
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                                
 #include "Input/Events.h"
 
 #include "Components/Widget.h"
@@ -36,7 +40,9 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_InputEvents(FAngelscriptBinds:
 	FKey_.Method("bool IsAxis3D() const", FUNC_NOJIT(FKey::IsAxis3D));
 	FKey_.Method("FText GetDisplayName(bool bLongDisplayName = true) const", FUNC_NOJIT(FKey::GetDisplayName));
 	FKey_.Method("FName GetKeyName() const", FUNC_NOJIT(FKey::GetFName));
-	FKey_.Method("FKey GetVirtualKey() const", FUNC_NOJIT(FKey::GetVirtualKey));
+                                                                                           
+    FKey_.Method("FKey GetVirtualKey() const", [](const FKey& Key) { return SoloASBridge::Compat::ResolveVirtualKey(Key); });
+                                                                                         
 
 	FKey_.Method("bool opEquals(const FKey& Other) const",
 	[](const FKey& A, const FKey& B) -> bool
@@ -519,15 +525,19 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_InputEvents(FAngelscriptBinds:
 		BIND_EKEYS(Android_Menu);
 
 		// Virtual keys that need to be resolved with GetVirtualKey()
-		BIND_EKEYS(Virtual_Gamepad_Accept);
-		BIND_EKEYS(Virtual_Gamepad_Back);
+                                                                                                                  
+		FAngelscriptBinds::BindGlobalVariable("const FKey Virtual_Gamepad_Accept", &SoloASBridge::Compat::VirtualGamepadAcceptKey());
+		FAngelscriptBinds::BindGlobalVariable("const FKey Virtual_Gamepad_Back", &SoloASBridge::Compat::VirtualGamepadBackKey());
+                                                                                                                
 
 		BIND_EKEYS(Invalid);
 
 #undef BIND_EKEYS
 
 		// Helper functions to automatically resolve virtual keys, backwards compatible with previous virtual key usage
-		FAngelscriptBinds::BindGlobalFunction("const FKey GetVirtual_Accept() property no_discard", []() -> FKey { return EKeys::Virtual_Gamepad_Accept.GetVirtualKey(); });
-		FAngelscriptBinds::BindGlobalFunction("const FKey GetVirtual_Back() property no_discard", []() -> FKey { return EKeys::Virtual_Gamepad_Back.GetVirtualKey(); });
+                                                                                                                  
+		FAngelscriptBinds::BindGlobalFunction("const FKey GetVirtual_Accept() property no_discard", []() -> FKey { return SoloASBridge::Compat::ResolveVirtualKey(SoloASBridge::Compat::VirtualGamepadAcceptKey()); });
+		FAngelscriptBinds::BindGlobalFunction("const FKey GetVirtual_Back() property no_discard", []() -> FKey { return SoloASBridge::Compat::ResolveVirtualKey(SoloASBridge::Compat::VirtualGamepadBackKey()); });
+                                                                                                                
 	}
 });

@@ -410,6 +410,7 @@ void FAngelscriptTest::ReportError(const FString& Message, int Line, int Column)
 	Diagnostic.Column = Column;
 	Diagnostic.bIsError = true;
 	Diagnostic.bIsInfo = false;
+                                                                                                                 
 	const char* SectionName = TestFunction->GetScriptSectionName();
 	if (asIScriptContext* ActiveContext = asGetActiveContext())
 	{
@@ -418,9 +419,12 @@ void FAngelscriptTest::ReportError(const FString& Message, int Line, int Column)
 	const FString Filename = SectionName != nullptr
 		? FString(ANSI_TO_TCHAR(SectionName)) : Module->Code[0].AbsoluteFilename;
 	Diagnostic.Message = FString::Printf(TEXT("%s (%s:%d:%d)"), *Message, *Filename, Line, Column);
+                                                                                                               
 
 	// ScriptCompileError logs an error to the Unreal log, which is sufficient to break
 	// the test if we're running in the automation framework or on hot reload.
+                                                                                                                 
+                                                                                                               
 	AngelscriptManager->ScriptCompileError(Filename, Diagnostic);
 }
 

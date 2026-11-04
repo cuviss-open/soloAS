@@ -1,17 +1,13 @@
 #include "AngelscriptBinds.h"
                                                                                                          
-#include "Runtime/SoloASInterfaceDispatch.h"
+#include "Compat/SoloASRuntimeCompat.h"
                                                                                                        
-                                                                                                
-#include "Extensions/NativeEventSuper/AngelscriptNativeEventSuperHost.h"
-                                                                                              
-                                                                                                           
-#include "Extensions/AngelscriptExtensionPipelineInternal.h"
-                                                                                                         
 #include "AngelscriptManager.h"
 #include "AngelscriptType.h"
 
+                                                                                                                     
 #include "Misc/PackageName.h"
+                                                                                                                   
 #include "UObject/UObjectIterator.h"
 #include "UObject/UnrealType.h"
 
@@ -30,17 +26,6 @@ static FScriptCall* GCurrentCall = nullptr;
 static FScriptCall* GStoredCall = nullptr;
 
 TMap<UClass*, TMap<FString, UFunction*>> GBlueprintEventsByScriptName;
-                                                                                                    
-void RegisterBlueprintEventByScriptName(UFunction* Function, const FString& ScriptName)
-{
-    FAngelscriptNativeInterfaceSelectionContext Context;
-    Context.Point = EAngelscriptNativeInterfacePoint::RegisterEvent;
-    Context.ResolvedFunction = Function;
-    Context.ScriptName = ScriptName;
-    Context.EventsByScriptName = &GBlueprintEventsByScriptName;
-    DispatchAngelscriptNativeInterfaceBinding(Context);
-}
-                                                                                                  
 
 UFunction* GetBlueprintEventByScriptName(UClass* Class, const FString& ScriptName)
 {
@@ -58,14 +43,6 @@ UFunction* GetBlueprintEventByScriptName(UClass* Class, const FString& ScriptNam
 		}
 		CheckClass = CheckClass->GetSuperClass();
 	}
-                                                                                                  
-    FAngelscriptNativeInterfaceSelectionContext Context;
-    Context.Point = EAngelscriptNativeInterfacePoint::ResolveEvent;
-    Context.NativeClass = Class;
-    Context.ScriptName = ScriptName;
-    Context.EventsByScriptName = &GBlueprintEventsByScriptName;
-    if (DispatchAngelscriptNativeInterfaceBinding(Context)) return Context.ResolvedFunction;
-                                                                                                
 
 	return nullptr;
 }
@@ -191,24 +168,11 @@ struct alignas(64) FScriptCall
 		}
 	}
 
-                                                                                                         
-    SCRIPTCALL_INLINE void ExecuteEvent(UObject* Object, FName EventName, UFunction* InterfaceFunction = nullptr)
-    {
-        UFunction* Function = Object->FindFunction(EventName);
-        if (!Function && InterfaceFunction)
-        {
-            UClass* Interface = InterfaceFunction->GetOuterUClass();
-            if (Interface->HasAnyClassFlags(CLASS_Interface) && Object->GetClass()->ImplementsInterface(Interface))
-            {
-                ExecutePreamble();
-                const bool bHandled = SoloASBridge::InvokeInterfaceDefault(Object, InterfaceFunction, ArgumentBuffer, sizeof(ArgumentBuffer));
-                ExecuteCleanup();
-                if (!bHandled) FAngelscriptManager::Throw("The native interface default has an invalid invocation layout.");
-                return;
-            }
-        }
-        checkf(Function, TEXT("Missing reflected event %s"), *EventName.ToString());
-                                                                                                       
+	SCRIPTCALL_INLINE void ExecuteEvent(UObject* Object, FName EventName)
+	{
+                                                                                                                     
+                                                                                                                   
+		UFunction* Function = Object->FindFunctionChecked(EventName);
 		ExecutePreamble();
 
 		//check(Function->ParmsSize == ArgumentOffset);
@@ -231,11 +195,15 @@ struct alignas(64) FScriptCall
 	{
 		ExecutePreamble();
 
-		Delegate.ProcessDelegate<UObject>(&ArgumentBuffer[0]);
+                                                                                                  
+                                                                                                 
+		SoloASBridge::Compat::ProcessMulticastDelegate(Delegate, &ArgumentBuffer[0]);
+                                                                                               
 
 		ExecuteCleanup();
 	}
 };
+// SOLOAS-COMPAT-END
 
 SCRIPTCALL_INLINE FScriptCall& CurrentCall()
 {
@@ -427,13 +395,6 @@ struct FBlueprintEventSignature
 	UFunction* UnrealFunction = nullptr;
 };
 
-                                                                                                      
-void Cuviss::NativeEventSuper::CallNativeEventSuperWithSignature(
-	asIScriptGeneric* InGeneric)
-{
-	DispatchWithHost<FScriptCall, CurrentCall>(InGeneric);
-}
-                                                                                                    
 void CallStaticWithSignature(asIScriptGeneric* InGeneric)
 {
 	asCGeneric* Generic = static_cast<asCGeneric*>(InGeneric);
@@ -473,9 +434,9 @@ void CallEventWithSignature(asIScriptGeneric* InGeneric)
 			*(void**)ReturnPtr = nullptr;
 		Call.PushArgument<false,false>(Sig->ReturnType, &ReturnPtr);
 	}
-                                                                                                            
-    Call.ExecuteEvent((UObject*)Generic->GetObject(), Sig->FunctionName, Sig->UnrealFunction);
-                                                                                                          
+                                                                                                                     
+		Call.ExecuteEvent((UObject*)Generic->GetObject(), Sig->FunctionName);
+                                                                                                                   
 }
 
 void CallMixinWithSignature(asIScriptGeneric* InGeneric)
@@ -552,9 +513,6 @@ void BindBlueprintEvent(
 		return;
 
 	auto* Sig = new FBlueprintEventSignature;
-                                                                                                            
-    if (Function->GetOuterUClass()->HasAnyClassFlags(CLASS_Interface)) Sig->UnrealFunction = Function;
-                                                                                                          
 	Sig->FunctionName = Function->GetFName();
 	Sig->ArgCount = Signature.ArgumentTypes.Num();
 	Sig->ReturnType = Signature.ReturnType;
@@ -611,14 +569,6 @@ void BindBlueprintEvent(
 
 	GBlueprintEventsByScriptName.FindOrAdd(CastChecked<UClass>(Function->GetOuter())).Add(Signature.ScriptName, Function);
 
-                                                                                                               
-	Cuviss::NativeEventSuper::OnBlueprintEventBound(
-		Signature,
-		InType->GetAngelscriptTypeName(), Function,
-		Sig->Arguments, Sig->ArgCount,
-		Sig->ReturnType,
-		Sig->bInitReturn, Sig->bZeroReturnPtr);
-                                                                                                             
 #if AS_CAN_GENERATE_JIT
 #if AS_USE_BIND_DB
 	SCRIPT_NATIVE_UFUNCTION(Function, FPackageName::ObjectPathToObjectName(DBBind.UnrealPath), false);
@@ -821,37 +771,3 @@ void BindDelegateEvent(FAngelscriptBinds& Delegate_, UFunction* Function, bool b
 		FAngelscriptBinds::SetPreviousBindUnsafeDuringConstruction(true);
 	}
 }
-
-                                                                                                      
-bool DescribeAngelscriptBlueprintEvent(TSharedRef<FAngelscriptType> Type, UFunction* Function,
-    FAngelscriptMethodBind& MethodBind, FAngelscriptBlueprintEventBindingSnapshot& Snapshot, bool bFromDatabase)
-{
-    FAngelscriptFunctionSignature Signature;
-    if (bFromDatabase) Signature.InitFromDB(Type, Function, MethodBind, true);
-#if WITH_EDITOR
-    else
-    {
-        Signature = FAngelscriptFunctionSignature(Type, Function);
-        if (Signature.bAllTypesValid) Signature.WriteToDB(MethodBind);
-    }
-#endif
-    if (!Signature.bAllTypesValid || Signature.TargetType != FAngelscriptFunctionSignature::EBindTargetType::Method) return false;
-    Snapshot.Target = EAngelscriptBlueprintEventTarget::Method;
-    Snapshot.TargetScriptTypeName = Type->GetAngelscriptTypeName();
-    Snapshot.Declaration = Signature.Declaration;
-    Snapshot.ScriptName = Signature.ScriptName;
-    Snapshot.NativeDeclaringClassPath = Function->GetOuterUClass()->GetPathName();
-    Snapshot.NativeFunctionName = Function->GetFName();
-    Snapshot.ArgumentTypes = Signature.ArgumentTypes;
-    Snapshot.ReturnType = Signature.ReturnType;
-    return true;
-}
-void BindAngelscriptBlueprintEvent(TSharedRef<FAngelscriptType> Type, UFunction* Function, FAngelscriptMethodBind& MethodBind)
-{
-#if AS_USE_BIND_DB
-    BindBlueprintEvent(Type, Function, MethodBind);
-#else
-    BindBlueprintEvent(Type, Function, MethodBind, nullptr);
-#endif
-}
-                                                                                                    

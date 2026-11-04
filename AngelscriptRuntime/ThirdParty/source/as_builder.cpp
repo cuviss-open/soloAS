@@ -49,9 +49,6 @@
 #include <functional>
 #include "AngelscriptManager.h"
 #include "AngelscriptSettings.h"
-                                                                                                  
-#include "Extensions/NativeEventSuper/AngelscriptNativeEventSuperThirdParty.h"
-                                                                                                
 
 BEGIN_AS_NAMESPACE
 
@@ -2951,9 +2948,6 @@ void asCBuilder::AddInterfaceToClass(sClassDeclaration *decl, asCScriptNode *err
 
 		// Add the interface to the class
 		CastToObjectType(decl->typeInfo)->interfaces.PushLast(intfType);
-                                                                                                           
-		MarkStructuralDependency(decl->typeInfo, intfType, errNode, decl->script);
-                                                                                                         
 
 		// Add the inherited interfaces too
 		// For interfaces this will be done outside to handle out-of-order declarations
@@ -3212,12 +3206,6 @@ void asCBuilder::DetermineTypeRelations()
 				str.Format(TXT_CANNOT_INHERIT_FROM_s_FINAL, objType->name.AddressOf());
 				WriteError(str, file, node);
 			}
-                                                                                                          
-			else if (objType->IsInterface())
-			{
-				AddInterfaceToClass(decl, node, objType);
-			}
-                                                                                                        
 			else
 			{
 				// The class inherits from another script class
@@ -5660,12 +5648,6 @@ void asCBuilder::GetFunctionDescriptions(const char *name, asCArray<int> &funcs,
 void asCBuilder::GetObjectMethodDescriptions(const char *name, asCObjectType *objectType, asCArray<int> &methods, bool objIsConst, const asCString &scope, asCScriptNode *errNode, asCScriptCode *script, bool bConstDueToTemporary)
 {
 	asASSERT(objectType);
-                                                                                                      
-	auto NativeEventSuperPostProcess =
-		Cuviss::NativeEventSuper::PostProcessBuilder(
-			*this, name, objectType, methods, objIsConst,
-			scope == "Super", bConstDueToTemporary);
-                                                                                                    
 
 	bool bAllowSystemFunctions = true;
 	if( scope != "" )
@@ -6503,9 +6485,6 @@ asCDataType asCBuilder::ModifyDataTypeFromNode(const asCDataType &type, asCScrip
 		}
 	}
 
-                                                                                                            
-	MarkDependency(dt.GetTypeInfo(), node, file);
-                                                                                                          
 	return dt;
 }
 
@@ -6543,29 +6522,6 @@ asCTypeInfo *asCBuilder::GetType(const char *type, asSNameSpace *ns, asCObjectTy
 			});
 		}
 
-                                                                                         
-		if (!ti && module && module->scriptUnitLayer == 2 && ns == module->defaultNamespace)
-		{
-			bool bAmbiguous = false;
-			for (asSNameSpace* Dependency : module->scriptUnitTypeDependencies)
-			{
-				engine->allScriptDeclaredTypes.FindAllUntil(type, [&](asCTypeInfo* Candidate)
-				{
-					if (Candidate->nameSpace != Dependency) return false;
-					if (ti && ti != Candidate) bAmbiguous = true;
-					ti = Candidate;
-					return true;
-				});
-			}
-			if (bAmbiguous)
-			{
-				asCString Message;
-				Message.Format("Ambiguous FeatureMod type '%s'; qualify it as ModId::Type", type);
-				WriteError(Message, scripts.GetLength() ? scripts[0] : nullptr, nullptr);
-				return nullptr;
-			}
-		}
-                                                                                       
 		return ti;
 	}
 	else
@@ -6761,10 +6717,8 @@ void asCBuilder::MarkStructuralDependency(asCTypeInfo* UserTypeInfo, asCTypeInfo
 {
 	if (!module)
 		return;
-                                                                                                                   
-	if (DependentOnTypeInfo->module == nullptr && DependentOnTypeInfo->GetSubTypeCount() == 0)
+	if (DependentOnTypeInfo->module == nullptr)
 		return;
-                                                                                                                 
 
 	asUINT SubTypeCount = DependentOnTypeInfo->GetSubTypeCount();
 	if (SubTypeCount != 0)
@@ -6869,10 +6823,8 @@ void asCBuilder::MarkDependency(asCTypeInfo* TypeInfo, asCScriptNode* node, asCS
 		return;
 	if (TypeInfo == nullptr)
 		return;
-                                                                                                         
-	if (TypeInfo->module == nullptr && TypeInfo->GetSubTypeCount() == 0)
+	if (TypeInfo->module == nullptr)
 		return;
-                                                                                                       
 
 	asUINT SubTypeCount = TypeInfo->GetSubTypeCount();
 	if (SubTypeCount != 0)

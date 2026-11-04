@@ -290,10 +290,6 @@ asITypeInfo *asCObjectType::GetInterface(asUINT index) const
 // internal
 bool asCObjectType::IsInterface() const
 {
-                                                                                                               
-	if( (flags & asOBJ_SCRIPT_OBJECT) && size == 0 )
-		return true;
-                                                                                                             
 	/*if( (flags & asOBJ_SCRIPT_OBJECT) && size == 0 )
 		return true;*/
 

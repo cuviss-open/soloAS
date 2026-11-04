@@ -1,5 +1,6 @@
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "Editor/SoloASRetiredLoadingExportRepair.h"
+#include "Compat/SoloASRuntimeCompat.h"
 #include "Editor/SoloASCopyProperties.h"
 
 #include "HAL/IConsoleManager.h"
@@ -44,17 +45,21 @@ static void RepairRenamedLoadingExport(UObject* Object, UObject* OldOuter, FName
 
 void InitializeRetiredLoadingExportRepair()
 {
-#if WITH_EDITOR
+// SOLOAS-COMPAT-BEGIN(<5.6) UE 5.5 uses the existing synchronous export snapshot compensation [test: SoloAS.ActorConstructionAsyncLoadingFullReload] [id: CS.Compatibility.Bridge.SoloASRetiredLoadingExportRepair.RenameDelegateStartup]
+#if WITH_EDITOR && SOLOAS_UE_AT_LEAST(5, 6)
     RetiredExportRenameHandle = FCoreUObjectDelegates::OnObjectRenamed.AddStatic(&RepairRenamedLoadingExport);
 #endif
+// SOLOAS-COMPAT-END
 }
 
 void ShutdownRetiredLoadingExportRepair()
 {
-#if WITH_EDITOR
+// SOLOAS-COMPAT-BEGIN(<5.6) No rename delegate is registered on 5.5 [test: SoloAS.ActorConstructionAsyncLoadingFullReload] [id: CS.Compatibility.Bridge.SoloASRetiredLoadingExportRepair.RenameDelegateShutdown]
+#if WITH_EDITOR && SOLOAS_UE_AT_LEAST(5, 6)
     FCoreUObjectDelegates::OnObjectRenamed.Remove(RetiredExportRenameHandle);
     RetiredExportRenameHandle.Reset();
 #endif
+// SOLOAS-COMPAT-END
 }
 }
 
@@ -67,7 +72,7 @@ FSoloASRetiredLoadingExportRepair::FSoloASRetiredLoadingExportRepair(UObject* Ne
     if (NewOwner)
     {
         TArray<UObject*> Children;
-        GetObjectsWithOuter(NewOwner, Children, EGetObjectsFlags::IncludeNestedObjects);
+        SoloASBridge::Compat::GetNestedObjects(NewOwner, Children);
         for (UObject* Object : Children) Capture(Object);
     }
     else
@@ -107,6 +112,21 @@ FSoloASRetiredLoadingExportRepair::~FSoloASRetiredLoadingExportRepair()
             const bool bHadPendingFlags = Object->HasAnyFlags(PendingFlags)
                 || Export.PendingFlags != RF_NoFlags;
             Object->ClearFlags(PendingFlags);
+// SOLOAS-COMPAT-BEGIN(<5.6) RetiredLoadingExportAsyncCleanup: Async2 must retain its old object until internal flag cleanup [test: SoloAS.CopyPropertiesEditorImports]
+#if WITH_EDITOR && SOLOAS_UE_BEFORE(5, 6)
+                                                                                                             
+            // UE 5.5 patches a null linker export into Async2 without resetting
+            // bWasFoundInMemory. Mark only this detached export as invalid, as
+            // InvalidateExport does, so PreloadLinkerLoadExports retains the
+            // original object for ClearConstructedObjects to clear async flags.
+            if (Export.Linker->ExportMap.IsValidIndex(Export.LinkerIndex)
+                && Export.Linker->ExportMap[Export.LinkerIndex].Object == nullptr)
+            {
+                Export.Linker->ExportMap[Export.LinkerIndex].bExportLoadFailed = true;
+            }
+                                                                                                           
+#endif
+// SOLOAS-COMPAT-END
             Repaired += bHadPendingFlags;
             continue;
         }

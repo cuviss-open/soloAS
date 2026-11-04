@@ -9,6 +9,7 @@
 class UScriptStruct;
 
 // A failed preparation leaves all original reflected property values unchanged.
+// Scalar payloads include reflected container slots and stable native/Blueprint defaults.
 // Success commits these values; later failures in the enclosing UE reload are not rolled back here.
 bool MigrateInstancedStructsForReload(const TMap<UScriptStruct*, UScriptStruct*>& Replacements, FString& Error);
 
@@ -17,7 +18,8 @@ struct FAngelscriptPayloadReloadType;
 // Read-only admission; candidate UE structures and payload defaults do not exist yet.
 bool ValidateInstancedStructReload(const TArray<FAngelscriptPayloadReloadType>& Types, FString& Error);
 
-// Reference payloads support direct FInstancedStruct properties on stable native owners.
+// Reference payloads support direct FInstancedStruct properties on stable native owners
+// and stable class defaults, including native-container slots on those defaults.
 // Fields: numeric/bool scalars, FString, fixed enums, strong UObject references,
 // and one-dimensional TArray of strong UObject references. Retained fields keep their types;
 // added fields use script defaults. Nested containers, maps, sets and weak references are unsupported.

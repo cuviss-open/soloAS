@@ -1,7 +1,9 @@
 #include "AngelscriptEditorModule.h"
+                                                                                                              
+                                                                                           
+#include "Compat/SoloASRuntimeCompat.h"
+// SOLOAS-COMPAT-END
                                                                                                             
-#include "EditorBinary/AngelscriptPythonTypeRetirement.h"
-                                                                                                          
 #include "ClassReloadHelper.h"
 #include "AngelscriptSettings.h"
                                                                                                       
@@ -19,29 +21,31 @@
 #include "EditorBinary/AngelscriptActorConstructionHook.h"
 #endif
                                                                                                         
-                                                                                        
+                                                                                               
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
-#include "EditorBinary/AngelscriptBpgcSemanticsHooks.h"
+#include "EditorBinary/AngelscriptScriptClassSemanticsHooks.h"
 #endif
-                                                                                      
+                                                                                             
                                                                                                                   
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
 #include "EditorObject/AngelscriptEditorObjectPrecreateImportAdapter.h"
 #include "Editor/SoloASEditorObjectImportProperties.h"
 #endif
                                                                                                                 
+
                                                                                                 
 #include "StateTree/AngelscriptStateTreeClassProvider.h"
                                                                                               
-
 #include "AngelscriptCodeModule.h"
 #include "AngelscriptManager.h"
 #include "AngelscriptBinds/Bind_FGameplayTag.h"
 #include "ClassGenerator/ASClass.h"
 #include "AngelscriptCreateBlueprintOverride.h"
+                                                                                                              
 #include "BlueprintActionFilter.h"
 #include "BlueprintEventNodeSpawner.h"
 #include "BlueprintGraphModule.h"
+                                                                                                            
 #include "EditorMenuExtensions/ScriptEditorMenuExtension.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "KismetCompilerModule.h"
@@ -166,13 +170,6 @@ void OnScriptFileChanges(const TArray<FFileChangeData>& Changes)
 
 		if (Change.Filename.EndsWith(TEXT(".as")))
 		{
-                                                                                                                 
-			#if WITH_EDITOR && PLATFORM_DESKTOP && !UE_BUILD_SHIPPING
-			FAngelscriptManager::OnScriptFileChanged.Broadcast(
-				FAngelscriptManager::FFilenamePair{ AbsolutePath, RelativePath },
-				Change.Action == FFileChangeData::EFileChangeAction::FCA_Removed);
-			#endif
-                                                                                                               
 			if (Change.Action == FFileChangeData::EFileChangeAction::FCA_Removed)
 				AngelscriptManager.FileDeletionsDetectedForReload.AddUnique(FAngelscriptManager::FFilenamePair{ AbsolutePath, RelativePath });
 			else
@@ -211,11 +208,6 @@ void OnScriptFileChanges(const TArray<FFileChangeData>& Changes)
 			}
 		}
 	}
-                                                                                                            
-	#if WITH_EDITOR && PLATFORM_DESKTOP && !UE_BUILD_SHIPPING
-	FAngelscriptManager::OnScriptWatcherBatchCompleted.Broadcast();
-	#endif
-                                                                                                          
 }
 
 void ForceEditorWindowToFront()
@@ -490,11 +482,11 @@ void FAngelscriptEditorModule::StartupModule()
     AngelscriptActorConstructionHook::Initialize();
 #endif
                                                                                                         
-                                                                                        
+                                                                                               
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
-	AngelscriptBpgcSemanticsHooks::Initialize();
+	AngelscriptScriptClassSemanticsHooks::Initialize();
 #endif
-                                                                                      
+                                                                                             
                                                                                                                   
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
 	SoloASBridge::SetEditorObjectImportPropertiesAdapter(
@@ -506,9 +498,6 @@ void FAngelscriptEditorModule::StartupModule()
 	FAngelscriptStateTreeClassProvider::Initialize();
                                                                                               
 	FClassReloadHelper::Init();
-                                                                                                            
-    AngelscriptPythonTypeRetirement::Initialize();
-                                                                                                          
 	RegisterAngelscriptSourceNavigation();
 
 	if (FAngelscriptManager::bIsInitialCompileFinished)
@@ -516,7 +505,11 @@ void FAngelscriptEditorModule::StartupModule()
 
 	IGameplayTagsModule::OnTagSettingsChanged.AddRaw(this, &FAngelscriptEditorModule::ReloadTags);
 	IGameplayTagsModule::OnGameplayTagTreeChanged.AddRaw(this, &FAngelscriptEditorModule::ReloadTags);
-	FCoreDelegates::GetOnPostEngineInit().AddStatic(&OnEngineInitDone);
+                                                                                                              
+                                                                                           
+	SoloASBridge::Compat::OnPostEngineInit().AddStatic(&OnEngineInitDone);
+// SOLOAS-COMPAT-END
+                                                                                                            
 
 	UScriptEditorMenuExtension::InitializeExtensions();
 
@@ -1012,9 +1005,9 @@ void FAngelscriptEditorModule::ShowAssetListPopup(const TArray<FString>& AssetPa
 
 void FAngelscriptEditorModule::ShutdownModule()
 {
-                                                                                                             
-    AngelscriptPythonTypeRetirement::Shutdown();
-                                                                                                           
+                                                                                                 
+	FAngelscriptStateTreeClassProvider::Shutdown();
+                                                                                               
                                                                                                               
 	if (FBlueprintGraphModule* BlueprintGraph =
 		FModuleManager::GetModulePtr<FBlueprintGraphModule>(TEXT("BlueprintGraph")))
@@ -1043,25 +1036,16 @@ void FAngelscriptEditorModule::ShutdownModule()
     AngelscriptActorConstructionHook::Shutdown();
 #endif
                                                                                                          
-                                                                                         
+                                                                                                
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
-	AngelscriptBpgcSemanticsHooks::Shutdown();
+	AngelscriptScriptClassSemanticsHooks::Shutdown();
 #endif
-                                                                                       
+                                                                                              
                                                                                                                    
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
 	SoloASBridge::SetEditorObjectImportPropertiesAdapter(nullptr, nullptr);
 #endif
                                                                                                                  
-                                                                                                 
-	FAngelscriptStateTreeClassProvider::Shutdown();
-                                                                                               
-                                                                                                               
-#if WITH_EDITOR && PLATFORM_DESKTOP && !UE_BUILD_SHIPPING
-	if (FAngelscriptManager::IsInitialized())
-		FAngelscriptManager::OnScriptEditorShutdown.Broadcast();
-#endif
-                                                                                                             
                                                                                                       
 	UnregisterAngelscriptSourceNavigation();
                                                                                                     

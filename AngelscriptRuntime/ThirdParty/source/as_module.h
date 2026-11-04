@@ -222,11 +222,6 @@ public:
 
 	// Base name of the module, excluding any suffixes that get added during hotreload
 	asCString baseModuleName;
-                                                                                               
-	asCString scriptUnitId;
-	uint8 scriptUnitLayer = 0;
-	TArray<asSNameSpace*> scriptUnitTypeDependencies;
-                                                                                             
 
 	asCScriptEngine  *engine;
 	asCBuilder       *builder;

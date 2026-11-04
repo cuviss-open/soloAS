@@ -24,34 +24,6 @@ FStaticJITCompiledInfo::FStaticJITCompiledInfo(FGuid Guid)
 	ActiveInfo = this;
 }
 
-                                                                                                  
-FStaticJITCompiledInfo::FStaticJITCompiledInfo(
-	FGuid Guid,
-	const FStaticJITModuleDataGuid* InModuleDataGuids,
-	uint32 InModuleDataGuidCount)
-	: PrecompiledDataGuid(Guid)
-	, ModuleDataGuids(InModuleDataGuids)
-	, ModuleDataGuidCount(InModuleDataGuidCount)
-{
-	const FStaticJITCompiledInfo*& ActiveInfo = GetActiveCompiledInfo();
-	checkf(ActiveInfo == nullptr, TEXT("Only one angelscript static JIT info can be compiled in!"))
-	ActiveInfo = this;
-}
-
-bool FStaticJITCompiledInfo::GetModuleDataGuid(const FString& ModuleName, FGuid& OutGuid) const
-{
-	for (uint32 Index = 0; Index < ModuleDataGuidCount; ++Index)
-	{
-		if (ModuleDataGuids[Index].ModuleName != nullptr
-			&& ModuleName == ModuleDataGuids[Index].ModuleName)
-		{
-			OutGuid = ModuleDataGuids[Index].DataGuid;
-			return true;
-		}
-	}
-	return false;
-}
-                                                                                                
 
 const FStaticJITCompiledInfo* FStaticJITCompiledInfo::Get()
 {

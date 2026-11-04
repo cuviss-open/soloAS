@@ -1,5 +1,8 @@
 #include "AngelscriptBinds/Bind_TSet.h"
 #include "AngelscriptBinds.h"
+                                                                                                           
+#include "SoloASEngineCompat.h"
+                                                                                                         
 #include "AngelscriptManager.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -83,7 +86,21 @@ struct FAngelscriptSetType : public FAngelscriptType
 			Usage.SubTypes[0].EmitReferenceInfo(InnerParams);
 		}
 
-		Params.Schema->Add(UE::GC::DeclareMember(Params.Names.Top(), Params.AtOffset, UE::GC::EMemberType::StructSet, InnerSchema.Build()));
+                                                                                                           
+		Params.Schema->Add(UE::GC::DeclareMember(Params.Names.Top(), Params.AtOffset,
+                                                                                                         
+                                                                                   
+// SOLOAS-COMPAT-BEGIN(<5.7) UE 5.6 uses the sparse-array GC schema for sets [test: ASRegression]
+#if SOLOAS_UE_BEFORE(5, 7)
+            UE::GC::EMemberType::SparseStructArray
+#else
+            UE::GC::EMemberType::StructSet
+#endif
+// SOLOAS-COMPAT-END
+                                                                                 
+                                                                                                           
+, InnerSchema.Build()));
+                                                                                                         
 	}
 
 	bool CanCreateProperty(const FAngelscriptTypeUsage& Usage) const override
@@ -98,7 +115,9 @@ struct FAngelscriptSetType : public FAngelscriptType
                                                                                                                       
 #if 0
                                                                                                                     
+                                                                                                           
 		auto* SetProp = new FSetProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                         
                                                                                                                
 #endif
 		auto* SetProp = CastFieldChecked<FSetProperty>(

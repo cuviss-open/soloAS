@@ -4,9 +4,6 @@
 #include "ClassGenerator/AngelscriptAdditionalCompileChecks.h"
 #include "AngelscriptManager.h"
 
-                                                                                                              
-struct FScopedSlowTask;
-                                                                                                            
 typedef const TArray<TPair<FName, int64>>& EnumNameList;
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAngelscriptPostReload, bool);
 DECLARE_MULTICAST_DELEGATE(FOnAngelscriptFullReload);
@@ -51,37 +48,14 @@ struct FAngelscriptClassGenerator
 
 	void PerformFullReload();
 	void PerformSoftReload();
-                                                                                                          
-	bool PrepareModuleTransaction(FString& Error);
-	bool CommitModuleTransaction(FString& Error);
-	void AbortModuleTransaction();
-                                                                                                        
 
 
 	void GetFullReloadLines(TSharedRef<FAngelscriptModuleDesc> Module, TArray<int32>& OutLines);
 	bool WantsFullReload(TSharedRef<FAngelscriptModuleDesc> Module);
 	bool NeedsFullReload(TSharedRef<FAngelscriptModuleDesc> Module);
 
-                                                                                                                                           
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-	static ANGELSCRIPTCODE_API bool ValidateExplicitFullReloadBindingShape(
-		const FString& CanonicalTarget,
-		const TArray<TArray<FString>>& CanonicalModuleCodePaths,
-		int32& OutTargetModuleIndex,
-		int32 QualifyingWitnessCount = INDEX_NONE);
-	static ANGELSCRIPTCODE_API bool HasDistinctExplicitFullReloadMarkerPair(
-		const UASClass* OldClass,
-		const UASClass* NewClass);
-#endif
-                                                                                                                                         
 private:
 
-                                                                                                            
-	bool bPreparingModuleTransaction = false;
-	bool bModuleTransactionPrepared = false;
-	void CompleteReload(FScopedSlowTask& SlowTask);
-	void PublishClassRegistration(UASClass* Class);
-                                                                                                          
 	struct FReloadPropagation
 	{
 		bool bStartedPropagating = false;
@@ -96,9 +70,6 @@ private:
 		int32 DataIndex;
 		TSharedPtr<FAngelscriptClassDesc> NewClass;
 		TSharedPtr<FAngelscriptClassDesc> OldClass;
-                                                                                                                          
-		bool bExplicitFullReloadTarget = false;
-                                                                                                                        
 		bool bAnalyzed = false;
 		bool bReloaded = false;
 		UASClass* ReplacedClass = nullptr;
@@ -182,11 +153,6 @@ private:
 	bool bReinstancingAny = false;
 	int32 NextUniqueNumber = 0;
 
-                                                                                                                                
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-	bool ValidateAndMarkExplicitFullReloadTarget();
-#endif
-                                                                                                                              
 	bool ShouldFullReload(FClassData& Class);
 	bool ShouldFullReload(FEnumData& Enum);
 	bool ShouldFullReload(FDelegateData& Enum);

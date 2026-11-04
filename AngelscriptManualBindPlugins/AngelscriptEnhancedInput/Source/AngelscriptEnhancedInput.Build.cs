@@ -9,6 +9,7 @@ namespace UnrealBuildTool.Rules
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
                                                                                                                            
+            ShortName = "EI";
             PrecompileForTargets = PrecompileTargetsType.Any;
             bUsePrecompiled = SoloASBridgeBuildPath.ShouldUsePrecompiled(this, Target, bUsePrecompiled);
             PrivateDependencyModuleNames.Add("SoloASBridge");

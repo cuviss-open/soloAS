@@ -1,8 +1,101 @@
 {
   "buildVersion": "5.8.4-0+UE5",
-  "installedBuild": {
-    "changelist": 58902052,
-    "compatibleChangelist": 55116800,
-    "branch": "++UE5+Release-5.8"
+  "support": {
+    "5.8": {
+      "policy": "track-all-patches",
+      "minimumPatch": 0,
+      "patches": {
+        "3": {
+          "installedBuild": {
+            "changelist": 58210709,
+            "compatibleChangelist": 55116800,
+            "branch": "++UE5+Release-5.8"
+          },
+          "validated": false
+        },
+        "4": {
+          "installedBuild": {
+            "changelist": 58902052,
+            "compatibleChangelist": 55116800,
+            "branch": "++UE5+Release-5.8"
+          },
+          "validated": true
+        }
+      },
+      "validationPolicy": "latest-patch-only",
+      "verificationLevel": "full"
+    },
+    "5.7": {
+      "policy": "last-patch-only",
+      "validationPolicy": "latest-patch-only",
+      "minimumPatch": 4,
+      "status": "validated",
+      "supported": true,
+      "patches": {
+        "4": {
+          "installedBuild": {
+            "changelist": 51494982,
+            "compatibleChangelist": 47537391,
+            "branch": "++UE5+Release-5.7"
+          },
+          "validated": true
+        }
+      },
+      "verificationLevel": "core"
+    },
+    "5.6": {
+      "status": "validated",
+      "supported": true,
+      "policy": "last-patch-only",
+      "validationPolicy": "latest-patch-only",
+      "minimumPatch": 1,
+      "patches": {
+        "1": {
+          "validated": true,
+          "installedBuild": {
+            "changelist": 44394996,
+            "compatibleChangelist": 43139311,
+            "branch": "++UE5+Release-5.6"
+          }
+        }
+      },
+      "verificationLevel": "core"
+    },
+    "5.5": {
+      "status": "validated",
+      "supported": true,
+      "policy": "last-patch-only",
+      "validationPolicy": "latest-patch-only",
+      "minimumPatch": 4,
+      "patches": {
+        "4": {
+          "validated": true,
+          "installedBuild": {
+            "changelist": 40574608,
+            "compatibleChangelist": 37670630,
+            "branch": "++UE5+Release-5.5"
+          }
+        }
+      },
+      "verificationLevel": "core"
+    },
+    "5.4": {
+      "status": "validated",
+      "supported": true,
+      "policy": "last-patch-only",
+      "validationPolicy": "latest-patch-only",
+      "minimumPatch": 4,
+      "patches": {
+        "4": {
+          "validated": true,
+          "installedBuild": {
+            "changelist": 35576357,
+            "compatibleChangelist": 33043543,
+            "branch": "++UE5+Release-5.4"
+          }
+        }
+      },
+      "verificationLevel": "core"
+    }
   }
 }

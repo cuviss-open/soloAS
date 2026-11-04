@@ -134,7 +134,9 @@ struct FScriptDelegateType : TAngelscriptCppType<FScriptDelegate>
                                                                                                                                  
 #if 0
                                                                                                                                
+                                                                                                                
 		auto* Prop = new FDelegateProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                              
                                                                                                                           
 #endif
 		auto* Prop = CastFieldChecked<FDelegateProperty>(
@@ -749,7 +751,9 @@ struct FMulticastScriptDelegateType : TAngelscriptCppType<FMulticastScriptDelega
                                                                                                                                           
 #if 0
                                                                                                                                         
+                                                                                                                
 		auto* Prop = new FMulticastInlineDelegateProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                              
                                                                                                                                    
 #endif
 		auto* Prop = CastFieldChecked<FMulticastInlineDelegateProperty>(
@@ -1226,7 +1230,9 @@ struct FScriptSparseDelegateType : public FAngelscriptType
                                                                                                                                           
 #if 0
                                                                                                                                         
+                                                                                                                
 		auto* Prop = new FMulticastSparseDelegateProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                              
                                                                                                                                    
 #endif
 		auto* Prop = CastFieldChecked<FMulticastSparseDelegateProperty>(

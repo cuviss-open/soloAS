@@ -1,8 +1,15 @@
+                                                                                                       
 // SPDX-License-Identifier: MIT
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "EditorObject/AngelscriptEditorObjectPrecreateImportAdapter.h"
+                                                                                                     
+                                                                                                                                                                          
+#include "Compat/SoloASRuntimeCompat.h"
+// SOLOAS-COMPAT-END
 
+                                                                                                       
 #include "AngelscriptBinds.h"
+#include "Editor/SoloASEditorObjectImportProperties.h"
 #include "AngelscriptManager.h"
 #include "ClassGenerator/ASClass.h"
 
@@ -39,6 +46,18 @@
 
 namespace
 {
+                                                                                                     
+// SOLOAS-COMPAT-BEGIN(<5.6) The old overridable manager accepts references [test: SoloAS.EditorObjectPrecreateImport] | CS.Runtime.CoreSurface.AngelscriptEditorObjectPrecreateImportAdapter.Compat2
+bool IsImportOverrideEnabled(const UObject* Object)
+{
+#if SOLOAS_UE_BEFORE(5, 6)
+    return Object && FOverridableManager::Get().IsEnabled(*Object);
+#else
+    return Object && FOverridableManager::Get().IsEnabled(Object);
+#endif
+}
+// SOLOAS-COMPAT-END
+                                                                                                       
 const EPropertyFlags UnsupportedPropertyFlags =
 	CPF_Transient
 	| CPF_EditConst
@@ -86,7 +105,12 @@ FAngelscriptEditorObjectPrecreateImportAdapter::ValidatePreCreate(
 		return EAngelscriptEditorObjectImportResult::DuplicateName;
 	return EAngelscriptEditorObjectImportResult::Completed;
 }
+                                                                                                     
 
+// SOLOAS-COMPAT-BEGIN(<5.6) The newer override-aware parser is not the UE 5.5 native protocol [test: SoloAS.EngineCompat.T3DImportBoundary] | CS.Runtime.CoreSurface.AngelscriptEditorObjectPrecreateImportAdapter.Compat3
+#if SOLOAS_UE_AT_LEAST(5, 6) || SOLOAS_UE_BEFORE(5, 5)
+// SOLOAS-COMPAT-END
+                                                                                                       
 namespace
 {
 // The unexported editor token helpers use two public Command calls and restore
@@ -303,9 +327,18 @@ struct FTextImportFrame
 		: Params(InParams), Graph(InGraph), Context(InContext), Cursor(Params.SourceText),
 		  Root(Params.SubobjectRoot),
 		  bSubobjectsAllowed(!Params.ObjectStruct->IsA(UScriptStruct::StaticClass()) && Params.SubobjectOuter),
-		  Remapper(Params.ObjectRemapper)
-	{
-		if (bSubobjectsAllowed)
+		  Remapper(nullptr)
+    {
+                                                                                                     
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 remappers are caller-owned const input; extend a local copy [test: SoloAS.EditorObjectPrecreateImport] | CS.Runtime.CoreSurface.AngelscriptEditorObjectPrecreateImportAdapter.Compat4
+#if SOLOAS_UE_BEFORE(5, 5)
+        if (Params.ObjectRemapper) Remapper = &LocalRemapper.Emplace(*Params.ObjectRemapper);
+#else
+        Remapper = Params.ObjectRemapper;
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                       
+        if (bSubobjectsAllowed)
 		{
 			if (!Root)
 				Root = Params.SubobjectOuter;
@@ -318,7 +351,11 @@ struct FTextImportFrame
 	{
 		if (FObjectInstancingGraph* Existing = DedicatedGraphs.Find(Object))
 			return Existing;
-		if (FOverridableSerializationLogic::ShouldUseDedicatedInstancingGraph(Object, Overrides))
+                                                                                                     
+                                                                                                                                                                          
+		if (SoloASBridge::Compat::UseDedicatedInstancingGraph(Object, Overrides))
+// SOLOAS-COMPAT-END
+                                                                                                       
 			return &DedicatedGraphs.Emplace(Object, FObjectInstancingGraph(Object));
 		return &Graph;
 	}
@@ -393,15 +430,24 @@ struct FTextImportFrame
 			}
 			Class = BaseTemplate->GetClass();
 		}
+                                                                                                     
 
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 text import has no override-operation or shadow serialization protocol [test: SoloAS.EditorObjectPrecreateImport] | CS.Runtime.CoreSurface.AngelscriptEditorObjectPrecreateImportAdapter.Compat6
+#if SOLOAS_UE_BEFORE(5, 5)
+        constexpr bool bT3D = false;
+        constexpr bool bShadow = false;
+#else
 		const bool bT3D = FOverridableSerializationLogic::HasCapabilities(
 			FOverridableSerializationLogic::ECapabilities::T3DSerialization);
 		const bool bShadow = bT3D && FOverridableSerializationLogic::HasCapabilities(
 			FOverridableSerializationLogic::ECapabilities::SubObjectsShadowSerialization);
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                       
 		checkSlow(Class);
 		if (bRedefinition)
 		{
-			if (bShadow && FOverridableManager::Get().IsEnabled(BaseTemplate))
+			if (bShadow && IsImportOverrideEnabled(BaseTemplate))
 			{
 				if (!Remapper)
 					Remapper = &LocalRemapper.Emplace();
@@ -417,8 +463,22 @@ struct FTextImportFrame
 
 		FName OperationName = NAME_None;
 		const bool bOperation = FParse::Value(Header, TEXT("OverriddenOperation="), OperationName);
+                                                                                                     
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 does not parse T3D override operations [test: SoloAS.EditorObjectPrecreateImport] | CS.Runtime.CoreSurface.AngelscriptEditorObjectPrecreateImportAdapter.Compat7
+#if SOLOAS_UE_BEFORE(5, 5)
+        if (bOperation)
+        {
+            Params.Warn->Logf(ELogVerbosity::Error,
+                TEXT("SOLOAS-COMPAT: UE 5.4 cannot import OverriddenOperation state from a newer editor; object import rejected."));
+            return false;
+        }
+        const TOptional<EOverriddenPropertyOperation> Operation;
+#else
 		const TOptional<EOverriddenPropertyOperation> Operation = bOperation && bT3D
 			? GetOverriddenOperationFromName(OperationName) : TOptional<EOverriddenPropertyOperation>();
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                       
 		UObject* RequestedArchetype = ResolveImportArchetype(Header, Params.SubobjectOuter);
 		UObject* Child = nullptr;
 		if (Params.SubobjectOuter->HasAnyFlags(RF_ClassDefaultObject))
@@ -458,7 +518,7 @@ struct FTextImportFrame
 		UObject* Abandoned = nullptr;
 		if (Child && (Child->GetClass() != Class || Child->GetOuter() != Params.SubobjectOuter || Child->GetFName() != Name))
 		{
-			if (bShadow && FOverridableManager::Get().IsEnabled(Child) && !Child->GetClass()->IsChildOf(Class))
+			if (bShadow && IsImportOverrideEnabled(Child) && !Child->GetClass()->IsChildOf(Class))
 				Name = MakeUniqueObjectName(Params.SubobjectOuter, Class, Name);
 			else
 			{
@@ -472,7 +532,11 @@ struct FTextImportFrame
 		FObjectInstancingGraph* SelectedGraph = &Graph;
 		if (!Child)
 		{
-			const bool bDedicated = FOverridableSerializationLogic::ShouldUseDedicatedInstancingGraphForNewObject(
+                                                                                                     
+                                                                                                                                                                          
+			const bool bDedicated = SoloASBridge::Compat::UseDedicatedInstancingGraphForNewObject(
+// SOLOAS-COMPAT-END
+                                                                                                       
 				Class, Flags, RequestedArchetype, bT3D && Operation.IsSet());
 			FObjectInstancingGraph ConstructionGraph;
 			Child = NewObject<UObject>(Params.SubobjectOuter, Class, Name, Flags, RequestedArchetype,
@@ -516,6 +580,9 @@ struct FTextImportFrame
 			EArchiveReplaceObjectFlags::IgnoreArchetypeRef);
 		if (bExportPath && Remapper)
 			Remapper->Add(FSoftObjectPath(ExportPath), Child);
+                                                                                                     
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 native text imports do not restore T3D override operations [test: SoloAS.EditorObjectPrecreateImport] | CS.Runtime.CoreSurface.AngelscriptEditorObjectPrecreateImportAdapter.Compat9
+#if SOLOAS_UE_AT_LEAST(5, 5)
 		if (bT3D)
 		{
 			if (Operation.IsSet())
@@ -523,6 +590,9 @@ struct FTextImportFrame
 			else
 				FOverridableManager::Get().Disable(Child);
 		}
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                        
 		return EnterChild(Child, Class, SelectedGraph);
 	}
 
@@ -580,7 +650,15 @@ struct FTextImportFrame
 			| (GIsImportingT3D ? PPF_AttemptNonQualifiedSearch : 0);
 		FString Statement;
 		int32 LinesConsumed = 0;
-		while (FParse::LineExtended(&Cursor, Statement, LinesConsumed, FParse::ELineExtendedFlags::OldExactMode))
+                                                                                                      
+		// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 selects the same exact line mode with a bool [test: SoloAS.EditorObjectPrecreateImport] | CS.Runtime.CoreSurface.AngelscriptEditorObjectPrecreateImportAdapter.Compat10
+#if SOLOAS_UE_BEFORE(5, 5)
+        while (FParse::LineExtended(&Cursor, Statement, LinesConsumed, true))
+#else
+        while (FParse::LineExtended(&Cursor, Statement, LinesConsumed, FParse::ELineExtendedFlags::OldExactMode))
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                        
 		{
 			int32 Length = Statement.Len();
 			while (Length > 0 && (Statement[Length - 1] == TEXT(';')
@@ -709,7 +787,7 @@ const TCHAR* ExecuteTextImportFrame(FImportObjectParams& Params, FTextImportCont
 	if (Params.SubobjectRoot && Params.SubobjectRoot != UObject::StaticClass()->GetDefaultObject())
 		Graph.SetDestinationRoot(Params.SubobjectRoot);
 	TOptional<TMap<FSoftObjectPath, UObject*>> WrapperRemapper;
-	if (!Params.ObjectRemapper && FOverridableManager::Get().IsEnabled(Params.SubobjectOuter))
+	if (!Params.ObjectRemapper && IsImportOverrideEnabled(Params.SubobjectOuter))
 		Params.ObjectRemapper = &WrapperRemapper.Emplace();
 
 	check(Params.ObjectStruct);
@@ -717,11 +795,17 @@ const TCHAR* ExecuteTextImportFrame(FImportObjectParams& Params, FTextImportCont
 	const TCHAR* Result = nullptr;
 	if (Params.SourceText)
 	{
-		FOverriddenPropertySet* Overrides = nullptr;
+                                                                                                      
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 text import has no T3D override scope [test: SoloAS.EditorObjectPrecreateImport] | CS.Runtime.CoreSurface.AngelscriptEditorObjectPrecreateImportAdapter.Compat11
+#if SOLOAS_UE_AT_LEAST(5, 5)
+        FOverriddenPropertySet* Overrides = nullptr;
 		if (Params.SubobjectOuter && FOverridableSerializationLogic::HasCapabilities(
 			FOverridableSerializationLogic::ECapabilities::T3DSerialization))
 			Overrides = FOverridableManager::Get().GetOverriddenProperties(Params.SubobjectOuter);
 		FEnableOverridableSerializationScope OverrideScope(Overrides != nullptr, Overrides);
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                        
 		FTextImportFrame Frame(Params, Graph, Context);
 		Result = Frame.Parse();
 	}
@@ -748,12 +832,28 @@ const TCHAR* ExecuteTextImportFrame(FImportObjectParams& Params, FTextImportCont
 }
 }
 
+#endif
+
 const TCHAR* FAngelscriptEditorObjectPrecreateImportAdapter::ImportWholeText(FImportObjectParams& Params)
 {
+                                                                                                      
+// SOLOAS-COMPAT-BEGIN(<5.6) Preserve native imports and reject cross-version override text explicitly [test: SoloAS.EngineCompat.T3DImportBoundary] | CS.Runtime.CoreSurface.AngelscriptEditorObjectPrecreateImportAdapter.Compat12
+#if SOLOAS_UE_BEFORE(5, 6) && SOLOAS_UE_AT_LEAST(5, 5)
+    return SoloASBridge::ImportObjectPropertiesNative(Params);
+#else
+// SOLOAS-COMPAT-END
+                                                                                                        
+// SOLOAS-COMPAT-BEGIN(<5.5) CS.Runtime.UE54.ImportArchetypeIdentity [test: SoloAS.EditorObjectActualImportIdentity]
+#if SOLOAS_UE_BEFORE(5, 5)
+    if (SoloASBridge::HasUnsupportedT3DOverrideTokens(Params.SourceText))
+        return SoloASBridge::ImportObjectPropertiesNative(Params);
+#endif
+// SOLOAS-COMPAT-END
 	TOptional<FTextImportContext> Context;
 	if (Params.LineNumber != INDEX_NONE && !Params.SubobjectRoot)
 		Context.Emplace(Params);
 	return ExecuteTextImportFrame(Params, Context.IsSet() ? &Context.GetValue() : nullptr);
+#endif
 }
 
 bool FAngelscriptEditorObjectPrecreateImportAdapter::ShouldUseImportWholeText(
@@ -761,7 +861,14 @@ bool FAngelscriptEditorObjectPrecreateImportAdapter::ShouldUseImportWholeText(
 {
 	if (!IsInGameThread())
 		return false;
+                                                                                                      
+// SOLOAS-COMPAT-BEGIN(<5.6) Reject newer override protocol even when no script class marker is present [test: SoloAS.EngineCompat.T3DImportBoundary] | CS.Runtime.CoreSurface.AngelscriptEditorObjectPrecreateImportAdapter.Compat13
+#if SOLOAS_UE_BEFORE(5, 6)
+    if (SoloASBridge::HasUnsupportedT3DOverrideTokens(Params.SourceText)) return true;
+#endif
+// SOLOAS-COMPAT-END
 
+                                                                                                        
 	auto IsScriptClassOrSubclass = [](const UClass* Class)
 	{
 		for (const UClass* Current = Class; Current != nullptr; Current = Current->GetSuperClass())
@@ -778,7 +885,11 @@ bool FAngelscriptEditorObjectPrecreateImportAdapter::ShouldUseImportWholeText(
 		if (Outer == nullptr)
 			return false;
 		TArray<UObject*> Subobjects;
-		GetObjectsWithOuter(Outer, Subobjects, EGetObjectsFlags::IncludeNestedObjects);
+                                                                                                      
+                                                                                                                                                                           
+		SoloASBridge::Compat::GetNestedObjects(Outer, Subobjects);
+// SOLOAS-COMPAT-END
+                                                                                                        
 		for (const UObject* Subobject : Subobjects)
 			if (IsScriptObject(Subobject))
 				return true;
@@ -807,42 +918,9 @@ bool FAngelscriptEditorObjectPrecreateImportAdapter::ShouldUseImportWholeText(
 	}
 	return false;
 }
+                                                                                                      
 
-bool FAngelscriptEditorObjectPrecreateImportAdapter::ImportObjectText(UObject* Object, const FString& Text)
-{
-	if (!IsInGameThread() || !IsValid(Object)
-		|| Object->HasAnyFlags(RF_NeedLoad | RF_NeedPostLoad | RF_BeginDestroyed | RF_FinishDestroyed)
-		|| Object->GetClass()->HasAnyClassFlags(CLASS_NewerVersionExists))
-		return false;
-
-	// Editor callbacks can reenter script and change the caller's string or roots.
-	const FString SourceText(Text);
-	TStrongObjectPtr<UObject> RetainedObject(Object);
-	TStrongObjectPtr<UClass> RetainedClass(Object->GetClass());
-	FImportObjectParams Params;
-	Params.DestData = reinterpret_cast<uint8*>(Object);
-	Params.ObjectStruct = RetainedClass.Get();
-	Params.SubobjectRoot = Object;
-	Params.SubobjectOuter = Object;
-	Params.SourceText = *SourceText;
-	Params.Warn = GWarn;
-	Params.bShouldCallEditChange = true;
-	const TCHAR* End = ImportWholeText(Params);
-	return End == *SourceText + SourceText.Len();
-}
-
-AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_EditorObjectTextImport(FAngelscriptBinds::EOrder::Late, []()
-{
-	if (!FAngelscriptManager::bUseEditorScripts)
-		return;
-	FAngelscriptBinds::FNamespace Namespace("Editor");
-	FAngelscriptBinds::BindGlobalFunction("bool ImportObjectText(UObject Object, const FString& Text)",
-		[](UObject* Object, const FString& Text)
-		{
-			return FAngelscriptEditorObjectPrecreateImportAdapter::ImportObjectText(Object, Text);
-		});
-});
-
+                                                                                                        
 UObject* FAngelscriptEditorObjectPrecreateImportAdapter::PreCreate(
 	const FAngelscriptEditorObjectPreCreateRequest& Request,
 	EAngelscriptEditorObjectImportResult& OutResult)
@@ -935,3 +1013,4 @@ FAngelscriptEditorObjectPrecreateImportAdapter::ImportProperties(
 	}
 	return EAngelscriptEditorObjectImportResult::Completed;
 }
+                                                                                                      

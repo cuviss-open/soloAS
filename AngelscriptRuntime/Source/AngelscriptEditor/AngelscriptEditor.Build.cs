@@ -8,29 +8,26 @@ namespace UnrealBuildTool.Rules
 		public AngelscriptEditor(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+                                                                                                     
 			PrecompileForTargets = PrecompileTargetsType.Any;
 			bUsePrecompiled = SoloASBridgeBuildPath.ShouldUsePrecompiled(this, Target, bUsePrecompiled);
-                                                                                                               
-            if (Target.bBuildEditor && Target.LinkType != TargetLinkType.Monolithic
-                && (Target.Platform == UnrealTargetPlatform.Win64 || Target.Platform == UnrealTargetPlatform.Mac))
-            {
-                PrivateDependencyModuleNames.AddRange(new[] { "PythonScriptPlugin", "Python3" });
-                PrivateIncludePaths.Add(Path.Combine(GetModuleDirectory("PythonScriptPlugin"), "Private"));
-            }
-                                                                                                             
+                                                                                                   
 
                                                                                                                      
             PrivateIncludePaths.Add(Path.Combine(GetModuleDirectory("CoreUObject"), "Internal"));
                                                                                                                    
 
+                                                                                                             
+        bool WithStateTree = UnrealBuildTool.Rules.SoloASBridgeBuildPath.IsStateTreeEnabled(Target, EngineDirectory);
+        PrivateDefinitions.Add("SOLOAS_WITH_STATETREE=" + (WithStateTree ? "1" : "0"));
+        if (WithStateTree) PrivateDependencyModuleNames.Add("StateTreeEditorModule");
+
+                                                                                                           
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
 				"Core",
 				"CoreUObject",
 				"Engine",
-                                                                                                             
-				"StateTreeEditorModule",
-                                                                                                           
 				"UnrealEd",
 				"EditorSubsystem",
 				"AngelscriptCode",
@@ -50,8 +47,10 @@ namespace UnrealBuildTool.Rules
                                                                                                      
 			PrivateDependencyModuleNames.AddRange(new string[]
 			{
+                                                                                                       
 				"TypedElementFramework",
 				"TypedElementRuntime",
+                                                                                                     
                                                                                                         
 				"BSPUtils",
                                                                                                       
@@ -63,13 +62,7 @@ namespace UnrealBuildTool.Rules
 				"ContentBrowser",
 				"ContentBrowserData",
 				"ToolMenus",
-                                                                                                       
-                "OutputLog",
-                                                                                                     
 				"ToolWidgets",
-                                                                                           
-				"UMG",
-                                                                                         
 				"PlacementMode",
 				"StructViewer",
                                                                                                            
@@ -82,18 +75,21 @@ namespace UnrealBuildTool.Rules
                                                                                                          
                                                                                                                    
 				"SoloASBridgeEditor",
+                "StructUtils",
                                                                                                                  
 			});
 
-                                                                                                  
+                                                                                                         
 			if (Target.bBuildEditor)
 				PrivateDependencyModuleNames.Add("Persona");
-                                                                                                
+                                                                                                       
 
                                                                                                                 
 			if (Target.bBuildEditor && Target.LinkType == TargetLinkType.Modular
 				&& Target.Platform == UnrealTargetPlatform.Win64)
-				PrivateDependencyModuleNames.Add("Detours");
+				// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 requires the Bridge-owned Detours source module [test: SoloAS.EditorHookInstallation]
+				PrivateDependencyModuleNames.Add(SoloASBridgeBuildPath.EditorDetoursModule(Target));
+// SOLOAS-COMPAT-END
                                                                                                               
 		}
 	}

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "StateTreeNodeClassCache.h"
+struct FStateTreeNodeClassData;
 
 class UClass;
 

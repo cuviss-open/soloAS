@@ -56,7 +56,7 @@ asITypeInfo* GetAngelscriptClassScriptType(const UClass* Class)
 // CUVISS STUDIO EXTENSION BEGIN: CS.Runtime.ClassState.BlueprintAncestryFallback
 	// UASClass derives from UClass, so the Blueprint metaclass guard below
 	// also excludes cleared or retired direct script carriers.
-	// Haze stores the AS type on BlueprintGeneratedClass identities as an Engine
+	// UE-AS fork stores the AS type on BlueprintGeneratedClass identities as an Engine
 	// field. Stock UE has no such field, so recover the same identity from the
 	// nearest AS class when a generated Blueprint has no direct sidecar record.
 	if (Class->GetClass() == nullptr

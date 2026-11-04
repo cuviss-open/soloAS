@@ -157,7 +157,9 @@ struct TAngelscriptCppPropertyType : public TAngelscriptCppType<typename Propert
                                                                                                                                
 #if 0
                                                                                                                              
+                                                                                                        
 		return new PropertyType(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                      
                                                                                                                         
 #endif
 		return CastFieldChecked<PropertyType>(

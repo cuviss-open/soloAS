@@ -47,6 +47,9 @@
 #include "as_objecttype.h"
 #include "as_callfunc.h"
 #include "AngelscriptManager.h"
+                                                                                                  
+#include "AngelscriptExecutionQuiescence.h" // E: standalone JIT TUs do not inherit module force-includes.
+                                                                                                
 
                                                                                                                   
 #if SOLOAS_LEGACY_TERMINAL_LIFECYCLE

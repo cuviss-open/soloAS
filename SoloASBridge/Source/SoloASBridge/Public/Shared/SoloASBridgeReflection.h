@@ -9,11 +9,6 @@ class UClass;
 
 namespace SoloASBridge
 {
-/** Registers binary-safe mixin callable/reference traits for one native class. */
-SOLOASBRIDGE_API void RegisterBindingClassTraits(UClass* Class, FName Owner,
-    bool bScriptCallable, UClass* NativeTarget = nullptr);
-/** Registers C++ reference parameters from the loaded classes of one module. */
-SOLOASBRIDGE_API void RegisterBindingModuleReferenceTraits(FName Module, FName Owner);
 /** Opens the reflection trait registry for game-thread registrations. */
 SOLOASBRIDGE_API void InitializeReflectionTraits();
 
@@ -30,6 +25,9 @@ SOLOASBRIDGE_API bool SetPropertyTraits(
     FName RegistrationOwner,
     ESoloASBridgePropertyTrait Traits
 );
+
+/** Recovers native declaration traits retained by stock reflection. */
+SOLOASBRIDGE_API ESoloASBridgePropertyTrait GetNativePropertyTraits(const FProperty* Property);
 
 /** Copies the traits for Property into OutTraits. */
 SOLOASBRIDGE_API bool GetPropertyTraits(

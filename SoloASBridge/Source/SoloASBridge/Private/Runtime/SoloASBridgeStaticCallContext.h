@@ -3,7 +3,7 @@
 #include "UObject/Object.h"
 #include "SoloASBridgeStaticCallContext.generated.h"
 
-UCLASS(Transient)
+UCLASS(Transient, meta = (NotInAngelscript))
 class USoloASBridgeStaticCallContext final : public UObject
 {
     GENERATED_BODY()

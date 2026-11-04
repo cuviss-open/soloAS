@@ -1,4 +1,7 @@
 #include "AngelscriptDebugServer.h"
+                                                                                                   
+#include "SoloASEngineCompat.h"
+                                                                                                 
 #include "AngelscriptManager.h"
 #include "AngelscriptDocs.h"
 
@@ -16,7 +19,9 @@
 #include "Blueprint/BlueprintSupport.h"
 #include "Misc/PackageName.h"
 #include "Misc/MessageDialog.h"
+                                                                                                                        
 #include "Misc/Paths.h"
+                                                                                                                      
 
 #include "StartAngelscriptHeaders.h"
 #include "AngelscriptInclude.h"
@@ -337,18 +342,6 @@ void FAngelscriptDebugServer::ProcessException(class asIScriptContext* Context)
 		// Maybe we need to do something if an exception occurs while paused?
 		return;
 	}
-	                                                                                                 
-	if (bIsDebugging && FAngelscriptModdingDebugMessageAccessGateRuntime::HasHandlers())
-	{
-		const FDebugMessageAccessContext AccessContext = BuildContextFromScriptContext(
-			FAngelscriptModdingDebugMessageAccessGate::EOperation::ExecutionControl, Context, 0);
-		if (!IsDebugMessageAllowed(AccessContext, TEXT("exception")))
-		{
-			ProcessMessages();
-			return;
-		}
-	}
-	                                                                                               
 
 	ProcessMessages();
 
@@ -380,19 +373,6 @@ void FAngelscriptDebugServer::ProcessScriptLine(class asCContext* Context)
 	// Don't break if we're stopping the engine
 	if (IsEngineExitRequested())
 		return;
-	                                                                                                 
-	if (FAngelscriptModdingDebugMessageAccessGateRuntime::HasHandlers())
-	{
-		const FDebugMessageAccessContext AccessContext = BuildContextFromScriptContext(
-			FAngelscriptModdingDebugMessageAccessGate::EOperation::ExecutionControl,
-			(asIScriptContext*)Context,
-			0);
-		if (!IsDebugMessageAllowed(AccessContext, TEXT("line")))
-		{
-			return;
-		}
-	}
-	                                                                                               
 
 	if (DataBreakpoints.Num() > 0 && bBreakNextScriptLine)
 	{
@@ -585,19 +565,6 @@ bool FAngelscriptDebugServer::ShouldBreakOnActiveSide()
 
 void FAngelscriptDebugServer::PauseExecution(FStoppedMessage* StopMessage)
 {
-	                                                                                                 
-	if (FAngelscriptModdingDebugMessageAccessGateRuntime::HasHandlers())
-	{
-		const FDebugMessageAccessContext AccessContext = BuildScriptAccessContext(
-			FAngelscriptModdingDebugMessageAccessGate::EOperation::ExecutionControl, 0);
-		if (!IsDebugMessageAllowed(AccessContext, TEXT("pause")))
-		{
-			bIsPaused = false;
-			FAngelscriptManager::Get().UpdateLineCallbackState();
-			return;
-		}
-	}
-	                                                                                               
 
 	bIsPaused = true;
 
@@ -639,299 +606,6 @@ void FAngelscriptDebugServer::SleepForCommunicate(float Duration)
 	}
 }
 
-                                                                                                 
-FAngelscriptDebugServer::FDebugMessageAccessContext FAngelscriptDebugServer::BuildSourceAccessContext(
-	FAngelscriptModdingDebugMessageAccessGate::EOperation Operation,
-	const FString& Filename,
-	const FString& ModuleName) const
-{
-	FDebugMessageAccessContext Result;
-	Result.Operation = Operation;
-	FString NormalizedFilename = Filename;
-	FPaths::NormalizeFilename(NormalizedFilename);
-	TSharedPtr<FAngelscriptModuleDesc> Module = ModuleName.IsEmpty()
-		? FAngelscriptManager::Get().GetModuleByFilename(NormalizedFilename)
-		: FAngelscriptManager::Get().GetModuleByModuleName(ModuleName);
-	if (!Module.IsValid())
-	{
-		return Result;
-	}
-
-	Result.ModuleName = Module->ModuleName;
-	for (const FAngelscriptModuleDesc::FCodeSection& Section : Module->Code)
-	{
-		FString RelativeFilename = Section.RelativeFilename;
-		FString AbsoluteFilename = Section.AbsoluteFilename;
-		FPaths::NormalizeFilename(RelativeFilename);
-		FPaths::NormalizeFilename(AbsoluteFilename);
-		if (NormalizedFilename.IsEmpty())
-		{
-			continue;
-		}
-		if (NormalizedFilename.Equals(RelativeFilename, ESearchCase::CaseSensitive)
-			|| NormalizedFilename.Equals(AbsoluteFilename, ESearchCase::IgnoreCase)
-			|| NormalizedFilename.EndsWith(TEXT("/") + RelativeFilename, ESearchCase::IgnoreCase))
-		{
-			Result.SourceIdentity = RelativeFilename;
-			Result.bIdentityKnown = !Result.ModuleName.IsEmpty() && !Result.SourceIdentity.IsEmpty();
-			return Result;
-		}
-	}
-
-	// Module-only requests are known only when the module has exactly one source.
-	// A multi-file module without a request-specific section is ambiguous and fails closed.
-	if (NormalizedFilename.IsEmpty() && Module->Code.Num() == 1)
-	{
-		Result.SourceIdentity = Module->Code[0].RelativeFilename;
-		FPaths::NormalizeFilename(Result.SourceIdentity);
-		Result.bIdentityKnown = !Result.ModuleName.IsEmpty() && !Result.SourceIdentity.IsEmpty();
-	}
-	return Result;
-}
-
-FAngelscriptDebugServer::FDebugMessageAccessContext FAngelscriptDebugServer::BuildScriptAccessContext(
-	FAngelscriptModdingDebugMessageAccessGate::EOperation Operation,
-	int32 DebuggerFrame)
-{
-	FDebugMessageAccessContext Result;
-	Result.Operation = Operation;
-	auto* Context = (asCContext*)asGetActiveContext();
-	if (DebuggerFrame < 0 || Context == nullptr || (int32)Context->GetCallstackSize() <= 0)
-	{
-		return Result;
-	}
-
-	const int32 Frame = ResolveDebuggerFrame(DebuggerFrame);
-	if (Frame < 0 || Frame >= (int32)Context->GetCallstackSize())
-	{
-		return Result;
-	}
-	return BuildContextFromScriptContext(Operation, (asIScriptContext*)Context, Frame);
-}
-
-FAngelscriptDebugServer::FDebugMessageAccessContext FAngelscriptDebugServer::BuildContextFromScriptContext(
-	FAngelscriptModdingDebugMessageAccessGate::EOperation Operation,
-	asIScriptContext* Context,
-	int32 ScriptFrame) const
-{
-	FDebugMessageAccessContext Result;
-	Result.Operation = Operation;
-	if (Context == nullptr || ScriptFrame < 0 || ScriptFrame >= (int32)Context->GetCallstackSize())
-	{
-		return Result;
-	}
-	const auto* Function = (asIScriptFunction*)Context->GetFunction(ScriptFrame);
-	if (Function == nullptr)
-	{
-		return Result;
-	}
-	const char* ModuleName = Function->GetModuleName();
-	const char* SectionName = Function->GetScriptSectionName();
-	if (ModuleName == nullptr || SectionName == nullptr)
-	{
-		return Result;
-	}
-	return BuildSourceAccessContext(
-		Operation,
-		ANSI_TO_TCHAR(SectionName),
-		ANSI_TO_TCHAR(ModuleName));
-}
-
-FAngelscriptDebugServer::FDebugMessageAccessContext FAngelscriptDebugServer::BuildMessageAccessContext(
-	EDebugMessageType MessageType,
-	const FArrayReaderPtr& Datagram,
-	FSocket* Client)
-{
-	using FGate = FAngelscriptModdingDebugMessageAccessGateRuntime;
-	FDebugMessageAccessContext Result;
-	TArray<uint8> Payload;
-	Payload.Append(Datagram->GetData(), Datagram->Num());
-	FMemoryReader Reader(Payload, true);
-	Reader.Seek(Datagram->Tell());
-
-	const auto SetGlobalOperation = [&Result](FGate::EOperation Operation)
-	{
-		Result.Operation = Operation;
-		Result.bGlobalOperation = true;
-	};
-	const auto ModuleOnlyContext = [this](FGate::EOperation Operation, const FString& ModuleName)
-	{
-		return BuildSourceAccessContext(Operation, FString(), ModuleName);
-	};
-
-	switch (MessageType)
-	{
-	case EDebugMessageType::StartDebugging:
-	case EDebugMessageType::Disconnect:
-		SetGlobalOperation(FGate::EOperation::Session);
-		return Result;
-	case EDebugMessageType::StopDebugging:
-		if (const FDebugMessageAccessContext* PriorContext = ClientAccessContexts.Find(Client);
-			PriorContext != nullptr && PriorContext->bIdentityKnown)
-		{
-			Result = *PriorContext;
-			Result.Operation = FGate::EOperation::Session;
-			return Result;
-		}
-		SetGlobalOperation(FGate::EOperation::Session);
-		return Result;
-	case EDebugMessageType::StopPIE:
-		SetGlobalOperation(FGate::EOperation::Session);
-		return Result;
-	case EDebugMessageType::RequestDebugDatabase:
-		SetGlobalOperation(FGate::EOperation::DebugDatabase);
-		return Result;
-	case EDebugMessageType::Pause:
-	case EDebugMessageType::Continue:
-	case EDebugMessageType::StepOver:
-	case EDebugMessageType::StepIn:
-	case EDebugMessageType::StepOut:
-	case EDebugMessageType::EngineBreak:
-		return BuildScriptAccessContext(FGate::EOperation::ExecutionControl, 0);
-	case EDebugMessageType::RequestCallStack:
-		return BuildScriptAccessContext(FGate::EOperation::CallStack, 0);
-	case EDebugMessageType::RequestVariables:
-	{
-		FString Path;
-		Reader << Path;
-		int32 DebuggerFrame = 0;
-		int32 ColonIndex = INDEX_NONE;
-		if (Path.FindChar(TEXT(':'), ColonIndex)
-			&& Path.IsValidIndex(ColonIndex + 1) && Path[ColonIndex + 1] != TEXT(':'))
-		{
-			LexFromString(DebuggerFrame, *Path.Left(ColonIndex));
-		}
-		return BuildScriptAccessContext(FGate::EOperation::Variables, DebuggerFrame);
-	}
-	case EDebugMessageType::RequestEvaluate:
-	{
-		FString Path;
-		int32 DebuggerFrame = 0;
-		Reader << Path;
-		Reader << DebuggerFrame;
-		int32 ColonIndex = INDEX_NONE;
-		if (Path.FindChar(TEXT(':'), ColonIndex)
-			&& Path.IsValidIndex(ColonIndex + 1) && Path[ColonIndex + 1] != TEXT(':'))
-		{
-			LexFromString(DebuggerFrame, *Path.Left(ColonIndex));
-		}
-		return BuildScriptAccessContext(FGate::EOperation::Evaluation, DebuggerFrame);
-	}
-	case EDebugMessageType::SetBreakpoint:
-	{
-		FAngelscriptBreakpoint Breakpoint;
-		Reader << Breakpoint;
-		return BuildSourceAccessContext(FGate::EOperation::Breakpoint, Breakpoint.Filename, Breakpoint.ModuleName);
-	}
-	case EDebugMessageType::ClearBreakpoints:
-	{
-		FAngelscriptClearBreakpoints Breakpoint;
-		Reader << Breakpoint;
-		return BuildSourceAccessContext(FGate::EOperation::Breakpoint, Breakpoint.Filename, Breakpoint.ModuleName);
-	}
-	case EDebugMessageType::SetDataBreakpoints:
-	case EDebugMessageType::ClearDataBreakpoints:
-		return BuildScriptAccessContext(FGate::EOperation::Breakpoint, 0);
-	case EDebugMessageType::GoToDefinition:
-	{
-		FAngelscriptGoToDefinition GoTo;
-		Reader << GoTo;
-		TSharedPtr<FAngelscriptModuleDesc> Module;
-		FAngelscriptManager::Get().GetClass(GoTo.TypeName, &Module);
-		if (!Module.IsValid())
-		{
-			return Result;
-		}
-		return ModuleOnlyContext(FGate::EOperation::Source, Module->ModuleName);
-	}
-	case EDebugMessageType::FindAssets:
-	{
-		FAngelscriptFindAssets Assets;
-		Reader << Assets;
-		TSharedPtr<FAngelscriptModuleDesc> Module;
-		FAngelscriptManager::Get().GetClass(Assets.ClassName, &Module);
-		if (!Module.IsValid())
-		{
-			return Result;
-		}
-		return ModuleOnlyContext(FGate::EOperation::AssetDatabase, Module->ModuleName);
-	}
-	case EDebugMessageType::RequestBreakFilters:
-	case EDebugMessageType::BreakOptions:
-		SetGlobalOperation(FGate::EOperation::Session);
-		return Result;
-	default:
-		return Result;
-	}
-}
-
-FAngelscriptDebugServer::FDebugMessageAccessContext FAngelscriptDebugServer::BuildOutgoingAccessContext(
-	FSocket* Client,
-	EDebugMessageType MessageType)
-{
-	using FGate = FAngelscriptModdingDebugMessageAccessGateRuntime;
-	if (CurrentAccessContext.Operation != FGate::EOperation::Unknown)
-	{
-		return CurrentAccessContext;
-	}
-
-	FDebugMessageAccessContext Result;
-	switch (MessageType)
-	{
-	case EDebugMessageType::DebugServerVersion:
-	case EDebugMessageType::PingAlive:
-		Result.Operation = FGate::EOperation::Session;
-		Result.bGlobalOperation = true;
-		break;
-	case EDebugMessageType::DebugDatabaseSettings:
-	case EDebugMessageType::DebugDatabaseFinished:
-		Result.Operation = FGate::EOperation::DebugDatabase;
-		Result.bGlobalOperation = true;
-		break;
-	case EDebugMessageType::AssetDatabaseInit:
-	case EDebugMessageType::AssetDatabase:
-	case EDebugMessageType::AssetDatabaseFinished:
-		Result.Operation = FGate::EOperation::AssetDatabase;
-		Result.bGlobalOperation = true;
-		break;
-	case EDebugMessageType::HasStopped:
-	case EDebugMessageType::HasContinued:
-		return BuildScriptAccessContext(FGate::EOperation::ExecutionControl, 0);
-	case EDebugMessageType::ClearDataBreakpoints:
-		return BuildScriptAccessContext(FGate::EOperation::Breakpoint, 0);
-	case EDebugMessageType::CallStack:
-	case EDebugMessageType::Variables:
-	case EDebugMessageType::Evaluate:
-	case EDebugMessageType::SetBreakpoint:
-		if (const FDebugMessageAccessContext* ClientContext = ClientAccessContexts.Find(Client))
-		{
-			return *ClientContext;
-		}
-		return Result;
-	default:
-		break;
-	}
-	return Result;
-}
-
-bool FAngelscriptDebugServer::IsDebugMessageAllowed(const FDebugMessageAccessContext& Context, const TCHAR* Direction) const
-{
-	using FGate = FAngelscriptModdingDebugMessageAccessGateRuntime;
-	if (!FGate::HasHandlers())
-	{
-		return true;
-	}
-	if (FGate::IsAllowed(Context))
-	{
-		return true;
-	}
-	UE_LOG(Angelscript, Warning, TEXT("MODKIT_DEBUG_ACL_DENY direction=%s operation=%s module=%s source=%s"),
-		Direction,
-		FGate::GetOperationToken(Context.Operation),
-		*Context.ModuleName,
-		*Context.SourceIdentity);
-	return false;
-}
 
 void FAngelscriptDebugServer::ProcessMessages()
 {
@@ -968,7 +642,6 @@ void FAngelscriptDebugServer::ProcessMessages()
 
 			ClientsThatWantDebugDatabase.RemoveSwap(Clients[ClientIndex]);
 			QueuedSends.Remove(Clients[ClientIndex]);
-			ClientAccessContexts.Remove(Clients[ClientIndex]);
 			Clients.RemoveAtSwap(ClientIndex);
 		}
 	}
@@ -1016,35 +689,7 @@ void FAngelscriptDebugServer::ProcessMessages()
 			EDebugMessageType MessageType;
 			*Datagram << MessageType;
 
-			if (!FAngelscriptModdingDebugMessageAccessGateRuntime::HasHandlers())
-			{
-				HandleMessage(MessageType, Datagram, Client);
-				continue;
-			}
-
-			const FDebugMessageAccessContext AccessContext = BuildMessageAccessContext(MessageType, Datagram, Client);
-			if (!IsDebugMessageAllowed(AccessContext, TEXT("in")))
-			{
-				ClientAccessContexts.Remove(Client);
-				continue;
-			}
-
-			if (AccessContext.bIdentityKnown)
-			{
-				ClientAccessContexts.Add(Client, AccessContext);
-			}
-			else if (!AccessContext.bGlobalOperation)
-			{
-				ClientAccessContexts.Remove(Client);
-			}
-			{
-				TGuardValue<FDebugMessageAccessContext> CuvissAccessGuard(CurrentAccessContext, AccessContext);
-				HandleMessage(MessageType, Datagram, Client);
-			}
-			if (MessageType == EDebugMessageType::StopDebugging || MessageType == EDebugMessageType::Disconnect)
-			{
-				ClientAccessContexts.Remove(Client);
-			}
+			HandleMessage(MessageType, Datagram, Client);
 		}
 
 		TrySendingMessages(Client);
@@ -1069,7 +714,6 @@ void FAngelscriptDebugServer::ProcessMessages()
 		CallstackRequests.Empty();
 	}
 }
-                                                                                               
 
 void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArrayReaderPtr Datagram, class FSocket* Client)
 {
@@ -1620,24 +1264,6 @@ FString FAngelscriptDebugServer::CanonizeFilename(const FString& Filename)
 
 void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 {
-	                                                                                                 
-	using FGate = FAngelscriptModdingDebugMessageAccessGateRuntime;
-	const bool bCuvissGateActive = FGate::HasHandlers();
-	const auto IsCuvissFrameAllowed = [this](const FGate::FMessageContext& AccessContext)
-	{
-		return IsDebugMessageAllowed(AccessContext, TEXT("out-callstack"));
-	};
-	const auto MakeCuvissNativeFrameContext = []()
-	{
-		FGate::FMessageContext AccessContext;
-		AccessContext.Operation = FGate::EOperation::CallStack;
-		AccessContext.ModuleName = TEXT("Angelscript.NativeAPI");
-		AccessContext.SourceIdentity = TEXT("Angelscript.NativeAPI");
-		AccessContext.bIdentityKnown = true;
-		AccessContext.bNativeApi = true;
-		return AccessContext;
-	};
-	                                                                                               
 
 	FAngelscriptCallStack Stack;
 
@@ -1680,13 +1306,6 @@ void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 					|| IsAngelscriptRuntimeGeneratedFunction(Function))
                                                                                                                       
 					continue;
-				                                                                                                 
-				if (bCuvissGateActive)
-				{
-					// Blueprint frames have no script module/source identity and are omitted.
-					continue;
-				}
-				                                                                                               
 
 				if (Function->HasAnyFunctionFlags(FUNC_UbergraphFunction))
 				{
@@ -1714,31 +1333,6 @@ void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 			// Append the script stack frame
 			if (ScriptFunction != nullptr)
 			{
-				                                                                                                 
-				if (bCuvissGateActive)
-				{
-					if (ScriptFunction->GetFuncType() == asEFuncType::asFUNC_SYSTEM)
-					{
-						if (!IsCuvissFrameAllowed(MakeCuvissNativeFrameContext()))
-						{
-							continue;
-						}
-					}
-					else
-					{
-						const char* CuvissModuleName = ScriptFunction->GetModuleName();
-						const char* CuvissSectionName = ScriptFunction->GetScriptSectionName();
-						if (CuvissModuleName == nullptr || CuvissSectionName == nullptr
-							|| !IsCuvissFrameAllowed(BuildSourceAccessContext(
-								FAngelscriptModdingDebugMessageAccessGate::EOperation::CallStack,
-								ANSI_TO_TCHAR(CuvissSectionName),
-								ANSI_TO_TCHAR(CuvissModuleName))))
-						{
-							continue;
-						}
-					}
-				}
-				                                                                                               
 
 				if (ScriptFunction->traits.GetTrait(asTRAIT_GENERATED_FUNCTION))
 				{
@@ -1791,80 +1385,6 @@ void FAngelscriptDebugServer::BroadcastDebugDatabase()
 
 void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 {
-	                                                                                                                          
-	using FGate = FAngelscriptModdingDebugMessageAccessGateRuntime;
-	const bool bCuvissFilterDebugDatabase = FGate::HasHandlers();
-	FDebugMessageAccessContext CuvissGlobalDatabaseContext;
-	CuvissGlobalDatabaseContext.Operation = FGate::EOperation::DebugDatabase;
-	CuvissGlobalDatabaseContext.bGlobalOperation = true;
-	if (bCuvissFilterDebugDatabase && !IsDebugMessageAllowed(CuvissGlobalDatabaseContext, TEXT("out")))
-	{
-		return;
-	}
-
-	const FDebugMessageAccessContext CuvissFilteredDatabaseContext = [this, bCuvissFilterDebugDatabase]()
-	{
-		FDebugMessageAccessContext Context;
-		Context.Operation = FGate::EOperation::DebugDatabase;
-		Context.bGlobalOperation = true;
-		Context.bFilteredAggregate = bCuvissFilterDebugDatabase;
-		return Context;
-	}();
-	const FDebugMessageAccessContext CuvissNativeApiContext = []()
-	{
-		FDebugMessageAccessContext Context;
-		Context.Operation = FGate::EOperation::DebugDatabase;
-		Context.ModuleName = TEXT("Angelscript.NativeAPI");
-		Context.SourceIdentity = TEXT("Angelscript.NativeAPI");
-		Context.bIdentityKnown = true;
-		Context.bNativeApi = true;
-		return Context;
-	}();
-	const auto CuvissTypeAccessContext = [this, CuvissNativeApiContext](const asITypeInfo* Type) -> FDebugMessageAccessContext
-	{
-		using FInnerGate = FAngelscriptModdingDebugMessageAccessGate;
-		FDebugMessageAccessContext Context;
-		Context.Operation = FInnerGate::EOperation::DebugDatabase;
-		if (Type == nullptr || Type->GetModule() == nullptr)
-		{
-			return Type == nullptr ? Context : CuvissNativeApiContext;
-		}
-		TSharedPtr<FAngelscriptModuleDesc> Module = FAngelscriptManager::Get().GetModule(Type->GetModule());
-		const asCTypeInfo* InternalType = (const asCTypeInfo*)Type;
-		if (!Module.IsValid() || !Module->Code.IsValidIndex(InternalType->scriptSectionIdx))
-		{
-			return Context;
-		}
-		return BuildSourceAccessContext(
-			FInnerGate::EOperation::DebugDatabase,
-			Module->Code[InternalType->scriptSectionIdx].RelativeFilename,
-			Module->ModuleName);
-	};
-	const auto CuvissFunctionAccessContext = [this, CuvissNativeApiContext](const asCScriptFunction* Function) -> FDebugMessageAccessContext
-	{
-		using FInnerGate = FAngelscriptModdingDebugMessageAccessGate;
-		FDebugMessageAccessContext Context;
-		Context.Operation = FInnerGate::EOperation::DebugDatabase;
-		if (Function == nullptr)
-		{
-			return Context;
-		}
-		const char* ModuleName = Function->GetModuleName();
-		const char* SectionName = Function->GetScriptSectionName();
-		if (ModuleName == nullptr || ModuleName[0] == '\0')
-		{
-			return CuvissNativeApiContext;
-		}
-		if (SectionName == nullptr)
-		{
-			return Context;
-		}
-		return BuildSourceAccessContext(
-			FInnerGate::EOperation::DebugDatabase,
-			ANSI_TO_TCHAR(SectionName),
-			ANSI_TO_TCHAR(ModuleName));
-	};
-
 	double StartTime = FPlatformTime::Seconds();
 
 	auto* ScriptEngine = FAngelscriptManager::Get().Engine;
@@ -1878,7 +1398,7 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 	DebugSettings.bExposeGlobalFunctions = GetDefault<UAngelscriptSettings>()->bExposeGlobalFunctionsToOtherScriptFiles;
 	DebugSettings.bDeprecateActorGenerics = GetDefault<UAngelscriptSettings>()->DeprecateOldActorGenericMethods == EAngelscriptDeprecationMode::Deprecated;
 	DebugSettings.bDisallowActorGenerics = GetDefault<UAngelscriptSettings>()->DeprecateOldActorGenericMethods == EAngelscriptDeprecationMode::Disallowed;
-	SendMessageToClient(Client, EDebugMessageType::DebugDatabaseSettings, DebugSettings, &CuvissGlobalDatabaseContext);
+	SendMessageToClient(Client, EDebugMessageType::DebugDatabaseSettings, DebugSettings);
 
 	auto Root = MakeShared<FJsonObject>();
 	auto SendTypes = [&]()
@@ -1888,7 +1408,7 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 		auto JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&DB.Database);
 		FJsonSerializer::Serialize(Root, JsonWriter);
 
-		SendMessageToClient(Client, EDebugMessageType::DebugDatabase, DB, &CuvissFilteredDatabaseContext);
+		SendMessageToClient(Client, EDebugMessageType::DebugDatabase, DB);
 
 		Root = MakeShared<FJsonObject>();
 	};
@@ -1920,12 +1440,6 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 
 	auto MakeFuncDesc = [&](asCScriptFunction* ScriptFunction) -> TSharedPtr<FJsonObject>
 	{
-		if (bCuvissFilterDebugDatabase
-			&& !IsDebugMessageAllowed(CuvissFunctionAccessContext(ScriptFunction), TEXT("database")))
-		{
-			return nullptr;
-		}
-
 		auto FuncDesc = MakeShared<FJsonObject>();
 
 		int32 ArgCount = ScriptFunction->GetParamCount();
@@ -2102,11 +1616,6 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 	for (int32 TypeIndex = 0; TypeIndex < TypeCount; ++TypeIndex)
 	{
 		auto* ScriptType = ScriptEngine->GetObjectTypeByIndex(TypeIndex);
-		if (bCuvissFilterDebugDatabase
-			&& !IsDebugMessageAllowed(CuvissTypeAccessContext(ScriptType), TEXT("database")))
-		{
-			continue;
-		}
 		FString TypeName = ANSI_TO_TCHAR(ScriptType->GetName());
 		int32 ClassTypeId = ScriptType->GetTypeId();
 		UnsentCount += 1;
@@ -2317,190 +1826,6 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 			UnsentCount = 0;
 		}
 	}
-	                                                                                                                        
-
-                                                                                                 
-	// Keep the DebugServer database as the symbol source for editor tooling: module-local script
-	// classes are not part of asIScriptEngine::GetObjectTypeCount().
-	TSet<FString> ExportedTypeNames;
-	const int32 RegisteredTypeCount = ScriptEngine->GetObjectTypeCount();
-	for (int32 TypeIndex = 0; TypeIndex < RegisteredTypeCount; ++TypeIndex)
-	{
-		asITypeInfo* RegisteredType = ScriptEngine->GetObjectTypeByIndex(TypeIndex);
-		if (RegisteredType != nullptr && RegisteredType->GetName() != nullptr)
-			ExportedTypeNames.Add(ANSI_TO_TCHAR(RegisteredType->GetName()));
-	}
-	const int32 ModuleCount = ScriptEngine->GetModuleCount();
-	for (int32 ModuleIndex = 0; ModuleIndex < ModuleCount; ++ModuleIndex)
-	{
-		asIScriptModule* ScriptModule = ScriptEngine->GetModuleByIndex(ModuleIndex);
-		if (ScriptModule == nullptr)
-			continue;
-
-		const char* ModuleNameRaw = ScriptModule->GetName();
-		if (ModuleNameRaw == nullptr)
-			continue;
-		const FString ModuleName = ANSI_TO_TCHAR(ModuleNameRaw);
-
-		const int32 ModuleTypeCount = ScriptModule->GetObjectTypeCount();
-		for (int32 TypeIndex = 0; TypeIndex < ModuleTypeCount; ++TypeIndex)
-		{
-			asITypeInfo* ScriptType = ScriptModule->GetObjectTypeByIndex(TypeIndex);
-			if (ScriptType == nullptr)
-				continue;
-
-			const char* TypeNameRaw = ScriptType->GetName();
-			if (TypeNameRaw == nullptr)
-				continue;
-			const FString TypeName = ANSI_TO_TCHAR(TypeNameRaw);
-			if (TypeName.IsEmpty() || TypeName[0] == '_')
-				continue;
-
-			const char* NamespaceRaw = ScriptType->GetNamespace();
-			const FString NamespaceName = NamespaceRaw != nullptr ? ANSI_TO_TCHAR(NamespaceRaw) : FString();
-			const FString OwnerName = NamespaceName.IsEmpty() ? TypeName : NamespaceName + TEXT("::") + TypeName;
-			const bool bNameCollision = ExportedTypeNames.Contains(TypeName);
-			ExportedTypeNames.Add(TypeName);
-			const FString TableName = bNameCollision ? ModuleName + TEXT("::") + OwnerName : TypeName;
-			if (Root->HasField(TableName))
-				continue;
-
-			const int32 ClassTypeId = ScriptType->GetTypeId();
-			auto TypeDesc = MakeShared<FJsonObject>();
-			auto Properties = MakeShared<FJsonObject>();
-			TArray<TSharedPtr<FJsonValue>> Methods;
-			TypeDesc->SetStringField(TEXT("origin"), TEXT("as"));
-			TypeDesc->SetStringField(TEXT("module"), ModuleName);
-			TypeDesc->SetStringField(TEXT("owner"), OwnerName);
-			TypeDesc->SetStringField(TEXT("namespace"), NamespaceName);
-			TypeDesc->SetStringField(TEXT("name"), TypeName);
-			asITypeInfo* BaseType = ScriptType->GetBaseType();
-			if (BaseType != nullptr && BaseType->GetName() != nullptr)
-			{
-				const char* BaseNamespaceRaw = BaseType->GetNamespace();
-				const FString BaseNamespace = BaseNamespaceRaw != nullptr ? ANSI_TO_TCHAR(BaseNamespaceRaw) : FString();
-				const FString BaseName = ANSI_TO_TCHAR(BaseType->GetName());
-				TypeDesc->SetStringField(TEXT("inherits"), BaseNamespace.IsEmpty() ? BaseName : BaseNamespace + TEXT("::") + BaseName);
-			}
-
-			const int32 PropertyCount = ScriptType->GetPropertyCount();
-			for (int32 PropertyIndex = 0; PropertyIndex < PropertyCount; ++PropertyIndex)
-			{
-				const char* PropertyNameRaw = nullptr;
-				int TypeId = -1;
-				int Offset = 0;
-				ScriptType->GetProperty(PropertyIndex, &PropertyNameRaw, &TypeId, nullptr, nullptr, &Offset);
-				if (PropertyNameRaw == nullptr || TypeId == -1)
-					continue;
-
-				asCObjectProperty* ObjectProperty = ((asCObjectType*)ScriptType)->properties[PropertyIndex];
-#if WITH_EDITOR
-				if (ObjectProperty->isDeprecated)
-					continue;
-#endif
-
-				TArray<TSharedPtr<FJsonValue>> PropertyDesc;
-				PropertyDesc.Add(MakeShared<FJsonValueString>(GetDecl(TypeId)));
-				if (ObjectProperty->isProtected)
-					PropertyDesc.Add(MakeShared<FJsonValueNumber>(4));
-				const FString& Documentation = FAngelscriptDocs::GetUnrealDocumentationForProperty(ClassTypeId, Offset);
-				if (!Documentation.IsEmpty() || ObjectProperty->isProtected)
-					PropertyDesc.Add(MakeShared<FJsonValueString>(Documentation));
-				Properties->SetArrayField(ANSI_TO_TCHAR(PropertyNameRaw), PropertyDesc);
-				++UnsentCount;
-			}
-
-			const int32 MethodCount = ScriptType->GetMethodCount();
-			for (int32 MethodIndex = 0; MethodIndex < MethodCount; ++MethodIndex)
-			{
-				auto* ScriptFunction = (asCScriptFunction*)ScriptType->GetMethodByIndex(MethodIndex);
-				if (ScriptFunction == nullptr || ScriptFunction->traits.GetTrait(asTRAIT_DEPRECATED))
-					continue;
-
-				if (ScriptFunction->traits.GetTrait(asTRAIT_GENERATED_FUNCTION))
-				{
-					FString PropertyName = ANSI_TO_TCHAR(ScriptFunction->GetName());
-					int TypeId = -1;
-					if (PropertyName.StartsWith(TEXT("Get")))
-					{
-						PropertyName = PropertyName.Mid(3);
-						TypeId = ScriptEngine->GetTypeIdFromDataType(ScriptFunction->returnType);
-					}
-					else if (PropertyName.StartsWith(TEXT("Set")) && ScriptFunction->GetParamCount() > 0)
-					{
-						PropertyName = PropertyName.Mid(3);
-						TypeId = ScriptEngine->GetTypeIdFromDataType(ScriptFunction->parameterTypes[0]);
-					}
-					if (TypeId == -1 || Properties->HasField(PropertyName))
-						continue;
-					TArray<TSharedPtr<FJsonValue>> PropertyDesc;
-					PropertyDesc.Add(MakeShared<FJsonValueString>(GetDecl(TypeId)));
-					Properties->SetArrayField(PropertyName, PropertyDesc);
-					++UnsentCount;
-					continue;
-				}
-
-				auto FuncDesc = MakeFuncDesc(ScriptFunction);
-				if (FuncDesc.IsValid())
-				{
-					Methods.Add(MakeShared<FJsonValueObject>(FuncDesc));
-					++UnsentCount;
-				}
-			}
-
-			const int32 BehaviourCount = ScriptType->GetBehaviourCount();
-			for (int32 BehaviourIndex = 0; BehaviourIndex < BehaviourCount; ++BehaviourIndex)
-			{
-				asEBehaviours BehaviourType;
-				auto* ScriptFunction = (asCScriptFunction*)ScriptType->GetBehaviourByIndex(BehaviourIndex, &BehaviourType);
-				if (ScriptFunction == nullptr || ScriptFunction->traits.GetTrait(asTRAIT_DEPRECATED))
-					continue;
-				const bool bReferenceType = (ScriptType->GetFlags() & asOBJ_REF) != 0;
-				if (bReferenceType ? BehaviourType != asBEHAVE_FACTORY : BehaviourType != asBEHAVE_CONSTRUCT)
-					continue;
-
-				auto FuncDesc = MakeFuncDesc(ScriptFunction);
-				if (FuncDesc.IsValid())
-				{
-					FuncDesc->SetStringField(TEXT("name"), TypeName);
-					FuncDesc->SetStringField(TEXT("return"), TypeName);
-					FuncDesc->SetBoolField(TEXT("isConstructor"), true);
-					Methods.Add(MakeShared<FJsonValueObject>(FuncDesc));
-					++UnsentCount;
-				}
-			}
-
-			if (ScriptType->GetSubTypeCount() != 0)
-			{
-				TArray<TSharedPtr<FJsonValue>> SubTypes;
-				const int32 SubTypeCount = ScriptType->GetSubTypeCount();
-				for (int32 SubTypeIndex = 0; SubTypeIndex < SubTypeCount; ++SubTypeIndex)
-				{
-					asITypeInfo* SubType = ScriptType->GetSubType(SubTypeIndex);
-					if (SubType != nullptr)
-						SubTypes.Add(MakeShared<FJsonValueString>(ANSI_TO_TCHAR(SubType->GetName())));
-				}
-				TypeDesc->SetArrayField(TEXT("subtypes"), SubTypes);
-			}
-
-			if ((ScriptType->GetFlags() & asOBJ_VALUE) != 0)
-				TypeDesc->SetBoolField(TEXT("isStruct"), true);
-			const FString& TypeDocumentation = FAngelscriptDocs::GetUnrealDocumentationForType(ClassTypeId);
-			if (!TypeDocumentation.IsEmpty())
-				TypeDesc->SetStringField(TEXT("doc"), TypeDocumentation);
-			TypeDesc->SetObjectField(TEXT("properties"), Properties);
-			TypeDesc->SetArrayField(TEXT("methods"), Methods);
-			Root->SetObjectField(TableName, TypeDesc);
-
-			if (UnsentCount > 10)
-			{
-				SendTypes();
-				UnsentCount = 0;
-			}
-		}
-	}
-                                                                                               
-                                                                                                                         
 
 	struct FNS
 	{
@@ -2519,11 +1844,6 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 		asCScriptFunction* Func = (asCScriptFunction*)ScriptEngine->GetGlobalFunctionByIndex(GlobalFuncIndex);
 		if (Func->traits.GetTrait(asTRAIT_DEPRECATED))
 			continue;
-		if (bCuvissFilterDebugDatabase
-			&& !IsDebugMessageAllowed(CuvissFunctionAccessContext(Func), TEXT("database")))
-		{
-			continue;
-		}
 		NSFunctions.FindOrAdd(ANSI_TO_TCHAR(Func->GetNamespace())).Functions.Add(Func);
 	}
 
@@ -2538,11 +1858,6 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 	for (int32 EnumIndex = 0; EnumIndex < EnumCount; ++EnumIndex)
 	{
 		auto* EnumType = (asCTypeInfo*)ScriptEngine->GetEnumByIndex(EnumIndex);
-		if (bCuvissFilterDebugDatabase
-			&& !IsDebugMessageAllowed(CuvissTypeAccessContext(EnumType), TEXT("database")))
-		{
-			continue;
-		}
 		auto& NS = NSFunctions.FindOrAdd(ANSI_TO_TCHAR(EnumType->GetName()));
 		UEnum* UnrealEnum = (UEnum*)EnumType->GetUserData();
 
@@ -2650,11 +1965,6 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 	for (auto& TemplateSpecializationElem : ScriptEngine->registeredTemplateSpecializationFunctions)
 	{
 		asCObjectType* ScriptType = TemplateSpecializationElem.Key;
-		if (bCuvissFilterDebugDatabase
-			&& !IsDebugMessageAllowed(CuvissTypeAccessContext(ScriptType), TEXT("database")))
-		{
-			continue;
-		}
 		auto TypeDesc = MakeShared<FJsonObject>();
 		auto Properties = MakeShared<FJsonObject>();
 		TArray<TSharedPtr<FJsonValue>> Methods;
@@ -2687,27 +1997,13 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 	SendTypes();
 
 	FEmptyMessage Message;
-	SendMessageToClient(Client, EDebugMessageType::DebugDatabaseFinished, Message, &CuvissFilteredDatabaseContext);
+	SendMessageToClient(Client, EDebugMessageType::DebugDatabaseFinished, Message);
 
-	if (!bCuvissFilterDebugDatabase)
-	{
-		SendAssetDatabase(Client);
-	}
-	else
-	{
-		FDebugMessageAccessContext CuvissAssetDatabaseContext;
-		CuvissAssetDatabaseContext.Operation = FGate::EOperation::AssetDatabase;
-		CuvissAssetDatabaseContext.bGlobalOperation = true;
-		if (IsDebugMessageAllowed(CuvissAssetDatabaseContext, TEXT("out")))
-		{
-			SendAssetDatabase(Client);
-		}
-	}
+	SendAssetDatabase(Client);
 
 	double EndTime = FPlatformTime::Seconds();
 	UE_LOG(Angelscript, Log, TEXT("Sending debug database took %.3g seconds"), (EndTime - StartTime));
 }
-                                                                                                                       
 
 void AddAssetToMessage(FAngelscriptAssetDatabase& Message, const FAssetData& AssetData)
 {
@@ -2847,7 +2143,15 @@ void FAngelscriptDebugServer::SendAssetDatabase(FSocket* Client)
 			Message.Assets.Reset();
 		}
 		return true;
+                                                                                                
+                                                                                                            
+#if SOLOAS_UE_BEFORE(5, 5)
+    }, true);
+#else
 	}, UE::AssetRegistry::EEnumerateAssetsFlags::OnlyOnDiskAssets);
+#endif
+// SOLOAS-COMPAT-END
+                                                                                              
 
 	if (Message.Assets.Num() != 0)
 	{

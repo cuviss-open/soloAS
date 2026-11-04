@@ -1,5 +1,6 @@
 #include "Editor/SoloASBridgeReload.h"
 #include "Editor/SoloASRetiredLoadingExportRepair.h"
+#include "SoloASEngineCompat.h"
 
 #include "CoreGlobals.h"
 #include "HAL/PlatformProcess.h"
@@ -18,6 +19,13 @@
 #include "Kismet2/ReloadUtilities.h"
 #include "Misc/OutputDevice.h"
 #include "Templates/UnrealTemplate.h"
+                                                                                                                                 
+#if SOLOAS_UE_BEFORE(5, 6)
+#include "Components/ActorComponent.h"
+#include "GameFramework/Actor.h"
+#include "UObject/ReferencerFinder.h"
+#endif
+// SOLOAS-COMPAT-END
 
 namespace
 {
@@ -172,7 +180,52 @@ ESoloASBridgeReloadResult SoloASBridge::RunWithStockCopyPropertiesScope(
     }
 
     TGuardValue<bool> ReloadInProgress(GBridgeReloadInProgress, true);
+// SOLOAS-COMPAT-BEGIN(<5.6) UE 5.4/5.5 gather source objects before merging copied actor subobjects [test: SoloAS.BlueprintActorReferenceTiming.Default] [id: CS.Bridge.Pre56.ReloadSubobjectReferences]
+#if SOLOAS_UE_BEFORE(5, 6)
+    TMap<UObject*, UObject*> ReinstancedObjects;
+    const FDelegateHandle ReinstanceHandle = FCoreUObjectDelegates::OnObjectsReinstanced.AddLambda(
+        [&](const TMap<UObject*, UObject*>& Replacements) { ReinstancedObjects.Append(Replacements); });
+    ON_SCOPE_EXIT { FCoreUObjectDelegates::OnObjectsReinstanced.Remove(ReinstanceHandle); };
+#endif
     Body();
+#if SOLOAS_UE_BEFORE(5, 6)
+    // Native actor copying adds these edges after SourceObjects is built, so
+    // holders that reference only a component never enter its replacement pass.
+    // Complete the published map before the caller collects retired instances.
+    TMap<UObject*, UObject*> Subobjects;
+    TSet<UObject*> RetiredObjects;
+    for (const auto& Pair : ReinstancedObjects)
+    {
+        RetiredObjects.Add(Pair.Key);
+        if (!Pair.Key || !Pair.Value || Pair.Key == Pair.Value || Pair.Key->IsTemplate()
+            || (!Pair.Key->IsA<UActorComponent>() && !Pair.Key->IsDefaultSubobject())
+            || !Pair.Key->GetTypedOuter<AActor>()) continue;
+        UObject* Target = Pair.Value;
+        TSet<UObject*> Seen;
+        while (UObject* const* Next = ReinstancedObjects.Find(Target))
+        {
+            if (*Next == Target) break;
+            checkf(!Seen.Contains(Target), TEXT("Cyclic actor subobject replacement map"));
+            Seen.Add(Target);
+            Target = *Next;
+        }
+        if (IsValid(Target)) Subobjects.Add(Pair.Key, Target);
+    }
+    if (!Subobjects.IsEmpty())
+    {
+        TArray<UObject*> Sources;
+        Subobjects.GenerateKeyArray(Sources);
+        for (UObject* Referencer : FReferencerFinder::GetAllReferencers(Sources, &RetiredObjects))
+        {
+            if (!IsValid(Referencer) || Referencer->GetClass()->HasAnyClassFlags(CLASS_NewerVersionExists)) continue;
+            const UClass* Class = Cast<UClass>(Referencer);
+            if (Class && Class->HasAnyClassFlags(CLASS_NewerVersionExists)) continue;
+            FArchiveReplaceObjectRef<UObject> Replace(Referencer, Subobjects,
+                EArchiveReplaceObjectFlags::IgnoreOuterRef | EArchiveReplaceObjectFlags::IgnoreArchetypeRef);
+        }
+    }
+#endif
+// SOLOAS-COMPAT-END
     return ESoloASBridgeReloadResult::Completed;
 }
 
@@ -297,6 +350,15 @@ void SoloASBridge::RefreshRetainedScriptTypeReferences(const TMap<UClass*, UClas
                 {
                     // Inspect a copy: resolving a mismatched concrete type can clear its owner.
                     FFieldPath Copy(Path);
+                                                                                                                         
+#if SOLOAS_UE_BEFORE(5, 6)
+                    struct FFieldPathCacheAccess54 : FFieldPath
+                    {
+                        static auto ClearMember() { return &FFieldPathCacheAccess54::ClearCachedField; }
+                    };
+                    (Copy.*FFieldPathCacheAccess54::ClearMember())();
+#endif
+// SOLOAS-COMPAT-END
                     const FString Name = Copy.ToString();
                     for (const FString& Prefix : CurrentOwnerPrefixes) bRefresh |= Name.StartsWith(Prefix);
                 }
