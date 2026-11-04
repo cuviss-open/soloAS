@@ -1,12 +1,15 @@
 #include "AngelscriptBinds.h"
+                                                                                                                 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 6
+#include "Blueprint/UserWidget.h"
+#endif
+                                                                                                               
+                                                                                                                 
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                               
                                                                                                   
 #include "AngelscriptCallableMetadataAdapter.h"
                                                                                                 
-                                                                                                               
-#include "Extensions/AngelscriptExtensionPipelineInternal.h"
-#include "AngelscriptExecutionQuiescence.h"
-extern TMap<UClass*, TMap<FString, UFunction*>> GBlueprintEventsByScriptName;
-                                                                                                             
 #include "AngelscriptManager.h"
 #include "AngelscriptType.h"
 #include "AngelscriptCodeModule.h"
@@ -46,6 +49,34 @@ extern TMap<UClass*, TMap<FString, UFunction*>> GBlueprintEventsByScriptName;
 #include "as_objecttype.h"
 #include "EndAngelscriptHeaders.h"
 
+                                                                                                              
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 6
+AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_LegacyAccessorSurface((int32)FAngelscriptBinds::EOrder::Late + 99, []
+{
+	// These public native methods only became reflected in later SDKs. Bind
+	// them before properties so the usual name-based accessor rules apply.
+	auto Widget = FAngelscriptBinds::ExistingClass("UUserWidget");
+	Widget.Method("bool SetDesiredFocusWidget(UWidget Widget)",
+		METHODPR_TRIVIAL(bool, UUserWidget, SetDesiredFocusWidget, (UWidget*)));
+#if WITH_EDITOR && ENGINE_MINOR_VERSION < 5
+	for (const TCHAR* TypeName : { TEXT("UAnimSequence"), TEXT("UPoseAsset") })
+	{
+		auto Binds = FAngelscriptBinds::ExistingClass(FString(TypeName));
+		Binds.Method("void SetRetargetSourceAsset(USkeletalMesh InRetargetSourceAsset)",
+			FUNC_TRIVIAL(SoloASBridge::Compat::SetLegacyRetargetSourceAsset));
+		FAngelscriptBinds::SetPreviousBindIsEditorOnly(true);
+		Binds.Method("const TSoftObjectPtr<USkeletalMesh>& GetRetargetSourceAsset() const",
+			FUNC_TRIVIAL(SoloASBridge::Compat::GetLegacyRetargetSourceAsset));
+		FAngelscriptBinds::SetPreviousBindIsEditorOnly(true);
+		Binds.Method("void ClearRetargetSourceAsset()",
+			[](UObject* Asset) { SoloASBridge::Compat::SetLegacyRetargetSourceAsset(Asset, nullptr); });
+		FAngelscriptBinds::SetPreviousBindIsEditorOnly(true);
+	}
+#endif
+});
+#endif
+                                                                                                            
+
 static const FName NAME_BlueprintType("BlueprintType");
 static const FName NAME_NotBlueprintType("NotBlueprintType");
 static const FName NAME_NotInAngelscript("NotInAngelscript");
@@ -57,16 +88,6 @@ static const FName NAME_META_DisallowInstantiation("AngelscriptDisallowInstantia
 
 static void BindUClassLookup();
 
-                                                                                                
-static bool SelectNativeInterface(UClass* Class, bool& OutBind)
-{
-    FAngelscriptNativeInterfaceSelectionContext Context;
-    Context.NativeClass = Class;
-    const bool Handled = DispatchAngelscriptNativeInterfaceBinding(Context);
-    OutBind = Context.bBindAsInterface;
-    return Handled;
-}
-                                                                                              
 /**
  * Type operations for an UObject type.
  */
@@ -133,10 +154,6 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 
 	bool CanCreateProperty(const FAngelscriptTypeUsage& Usage) const override
 	{
-                                                                                                           
-        if (Class && Class->HasAnyClassFlags(CLASS_Interface) && ClassScriptType
-            && (ClassScriptType->GetFlags() & asOBJ_IMPLICIT_HANDLE) != 0) return false;
-                                                                                                         
 		return Class != nullptr || Usage.ScriptClass != nullptr;
 	}
 
@@ -148,7 +165,9 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
                                                                                                                                         
 #if 0
                                                                                                                                       
+                                                                                                                    
 			auto* Property = new FClassProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                                  
                                                                                                                                  
 #endif
 			auto* Property = CastFieldChecked<FClassProperty>(
@@ -162,7 +181,9 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
                                                                                                                                          
 #if 0
                                                                                                                                        
+                                                                                                                    
 		auto* Property = new FObjectProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                                  
                                                                                                                                   
 #endif
 		auto* Property = CastFieldChecked<FObjectProperty>(
@@ -226,13 +247,7 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 		Params.Schema->Add(UE::GC::DeclareMember(Params.Names.Top(), Params.AtOffset, UE::GC::EMemberType::Reference));
 	}
 
-                                                                                                            
-    bool CanBeArgument(const FAngelscriptTypeUsage& Usage) const override
-    {
-        return !(Class && Class->HasAnyClassFlags(CLASS_Interface) && ClassScriptType
-            && (ClassScriptType->GetFlags() & asOBJ_IMPLICIT_HANDLE) != 0);
-    }
-                                                                                                          
+	bool CanBeArgument(const FAngelscriptTypeUsage& Usage) const override { return true; }
 	void SetArgument(const FAngelscriptTypeUsage& Usage, int32 ArgumentIndex, class asIScriptContext* Context, struct FFrame& Stack, const FArgData& Data) const override
 	{
 		UObject** ArgPtr = (UObject**)Data.StackPtr;
@@ -250,9 +265,7 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 
 	bool CanBeReturned(const FAngelscriptTypeUsage& Usage) const override
 	{
-                                                                                                         
-        return !Usage.bIsReference && CanBeArgument(Usage);
-                                                                                                       
+		return !Usage.bIsReference;
 	}
 
 	void GetReturnValue(const FAngelscriptTypeUsage& Usage, class asIScriptContext* Context, void* Destination) const override
@@ -678,14 +691,6 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 
 	bool GetCppForm(const FAngelscriptTypeUsage& Usage, FCppForm& OutCppForm) const override
 	{
-                                                                                                  
-        if (Class && Class->HasAnyClassFlags(CLASS_Interface) && ClassScriptType
-            && (ClassScriptType->GetFlags() & asOBJ_IMPLICIT_HANDLE) != 0)
-        {
-            OutCppForm.CppType = OutCppForm.CppGenericType = TEXT("UObject*");
-            return true;
-        }
-                                                                                                
 		if (Class == UObject::StaticClass())
 		{
 			OutCppForm.CppType = TEXT("UObject*");
@@ -723,22 +728,8 @@ ANGELSCRIPTCODE_API bool IsEditorOnlyStruct(UStruct* Struct);
 ANGELSCRIPTCODE_API bool ShouldDisallowInstantiation(UClass* Class);
 #endif
 
-                                                                                                       
-static void RegisterExtensionReferenceType(UClass* Class, const FString& TypeName)
-{
-    FAngelscriptType::Register(MakeShared<FUObjectType>(Class, TypeName, FAngelscriptBinds::ExistingClass(TypeName).GetTypeInfo()));
-}
-                                                                                                     
 static void BindUClass(UClass* Class, const FString& TypeName)
 {
-                                                                                                   
-    FAngelscriptNativeInterfaceSelectionContext Context;
-    Context.Point = EAngelscriptNativeInterfacePoint::RegisterType;
-    Context.NativeClass = Class;
-    Context.TypeName = TypeName;
-    Context.RegisterType = &RegisterExtensionReferenceType;
-    if (DispatchAngelscriptNativeInterfaceBinding(Context)) return;
-                                                                                                 
 	// Bind into angelscript engine
 	auto Class_ = FAngelscriptBinds::ReferenceClass(TypeName, Class);
 
@@ -801,40 +792,7 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_BlueprintType_Declarations(FAn
 		UClass* Class = FindObject<UClass>(nullptr, *DBBind.UnrealPath);
 		if (Class == nullptr)
 			continue;
-		if (FAngelscriptManager::Get().IsBlueprintImportProxyClass(Class)
-			&& !FAngelscriptManager::Get().IsBlueprintDependencyClass(Class))
-			continue;
 
-                                                                                                        
-        FAngelscriptNativeInterfaceSelectionContext Context;
-        Context.Point = EAngelscriptNativeInterfacePoint::PrepareDatabase;
-        Context.NativeClass = Class;
-        Context.ResolveDatabaseClass = [](UClass* InterfaceClass)
-        {
-            // Keep the per-pass lookup in Runtime; callers can only resolve a class.
-            auto& Classes = FAngelscriptBindDatabase::Get().Classes;
-            struct FPathIndex
-            {
-                const FAngelscriptClassBind* Data = nullptr;
-                int32 Num = INDEX_NONE;
-                TMap<FString, int32> ByPath;
-            };
-            static FPathIndex Index;
-            if (Index.Data != Classes.GetData() || Index.Num != Classes.Num())
-            {
-                Index.ByPath.Reset();
-                for (int32 I = 0; I < Classes.Num(); ++I)
-                    if (!Classes[I].UnrealPath.IsEmpty()) Index.ByPath.Add(Classes[I].UnrealPath, I);
-                Index.Data = Classes.GetData();
-                Index.Num = Classes.Num();
-            }
-            const int32* I = Index.ByPath.Find(InterfaceClass->GetPathName());
-            if (!I) return false;
-            Classes[*I].ResolvedClass = InterfaceClass;
-            return true;
-        };
-        if (DispatchAngelscriptNativeInterfaceBinding(Context)) continue;
-                                                                                                      
 		DBBind.ResolvedClass = Class;
 		BindUClass(Class, DBBind.TypeName);
 	}
@@ -852,36 +810,8 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 		UClass* Class = DBBind.ResolvedClass;
 		if (Class == nullptr)
 			continue;
-		if (FAngelscriptManager::Get().IsBlueprintImportProxyClass(Class)
-			&& !FAngelscriptManager::Get().IsBlueprintDependencyClass(Class))
-			continue;
 
 		auto ClassType = FAngelscriptType::GetByClass(Class);
-                                                                                                      
-        FAngelscriptNativeInterfaceSelectionContext Context;
-        Context.Point = EAngelscriptNativeInterfacePoint::BindDatabaseMethods;
-        Context.NativeClass = Class;
-        Context.Type = ClassType;
-        Context.DatabaseMethodCount = DBBind.Methods.Num();
-        Context.GetDatabaseMethodDeclaration = [&DBBind](int32 Index) { return DBBind.Methods[Index].Declaration; };
-        Context.VisitDatabaseMethod = [&DBBind, ClassType](int32 Index,
-            FAngelscriptNativeInterfaceMethodVisitor Visit)
-        {
-            FAngelscriptMethodBind Method = DBBind.Methods[Index];
-            UClass* InterfaceClass = ClassType->GetClass(FAngelscriptTypeUsage::DefaultUsage);
-            if (!InterfaceClass || !InterfaceClass->HasAnyClassFlags(CLASS_Interface))
-                UE_LOG(Angelscript, Fatal, TEXT("Native interface database type is invalid: %s"), *ClassType->GetAngelscriptTypeName());
-            UFunction* Function = InterfaceClass->FindFunctionByName(*Method.UnrealPath);
-            if (!Function) UE_LOG(Angelscript, Fatal, TEXT("Native interface database function is missing: %s.%s"),
-                *ClassType->GetAngelscriptTypeName(), *Method.UnrealPath);
-            FAngelscriptBlueprintEventBindingSnapshot Snapshot;
-            if (!DescribeAngelscriptBlueprintEvent(ClassType.ToSharedRef(), Function, Method, Snapshot, true))
-                UE_LOG(Angelscript, Fatal, TEXT("Invalid native interface database signature: %s"), *Method.Declaration);
-            Visit(Function, Snapshot, [&]() { BindAngelscriptBlueprintEvent(ClassType.ToSharedRef(), Function, Method); });
-        };
-        Context.EventsByScriptName = &GBlueprintEventsByScriptName;
-        if (DispatchAngelscriptNativeInterfaceBinding(Context)) continue;
-                                                                                                    
 		auto* SuperClass = Class->GetSuperClass();
 
 		for (auto& DBFunc : DBBind.Methods)
@@ -906,15 +836,6 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 		UClass* Class = DBBind.ResolvedClass;
 		if (Class == nullptr)
 			continue;
-		if (FAngelscriptManager::Get().IsBlueprintImportProxyClass(Class)
-			&& !FAngelscriptManager::Get().IsBlueprintDependencyClass(Class))
-			continue;
-                                                                                                         
-        FAngelscriptNativeInterfaceSelectionContext Context;
-        Context.Point = EAngelscriptNativeInterfacePoint::FinalizeRecord;
-        Context.NativeClass = Class;
-        if (DispatchAngelscriptNativeInterfaceBinding(Context)) continue;
-                                                                                                       
 	
 		FAngelscriptBinds Binds = FAngelscriptBinds::ExistingClass(DBBind.TypeName);
 		auto* ScriptType = Binds.GetTypeInfo();
@@ -1024,7 +945,9 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 					}
 					else if (auto* EnumProperty = CastField<FEnumProperty>(Property))
 					{
-						if (EnumProperty->GetElementSize() == 4)
+                                                                                                           
+						if (SoloASBridge::Compat::GetPropertyElementSize(EnumProperty) == 4)
+                                                                                                         
 						{
 							Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_ByteExtendToDWord, FAngelscriptBindHelpers::SetValueFromProperty_NativeByteExtendToDWord), (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 							FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
@@ -1035,17 +958,23 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 							FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
 						}
 					}
-					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && Property->GetElementSize() == 1)
+                                                                                                           
+					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && SoloASBridge::Compat::GetPropertyElementSize(Property) == 1)
+                                                                                                         
 					{
 						Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_Byte, FAngelscriptBindHelpers::SetValueFromProperty_NativeByte), (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 						FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
 					}
-					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && Property->GetElementSize() == 4)
+                                                                                                           
+					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && SoloASBridge::Compat::GetPropertyElementSize(Property) == 4)
+                                                                                                         
 					{
 						Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_DWord, FAngelscriptBindHelpers::SetValueFromProperty_NativeDWord), (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 						FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
 					}
-					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && Property->GetElementSize() == 8)
+                                                                                                           
+					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && SoloASBridge::Compat::GetPropertyElementSize(Property) == 8)
+                                                                                                         
 					{
 						Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_QWord, FAngelscriptBindHelpers::SetValueFromProperty_NativeQWord), (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 						FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
@@ -1158,22 +1087,10 @@ bool ShouldBindEngineType(UClass* Class)
 {
 	if (Class == nullptr)
 		return false;
-	if (FAngelscriptManager::Get().IsBlueprintImportProxyClass(Class)
-		&& !FAngelscriptManager::Get().IsBlueprintDependencyClass(Class))
-		return false;
-	if (FAngelscriptManager::Get().IsBlueprintDependencyClass(Class))
-		return true;
 
 	// UObject always gets bound
 	if (Class == UObject::StaticClass())
 		return true;
-                                                                                                 
-    if (Class->HasAnyClassFlags(CLASS_Interface))
-    {
-        bool Bind = false;
-        if (SelectNativeInterface(Class, Bind)) return Bind;
-    }
-                                                                                               
 
 	// Only bind native classes
 	if (!Class->HasAnyClassFlags(CLASS_Native))
@@ -1217,6 +1134,11 @@ bool ShouldBindEngineType(UClass* Class)
 
 AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_BlueprintType_Declarations(FAngelscriptBinds::EOrder::Early, []
 {
+                                                                                                        
+#if WITH_EDITOR
+	SoloASBridge::Compat::PrepareScriptBindingModules();
+#endif
+                                                                                                      
 	// Bind any clasess that are BlueprintType
 	for (UClass* Class : TObjectRange<UClass>())
 	{
@@ -1428,7 +1350,9 @@ void BindProperties(FAngelscriptBinds Binds, TSharedRef<FAngelscriptType> Type, 
 				}
 				else if (auto* EnumProperty = CastField<FEnumProperty>(Property))
 				{
-					if (EnumProperty->GetElementSize() == 4)
+                                                                                                           
+					if (SoloASBridge::Compat::GetPropertyElementSize(EnumProperty) == 4)
+                                                                                                         
 					{
 						Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_ByteExtendToDWord, FAngelscriptBindHelpers::SetValueFromProperty_NativeByteExtendToDWord), Params, (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 						FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
@@ -1439,17 +1363,23 @@ void BindProperties(FAngelscriptBinds Binds, TSharedRef<FAngelscriptType> Type, 
 						FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
 					}
 				}
-				else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && Property->GetElementSize() == 1)
+                                                                                                           
+				else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && SoloASBridge::Compat::GetPropertyElementSize(Property) == 1)
+                                                                                                         
 				{
 					Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_Byte, FAngelscriptBindHelpers::SetValueFromProperty_NativeByte), Params, (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 					FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
 				}
-				else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && Property->GetElementSize() == 4)
+                                                                                                           
+				else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && SoloASBridge::Compat::GetPropertyElementSize(Property) == 4)
+                                                                                                         
 				{
 					Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_DWord, FAngelscriptBindHelpers::SetValueFromProperty_NativeDWord), Params, (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 					FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
 				}
-				else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && Property->GetElementSize() == 8)
+                                                                                                           
+				else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && SoloASBridge::Compat::GetPropertyElementSize(Property) == 8)
+                                                                                                         
 				{
 					Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_QWord, FAngelscriptBindHelpers::SetValueFromProperty_NativeQWord), Params, (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 					FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
@@ -1648,27 +1578,6 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 	{
 		auto ClassType = BindOrder.Type;
 		auto* SuperClass = BindOrder.Class->GetSuperClass();
-                                                                                                     
-        FAngelscriptNativeInterfaceSelectionContext Context;
-        Context.Point = EAngelscriptNativeInterfacePoint::BindReflectedMethods;
-        Context.NativeClass = BindOrder.Class;
-        Context.Type = ClassType;
-        Context.VisitReflectedMethod = [&BindOrder, ClassType](UFunction* Function,
-            FAngelscriptNativeInterfaceMethodVisitor Visit)
-        {
-#if WITH_EDITOR
-            FAngelscriptMethodBind Method;
-            FAngelscriptBlueprintEventBindingSnapshot Snapshot;
-            if (!DescribeAngelscriptBlueprintEvent(ClassType.ToSharedRef(), Function, Method, Snapshot, false)) return;
-            const bool bRetain = Visit(Function, Snapshot,
-                [&]() { BindAngelscriptBlueprintEvent(ClassType.ToSharedRef(), Function, Method); });
-            if (bRetain && !Function->HasAnyFunctionFlags(FUNC_EditorOnly))
-                BindOrder.DBBind.Methods.Add(MoveTemp(Method));
-#endif
-        };
-        Context.EventsByScriptName = &GBlueprintEventsByScriptName;
-        if (DispatchAngelscriptNativeInterfaceBinding(Context)) continue;
-                                                                                                   
 
 		// Bind blueprint accessible functions
                                                                                                                                
@@ -1794,19 +1703,6 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_Defaults((int32)FAngelscriptBi
 	{
 		auto ClassType = BindOrder.Type;
 		auto* SuperClass = BindOrder.Class->GetSuperClass();
-                                                                                                        
-        FAngelscriptNativeInterfaceSelectionContext Context;
-        Context.Point = EAngelscriptNativeInterfacePoint::FinalizeRecord;
-        Context.NativeClass = BindOrder.Class;
-        Context.Type = BindOrder.Type;
-        Context.FinalizeRecord = [&BindOrder]()
-        {
-            BindOrder.DBBind.TypeName = BindOrder.Type->GetAngelscriptTypeName();
-            BindOrder.DBBind.UnrealPath = BindOrder.Class->GetPathName();
-            FAngelscriptBindDatabase::Get().Classes.Add(BindOrder.DBBind);
-        };
-        if (DispatchAngelscriptNativeInterfaceBinding(Context)) continue;
-                                                                                                      
 
 		FString TypeName = BindOrder.Type->GetAngelscriptTypeName();
 		FAngelscriptBinds Binds = FAngelscriptBinds::ExistingClass(TypeName);
@@ -1918,7 +1814,9 @@ struct FSubclassOfType : TAngelscriptCppType<TSubclassOf<UObject>>
                                                                                                                                     
 #if 0
                                                                                                                                   
+                                                                                                                    
 		auto* Property = new FClassProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                                  
                                                                                                                              
 #endif
 		auto* Property = CastFieldChecked<FClassProperty>(
@@ -2193,7 +2091,9 @@ struct FObjectPtrType : TAngelscriptCppType<TObjectPtr<UObject>>
                                                                                                                                      
 #if 0
                                                                                                                                    
+                                                                                                                    
 		auto* Property = new FObjectProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                                  
                                                                                                                               
 #endif
 		auto* Property = CastFieldChecked<FObjectProperty>(
@@ -2508,7 +2408,9 @@ struct FWeakObjectPtrType : TAngelscriptCppType<TWeakObjectPtr<UObject>>
                                                                                                                                          
 #if 0
                                                                                                                                        
+                                                                                                                    
 		auto* Property = new FWeakObjectProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                                  
                                                                                                                                   
 #endif
 		auto* Property = CastFieldChecked<FWeakObjectProperty>(
@@ -2930,243 +2832,3 @@ static void BindUClassLookup()
 		return Usage.IsValid();
 	});
 }
-
-                                                                                            
-extern void RegisterBlueprintEventByScriptName(UFunction* Function, const FString& ScriptName);
-#include "UObject/StrongObjectPtr.h"
-extern void RebindAngelscriptObjectViewDatabase(TSharedRef<FAngelscriptType> Type, UClass* PreviousClass);
-struct FObjectViewBindingSnapshot
-{
-    TArray<FString> Layout;
-    // Retired field addresses are lookup keys only, never dereferenced.
-    TMap<void*, FString> MemberNames;
-    TMap<FString, void*> MemberAddresses;
-    TMap<FString, TWeakObjectPtr<UObject>> ReferencedTypes;
-    TArray<TStrongObjectPtr<UFunction>> FunctionLifetimes;
-};
-
-static void SnapshotObjectViewProperty(FObjectViewBindingSnapshot& Snapshot, const FString& Key, FProperty* Property)
-{
-    Snapshot.MemberNames.Add(Property, Key);
-    Snapshot.MemberAddresses.Add(Key, Property);
-    Snapshot.Layout.Add(FString::Printf(TEXT("%s:%s:%s:%d:%d:%d:%llu"), *Key,
-        *Property->GetClass()->GetName(), *Property->GetCPPType(), Property->GetOffset_ForInternal(),
-        Property->ElementSize, Property->ArrayDim, uint64(Property->PropertyFlags)));
-    if (auto* Bool = CastField<FBoolProperty>(Property))
-        Snapshot.Layout.Add(FString::Printf(TEXT("%s:bool:%u:%u"), *Key, Bool->GetFieldMask(), Bool->GetByteOffset()));
-    if (auto* Object = CastField<FObjectPropertyBase>(Property)) Snapshot.ReferencedTypes.Add(Key, Object->PropertyClass);
-    if (auto* Class = CastField<FClassProperty>(Property)) Snapshot.ReferencedTypes.Add(Key + TEXT(":meta"), Class->MetaClass);
-    if (auto* Interface = CastField<FInterfaceProperty>(Property)) Snapshot.ReferencedTypes.Add(Key, Interface->InterfaceClass);
-    if (auto* Struct = CastField<FStructProperty>(Property)) Snapshot.ReferencedTypes.Add(Key, Struct->Struct);
-    if (auto* Enum = CastField<FEnumProperty>(Property)) Snapshot.ReferencedTypes.Add(Key, Enum->GetEnum());
-    if (auto* Byte = CastField<FByteProperty>(Property); Byte && Byte->Enum) Snapshot.ReferencedTypes.Add(Key, Byte->Enum);
-    if (auto* Array = CastField<FArrayProperty>(Property)) SnapshotObjectViewProperty(Snapshot, Key + TEXT(":inner"), Array->Inner);
-    if (auto* Set = CastField<FSetProperty>(Property)) SnapshotObjectViewProperty(Snapshot, Key + TEXT(":element"), Set->ElementProp);
-    if (auto* Map = CastField<FMapProperty>(Property))
-    {
-        SnapshotObjectViewProperty(Snapshot, Key + TEXT(":key"), Map->KeyProp);
-        SnapshotObjectViewProperty(Snapshot, Key + TEXT(":value"), Map->ValueProp);
-    }
-}
-
-static FObjectViewBindingSnapshot SnapshotObjectView(UClass* Class)
-{
-    FObjectViewBindingSnapshot Snapshot;
-    Snapshot.Layout.Add(FString::Printf(TEXT("size:%d:alignment:%d"), Class->GetStructureSize(), Class->GetMinAlignment()));
-    Snapshot.ReferencedTypes.Add(TEXT("parent"), Class->GetSuperClass());
-    for (TFieldIterator<FProperty> It(Class); It; ++It)
-        SnapshotObjectViewProperty(Snapshot, TEXT("property:") + It->GetName(), *It);
-    for (TFieldIterator<UFunction> It(Class); It; ++It)
-    {
-        if (It->HasAnyFunctionFlags(FUNC_UbergraphFunction)) continue;
-#if WITH_EDITOR && !IS_MONOLITHIC
-        Snapshot.FunctionLifetimes.Emplace(*It);
-#endif
-        const FString Key = TEXT("function:") + It->GetName();
-        Snapshot.MemberNames.Add(*It, Key);
-        Snapshot.MemberAddresses.Add(Key, *It);
-        Snapshot.Layout.Add(FString::Printf(TEXT("%s:%u:%d"), *Key, uint32(It->FunctionFlags), It->ParmsSize));
-        for (TFieldIterator<FProperty> Param(*It); Param && Param->HasAnyPropertyFlags(CPF_Parm); ++Param)
-            SnapshotObjectViewProperty(Snapshot, Key + TEXT(":") + Param->GetName(), *Param);
-    }
-    Snapshot.Layout.Sort();
-    return Snapshot;
-}
-
-struct FObjectViewRegistration
-{
-    TSharedRef<FUObjectType> View;
-    FObjectViewBindingSnapshot Snapshot;
-    TWeakObjectPtr<UClass> PreviousClass;
-    explicit FObjectViewRegistration(TSharedRef<FUObjectType> InView)
-        : View(InView), Snapshot(SnapshotObjectView(InView->Class)) {}
-};
-static TMap<FString, FObjectViewRegistration> RegisteredObjectViews;
-
-static bool CompatibleObjectViewLayout(const TArray<FString>& Previous, const TArray<FString>& Replacement)
-{
-    auto Group = [](const TArray<FString>& Rows)
-    {
-        TMap<FString, TArray<FString>> Groups;
-        for (const FString& Row : Rows)
-        {
-            const FString Key = Row.StartsWith(TEXT("function:"))
-                ? Row.Left(Row.Find(TEXT(":"), ESearchCase::CaseSensitive, ESearchDir::FromStart, 9)) : TEXT("layout");
-            Groups.FindOrAdd(Key).Add(Row);
-        }
-        return Groups;
-    };
-    const auto Before = Group(Previous), After = Group(Replacement);
-    for (const auto& Pair : Before)
-    {
-        const auto* Rows = After.Find(Pair.Key);
-        if (!Rows || *Rows != Pair.Value) return false;
-    }
-    return true;
-}
-
-static bool RebindObjectView(FObjectViewRegistration& Registration, UClass* Class, FString& OutError,
-    bool bGeneration = false, bool bCommit = true)
-{
-    auto View = Registration.View;
-    UClass* Previous = View->Class;
-    // UnrealEd may already have repointed the old class's member table. Compare
-    // the independent registration snapshot, never those mutable old fields.
-    auto ReplacementSnapshot = SnapshotObjectView(Class);
-    const auto& Snapshot = Registration.Snapshot;
-    bool bCompatible = CompatibleObjectViewLayout(Snapshot.Layout, ReplacementSnapshot.Layout);
-    if (bGeneration)
-    {
-        bCompatible = true;
-        for (const FString& Row : Snapshot.Layout)
-            if (!Row.StartsWith(TEXT("size:")) && !ReplacementSnapshot.Layout.Contains(Row))
-            {
-                bCompatible = false;
-                break;
-            }
-    }
-    if (!Previous->HasAnyClassFlags(CLASS_CompiledFromBlueprint)
-        || !Class->HasAnyClassFlags(CLASS_CompiledFromBlueprint)
-        || Previous->HasAnyClassFlags(CLASS_Interface) || Class->HasAnyClassFlags(CLASS_Interface)
-        || !bCompatible)
-    {
-        OutError = TEXT("A Blueprint object view replacement requires the same parent, property layout and method signatures.");
-        return false;
-    }
-    for (const auto& Pair : Snapshot.ReferencedTypes)
-    {
-        const auto* Replacement = ReplacementSnapshot.ReferencedTypes.Find(Pair.Key);
-        if (!Replacement)
-        {
-            OutError = TEXT("A Blueprint object view replacement changed a referenced reflection type.");
-            return false;
-        }
-        if (Pair.Value == *Replacement || (Pair.Value.Get() == Previous && Replacement->Get() == Class)) continue;
-        UClass* ReferencedClass = Cast<UClass>(Replacement->Get());
-        const auto ReferencedView = FAngelscriptType::GetByClass(ReferencedClass);
-        const auto* ReferenceRegistration = ReferencedView.IsValid()
-            ? RegisteredObjectViews.Find(ReferencedView->GetAngelscriptTypeName()) : nullptr;
-        if (!ReferencedClass || !ReferenceRegistration || ReferenceRegistration->View != ReferencedView
-            || !ReferenceRegistration->PreviousClass.IsValid()
-            || ReferenceRegistration->PreviousClass.Get() != Pair.Value.Get()
-            || ReferencedView->GetClass(FAngelscriptTypeUsage()) != ReferencedClass
-            || FAngelscriptType::GetByClass(ReferencedClass) != ReferencedView
-            || ReferencedView->GetAngelscriptTypeInfo(FAngelscriptTypeUsage())->GetUserData() != ReferencedClass)
-        {
-            OutError = TEXT("A Blueprint object view replacement requires its referenced view to be rebound first.");
-            return false;
-        }
-    }
-    TMap<void*, void*> BindingReplacements;
-    for (const auto& Pair : Snapshot.MemberNames)
-        if (void* const* Replacement = ReplacementSnapshot.MemberAddresses.Find(Pair.Value))
-            BindingReplacements.Add(Pair.Key, *Replacement);
-    if (const auto Existing = FAngelscriptType::GetByClass(Class); Existing.IsValid() && Existing != View)
-    {
-        OutError = TEXT("The replacement Blueprint class already has another object view.");
-        return false;
-    }
-    if (!bCommit) return true;
-    FAngelscriptExecutionWriteScope Writer;
-    // No borrowed type is released. All validation precedes the first mutation.
-    asITypeInfo* Type = View->ClassScriptType;
-    for (asUINT Index = 0; Index < Type->GetMethodCount(); ++Index)
-    {
-        asIScriptFunction* Method = Type->GetMethodByIndex(Index);
-        if (void** Replacement = BindingReplacements.Find(Method->GetUserData()))
-            Method->SetUserData(*Replacement);
-    }
-    auto Events = GBlueprintEventsByScriptName.FindRef(Previous);
-    GBlueprintEventsByScriptName.Remove(Previous);
-    for (auto& Event : Events)
-        if (void** Replacement = BindingReplacements.Find(Event.Value)) Event.Value = static_cast<UFunction*>(*Replacement);
-    if (!Events.IsEmpty()) GBlueprintEventsByScriptName.Add(Class, MoveTemp(Events));
-    View->Class = Class;
-    Type->SetUserData(Class);
-    RebindAngelscriptObjectViewDatabase(View, Previous);
-    for (TFieldIterator<UFunction> It(Class); It; ++It)
-        if (It->HasAnyFunctionFlags(FUNC_BlueprintEvent)
-            && !Snapshot.MemberAddresses.Contains(TEXT("function:") + It->GetName()))
-            RegisterBlueprintEventByScriptName(*It, It->GetName());
-    Registration.Snapshot = MoveTemp(ReplacementSnapshot);
-    Registration.PreviousClass = Previous;
-    return true;
-}
-
-static bool RebindExplicitObjectView(UClass* PreviousClass, UClass* ReplacementClass,
-    FString& OutError, bool bGeneration, bool bCommit)
-{
-    OutError.Reset();
-    check(IsInGameThread());
-    const auto PreviousType = FAngelscriptType::GetByClass(PreviousClass);
-    auto* Registration = PreviousType ? RegisteredObjectViews.Find(PreviousType->GetAngelscriptTypeName()) : nullptr;
-    if (!Registration || Registration->View->Class != PreviousClass || !ReplacementClass)
-    {
-        OutError = TEXT("Rebinding requires an existing object view and its explicit replacement class.");
-        return false;
-    }
-    return RebindObjectView(*Registration, ReplacementClass, OutError, bGeneration, bCommit);
-}
-
-bool CanRebindAngelscriptObjectViewGeneration(UClass* PreviousClass, UClass* ReplacementClass, FString& OutError)
-{
-    return RebindExplicitObjectView(PreviousClass, ReplacementClass, OutError, true, false);
-}
-
-bool RebindAngelscriptObjectViewGeneration(UClass* PreviousClass, UClass* ReplacementClass, FString& OutError)
-{
-    return RebindExplicitObjectView(PreviousClass, ReplacementClass, OutError, true, true);
-}
-
-#if WITH_EDITOR && !IS_MONOLITHIC
-bool RebindAngelscriptObjectView(UClass* PreviousClass, UClass* ReplacementClass, FString& OutError)
-{
-    return RebindExplicitObjectView(PreviousClass, ReplacementClass, OutError, false, true);
-}
-#endif
-
-bool RegisterAngelscriptObjectView(UClass* Class, const FString& ScriptName, FString& OutError)
-{
-    OutError.Reset();
-    if (Class == nullptr || ScriptName.IsEmpty())
-    {
-        OutError = TEXT("An object view requires a reflection class and a script name.");
-        return false;
-    }
-    if (FAngelscriptManager::Get().Engine->GetTypeInfoByName(TCHAR_TO_ANSI(*ScriptName)))
-    {
-        OutError = FString::Printf(TEXT("The script type '%s' is already registered."), *ScriptName);
-        return false;
-    }
-    auto Binds = FAngelscriptBinds::ReferenceClass(ScriptName, Class);
-    Binds.SetTypeUserData(Class);
-    auto* Type = static_cast<asCObjectType*>(Binds.GetTypeInfo());
-    Type->flags |= asOBJ_DISALLOW_INSTANTIATION;
-    auto View = MakeShared<FUObjectType>(Class, ScriptName, Type);
-    FAngelscriptType::Register(View);
-    RegisteredObjectViews.Add(ScriptName, FObjectViewRegistration(View));
-    for (TFieldIterator<UFunction> It(Class); It; ++It)
-        if (It->HasAnyFunctionFlags(FUNC_BlueprintEvent)) RegisterBlueprintEventByScriptName(*It, It->GetName());
-    return true;
-}
-                                                                                          

@@ -4,6 +4,7 @@
 #include "Blueprint/AngelscriptInheritedComponentAttachmentRepairSupport.h"
 
 #include "AngelscriptReflectionAdapter.h"
+#include "SoloASEngineCompat.h"
 #include "ClassGenerator/ASClass.h"
 #include "Engine/SCS_Node.h"
 #include "ComponentInstanceDataCache.h"
@@ -393,7 +394,16 @@ public:
             Snapshot.Cache = MakeUnique<FComponentInstanceDataCache>(Actor);
             for (UActorComponent* Component : Actor->GetComponents())
             {
+                                                                                                                                
+#if SOLOAS_UE_BEFORE(5, 6)
+                // Legacy actor copying lacks the accumulated replacement map. Include
+                // native defaults so peer references survive the later actor copy.
+                if (!IsValid(Component) || (!Component->IsCreatedByConstructionScript()
+                    && !Component->IsDefaultSubobject())) continue;
+#else
                 if (!IsValid(Component) || !Component->IsCreatedByConstructionScript()) continue;
+#endif
+                                                                                                              
                 FComponent& Entry = Snapshot.Components.AddDefaulted_GetRef();
                 Entry.Source = Component;
                 Entry.Class = Component->GetClass();
@@ -471,6 +481,39 @@ public:
                 Map.Add(Component.Source, New);
             }
         }
+                                                                                                                           
+#if SOLOAS_UE_BEFORE(5, 6)
+        // Legacy component copying can leave a replaced child in the retiring
+        // parent's child array. Remove only nonreciprocal entries before native
+        // destruction; the captured graph owns restoration on the live objects.
+        FArrayProperty* Children = FindFProperty<FArrayProperty>(USceneComponent::StaticClass(), TEXT("AttachChildren"));
+        FObjectPropertyBase* ChildProperty = Children ? CastField<FObjectPropertyBase>(Children->Inner) : nullptr;
+        if (ChildProperty)
+            for (const auto& Actor : Actors)
+                for (const auto& Component : Actor.Components)
+                {
+                    USceneComponent* Parents[] = {Cast<USceneComponent>(Component.Source),
+#if SOLOAS_UE_BEFORE(5, 5)
+                        // UE 5.4 destroys an intermediate SCS replacement before the
+                        // final actor map. Its copied child list needs the same repair.
+                        Cast<USceneComponent>(Map.FindRef(Component.Source))
+#else
+                        nullptr
+#endif
+                    };
+                    for (USceneComponent* Parent : Parents)
+                    {
+                        if (!Parent) continue;
+                        FScriptArrayHelper List(Children, Children->ContainerPtrToValuePtr<void>(Parent));
+                        for (int32 Index = List.Num() - 1; Index >= 0; --Index)
+                        {
+                            USceneComponent* Child = Cast<USceneComponent>(ChildProperty->GetObjectPropertyValue(List.GetRawPtr(Index)));
+                            if (Child && Child->GetAttachParent() != Parent) List.RemoveValues(Index);
+                        }
+                    }
+                }
+#endif
+                                                                                                                         
         if (!bReady) return;
         FRemap Remap(Map);
         for (auto& Actor : Actors)

@@ -2,6 +2,8 @@
 
 #include "Components/SceneComponent.h"
 #include "Runtime/Launch/Resources/Version.h"
+#include "SoloASEngineCompat.h"
+#include "GameFramework/Actor.h"
 #include "Shared/SoloASPrivateAccess.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -61,3 +63,20 @@ bool SoloASBridge::NormalizeSceneComponentChildren(USceneComponent* Parent)
     return false;
 #endif
 }
+
+// SOLOAS-COMPAT-BEGIN(<5.8) CS.Compatibility.Bridge.SceneDestroy [test: SoloAS.SceneGcReentrantAttachment] [id: CS.Compatibility.Bridge.SceneDestroy]
+#if WITH_EDITOR && SOLOAS_UE_BEFORE(5, 8)
+void SoloASBridge::RemoveRetiredSceneComponentStaleChildren(USceneComponent* Parent)
+{
+    if (IsValid(Parent->GetOwner())
+        && !Parent->GetClass()->HasAnyClassFlags(CLASS_NewerVersionExists)) return;
+    auto& Children = PrivateAccess::Get<PrivateAccess::FAttachChildrenTag>(*Parent);
+    for (int32 Index = Children.Num() - 1; Index >= 0; --Index)
+    {
+        USceneComponent* Child = Children[Index].Get();
+        if (Child && Child->GetAttachParent() != Parent)
+            Children.RemoveAt(Index, 1, EAllowShrinking::No);
+    }
+}
+#endif
+// SOLOAS-COMPAT-END

@@ -14,11 +14,12 @@
 #include "as_scriptfunction.h"
 #include "EndAngelscriptHeaders.h"
 
+                                                                                            
 struct FPassedDoc
 {
 	FString Tooltip;
 	FString Category;
-	UFunction* Function = nullptr;
+	TWeakObjectPtr<UFunction> Function;
 	TMap<FString, FString> Meta;
 };
 
@@ -114,8 +115,10 @@ UFunction* FAngelscriptDocs::LookupAngelscriptFunction(int FunctionId)
 	if (Found == nullptr)
 		return nullptr;
 	else
-		return Found->Function;
+		return Found->Function.Get();
 }
+
+                                                                                          
 
 const FPassedDoc& FAngelscriptDocs::GetFullUnrealDocumentation(int FunctionId)
 {
@@ -425,6 +428,9 @@ void FAngelscriptDocs::DumpDocumentation(asIScriptEngine* Engine)
 
 	TMap<FString, FString> GetAccessors;
 	TMap<FString, FString> SetAccessors;
+                                                                                                                             
+	TSet<FString> ReflectedConstGetAccessors;
+                                                                                                                           
 
 	auto AddFunction = [&](FDocClass& Class, asIScriptFunction* ScriptFunction, bool bRecordAccessors)
 	{
@@ -445,7 +451,17 @@ void FAngelscriptDocs::DumpDocumentation(asIScriptEngine* Engine)
 			if ((Name.StartsWith(TEXT("Get")) && Name.Len() > 3 && (FChar::IsUpper(Name[3]) || (Name.Len() > 4 && Name[3] == 'b' && FChar::IsUpper(Name[4])))
 				&& (ArgCount == 0 || (ArgCount == 1 && HiddenParam == 0 && false))) && ReturnType != TEXT("void"))
 			{
-				GetAccessors.Add(Name.RightChop(3), ReturnType);
+                                                                                                                                    
+				// A: a reflected getter pair documents the const view, independent of registration order.
+				const FString PropertyName = Name.RightChop(3);
+				if (LookupAngelscriptFunction(ScriptFunction->GetId()) != nullptr && (Flags & asTM_CONST) != 0)
+				{
+					ReflectedConstGetAccessors.Add(PropertyName);
+					GetAccessors.Add(PropertyName, ReturnType);
+				}
+				else if (!ReflectedConstGetAccessors.Contains(PropertyName))
+					GetAccessors.Add(PropertyName, ReturnType);
+                                                                                                                                  
 			}
 			else if (Name.StartsWith(TEXT("Set")) && Name.Len() > 3 && (FChar::IsUpper(Name[3]) || (Name.Len() > 4 && Name[3] == 'b' && FChar::IsUpper(Name[4])))
 				&& (ArgCount == 1 || (ArgCount == 2 && HiddenParam == 0 && false)))
@@ -503,6 +519,9 @@ void FAngelscriptDocs::DumpDocumentation(asIScriptEngine* Engine)
 		}
 
 		GetAccessors.Empty();
+                                                                                                                                   
+		ReflectedConstGetAccessors.Empty();
+                                                                                                                                 
 		SetAccessors.Empty();
 	};
 
@@ -557,7 +576,28 @@ void FAngelscriptDocs::DumpDocumentation(asIScriptEngine* Engine)
 				}
 				else
 				{
-					continue;
+                                                                                                
+					// E: explicitly documented native binds need not have a reflected property.
+					if (ScriptType->IsPropertyInherited(PropertyIndex))
+						continue;
+					int Offset;
+					ScriptType->GetProperty(PropertyIndex, nullptr, nullptr, nullptr, nullptr, &Offset);
+					bool bReflectedAlias = false;
+					for (TFieldIterator<FProperty> It(Class); It; ++It)
+					{
+						if (It->GetOffset_ForUFunction() == Offset)
+						{
+							bReflectedAlias = true;
+							break;
+						}
+					}
+					if (bReflectedAlias)
+						continue;
+					Prop.Documentation = FAngelscriptDocs::GetUnrealDocumentationForProperty(
+						ScriptType->GetTypeId(), Offset);
+					if (Prop.Documentation.IsEmpty())
+						continue;
+                                                                                              
 				}
 			}
 			else

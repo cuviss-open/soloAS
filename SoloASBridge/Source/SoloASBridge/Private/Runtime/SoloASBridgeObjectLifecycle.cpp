@@ -1,4 +1,5 @@
 #include "Runtime/SoloASBridgeObjectLifecycle.h"
+#include "Compat/SoloASRuntimeCompat.h"
 #include "Runtime/SoloASBridgeObjectLifecycleSupport.h"
 
 #include "Misc/ScopeLock.h"
@@ -88,7 +89,7 @@ bool TrackRuntimeObject(UObject* Object, void* TypeCookie)
         || (IsInAsyncLoadingThread()
             && Object != nullptr
             && Object->HasAnyInternalFlags(
-                EInternalObjectFlags_AsyncLoading
+                SoloASBridge::Compat::AsyncLoadingObjectFlags
             ));
     checkf(bSupportedTrackingThread, TEXT("unsupported tracking thread"));
     if (!bSupportedTrackingThread)

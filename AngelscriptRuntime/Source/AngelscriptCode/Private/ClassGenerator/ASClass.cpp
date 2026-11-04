@@ -3,37 +3,35 @@
 #include "Runtime/Launch/Resources/Version.h"
                                                                                                                             
 
-                                                                                                              
+                                                                                                                
 #include "Shared/SoloASScriptBlueprint.h"
+#include "Compat/SoloASRuntimeCompat.h"
 #include "ClassGenerator/AngelscriptReplicationShadow.h"
-#include "Serialization/AsyncLoadingEvents.h"
 #include "UObject/SparseDelegate.h"
 #include <atomic>
-                                                                                                            
+                                                                                                              
                                                                                             
 #include "ClassGenerator/AngelscriptRuntimeGcMirror.h"
 #include "AngelscriptRuntimeGcLifecycle.h"
 #include "AngelscriptExecutionQuiescence.h"
 #include "ClassGenerator/AngelscriptFieldDestruction.h"
 #include "ClassGenerator/AngelscriptRetiredModules.h"
+#include "ClassGenerator/AngelscriptPropertyInitialization.h"
 #include "Runtime/SoloASBridgeCallableDispatch.h"
 #include "AngelscriptReflectionAdapter.h"
 #include "UObject/EnumProperty.h"
 #include "UObject/ObjectKey.h"
 #include "UObject/UObjectHash.h"
                                                                                           
-                                                                                                  
-#include "Misc/CommandLine.h"
-#include "Misc/Parse.h"
+                                                                                                       
 #include "UObject/UnrealType.h"
-                                                                                                
-                                                                                                                             
-#include "AngelscriptSettings.h"
 #include "Engine/BlueprintGeneratedClass.h"
-                                                                                                                           
+                                                                                                     
 #include "AngelscriptManager.h"
 
+                                                                                                     
 #include "Runtime/Launch/Resources/Version.h"
+                                                                                                   
 #include "UObject/Package.h"
 #include "UObject/ScriptMacros.h"
 #include "UObject/UObjectThreadContext.h"
@@ -46,7 +44,9 @@
 #include "as_config.h"
 #include "as_scriptengine.h"
 #include "as_scriptobject.h"
+                                                                                                        
 #include "as_objecttype.h"
+                                                                                                      
 #include "as_context.h"
 #include "EndAngelscriptHeaders.h"
 
@@ -68,312 +68,6 @@ static_assert(STRUCT_OFFSET(UASClass, StockUberGraphFramePointerProperty)
 
 UObject* UASClass::OverrideConstructingObject = nullptr;
 
-                                                                                                       
-#if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
-static void TraceScriptConstructionProperty(UObject* Object, const TCHAR* Phase)
-{
-	FString PropertyName;
-	if (Object == nullptr
-		|| !FParse::Value(
-			FCommandLine::Get(),
-			TEXT("-SoloASConstructionTrace="),
-			PropertyName)
-		|| PropertyName.IsEmpty())
-	{
-		return;
-	}
-
-	FProperty* Property = Object->GetClass()->FindPropertyByName(
-		FName(*PropertyName));
-	if (Property == nullptr)
-	{
-		UE_LOG(
-			Angelscript,
-			Display,
-			TEXT("SOLOAS_CONSTRUCTION_TRACE phase=%s object=%s class=%s property=%s missing=1"),
-			Phase,
-			*Object->GetPathName(),
-			*Object->GetClass()->GetPathName(),
-			*PropertyName);
-		return;
-	}
-
-	FString Value;
-	const bool bExported = Property->ExportText_InContainer(
-		0,
-		Value,
-		Object,
-		nullptr,
-		Object,
-		PPF_None);
-	Value.ReplaceInline(TEXT("\n"), TEXT("\\n"));
-	const UStruct* Owner = Property->GetOwnerStruct();
-	UE_LOG(
-		Angelscript,
-		Display,
-		TEXT("SOLOAS_CONSTRUCTION_TRACE phase=%s object=%s class=%s property=%s owner=%s "
-			"flags=0x%llx exported=%d value=%s"),
-		Phase,
-		*Object->GetPathName(),
-		*Object->GetClass()->GetPathName(),
-		*Property->GetName(),
-		Owner != nullptr ? *Owner->GetPathName() : TEXT("<none>"),
-		static_cast<unsigned long long>(Property->GetPropertyFlags()),
-		bExported ? 1 : 0,
-		*Value);
-}
-#else
-#define TraceScriptConstructionProperty(Object, Phase) do { } while (false)
-#endif
-                                                                                                     
-                                                                                                                         
-struct FScriptStockPropertySnapshot
-{
-	FProperty* Property = nullptr;
-	const UStruct* Owner = nullptr;
-	const UClass* ObjectClass = nullptr;
-	const UClass* DefaultsClass = nullptr;
-	const FFieldClass* PropertyClass = nullptr;
-	int32 Offset = INDEX_NONE;
-	int32 Size = 0;
-	int32 ElementSize = 0;
-	uint64 PropertyFlags = 0;
-	void* Value = nullptr;
-
-	FScriptStockPropertySnapshot() = default;
-	FScriptStockPropertySnapshot(const FScriptStockPropertySnapshot&) = delete;
-	FScriptStockPropertySnapshot& operator=(
-		const FScriptStockPropertySnapshot&) = delete;
-
-	FScriptStockPropertySnapshot(FScriptStockPropertySnapshot&& Other) noexcept
-		: Property(Other.Property)
-		, Owner(Other.Owner)
-		, ObjectClass(Other.ObjectClass)
-		, DefaultsClass(Other.DefaultsClass)
-		, PropertyClass(Other.PropertyClass)
-		, Offset(Other.Offset)
-		, Size(Other.Size)
-		, ElementSize(Other.ElementSize)
-		, PropertyFlags(Other.PropertyFlags)
-		, Value(Other.Value)
-	{
-		Other.Property = nullptr;
-		Other.Value = nullptr;
-	}
-
-	FScriptStockPropertySnapshot& operator=(
-		FScriptStockPropertySnapshot&& Other) noexcept
-	{
-		if (this != &Other)
-		{
-			Reset();
-			Property = Other.Property;
-			Owner = Other.Owner;
-			ObjectClass = Other.ObjectClass;
-			DefaultsClass = Other.DefaultsClass;
-			PropertyClass = Other.PropertyClass;
-			Offset = Other.Offset;
-			Size = Other.Size;
-			ElementSize = Other.ElementSize;
-			PropertyFlags = Other.PropertyFlags;
-			Value = Other.Value;
-			Other.Property = nullptr;
-			Other.Value = nullptr;
-		}
-		return *this;
-	}
-
-	~FScriptStockPropertySnapshot()
-	{
-		Reset();
-	}
-
-	void Reset()
-	{
-		if (Property != nullptr && Value != nullptr)
-			Property->DestroyAndFreeValue(Value);
-		Property = nullptr;
-		Value = nullptr;
-	}
-};
-
-                                                                                                                       
-                                                                                                                           
-static bool IsSafeScriptStockProperty(const FProperty* Property)
-{
-	if (Property == nullptr)
-		return false;
-
-	if (Cast<UASClass>(Property->GetOwnerStruct()) == nullptr)
-		return false;
-
-	if (Property->GetSize() != Property->GetElementSize()
-		|| Property->HasAnyPropertyFlags(
-			CPF_Transient
-			| CPF_DuplicateTransient
-			| CPF_NonPIEDuplicateTransient
-			| CPF_TextExportTransient
-			| CPF_SkipSerialization
-			| CPF_Virtual)
-		|| Property->ContainsInstancedObjectProperty()
-		|| Property->HasGetter()
-		|| Property->HasSetter())
-	{
-		return false;
-	}
-
-	if (Property->IsA<FDelegateProperty>()
-		|| Property->IsA<FMulticastDelegateProperty>())
-	{
-		return false;
-	}
-
-	TArray<const FStructProperty*> EncounteredStructProps;
-	const EPropertyObjectReferenceType AllReferenceKinds =
-		EPropertyObjectReferenceType::Strong
-		| EPropertyObjectReferenceType::Weak
-		| EPropertyObjectReferenceType::Soft
-		| EPropertyObjectReferenceType::Conservative;
-	return !Property->ContainsObjectReference(
-		EncounteredStructProps,
-		AllReferenceKinds);
-}
-
-static const UClass* GetScriptStockDefaultsClass(UObject* Object)
-{
-	if (Object == nullptr)
-		return nullptr;
-
-	const UClass* ObjectClass = Object->GetClass();
-	if (Object->HasAnyFlags(RF_ClassDefaultObject)
-		&& ObjectClass->GetSuperClass() != nullptr)
-	{
-		return ObjectClass->GetSuperClass();
-	}
-	return ObjectClass;
-}
-
-                                                                                                                         
-                                                                                                                    
-static bool IsAllowlistedScriptStockProperty(
-	const UAngelscriptSettings* Settings,
-	const FProperty* Property)
-{
-	if (Settings == nullptr || Property == nullptr)
-		return false;
-
-	const UStruct* Owner = Property->GetOwnerStruct();
-	if (Owner == nullptr)
-		return false;
-
-	const FString Key = Owner->GetPathName() + TEXT(".") + Property->GetName();
-	return Settings->StockPurePropertyPreservationAllowlist.Contains(Key);
-}
-
-static TArray<FScriptStockPropertySnapshot> CaptureScriptStockProperties(UObject* Object)
-{
-	TArray<FScriptStockPropertySnapshot> Snapshots;
-	const bool bForceOff = FParse::Param(
-		FCommandLine::Get(),
-		TEXT("SoloASDisableStockPureProperties"));
-	const bool bCommandLineOptIn = FParse::Param(
-		FCommandLine::Get(),
-		TEXT("SoloASPreserveStockPureProperties"));
-	const UAngelscriptSettings* Settings = FAngelscriptManager::ConfigSettings;
-	const bool bConfiguredOptIn = Settings != nullptr
-		&& Settings->bEnableStockPurePropertyPreservation;
-	const bool bOptIn = bCommandLineOptIn || bConfiguredOptIn;
-	if (Object == nullptr || bForceOff || !bOptIn)
-	{
-		return Snapshots;
-	}
-
-	if (bOptIn
-		&& (Object->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject)
-			|| Cast<UBlueprintGeneratedClass>(Object->GetClass()) == nullptr))
-		return Snapshots;
-
-	const UClass* ObjectClass = Object->GetClass();
-	const UClass* DefaultsClass = GetScriptStockDefaultsClass(Object);
-	if (DefaultsClass == nullptr)
-		return Snapshots;
-
-	for (TFieldIterator<FProperty> It(Object->GetClass()); It; ++It)
-	{
-		FProperty* Property = *It;
-		if (!IsSafeScriptStockProperty(Property)
-			|| !Property->IsInContainer(DefaultsClass)
-			|| (bOptIn
-				&& !IsAllowlistedScriptStockProperty(Settings, Property)))
-			continue;
-
-		FScriptStockPropertySnapshot& Snapshot = Snapshots.AddDefaulted_GetRef();
-		Snapshot.Property = Property;
-		Snapshot.Owner = Property->GetOwnerStruct();
-		Snapshot.ObjectClass = ObjectClass;
-		Snapshot.DefaultsClass = DefaultsClass;
-		Snapshot.PropertyClass = Property->GetClass();
-		Snapshot.Offset = Property->GetOffset_ForInternal();
-		Snapshot.Size = Property->GetSize();
-		Snapshot.ElementSize = Property->GetElementSize();
-		Snapshot.PropertyFlags = static_cast<uint64>(
-			Property->GetPropertyFlags());
-		Snapshot.Value = Property->AllocateAndInitializeValue();
-		if (Snapshot.Value == nullptr)
-		{
-			Snapshots.RemoveAt(Snapshots.Num() - 1, 1, EAllowShrinking::No);
-			continue;
-		}
-		Property->CopyCompleteValue(
-			Snapshot.Value,
-			Property->ContainerPtrToValuePtr<void>(Object));
-	}
-
-	return Snapshots;
-}
-
-                                                                                                                  
-                                                                                                                    
-static int32 RestoreScriptStockProperties(
-	UObject* Object,
-	const TArray<FScriptStockPropertySnapshot>& Snapshots)
-{
-	if (Object == nullptr || Snapshots.Num() == 0)
-		return 0;
-
-	int32 RestoredCount = 0;
-	for (const FScriptStockPropertySnapshot& Snapshot : Snapshots)
-	{
-		FProperty* CurrentProperty = Snapshot.Property == nullptr
-			? nullptr
-			: Object->GetClass()->FindPropertyByName(
-				Snapshot.Property->GetFName());
-		if (CurrentProperty != Snapshot.Property
-			|| Snapshot.Owner == nullptr
-			|| Object->GetClass() != Snapshot.ObjectClass
-			|| Snapshot.DefaultsClass == nullptr
-			|| CurrentProperty->GetClass() != Snapshot.PropertyClass
-			|| CurrentProperty->GetOwnerStruct() != Snapshot.Owner
-			|| CurrentProperty->GetOffset_ForInternal() != Snapshot.Offset
-			|| CurrentProperty->GetSize() != Snapshot.Size
-			|| CurrentProperty->GetElementSize() != Snapshot.ElementSize
-			|| static_cast<uint64>(CurrentProperty->GetPropertyFlags())
-				!= Snapshot.PropertyFlags
-			|| !CurrentProperty->IsInContainer(Snapshot.DefaultsClass)
-			|| !IsSafeScriptStockProperty(CurrentProperty))
-		{
-			continue;
-		}
-
-		CurrentProperty->CopyCompleteValue(
-			CurrentProperty->ContainerPtrToValuePtr<void>(Object),
-			Snapshot.Value);
-		++RestoredCount;
-	}
-
-	return RestoredCount;
-}
-                                                                                                                  
                                                                                                                            
 static void RestoreScriptBlueprintDefaultProperties(
 	UObject* Object,
@@ -401,12 +95,13 @@ static void RestoreScriptBlueprintDefaultProperties(
 	}
 	for (FProperty* Property = Anchor->PropertyLink; Property; Property = Property->PropertyLinkNext)
 	{
-		const UClass* OwnerClass = Property->GetOwnerClass();
 		const bool bRuntimeTransient = Property->HasAnyPropertyFlags(
 			CPF_Transient | CPF_DuplicateTransient | CPF_NonPIEDuplicateTransient
 			| CPF_Config | CPF_GlobalConfig);
-		if (OwnerClass == nullptr || !SoloASBridge::IsRegisteredScriptClass(OwnerClass)
-			|| !Property->IsInContainer(Anchor) || bRuntimeTransient
+		// A Blueprint override is a value delta from the script CDO, regardless
+		// of whether the property was declared by script or a native ancestor.
+		// Equal values are inherited defaults and must not undo script defaults.
+		if (!SoloASBridge::Compat::IsPropertyInContainer(Property, Anchor) || bRuntimeTransient
 			|| Property->Identical_InContainer(BlueprintDefault, ParentDefault)
 			|| Property->ContainsInstancedObjectProperty())
 		{
@@ -438,7 +133,7 @@ UASClass::UASClass(const FObjectInitializer& ObjectInitializer)
 #if WITH_ANGELSCRIPT_HAZE
 	bIsScriptClass = true;
 #else
-	// The locked Haze fork exposes this field even when its legacy product macro
+	// The locked UE-AS fork exposes this field even when its legacy product macro
 	// defaults to zero. Stock UE has no field; the dependent branch therefore
 	// disappears without an offset, ABI assumption, or engine source change.
 	[]<typename T>(T* Class)
@@ -693,7 +388,9 @@ static FORCEINLINE_DEBUGGABLE void AngelscriptCallFromBPVM(UASFunction* ASFuncti
 
 		asQWORD OutValue = 0;
 		FAngelscriptGameThreadScopeWorldContext WorldContext(NewWorldContext);
-		(JitFunction)(Execution, VMArgStart, &OutValue);
+                                                                                                             
+		        (JitFunction)(Execution, VMArgStart, &OutValue);
+                                                                                                           
 
 		switch (ASFunction->ReturnArgument.VMBehavior)
 		{
@@ -912,7 +609,9 @@ static FORCEINLINE_DEBUGGABLE void AngelscriptCallFromParms(UASFunction* ASFunct
 		FAngelscriptGameThreadScopeWorldContext WorldContext(NewWorldContext);
 		FScriptExecution Execution(FAngelscriptManager::GameThreadTLD);
 
-		(JitFunction)(Execution, Object, Parms);
+                                                                                                             
+		        (JitFunction)(Execution, Object, Parms);
+                                                                                                           
 	}
 	else
 	{
@@ -1341,13 +1040,33 @@ void UASClass::GetLifetimeScriptReplicationList(TArray<FLifetimeProperty>& OutLi
                                                                                                                      
 }
 
-                                                                                                         
+                                                                                                           
 void UASClass::Link(FArchive& Ar, bool bRelinkExistingProperties)
 {
     FAngelscriptExecutionWriteScope Writer;
     RetireRuntimeTerminalClassChain(this);
     const int32 ExistingSize = GetPropertiesSize();
     ScriptFinishDestroyFields.Reset();
+// SOLOAS-COMPAT-BEGIN(<5.7) Stock 5.4-5.6 Link uses CPF_NoDestructor before building class and BP destructor chains; 5.4 registers finish-clear fields by the 5.5+ rule [test: SoloAS.RuntimeTerminalDestructorAdmission]
+#if SOLOAS_UE_BEFORE(5, 7)
+    for (TFieldIterator<FProperty> It(this, EFieldIteratorFlags::ExcludeSuper); It; ++It)
+    {
+#if SOLOAS_UE_AT_LEAST(5, 5)
+        // The legacy query skips NoDestructor fields. Discover the host's
+        // finish-clear protocol before suppressing UE's ordinary destructor.
+        // Relinking must rediscover it after our previous ownership flag.
+        It->ClearPropertyFlags(CPF_NoDestructor);
+        TArray<const FStructProperty*> Encountered;
+        It->ContainsFinishDestroy(Encountered);
+#else
+        // UE 5.4 has no finish-clear query; register the fields 5.5+ reports.
+        if (AngelscriptPropertyContainsLegacyFinishClear(**It))
+            ScriptFinishDestroyFields.AddUnique(*It);
+#endif
+        It->SetPropertyFlags(CPF_NoDestructor);
+    }
+#endif
+// SOLOAS-COMPAT-END
     Super::Link(Ar, bRelinkExistingProperties);
     if (bRelinkExistingProperties && ScriptTypePtr)
     {
@@ -1373,19 +1092,34 @@ void UASClass::Link(FArchive& Ar, bool bRelinkExistingProperties)
     RebuildRuntimeTerminalClassChain(this);
 }
 
+// A class removed by a full reload stays rooted and hidden; objects constructed from it afterwards have no script type.
+bool IsRemovedRuntimeScriptClass(const UASClass* Class);
+void ConstructRemovedRuntimeScriptFields(UObject* Object, UASClass* Class);
+void RecordRemovedClassConstruction(UObject* Object);
+bool ConsumeRemovedClassConstruction(UObject* Object);
+void DestroyRemovedRuntimeScriptFields(UObject* Object, const UASClass* Class);
+
 void UASClass::DestroyPersistentUberGraphFrame(UObject* Object, bool bSkipSuperClass) const
 {
 #if !SOLOAS_LEGACY_TERMINAL_LIFECYCLE
     // SetClass also tears down the old ubergraph frame while retaining the
     // live script object. Only actual object destruction owns AS finalization.
     if (Object && (Object->HasAnyFlags(RF_BeginDestroyed) || GExitPurge)
-        && GetFirstASClass(Object->GetClass()) == this
-        && (ScriptTypePtr || RetiredScriptTypeForGc) && !IsAngelscriptExecutionShutdownStarted())
+        && GetFirstASClass(Object->GetClass()) == this && !IsAngelscriptExecutionShutdownStarted())
     {
-        FAngelscriptExecutionWriteScope Writer(FAngelscriptExecutionWriteScope::EAcquire::GarbageCollection);
-        SoloASBridge::FScopedScriptFinishDestroy NativeCalls(Object);
-        const_cast<UASClass*>(this)->RuntimeDestroyObject(Object);
-        AngelscriptRuntimeGcMirror::ReleasePublicDestroyReloadTracking(Object);
+        if (!ScriptTypePtr && ConsumeRemovedClassConstruction(Object))
+        {
+            // Such an object holds natively constructed script fields only.
+            FAngelscriptExecutionWriteScope Writer(FAngelscriptExecutionWriteScope::EAcquire::GarbageCollection);
+            DestroyRemovedRuntimeScriptFields(Object, this);
+        }
+        else if (ScriptTypePtr || RetiredScriptTypeForGc)
+        {
+            FAngelscriptExecutionWriteScope Writer(FAngelscriptExecutionWriteScope::EAcquire::GarbageCollection);
+            SoloASBridge::FScopedScriptFinishDestroy NativeCalls(Object);
+            const_cast<UASClass*>(this)->RuntimeDestroyObject(Object);
+            AngelscriptRuntimeGcMirror::ReleasePublicDestroyReloadTracking(Object);
+        }
     }
 #endif
     Super::DestroyPersistentUberGraphFrame(Object, bSkipSuperClass);
@@ -1487,8 +1221,7 @@ bool UASClass::HasValidScriptClassCarrier() const
 	for (const UClass* Ancestor = GetSuperClass(); Ancestor != nullptr; Ancestor = Ancestor->GetSuperClass())
 	{
 		if (Visited.Contains(Ancestor)
-			|| (Cast<UBlueprintGeneratedClass>(Ancestor) != nullptr
-				&& !FAngelscriptManager::Get().IsBlueprintDependencyClass(const_cast<UClass*>(Ancestor))))
+			|| Cast<UBlueprintGeneratedClass>(Ancestor) != nullptr)
 		{
 			return false;
 		}
@@ -1499,7 +1232,7 @@ bool UASClass::HasValidScriptClassCarrier() const
 			|| CppClassStaticFunctions.GetAddReferencedObjects()
 				== CodeSuperClass->CppClassStaticFunctions.GetAddReferencedObjects());
 }
-                                                                                                       
+                                                                                                         
                                                                                                                  
 bool UASClass::HasValidScriptClassCarrierAncestry(
 	const UClass* SuperClass,
@@ -1513,8 +1246,7 @@ bool UASClass::HasValidScriptClassCarrierAncestry(
 	{
 		if (Visited.Contains(Ancestor))
 			return false;
-		if (Cast<UBlueprintGeneratedClass>(Ancestor) != nullptr
-			&& !FAngelscriptManager::Get().IsBlueprintDependencyClass(const_cast<UClass*>(Ancestor)))
+		if (Cast<UBlueprintGeneratedClass>(Ancestor) != nullptr)
 		{
 			if (OutInvalidBlueprintAncestor != nullptr)
 				*OutInvalidBlueprintAncestor = Ancestor;
@@ -1525,7 +1257,9 @@ bool UASClass::HasValidScriptClassCarrierAncestry(
 	return true;
 }
                                                                                                                
-                                                                                                                     
+                                                                                                                       
+                                                                               
+#if SOLOAS_UE_AT_LEAST(5, 7)
 EStructPropertyLinkFlags UASClass::GetPropertyLinkFlags(UStruct* ContainerStruct, FProperty* Property) const
 {
 	const EStructPropertyLinkFlags Flags = Super::GetPropertyLinkFlags(ContainerStruct, Property);
@@ -1536,7 +1270,7 @@ EStructPropertyLinkFlags UASClass::GetPropertyLinkFlags(UStruct* ContainerStruct
 		// storage still require the ordinary property destructor chain.
 #if SOLOAS_LEGACY_TERMINAL_LIFECYCLE
 		TArray<const FStructProperty*> EncounteredStructs;
-		if (Property->ContainsFinishDestroy(EncounteredStructs))
+		if (SoloASBridge::Compat::PropertyContainsFinishDestroy(Property, EncounteredStructs))
 		{
 			if (UeDelayedDestroyFields.Contains(Property))
 				return Flags;
@@ -1551,8 +1285,10 @@ EStructPropertyLinkFlags UASClass::GetPropertyLinkFlags(UStruct* ContainerStruct
 	}
 	return Flags;
 }
-                                                                                                                   
-                                                                                                                
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                                     
+                                                                                                                  
 static thread_local UObject* ConstructingScriptClassDefaultObject = nullptr;
 
 UObject* UASClass::CreateDefaultObject()
@@ -1589,7 +1325,7 @@ UObject* UASClass::CreateDefaultObject()
 		RF_Public | RF_ClassDefaultObject | RF_ArchetypeObject);
 	std::atomic_thread_fence(std::memory_order_release);
 	TSAN_BEFORE(DefaultObject);
-	SetDefaultObject(DefaultObject);
+	SoloASBridge::Compat::SetClassDefaultObject(this, DefaultObject);
 	for (TFieldIterator<FMulticastSparseDelegateProperty> It(this,
 		EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated); It; ++It)
 	{
@@ -1600,7 +1336,7 @@ UObject* UASClass::CreateDefaultObject()
 	}
 	{
 		TGuardValue<UObject*> ConstructionScope(ConstructingScriptClassDefaultObject, DefaultObject);
-		// Haze CreateDefaultObject excludes script CDOs from InitializeProperties.
+		// UE-AS fork CreateDefaultObject excludes script CDOs from InitializeProperties.
 		// Native and script constructors run once; the initializer still owns
 		// config loading, subobject initialization, PostInitProperties and tracking.
 		(*ClassConstructor)(FObjectInitializer(DefaultObject, ParentDefault, EObjectInitializerOptions::None));
@@ -1608,26 +1344,12 @@ UObject* UASClass::CreateDefaultObject()
 	if (GetOutermost()->HasAnyPackageFlags(PKG_CompiledIn)
 		&& !GetOutermost()->HasAnyPackageFlags(PKG_RuntimeGenerated))
 	{
-		NotifyRegistrationEvent(GetOutermost()->GetFName(), GetDefaultObjectName(),
-			ENotifyRegistrationType::NRT_ClassCDO, ENotifyRegistrationPhase::NRP_Finished,
-			nullptr, false, DefaultObject);
+		SoloASBridge::Compat::NotifyClassDefaultObjectRegistered(this, DefaultObject);
 	}
 	DefaultObject->PostCDOContruct();
 	return DefaultObject;
 }
-                                                                                                              
-                                                                                                       
-#include "Extensions/AngelscriptExtensionHooks.h"
-static void DispatchScriptDefaultObjectConstruction(const FObjectInitializer& Initializer)
-{
-    if (ConstructingScriptClassDefaultObject != Initializer.GetObj()) return;
-    FAngelscriptTypeGenerationContext Context;
-    Context.Point = EAngelscriptTypeGenerationPoint::ConstructDefaultObject;
-    Context.ObjectInitializer = &Initializer;
-    FString Error;
-    if (!DispatchAngelscriptTypeGeneration(Context, Error)) UE_LOG(Angelscript, Fatal, TEXT("%s"), *Error);
-}
-                                                                                                     
+                                                                                                                
                                                                                                                      
 bool UASClass::TryGetLifetimeScriptReplicationList(
 	const UASClass* ScriptClass,
@@ -1946,7 +1668,9 @@ void* UASClass::AllocScriptObject(class asITypeInfo* ScriptType, size_t Size)
 
 static FORCEINLINE_DEBUGGABLE void ExecuteDefaultsFunctions(UObject* Object, UASClass* Class)
 {
+                                                                                                             
 	SoloASBridge::FScopedScriptDefaultConstruction NativeDefaultCalls(Object);
+                                                                                                           
 	UASClass* DefaultsClass = Class;
 	UASClass* ParentDefaults = Cast<UASClass>(Class->GetSuperClass());
 
@@ -2146,8 +1870,8 @@ static bool IsScriptRuntimeScalarProperty(
 		|| OwnerClass == nullptr
 		|| !ScriptClass->IsChildOf(OwnerClass)
 		|| Property->ArrayDim != 1
-		|| Property->GetSize() != Property->GetElementSize()
-		|| !Property->IsInContainer(ScriptClass)
+		|| Property->GetSize() != SoloASBridge::Compat::GetPropertyElementSize(Property)
+		|| !SoloASBridge::Compat::IsPropertyInContainer(Property, ScriptClass)
 		|| PropertyOffset < static_cast<SIZE_T>(ScriptClass->ScriptPropertyOffset)
 		|| PropertyEnd > static_cast<SIZE_T>(ScriptClass->GetPropertiesSize())
 		|| PropertyEnd > static_cast<SIZE_T>(TypeCookie->GetSize())
@@ -2165,7 +1889,7 @@ static bool IsScriptRuntimeScalarProperty(
 			| CPF_NonPIEDuplicateTransient
 			| CPF_TextExportTransient
 			| CPF_SkipSerialization
-			| CPF_Virtual)
+			| SoloASBridge::Compat::VirtualPropertyFlag)
 		|| Property->ContainsInstancedObjectProperty()
 		|| Property->HasGetter()
 		|| Property->HasSetter()
@@ -2180,7 +1904,7 @@ static bool IsScriptRuntimeScalarProperty(
 	}
 
 	TArray<const FStructProperty*> EncounteredFinishDestroyProps;
-	if (Property->ContainsFinishDestroy(EncounteredFinishDestroyProps))
+	if (SoloASBridge::Compat::PropertyContainsFinishDestroy(Property, EncounteredFinishDestroyProps))
 		return false;
 
 	TArray<const FStructProperty*> EncounteredStructProps;
@@ -2262,7 +1986,7 @@ static void RestoreScriptRuntimeScalarState(
 				!= Snapshot.PropertyTraits
 			|| CurrentProperty->GetOffset_ForInternal() != Snapshot.Offset
 			|| CurrentProperty->GetSize() != Snapshot.Size
-			|| CurrentProperty->GetElementSize() != Snapshot.ElementSize
+			|| SoloASBridge::Compat::GetPropertyElementSize(CurrentProperty) != Snapshot.ElementSize
 			|| CurrentProperty->ArrayDim != Snapshot.ArrayDim
 			|| static_cast<uint64>(CurrentProperty->GetPropertyFlags())
 				!= Snapshot.PropertyFlags)
@@ -2293,9 +2017,9 @@ static void RestoreScriptRuntimeScalarState(
 					== Snapshot.BoolFieldMask
 				&& static_cast<uint32>(BoolProperty->GetByteOffset())
 					== Snapshot.BoolByteOffset
-				&& static_cast<uint32>(BoolProperty->GetBoolFieldSize())
+				&& static_cast<uint32>(SoloASBridge::Compat::GetBoolFieldSize(BoolProperty))
 					== Snapshot.BoolFieldSize
-				&& static_cast<uint32>(BoolProperty->GetByteMask())
+				&& static_cast<uint32>(SoloASBridge::Compat::GetBoolByteMask(BoolProperty))
 					== Snapshot.BoolByteMask)
 			{
 				BoolProperty->SetPropertyValue_InContainer(
@@ -2370,7 +2094,6 @@ void AngelscriptRuntimeGcMirror::ReconstructReinstancedScriptClassPair(
 		return;
 	}
 
-	TraceScriptConstructionProperty(NewObject, TEXT("pair-before-reconstruction"));
 	// Stock has constructed NewObject with NewType and copied reflected values.
 	// Pair admission requires its completed initializer and exact Pending mirror;
 	// Reserve published the batch and claimed that mirror for finalization.
@@ -2392,7 +2115,7 @@ void AngelscriptRuntimeGcMirror::ReconstructReinstancedScriptClassPair(
 			TEXT("REINSTANCED_PAIR_CLASS_REFERENCE_RESTORE_FAILED"),
 			NewObject);
 	}
-	TraceScriptConstructionProperty(NewObject, TEXT("pair-after-reconstruction"));
+
 }
                                                                                                        
 
@@ -2669,14 +2392,17 @@ void UASClass::StaticActorConstructor(const FObjectInitializer& Initializer)
 	FAngelscriptExecutionReadScope ConstructionTypeLifetimeScope;
                                                                                                                
 	UASClass* Class = GetFirstASClass(Object);
-                                                                                                                       
+                                                                                                                         
+	// A removed class completes native construction without a script type.
+	const bool bRemovedScriptClass = IsRemovedRuntimeScriptClass(Class);
 	if (Class == nullptr || Class->CodeSuperClass == nullptr
-		|| Class->CodeSuperClass->ClassConstructor == nullptr || Class->ScriptTypePtr == nullptr
-		|| static_cast<asITypeInfo*>(Class->ScriptTypePtr)->GetUserData() != Class)
+		|| Class->CodeSuperClass->ClassConstructor == nullptr
+		|| (!bRemovedScriptClass && (Class->ScriptTypePtr == nullptr
+			|| static_cast<asITypeInfo*>(Class->ScriptTypePtr)->GetUserData() != Class)))
 	{
 		UE_LOG(Angelscript, Fatal, TEXT("ASR-CONSTRUCTION-TYPE-NOT-READY: %s"), *Object->GetPathName());
 	}
-                                                                                                                     
+                                                                                                                       
 	asCObjectType* ScriptType = (asCObjectType*)Class->ScriptTypePtr;
 	AActor* Actor = (AActor*)Object;
 
@@ -2692,9 +2418,6 @@ void UASClass::StaticActorConstructor(const FObjectInitializer& Initializer)
 
 	// We need to run the C++ constructor first so everything is valid
 	Class->CodeSuperClass->ClassConstructor(Initializer);
-                                                                                                     
-	DispatchScriptDefaultObjectConstruction(Initializer);
-                                                                                                   
 	Actor->PrimaryActorTick.bCanEverTick = Class->bCanEverTick;
 	Actor->PrimaryActorTick.bStartWithTickEnabled = Class->bStartWithTickEnabled;
 
@@ -2720,28 +2443,58 @@ void UASClass::StaticActorConstructor(const FObjectInitializer& Initializer)
                                                                                                                     
 #endif
                                                                                                                   
-                                                                                                                 
-	const bool bOrdinaryBlueprintDefault = Object->HasAnyFlags(RF_ClassDefaultObject)
-		&& Object->GetClass()->GetClass() == UBlueprintGeneratedClass::StaticClass();
-	const bool bConstructedBeforePropertyInit = !bIsScriptAllocation
-		&& (bOrdinaryBlueprintDefault
-			|| ConstructingScriptClassDefaultObject == Object
-			|| Cast<UASClass>(Object->GetClass()) != nullptr
-			|| Object->GetClass()->GetClass() == USoloASScriptBlueprintGeneratedClass::StaticClass());
-	if (bConstructedBeforePropertyInit)
+                                                                                                                   
+	// As in the fork, a Blueprint class object runs the script construction and defaults here, and Stock then copies
+	// its Blueprint archetype and templates over them. A script class object applies its defaults after Stock property
+	// initialization, which copies the values of its script class defaults over it where the fork copies nothing.
+	const bool bScriptClassObject = Cast<UASClass>(Object->GetClass()) != nullptr;
+	if (bRemovedScriptClass)
+	{
+		if (!bIsScriptAllocation)
+		{
+			ConstructRemovedRuntimeScriptFields(Object, Class);
+			RelinkDefaultComponentProperties(Actor, Class);
+			// As in the fork, the defaults of surviving script ancestors still apply; the removed class has none.
+			if (bApplyDefaults && !bScriptClassObject)
+				ExecuteDefaultsFunctions(Object, Class);
+		}
+	}
+	else if (!bIsScriptAllocation)
 	{
 		RelinkDefaultComponentProperties(Actor, Class);
 		ExecuteConstructFunction(Object, Class);
-		// The engine copies inherited Blueprint overrides after this constructor.
-		if (bOrdinaryBlueprintDefault && bApplyDefaults)
+		if (bApplyDefaults && !bScriptClassObject)
 			ExecuteDefaultsFunctions(Object, Class);
 	}
-                                                                                                               
+                                                                                                                 
                                                                                                            
-	if (!bIsScriptAllocation)
+	if (bRemovedScriptClass && !bIsScriptAllocation)
 	{
+		// Untracked: such an object never uses a script type. Default subobjects are reinitialized after this.
+		RecordRemovedClassConstruction(Object);
 		UBlueprintGeneratedClass* BlueprintClass = Cast<UBlueprintGeneratedClass>(Object->GetClass());
-		if (BlueprintClass != nullptr && !BlueprintClass->IsChildOf(Class))
+		UObject* BlueprintDefault = BlueprintClass != nullptr ? BlueprintClass->GetDefaultObject(false) : nullptr;
+		SoloASBridge::Compat::AddActorPostInitCallback(
+            const_cast<FObjectInitializer&>(Initializer), Object, Class,
+			[Object, Class, bApplyDefaults, bScriptClassObject, BlueprintClass, BlueprintDefault]()
+			{
+				RelinkDefaultComponentProperties(CastChecked<AActor>(Object), Class);
+				if (bApplyDefaults)
+				{
+					FAngelscriptExecutionReadScope PostInitTypeLifetimeScope;
+					if (bScriptClassObject)
+						ExecuteDefaultsFunctions(Object, Class);
+					RestoreScriptBlueprintDefaultProperties(Object, Class, BlueprintClass, BlueprintDefault);
+				}
+			});
+	}
+	else if (!bIsScriptAllocation)
+	{
+		// Stock lists the native properties an ordinary Blueprint instance copies against the first native ancestor;
+		// the fork lists them against the script parent. Its deltas from the script defaults are copied after Stock.
+		UBlueprintGeneratedClass* BlueprintClass = Cast<UBlueprintGeneratedClass>(Object->GetClass());
+		if (BlueprintClass != nullptr && (!BlueprintClass->IsChildOf(Class) || Object->HasAnyFlags(RF_ClassDefaultObject)
+			|| BlueprintClass->GetClass() == USoloASScriptBlueprintGeneratedClass::StaticClass()))
 		{
 			BlueprintClass = nullptr;
 		}
@@ -2749,8 +2502,9 @@ void UASClass::StaticActorConstructor(const FObjectInitializer& Initializer)
 			? BlueprintClass->GetDefaultObject(false)
 			: nullptr;
 		// Actor construction runs after stock property initialization.
-		const_cast<FObjectInitializer&>(Initializer).AddPropertyPostInitCallback(
-			[Object, bApplyDefaults, bConstructedBeforePropertyInit, bOrdinaryBlueprintDefault, BlueprintClass, BlueprintDefault]()
+		SoloASBridge::Compat::AddActorPostInitCallback(
+            const_cast<FObjectInitializer&>(Initializer), Object, Class,
+			[Object, bApplyDefaults, bScriptClassObject, BlueprintClass, BlueprintDefault]()
 			{
 				FAngelscriptExecutionReadScope PostInitTypeLifetimeScope;
 				UASClass* Anchor = GetFirstASClass(Object);
@@ -2767,35 +2521,13 @@ void UASClass::StaticActorConstructor(const FObjectInitializer& Initializer)
 				{
 					return;
 				}
-				if (bConstructedBeforePropertyInit)
-				{
-					// Stock reinitializes default subobjects from their templates before this callback.
-					// Apply actor defaults once, after those copies, to the final component receivers.
-					RelinkDefaultComponentProperties(CastChecked<AActor>(Object), Anchor);
-					if (bApplyDefaults && !bOrdinaryBlueprintDefault)
-						ExecuteDefaultsFunctions(Object, Anchor);
-					AngelscriptRuntimeGcMirror::TrackRuntimeObjectWithMirror(Object, Type);
-					return;
-				}
-				TraceScriptConstructionProperty(Object, TEXT("callback-entry"));
-				const TArray<FScriptStockPropertySnapshot> StockPropertySnapshots =
-					CaptureScriptStockProperties(Object);
-				if (AActor* Actor = Cast<AActor>(Object))
-				{
-					RelinkDefaultComponentProperties(Actor, Anchor);
-				}
-				ExecuteConstructFunction(Object, Anchor);
-				TraceScriptConstructionProperty(Object, TEXT("after-construct"));
-				if (bApplyDefaults)
+				// Stock reinitializes default subobjects from their templates before this callback. A script class
+				// object applies its defaults once, after those copies, to the final component receivers.
+				RelinkDefaultComponentProperties(CastChecked<AActor>(Object), Anchor);
+				if (bApplyDefaults && bScriptClassObject)
 					ExecuteDefaultsFunctions(Object, Anchor);
-				TraceScriptConstructionProperty(
-					Object,
-					bApplyDefaults ? TEXT("after-defaults") : TEXT("defaults-skipped"));
-				RestoreScriptStockProperties(Object, StockPropertySnapshots);
 				RestoreScriptBlueprintDefaultProperties(Object, Anchor, BlueprintClass, BlueprintDefault);
-				TraceScriptConstructionProperty(Object, TEXT("after-stock-restore"));
-				AngelscriptRuntimeGcMirror::TrackRuntimeObjectWithMirror(
-					Object, Type);
+				AngelscriptRuntimeGcMirror::TrackRuntimeObjectWithMirror(Object, Type);
 			});
 	}
                                                                                                          
@@ -2808,14 +2540,17 @@ void UASClass::StaticComponentConstructor(const FObjectInitializer& Initializer)
 	FAngelscriptExecutionReadScope ConstructionTypeLifetimeScope;
                                                                                                                    
 	UASClass* Class = GetFirstASClass(Object);
-                                                                                                                           
+                                                                                                                             
+	// A removed class completes native construction without a script type.
+	const bool bRemovedScriptClass = IsRemovedRuntimeScriptClass(Class);
 	if (Class == nullptr || Class->CodeSuperClass == nullptr
-		|| Class->CodeSuperClass->ClassConstructor == nullptr || Class->ScriptTypePtr == nullptr
-		|| static_cast<asITypeInfo*>(Class->ScriptTypePtr)->GetUserData() != Class)
+		|| Class->CodeSuperClass->ClassConstructor == nullptr
+		|| (!bRemovedScriptClass && (Class->ScriptTypePtr == nullptr
+			|| static_cast<asITypeInfo*>(Class->ScriptTypePtr)->GetUserData() != Class)))
 	{
 		UE_LOG(Angelscript, Fatal, TEXT("ASR-CONSTRUCTION-TYPE-NOT-READY: %s"), *Object->GetPathName());
 	}
-                                                                                                                         
+                                                                                                                           
 	asCObjectType* ScriptType = (asCObjectType*)Class->ScriptTypePtr;
 	UActorComponent* Component = (UActorComponent*)Object;
 
@@ -2828,9 +2563,6 @@ void UASClass::StaticComponentConstructor(const FObjectInitializer& Initializer)
 
 	// We need to run the C++ constructor first so everything is valid
 	Class->CodeSuperClass->ClassConstructor(Initializer);
-                                                                                                         
-	DispatchScriptDefaultObjectConstruction(Initializer);
-                                                                                                       
 	Component->PrimaryComponentTick.bCanEverTick = Class->bCanEverTick;
 	Component->PrimaryComponentTick.bStartWithTickEnabled = Class->bStartWithTickEnabled;
 
@@ -2853,20 +2585,35 @@ void UASClass::StaticComponentConstructor(const FObjectInitializer& Initializer)
                                                                                                                         
 #endif
                                                                                                                       
-                                                                                                                     
+                                                                                                                       
 	const bool bConstructedBeforePropertyInit = !bIsScriptAllocation
 		&& (ConstructingScriptClassDefaultObject == Object
 			|| Cast<UASClass>(Object->GetClass()) != nullptr
 			|| Object->GetClass()->GetClass() == USoloASScriptBlueprintGeneratedClass::StaticClass());
-	if (bConstructedBeforePropertyInit)
+	if (bRemovedScriptClass)
+	{
+		if (!bIsScriptAllocation)
+		{
+			ConstructRemovedRuntimeScriptFields(Object, Class);
+			// As in the fork, the defaults of surviving script ancestors still apply; the removed class has none.
+			if (bApplyDefaults)
+				ExecuteDefaultsFunctions(Object, Class);
+		}
+	}
+	else if (bConstructedBeforePropertyInit)
 	{
 		ExecuteConstructFunction(Object, Class);
 		if (bApplyDefaults)
 			ExecuteDefaultsFunctions(Object, Class);
 	}
-                                                                                                                   
+                                                                                                                     
                                                                                                                
-	if (!bIsScriptAllocation)
+	if (bRemovedScriptClass && !bIsScriptAllocation)
+	{
+		// Untracked: such an object never uses a script type.
+		RecordRemovedClassConstruction(Object);
+	}
+	else if (!bIsScriptAllocation)
 	{
 		UBlueprintGeneratedClass* BlueprintClass = Cast<UBlueprintGeneratedClass>(Object->GetClass());
 		if (BlueprintClass != nullptr && !BlueprintClass->IsChildOf(Class))
@@ -2877,7 +2624,8 @@ void UASClass::StaticComponentConstructor(const FObjectInitializer& Initializer)
 			? BlueprintClass->GetDefaultObject(false)
 			: nullptr;
 		// Component construction runs after stock property initialization.
-		const_cast<FObjectInitializer&>(Initializer).AddPropertyPostInitCallback(
+		SoloASBridge::Compat::AddActorPostInitCallback(
+            const_cast<FObjectInitializer&>(Initializer), Object, Class,
 			[Object, bApplyDefaults, bConstructedBeforePropertyInit, BlueprintClass, BlueprintDefault]()
 			{
 				FAngelscriptExecutionReadScope PostInitTypeLifetimeScope;
@@ -2900,19 +2648,14 @@ void UASClass::StaticComponentConstructor(const FObjectInitializer& Initializer)
 					AngelscriptRuntimeGcMirror::TrackRuntimeObjectWithMirror(Object, Type);
 					return;
 				}
-				TraceScriptConstructionProperty(Object, TEXT("callback-entry"));
-				const TArray<FScriptStockPropertySnapshot> StockPropertySnapshots =
-					CaptureScriptStockProperties(Object);
+
 				ExecuteConstructFunction(Object, Anchor);
-				TraceScriptConstructionProperty(Object, TEXT("after-construct"));
+
 				if (bApplyDefaults)
 					ExecuteDefaultsFunctions(Object, Anchor);
-				TraceScriptConstructionProperty(
-					Object,
-					bApplyDefaults ? TEXT("after-defaults") : TEXT("defaults-skipped"));
-				RestoreScriptStockProperties(Object, StockPropertySnapshots);
+
 				RestoreScriptBlueprintDefaultProperties(Object, Anchor, BlueprintClass, BlueprintDefault);
-				TraceScriptConstructionProperty(Object, TEXT("after-stock-restore"));
+
 				AngelscriptRuntimeGcMirror::TrackRuntimeObjectWithMirror(
 					Object, Type);
 			});
@@ -2927,16 +2670,18 @@ void UASClass::StaticObjectConstructor(const FObjectInitializer& Initializer)
 	FAngelscriptExecutionReadScope ConstructionTypeLifetimeScope;
                                                                                                                 
 	UASClass* Class = GetFirstASClass(Object);
-                                                                                                                        
+                                                                                                                          
+	// A removed class completes native construction without a script type.
+	const bool bRemovedScriptClass = IsRemovedRuntimeScriptClass(Class);
 	if (Class == nullptr || Class->CodeSuperClass == nullptr
 		|| Class->CodeSuperClass->ClassConstructor == nullptr
 		|| (Class->bIsModuleStaticCarrier
 			? (Class->ScriptTypePtr != nullptr || Class->CodeSuperClass != UObject::StaticClass())
-			: (Class->ScriptTypePtr == nullptr || Class->ScriptTypePtr->GetUserData() != Class)))
+			: (!bRemovedScriptClass && (Class->ScriptTypePtr == nullptr || Class->ScriptTypePtr->GetUserData() != Class))))
 	{
 		UE_LOG(Angelscript, Fatal, TEXT("ASR-CONSTRUCTION-TYPE-NOT-READY: %s"), *Object->GetPathName());
 	}
-                                                                                                                      
+                                                                                                                        
 	asCObjectType* ScriptType = (asCObjectType*)Class->ScriptTypePtr;
 
 #if AS_CAN_HOTRELOAD
@@ -2948,9 +2693,6 @@ void UASClass::StaticObjectConstructor(const FObjectInitializer& Initializer)
 
 	// We need to run the C++ constructor first so everything is valid
 	Class->CodeSuperClass->ClassConstructor(Initializer);
-                                                                                                      
-	DispatchScriptDefaultObjectConstruction(Initializer);
-                                                                                                    
 
 	// Construct the C++ part of the angelscript scriptobject
 	const bool bIsScriptAllocation = CurrentObjectInitializers.Num() != 0 && CurrentObjectInitializers.Last().GetObj() == Object;
@@ -2971,20 +2713,35 @@ void UASClass::StaticObjectConstructor(const FObjectInitializer& Initializer)
                                                                                                                      
 #endif
                                                                                                                    
-                                                                                                                  
+                                                                                                                    
 	const bool bConstructedBeforePropertyInit = !bIsScriptAllocation
 		&& (ConstructingScriptClassDefaultObject == Object
 			|| Cast<UASClass>(Object->GetClass()) != nullptr
 			|| Object->GetClass()->GetClass() == USoloASScriptBlueprintGeneratedClass::StaticClass());
-	if (bConstructedBeforePropertyInit)
+	if (bRemovedScriptClass)
+	{
+		if (!bIsScriptAllocation)
+		{
+			ConstructRemovedRuntimeScriptFields(Object, Class);
+			// As in the fork, the defaults of surviving script ancestors still apply; the removed class has none.
+			if (bApplyDefaults)
+				ExecuteDefaultsFunctions(Object, Class);
+		}
+	}
+	else if (bConstructedBeforePropertyInit)
 	{
 		ExecuteConstructFunction(Object, Class);
 		if (bApplyDefaults)
 			ExecuteDefaultsFunctions(Object, Class);
 	}
-                                                                                                                
+                                                                                                                  
                                                                                                             
-	if (!bIsScriptAllocation)
+	if (bRemovedScriptClass && !bIsScriptAllocation)
+	{
+		// Untracked: such an object never uses a script type.
+		RecordRemovedClassConstruction(Object);
+	}
+	else if (!bIsScriptAllocation)
 	{
 		if (ScriptType == nullptr)
 		{
@@ -2999,7 +2756,8 @@ void UASClass::StaticObjectConstructor(const FObjectInitializer& Initializer)
 			? BlueprintClass->GetDefaultObject(false)
 			: nullptr;
 		// Object construction runs after stock property initialization.
-		const_cast<FObjectInitializer&>(Initializer).AddPropertyPostInitCallback(
+		SoloASBridge::Compat::AddActorPostInitCallback(
+            const_cast<FObjectInitializer&>(Initializer), Object, Class,
 			[Object, bApplyDefaults, bConstructedBeforePropertyInit, BlueprintClass, BlueprintDefault]()
 			{
 				FAngelscriptExecutionReadScope PostInitTypeLifetimeScope;
@@ -3022,19 +2780,14 @@ void UASClass::StaticObjectConstructor(const FObjectInitializer& Initializer)
 					AngelscriptRuntimeGcMirror::TrackRuntimeObjectWithMirror(Object, Type);
 					return;
 				}
-				TraceScriptConstructionProperty(Object, TEXT("callback-entry"));
-				const TArray<FScriptStockPropertySnapshot> StockPropertySnapshots =
-					CaptureScriptStockProperties(Object);
+
 				ExecuteConstructFunction(Object, Anchor);
-				TraceScriptConstructionProperty(Object, TEXT("after-construct"));
+
 				if (bApplyDefaults)
 					ExecuteDefaultsFunctions(Object, Anchor);
-				TraceScriptConstructionProperty(
-					Object,
-					bApplyDefaults ? TEXT("after-defaults") : TEXT("defaults-skipped"));
-				RestoreScriptStockProperties(Object, StockPropertySnapshots);
+
 				RestoreScriptBlueprintDefaultProperties(Object, Anchor, BlueprintClass, BlueprintDefault);
-				TraceScriptConstructionProperty(Object, TEXT("after-stock-restore"));
+
 				AngelscriptRuntimeGcMirror::TrackRuntimeObjectWithMirror(
 					Object, Type);
 			});

@@ -1,8 +1,9 @@
 #include "Shared/SoloASScriptBlueprint.h"
-#include "Runtime/Launch/Resources/Version.h"
-#include "Serialization/AsyncLoadingEvents.h"
+#include "SoloASEngineCompat.h"
+#include "Compat/SoloASRuntimeCompat.h"
+
 #include "UObject/ObjectSaveContext.h"
-#include "Serialization/AsyncLoadingEvents.h"
+
 
 #if WITH_EDITOR
 bool USoloASScriptBlueprintGeneratedClass::AttachDefaultObjectScope(FSoloASBlueprintDefaultObjectScope* Scope)
@@ -23,14 +24,41 @@ void USoloASScriptBlueprintGeneratedClass::DetachDefaultObjectScope(FSoloASBluep
 #if SOLOASBRIDGE_ENGINE_PROFILE_MATCHED \
     && USE_CIRCULAR_DEPENDENCY_LOAD_DEFERRING
 #include "Shared/SoloASPrivateAccess.h"
+                                                                                                                                                        
+#if SOLOAS_UE_BEFORE(5, 6)
+#include "AutoRTFM/AutoRTFM.h"
+#else
 #include "AutoRTFM.h"
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                                                                                 
+#if SOLOAS_UE_AT_LEAST(5, 5)
 #include "Misc/ConfigAccessTracking.h"
+#endif
+// SOLOAS-COMPAT-END
 #include "Misc/ScopeLock.h"
+                                                                                                                                                                                
+#if SOLOAS_UE_BEFORE(5, 6)
+using FBlueprintSerializeCriticalSection = FCriticalSection;
+#else
 #include "Misc/TransactionallySafeCriticalSection.h"
+using FBlueprintSerializeCriticalSection = FTransactionallySafeCriticalSection;
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                                                                                                 
+#if SOLOAS_UE_BEFORE(5, 8)
+#include "UObject/Class.h"
+#else
 #include "UObject/ObjectInstancingGraph.h"
+#endif
+// SOLOAS-COMPAT-END
 #include "UObject/OverridableManager.h"
 #include "UObject/Package.h"
+                                                                                                                                                                                                    
+#if SOLOAS_UE_AT_LEAST(5, 6)
 #include "UObject/PropertyStateTracking.h"
+#endif
+// SOLOAS-COMPAT-END
 #include "UObject/SparseDelegate.h"
 #include "UObject/UObjectThreadContext.h"
 #include "UObject/UnrealType.h"
@@ -46,13 +74,19 @@ struct FGraphTag
 { using Type = FObjectInstancingGraph* FObjectInitializer::*; friend Type Resolve(FGraphTag) noexcept; };
 struct FCallbackTag
 { using Type = TFunction<void()> FObjectInitializer::*; friend Type Resolve(FCallbackTag) noexcept; };
+                                                                                                                                                                             
+#if SOLOAS_UE_BEFORE(5, 5)
+
+#else
 struct FPostCallbacksTag
 { using Type = TArray<TFunction<void()>> FObjectInitializer::*; friend Type Resolve(FPostCallbacksTag) noexcept; };
+#endif
+// SOLOAS-COMPAT-END
 struct FInitPropertyTag
 { using Type = bool (*)(FProperty*, UObject*); friend Type Resolve(FInitPropertyTag) noexcept; };
 struct FBlueprintSerializeAndPostLoadCriticalTag
 {
-    using Type = FTransactionallySafeCriticalSection UBlueprintGeneratedClass::*;
+    using Type = FBlueprintSerializeCriticalSection UBlueprintGeneratedClass::*;
     friend Type Resolve(FBlueprintSerializeAndPostLoadCriticalTag) noexcept;
 };
 template struct TMember<FLastObjectTag, &FObjectInitializer::LastConstructedObject>;
@@ -60,7 +94,13 @@ template struct TMember<FInitializeTag, &FObjectInitializer::bShouldInitializePr
 template struct TMember<FDeferredTag, &FObjectInitializer::bIsDeferredInitializer>;
 template struct TMember<FGraphTag, &FObjectInitializer::InstanceGraph>;
 template struct TMember<FCallbackTag, &FObjectInitializer::PropertyInitCallback>;
+                                                                                                                                                                           
+#if SOLOAS_UE_BEFORE(5, 5)
+
+#else
 template struct TMember<FPostCallbacksTag, &FObjectInitializer::PropertyPostInitCallbacks>;
+#endif
+// SOLOAS-COMPAT-END
 template struct TMember<FInitPropertyTag, &FObjectInitializer::InitNonNativeProperty>;
 template struct TMember<FBlueprintSerializeAndPostLoadCriticalTag,
     &UBlueprintGeneratedClass::SerializeAndPostLoadCritical>;
@@ -85,7 +125,7 @@ public:
     }
 
 private:
-    UE::TScopeLock<FTransactionallySafeCriticalSection> Lock;
+    UE::TScopeLock<FBlueprintSerializeCriticalSection> Lock;
 };
 
 FName NativePropertyOverrideId(const FProperty& Property)
@@ -108,7 +148,7 @@ bool IsNativeInheritedDefaultProperty(const FProperty& Property, const UClass& P
         && OwnerClass->HasAnyClassFlags(CLASS_Native | CLASS_Intrinsic)
         && !bConfig
         && (!bTransient || !Property.ContainsInstancedObjectProperty())
-        && Property.IsInContainer(&Parent);
+        && SoloASBridge::Compat::IsPropertyInContainer(&Property, &Parent);
 }
 
 void RequireConstructionState(bool bValid)
@@ -150,6 +190,11 @@ struct FInitializerAccess final
     {
         if (!Class.HasAnyClassFlags(CLASS_HasInstancedReference))
             return;
+// SOLOAS-COMPAT-BEGIN(<5.5) The actor adapter already owns the legacy instancing/post-default phase [test: SoloAS.EngineCompat.ActorPostInitDefaults] [id: CS.Compatibility.Bridge.SoloASBlueprintDefaultObject.AbortPushScope]
+#if SOLOAS_UE_BEFORE(5, 5)
+        if (SoloASBridge::Compat::HasActorPostInitCallback(Initializer)) return;
+#endif
+// SOLOAS-COMPAT-END
         RequireConstructionState(HasOwnedState(Initializer) && !OwnedGraph.HasDestinationRoot());
         TFunction<void()> Original = MoveTemp(Callback(Initializer));
         Callback(Initializer) = [&Initializer, &Class, &OwnedGraph, Original = MoveTemp(Original)]() mutable
@@ -158,14 +203,25 @@ struct FInitializerAccess final
                 Original();
             RequireConstructionState(Graph(Initializer) == nullptr
                 && Initializer.GetObj()->HasAnyFlags(RF_ClassDefaultObject)
-                && !Initializer.GetObj()->HasAnyFlags(RF_NeedLoad | RF_ImmutableDefaultObject));
+                && !Initializer.GetObj()->HasAnyFlags(RF_NeedLoad | SoloASBridge::Compat::ImmutableDefaultObjectFlag));
             FObjectInstancingGraph* OriginalGraph = Graph(Initializer);
             Graph(Initializer) = &OwnedGraph;
             // Keep this graph through the stock DSO phase. Restore before user
             // post-init callbacks and Class::PostInitInstance see the initializer.
             TFunction<void()> RestoreGraph = [&Initializer, OriginalGraph]() { Graph(Initializer) = OriginalGraph; };
+                                                                                                                                                                       
+#if SOLOAS_UE_BEFORE(5, 5)
+            // Restore after the owned instancing pass, before stock PostInitProperties.
+#else
             PostCallbacks(Initializer).Insert(MoveTemp(RestoreGraph), 0);
+#endif
+// SOLOAS-COMPAT-END
             InstanceSubobjects(Initializer, &Class, true, false);
+                                                                                                                                                                           
+#if SOLOAS_UE_BEFORE(5, 5)
+            RestoreGraph();
+#endif
+// SOLOAS-COMPAT-END
         };
     }
 
@@ -174,18 +230,25 @@ private:
     { return SoloASBridge::PrivateAccess::Get<SoloASBridge::PrivateAccess::FGraphTag>(Initializer); }
     static TFunction<void()>& Callback(FObjectInitializer& Initializer)
     { return SoloASBridge::PrivateAccess::Get<SoloASBridge::PrivateAccess::FCallbackTag>(Initializer); }
+                                                                                                                                                                        
+#if SOLOAS_UE_BEFORE(5, 5)
+
+#else
     static TArray<TFunction<void()>>& PostCallbacks(FObjectInitializer& Initializer)
     { return SoloASBridge::PrivateAccess::Get<SoloASBridge::PrivateAccess::FPostCallbacksTag>(Initializer); }
+#endif
+// SOLOAS-COMPAT-END
 };
 
 void InitializeFromScriptParent(UClass& Class, UObject* Object, UClass* Parent, UObject* ParentDefault)
 {
-    if (FOverridableManager* Manager = FOverridableManager::TryGet())
-        Manager->InheritEnabledFrom(Object, ParentDefault);
-#if WITH_EDITORONLY_DATA
+    SoloASBridge::Compat::InheritObjectOverrides(Object, ParentDefault);
+                                                                                                                                                                    
+#if WITH_EDITORONLY_DATA && SOLOAS_UE_AT_LEAST(5, 6)
     UE::FInitializedPropertyValueState InitializedState(Object);
     UE::FInitializedPropertyValueState ParentState(ParentDefault);
 #endif
+    // SOLOAS-COMPAT-END
     // Match ordinary Blueprint CDO inheritance: construction establishes live
     // storage, then every inherited parent field receives the parent CDO value.
     // Blueprint-owned fields have no storage in the parent and are skipped.
@@ -198,10 +261,11 @@ void InitializeFromScriptParent(UClass& Class, UObject* Object, UClass* Parent, 
         const bool bTransient = Property->HasAnyPropertyFlags(
             CPF_Transient | CPF_DuplicateTransient | CPF_NonPIEDuplicateTransient);
         if ((!bTransient || !Property->ContainsInstancedObjectProperty())
-            && Property->IsInContainer(Parent))
+            && SoloASBridge::Compat::IsPropertyInContainer(Property, Parent))
         {
             Property->CopyCompleteValue_InContainer(Object, ParentDefault);
-#if WITH_EDITORONLY_DATA
+                                                                                                                                                                 
+#if WITH_EDITORONLY_DATA && SOLOAS_UE_AT_LEAST(5, 6)
             if (InitializedState.IsTracking())
             {
                 for (int32 Index = 0; Index < Property->ArrayDim; ++Index)
@@ -212,6 +276,7 @@ void InitializeFromScriptParent(UClass& Class, UObject* Object, UClass* Parent, 
                 }
             }
 #endif
+// SOLOAS-COMPAT-END
         }
     }
 }
@@ -231,15 +296,25 @@ void ConstructScriptParentDefault(UClass& Class, UObject* Object, UClass* Parent
         && Initializer.GetArchetype() == ParentDefault);
 
     // Match the engine destructor's native-construction boundary before any copy.
+                                                                                                                                                                                              
+#if SOLOAS_UE_BEFORE(5, 6)
+
+#else
     AutoRTFM::PopOnAbortHandler(&Context.IsInConstructor);
-    UE_AUTORTFM_OPEN
+#endif
+// SOLOAS-COMPAT-END
+    AutoRTFM::Open([&]()
     {
         --Context.IsInConstructor;
         Context.ConstructedObject = OuterObject;
-    };
+    });
     Object->ClearInternalFlags(EInternalObjectFlags::PendingConstruction);
     {
-        UE::ConfigAccessTracking::FIgnoreScope IgnoreConfigTracking;
+                                                                                                                                                                  
+#if SOLOAS_UE_AT_LEAST(5, 5)
+        [[maybe_unused]] UE::ConfigAccessTracking::FIgnoreScope IgnoreConfigTracking;
+#endif
+// SOLOAS-COMPAT-END
         InitializeFromScriptParent(Class, Object, Parent, ParentDefault);
         FInitializerAccess::InstallRootInstancing(Initializer, Class, OwnedGraph);
         FInitializerAccess::PostConstruct(Initializer);
@@ -248,11 +323,17 @@ void ConstructScriptParentDefault(UClass& Class, UObject* Object, UClass* Parent
         && Context.TopInitializer() == &Initializer && Context.IsInConstructor == OuterConstructorDepth
         && Context.ConstructedObject == OuterObject);
     // Consume both abort registrations, not just the visible TLS stack entry.
+                                                                                                                                                                                             
+#if SOLOAS_UE_BEFORE(5, 6)
+
+#else
     AutoRTFM::PopOnAbortHandler(&Initializer);
-    UE_AUTORTFM_OPEN
+#endif
+// SOLOAS-COMPAT-END
+    AutoRTFM::Open([&]()
     {
         Context.PopInitializer();
-    };
+    });
     RequireConstructionState(Context.TopInitializer() == OuterInitializer);
     FInitializerAccess::MarkConsumed(Initializer);
 }
@@ -306,7 +387,7 @@ UObject* USoloASScriptBlueprintGeneratedClass::CreateDefaultObject()
         RF_Public | RF_ClassDefaultObject | RF_ArchetypeObject);
     std::atomic_thread_fence(std::memory_order_release);
     TSAN_BEFORE(Object);
-    SetDefaultObject(Object);
+    SoloASBridge::Compat::SetClassDefaultObject(this, Object);
     for (TFieldIterator<FMulticastSparseDelegateProperty> It(this,
         EFieldIteratorFlags::ExcludeSuper, EFieldIteratorFlags::ExcludeDeprecated); It; ++It)
     {
@@ -319,8 +400,7 @@ UObject* USoloASScriptBlueprintGeneratedClass::CreateDefaultObject()
     if (GetOutermost()->HasAnyPackageFlags(PKG_CompiledIn)
         && !GetOutermost()->HasAnyPackageFlags(PKG_RuntimeGenerated))
     {
-        NotifyRegistrationEvent(GetOutermost()->GetFName(), GetDefaultObjectName(),
-            ENotifyRegistrationType::NRT_ClassCDO, ENotifyRegistrationPhase::NRP_Finished, nullptr, false, Object);
+        SoloASBridge::Compat::NotifyClassDefaultObjectRegistered(this, Object);
     }
     Object->PostCDOContruct();
     return PublishConstructed(Object);
@@ -411,7 +491,7 @@ void USoloASScriptBlueprintGeneratedClass::InitPropertiesFromCustomList(
 #endif
     // Blueprint-owned values were handled by the ordinary post-construction
     // loop. The stock BPGC custom list uses the first native ancestor and
-    // would replay script-parent values that Haze intentionally leaves to the
+    // would replay script-parent values that UE-AS fork intentionally leaves to the
     // inherited script defaults. Bridge owns the exact native override list.
     UClass::InitPropertiesFromCustomList(DataPtr, DefaultDataPtr);
 #if SOLOASBRIDGE_ENGINE_PROFILE_MATCHED \
@@ -427,7 +507,7 @@ void USoloASScriptBlueprintGeneratedClass::InitPropertiesFromCustomList(
         return;
     }
 
-    // Haze builds their native custom list against the script parent CDO. A
+    // UE-AS fork builds their native custom list against the script parent CDO. A
     // native field authored on this Blueprint CDO after that list was built
     // must still override the script constructor/defaults on new instances.
     for (FProperty* Property = Parent->PropertyLink; Property;

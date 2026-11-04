@@ -7,6 +7,8 @@
 class FProperty;
 class UFunction;
 
+ANGELSCRIPTCODE_API bool IsAngelscriptNativeCallerExcluded(const UFunction* Function);
+
 enum class EAngelscriptPropertyTrait : uint16
 {
 	None = 0,

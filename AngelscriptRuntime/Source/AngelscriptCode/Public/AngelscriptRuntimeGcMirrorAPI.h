@@ -71,6 +71,15 @@ struct FReinstancedScriptPairReplayToken
 	uint64 NewTrackSequence = 0;
 };
 
+// A callback's old pointer may be retired. Resolve the saved replacement serial
+// without dereferencing either raw address; a recycled address is a new instance.
+inline bool IsReinstancedScriptPairTombstoneIdentity(
+    const FObjectKey& RecordedNewKey, const void* NewIdentity)
+{
+    return NewIdentity != nullptr
+        && RecordedNewKey.ResolveObjectPtrEvenIfUnreachable() == NewIdentity;
+}
+
 enum class EReinstancedScriptPairReplayResult : uint8
 {
 	Missing,

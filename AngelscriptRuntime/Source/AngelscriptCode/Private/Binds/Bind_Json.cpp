@@ -555,7 +555,9 @@ struct FJsonObjectFieldIterator
 		{
 			return TEXT("");
 		}
-		return FString(CurrentValue.Key.ToView());
+                                                                                                                                               
+		return FString(CurrentValue.Key);
+// SOLOAS-COMPAT-END
 	}
 
 	FJsonValueContainer GetValue() const

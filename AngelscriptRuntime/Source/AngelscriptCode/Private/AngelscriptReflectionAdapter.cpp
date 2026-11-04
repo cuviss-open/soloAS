@@ -6,6 +6,9 @@
 #include "ClassGenerator/ASStruct.h"
 #include "Shared/SoloASBridgeReflection.h"
 #include "Runtime/SoloASBridgeScriptMetadata.h"
+                                                                                                                  
+#include "Runtime/SoloASBridgeCallableDispatch.h"
+                                                                                                                
 #include "UObject/Class.h"
 #include "UObject/UnrealType.h"
 
@@ -27,7 +30,8 @@ constexpr uint16 KnownPropertyTraitMask =
 
 constexpr uint16 NativeFunctionTraitMask =
 	static_cast<uint16>(ESoloASBridgeFunctionTrait::ScriptCallable)
-	| static_cast<uint16>(ESoloASBridgeFunctionTrait::WorldContext);
+	| static_cast<uint16>(ESoloASBridgeFunctionTrait::WorldContext)
+	| static_cast<uint16>(ESoloASBridgeFunctionTrait::NoNativeCaller);
 
 static_assert(
 	KnownPropertyTraitMask == SoloASBridgePropertyTraitMask,
@@ -56,6 +60,14 @@ bool TryGetParameterOrdinal(
 {
 	if (Function == nullptr || Property == nullptr)
 		return false;
+
+                                                                                                                  
+	if (Property == Function->GetReturnProperty())
+	{
+		OutOrdinal = MAX_uint32;
+		return true;
+	}
+                                                                                                                
 
 	uint32 Ordinal = 0;
 	for (TFieldIterator<FProperty> It(Function); It; ++It)
@@ -89,7 +101,7 @@ uint16 GetNativeSidecarPropertyTraits(const FProperty* Property)
 	if (!TryGetParameterOrdinal(Function, Property, ParameterOrdinal))
 		return 0;
 
-	const FString OwnerName = GetReflectedCppName(Function->GetOuterUClass());
+	const FString OwnerName = GetReflectedCppName(Cast<UClass>(Function->GetOuter()));
 	const FString FunctionName = Function->GetName();
 	const FString PropertyName = Property->GetName();
 	const auto Metadata = SoloASBridge::GetScriptMetadata();
@@ -119,6 +131,13 @@ uint16 GetNativeSidecarPropertyTraits(const FProperty* Property)
 		}
 		if (Order == 0)
 		{
+                                                                                                                 
+			// A: outside the compiled native-call closure retain the existing value-return ABI.
+			if (Property->HasAnyPropertyFlags(CPF_ReturnParm)
+				&& EnumHasAnyFlags(Descriptor.Traits, ESoloASBridgePropertyTrait::CppRef)
+				&& SoloASBridge::GetNativeReferenceCaller(Function) == nullptr)
+				return 0;
+                                                                                                               
 			return static_cast<uint16>(Descriptor.Traits)
 				& NativePropertyTraitMask;
 		}
@@ -135,7 +154,12 @@ uint16 GetNativeSidecarFunctionTraits(const UFunction* Function)
 	if (Function == nullptr)
 		return 0;
 
-	const FString OwnerName = GetReflectedCppName(Function->GetOwnerStruct());
+                                                                                                                
+	const UClass* Owner = Function->GetTypedOuter<UClass>();
+	if (Owner == nullptr)
+		return 0;
+	const FString OwnerName = GetReflectedCppName(Owner);
+                                                                                                              
 	const FString FunctionName = Function->GetName();
 	const auto Metadata = SoloASBridge::GetScriptMetadata();
 	const auto& Descriptors = Metadata->FunctionTraits;
@@ -240,6 +264,11 @@ EAngelscriptPropertyTrait GetAngelscriptPropertyTraits(
 	}
 	TraitBits |= GetNativeSidecarPropertyTraits(Property);
 
+	if (!IsRuntimeGeneratedOwner(Property->GetOwnerStruct()))
+	{
+		TraitBits |= static_cast<uint16>(SoloASBridge::GetNativePropertyTraits(Property));
+	}
+
 	if (IsRuntimeGeneratedOwner(Property->GetOwnerStruct()))
 	{
 		TraitBits |=
@@ -254,6 +283,12 @@ EAngelscriptPropertyTrait GetAngelscriptPropertyTraits(
 	}
 
 	return static_cast<EAngelscriptPropertyTrait>(TraitBits);
+}
+
+bool IsAngelscriptNativeCallerExcluded(const UFunction* Function)
+{
+	return (GetNativeSidecarFunctionTraits(Function)
+		& static_cast<uint16>(ESoloASBridgeFunctionTrait::NoNativeCaller)) != 0;
 }
 
 bool HasAngelscriptPropertyTrait(

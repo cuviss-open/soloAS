@@ -1,6 +1,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+                                                                                                
+#include "SoloASEngineCompat.h"
+#include "SoloASGameplayEffectAppliedTasks.h"
+                                                                                              
 
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
@@ -575,6 +579,13 @@ class ANGELSCRIPTGAS_API UAngelscriptAbilityTaskLibrary : public UBlueprintFunct
 		const bool bListenForPeriodicEffect = false
 	)
 	{
+                                                                                                             
+// SOLOAS-COMPAT-BEGIN(<5.7) UE 5.6 native factories lack effect asset/granted filters; plugin tasks retain all filters before forwarding [test: Test_GasAppliedEffectTagFilters]
+#if SOLOAS_UE_BEFORE(5, 7)
+        return USoloASWaitGameplayEffectAppliedSelf::Create(OwningAbility, Filter,
+            SourceTagRequirements, TargetTagRequirements, AssetTagRequirements, GrantedTagRequirements, bTriggerOnce, ExternalOwner, bListenForPeriodicEffect);
+#else
+                                                                                                           
 		return UAbilityTask_WaitGameplayEffectApplied_Self::WaitGameplayEffectAppliedToSelf(
 			OwningAbility,
 			Filter,
@@ -586,6 +597,10 @@ class ANGELSCRIPTGAS_API UAngelscriptAbilityTaskLibrary : public UBlueprintFunct
 			ExternalOwner,
 			bListenForPeriodicEffect
 		);
+                                                                                                             
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                           
 	}
 
 	UFUNCTION(ScriptCallable, Category = "Ability|Tasks")
@@ -601,6 +616,13 @@ class ANGELSCRIPTGAS_API UAngelscriptAbilityTaskLibrary : public UBlueprintFunct
 		const bool bListenForPeriodicEffect = false
 	)
 	{
+                                                                                                      
+// SOLOAS-COMPAT-BEGIN(<5.7) UE 5.6 native factories lack effect asset/granted filters; plugin tasks retain all filters before forwarding [test: Test_GasAppliedEffectTagFilters]
+#if SOLOAS_UE_BEFORE(5, 7)
+        return USoloASWaitGameplayEffectAppliedSelf::CreateQuery(OwningAbility, Filter,
+            SourceTagQuery, TargetTagQuery, InAssetTagQuery, InGrantedTagQuery, bTriggerOnce, ExternalOwner, bListenForPeriodicEffect);
+#else
+                                                                                                    
 		return UAbilityTask_WaitGameplayEffectApplied_Self::WaitGameplayEffectAppliedToSelf_Query(
 			OwningAbility,
 			Filter,
@@ -612,6 +634,10 @@ class ANGELSCRIPTGAS_API UAngelscriptAbilityTaskLibrary : public UBlueprintFunct
 			ExternalOwner,
 			bListenForPeriodicEffect
 		);
+                                                                                                      
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                    
 	}
 
 	UFUNCTION(ScriptCallable, Category = "Ability|Tasks")
@@ -627,6 +653,13 @@ class ANGELSCRIPTGAS_API UAngelscriptAbilityTaskLibrary : public UBlueprintFunct
 		const bool bListenForPeriodicEffect = false
 	)
 	{
+                                                                                                               
+// SOLOAS-COMPAT-BEGIN(<5.7) UE 5.6 native factories lack effect asset/granted filters; plugin tasks retain all filters before forwarding [test: Test_GasAppliedEffectTagFilters]
+#if SOLOAS_UE_BEFORE(5, 7)
+        return USoloASWaitGameplayEffectAppliedTarget::Create(OwningAbility, Filter,
+            SourceTagRequirements, TargetTagRequirements, AssetTagRequirements, GrantedTagRequirements, bTriggerOnce, ExternalOwner, bListenForPeriodicEffect);
+#else
+                                                                                                             
 		return UAbilityTask_WaitGameplayEffectApplied_Target::WaitGameplayEffectAppliedToTarget(
 			OwningAbility,
 			Filter,
@@ -638,6 +671,10 @@ class ANGELSCRIPTGAS_API UAngelscriptAbilityTaskLibrary : public UBlueprintFunct
 			ExternalOwner,
 			bListenForPeriodicEffect
 		);
+                                                                                                               
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                             
 	}
 
 	UFUNCTION(ScriptCallable, Category = "Ability|Tasks")
@@ -653,6 +690,13 @@ class ANGELSCRIPTGAS_API UAngelscriptAbilityTaskLibrary : public UBlueprintFunct
 		const bool bListenForPeriodicEffect = false
 	)
 	{
+                                                                                                        
+// SOLOAS-COMPAT-BEGIN(<5.7) UE 5.6 native factories lack effect asset/granted filters; plugin tasks retain all filters before forwarding [test: Test_GasAppliedEffectTagFilters]
+#if SOLOAS_UE_BEFORE(5, 7)
+        return USoloASWaitGameplayEffectAppliedTarget::CreateQuery(OwningAbility, Filter,
+            SourceTagQuery, TargetTagQuery, AssetTagQuery, GrantedTagQuery, bTriggerOnce, ExternalOwner, bListenForPeriodicEffect);
+#else
+                                                                                                      
 		return UAbilityTask_WaitGameplayEffectApplied_Target::WaitGameplayEffectAppliedToTarget_Query(
 			OwningAbility,
 			Filter,
@@ -664,6 +708,10 @@ class ANGELSCRIPTGAS_API UAngelscriptAbilityTaskLibrary : public UBlueprintFunct
 			ExternalOwner,
 			bListenForPeriodicEffect
 		);
+                                                                                                        
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                      
 	}
 
 	UFUNCTION(ScriptCallable, Category = "Ability|Tasks")

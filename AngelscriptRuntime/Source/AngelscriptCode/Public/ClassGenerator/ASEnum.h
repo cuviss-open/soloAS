@@ -7,7 +7,7 @@
 
 #include "ASEnum.generated.h"
 
-UCLASS()
+UCLASS(meta = (NotInAngelscript))
 class ANGELSCRIPTCODE_API UASEnum : public UUserDefinedEnum
 {
 	GENERATED_BODY()

@@ -151,8 +151,12 @@ FAngelscriptExecutionWriteScope::FAngelscriptExecutionWriteScope(EAcquire Acquir
 		return;
 	}
 
+    bool bCanBorrowReader = Acquire == EAcquire::GarbageCollection;
+#if WITH_EDITOR
+    bCanBorrowReader |= Acquire == EAcquire::StructLayoutEdit;
+#endif
 	checkf(
-		ReaderDepth == 0 || Acquire == EAcquire::GarbageCollection,
+		ReaderDepth == 0 || bCanBorrowReader,
 		TEXT(
 			"AngelScript execution read scope cannot be upgraded to a "
 			"write scope."

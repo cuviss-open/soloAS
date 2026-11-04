@@ -76,7 +76,9 @@ struct TAngelscriptPODPropertyType : public TAngelscriptPODType<typename Propert
                                                                                                                                
 #if 0
                                                                                                                              
+                                                                                                        
 		auto* Property = new PropertyType(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                      
                                                                                                                         
 #endif
 		auto* Property = CastFieldChecked<PropertyType>(

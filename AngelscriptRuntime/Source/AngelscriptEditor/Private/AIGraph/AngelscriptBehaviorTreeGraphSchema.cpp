@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "AngelscriptBehaviorTreeGraphSchema.h"
+#include "SoloASEngineCompat.h"
 
 #include "AngelscriptAIGraphClassProvider.h"
 #include "AngelscriptScriptNodeMenuTitle.h"
@@ -348,8 +349,16 @@ void UAngelscriptBehaviorTreeDecoratorGraphSchema::GetGraphContextActions(
 			NodeClass.GetCategory(),
 			AngelscriptAIGraph::GetScriptNodeMenuTitle(*Class),
 			FText::GetEmpty());
+                                                                                                                                                                                                      
+#if SOLOAS_UE_BEFORE(5, 6)
+        UClass* NodeType = FindObject<UClass>(nullptr, TEXT("/Script/BehaviorTreeEditor.BehaviorTreeDecoratorGraphNode_Decorator"));
+        check(NodeType);
+        auto* Node = static_cast<UBehaviorTreeDecoratorGraphNode_Decorator*>(NewObject<UObject>(ContextMenuBuilder.OwnerOfTemporaries, NodeType));
+#else
 		UBehaviorTreeDecoratorGraphNode_Decorator* Node = NewObject<UBehaviorTreeDecoratorGraphNode_Decorator>(
 			ContextMenuBuilder.OwnerOfTemporaries);
+#endif
+// SOLOAS-COMPAT-END
 		Node->ClassData = NodeClass;
 		Action->NodeTemplate = Node;
 	}

@@ -1,5 +1,7 @@
 #include "AngelscriptManager.h"
-#include "AngelscriptScriptUnit.h"
+                                                                                                     
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                   
                                                                                                     
 #include "ClassGenerator/AngelscriptTerminalDestructorAdmission.h"
                                                                                                   
@@ -21,21 +23,19 @@
 #include "HAL/FileManager.h"
 #include "Misc/Paths.h"
 #include "Misc/CommandLine.h"
-                                                                                                    
-#include "Misc/ScopeLock.h"
-                                                                                                  
 #include "Misc/ScopedSlowTask.h"
-                                                                                                    
-#include "Misc/ScopeExit.h"
-                                                                                                  
 #include "Misc/MessageDialog.h"
 #include "Async/Async.h"
 #include "Async/ParallelFor.h"
 #include "Engine/Engine.h"
 #include "Engine/AssetManager.h"
+                                                                                                                    
 #include "UObject/LinkerLoad.h"
+                                                                                                                  
 #include "UObject/Package.h"
+                                                                                                                    
 #include "UObject/UObjectThreadContext.h"
+                                                                                                                  
 #include "UObject/ReachabilityAnalysis.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Interfaces/IPluginManager.h"
@@ -49,6 +49,9 @@
 #include "AngelscriptInclude.h"
 #include "AngelscriptBinds.h"
 #include "AngelscriptDocs.h"
+                                                                                                        
+#include "Containers/Ticker.h"
+                                                                                                      
 #include "AngelscriptBindDatabase.h"
 #include "AngelscriptSettings.h"
                                                                                                          
@@ -57,13 +60,6 @@
                                                                                                     
 #include "Runtime/SoloASScriptPackageImport.h"
                                                                                                   
-                                                                                                       
-#include "Extensions/AngelscriptExtensionHooks.h"
-#include "Extensions/Cache/AngelscriptExtensionCacheCompatibility.h"
-                                                                                                     
-                                                                                                  
-#include "Extensions/AngelscriptModdingInternal.h"
-                                                                                                
 
 #include "StaticJIT/PrecompiledData.h"
 #include "StaticJIT/AngelscriptStaticJIT.h"
@@ -115,12 +111,6 @@ TMap<FName, int32> FAngelscriptManager::StaticNamesByIndex;
 
 FAngelscriptManager::FAngelscriptDebugStack* GAngelscriptStack = nullptr;
 FAngelscriptManager* FAngelscriptManager::GAngelscriptManager = nullptr;
-                                                                                                                  
-FAngelscriptManager::FOnScriptFileChanged FAngelscriptManager::OnScriptFileChanged;
-FAngelscriptManager::FOnScriptWatcherBatchCompleted FAngelscriptManager::OnScriptWatcherBatchCompleted;
-FAngelscriptManager::FOnScriptReloadTick FAngelscriptManager::OnScriptReloadTick;
-FAngelscriptManager::FOnScriptEditorShutdown FAngelscriptManager::OnScriptEditorShutdown;
-                                                                                                                
 static bool GAngelscriptLineReentry = false;
 bool FAngelscriptManager::bSimulateCooked = false;
 bool FAngelscriptManager::bUseEditorScripts = false;
@@ -184,19 +174,6 @@ UPackage* FAngelscriptManager::GetPackage()
 
 bool FAngelscriptManager::ShouldInitializeThreaded()
 {
-                                                                                                                           
-	const bool bHasExtensionPipelineCallbacks =
-		IsAngelscriptExtensionStageRegistered(EAngelscriptExtensionStage::PreParse)
-		|| IsAngelscriptExtensionStageRegistered(
-			EAngelscriptExtensionStage::BlueprintEventBound)
-		|| IsAngelscriptExtensionStageRegistered(
-			EAngelscriptExtensionStage::NativeInterfaceSelection)
-		|| IsAngelscriptExtensionStageRegistered(EAngelscriptExtensionStage::TypeGeneration);
-	if (bHasExtensionPipelineCallbacks)
-	{
-		return false;
-	}
-                                                                                                                         
                                                                                                                        
 #if 0
                                                                                                                      
@@ -408,7 +385,7 @@ TArray<FString> FAngelscriptManager::MakeAllScriptRoots(bool bOnlyProjectRoot)
 		// Add the script root paths from all the enabled plugins
 		IPluginManager& PluginManager = IPluginManager::Get();
 		TArray<FString> PluginRootPaths;
-		for (auto& Plugin : PluginManager.GetEnabledPlugins())
+		for (auto& Plugin : PluginManager.GetEnabledPluginsWithContent())
 		{
 			FString ScriptPath = FPaths::ConvertRelativePathToFull(Plugin->GetBaseDir() / TEXT("Script"));
 			if (FileManager.DirectoryExists(*ScriptPath))
@@ -508,12 +485,13 @@ void FAngelscriptManager::Initialize_AnyThread()
 	AllRootPaths = MakeAllScriptRoots(/*bOnlyProjectRoot =*/ true);
 
 	if (bGeneratePrecompiledData)
+                                                                                                                    
 	{
+                                                                                                                  
 		PrecompiledData = new FAngelscriptPrecompiledData(Engine);
-		                                                                                                  
-		PrecompiledDataInstances.Add(PrecompiledData);
-		                                                                                                
-	}
+                                                                                                                    
+			}
+                                                                                                                  
 
 	if (bGeneratePrecompiledData)
 	{
@@ -538,16 +516,9 @@ void FAngelscriptManager::Initialize_AnyThread()
                                                                                            
 	if ((!bUsePrecompiledData || bScriptDevelopmentMode) && FApp::HasProjectName())
 	{
-                                                                                               
-	// Cuviss Modding registration point: debug server start gate.
-	// An empty registry leaves the Runtime startup conditions in control.
-	if (!FAngelscriptModdingDebugServerStartGateRuntime::AnySuppress())
-                                                                                             
-	{
 		int Port = FAngelscriptManager::ConfigSettings->ConnectionPort;
 		FParse::Value(FCommandLine::Get(), TEXT("-asdebugport="), Port);
 		DebugServer = new FAngelscriptDebugServer(Port);
-	}
 	}
 #endif
 
@@ -561,48 +532,7 @@ void FAngelscriptManager::Initialize_AnyThread()
 #if AS_USE_BIND_DB
 	{
 		FAngelscriptScopeTimer Timer(TEXT("load bind database"));
-                                                                                                                  
-		if (IsAngelscriptExtensionProviderRegistered())
-		{
-			FAngelscriptValidatedCacheSnapshot CuvissBindCacheSnapshot;
-			FString CuvissCacheError;
-			if (!CreateValidatedAngelscriptExtensionCacheSnapshot(
-				EAngelscriptExtensionCacheArtifactFamily::Binds,
-				GetScriptRootDirectory() / TEXT("Binds.Cache"),
-				CuvissBindCacheSnapshot,
-				CuvissCacheError))
-			{
-				UE_LOG(
-					Angelscript,
-					Fatal,
-					TEXT("Binds.Cache compatibility validation failed: %s"),
-					*CuvissCacheError);
-			}
-			if (CuvissBindCacheSnapshot.IsValid())
-			{
-				FAngelscriptBindDatabase::Get().Load(
-					CuvissBindCacheSnapshot.GetPath(),
-					bGeneratePrecompiledData);
-			}
-			else
-			{
-				FAngelscriptBindDatabase::Get().Load(
-					GetScriptRootDirectory() / TEXT("Binds.Cache"),
-					bGeneratePrecompiledData);
-			}
-		}
-		else
-		{
-			FAngelscriptBindDatabase::Get().Load(
-				GetScriptRootDirectory() / TEXT("Binds.Cache"),
-				bGeneratePrecompiledData);
-		}
-#if 0
-                                                                                                                
 		FAngelscriptBindDatabase::Get().Load(GetScriptRootDirectory() / TEXT("Binds.Cache"), bGeneratePrecompiledData);
-                                                                                                                      
-#endif
-                                                                                                                    
 	}
 #endif
 
@@ -610,23 +540,6 @@ void FAngelscriptManager::Initialize_AnyThread()
 	 * Set everything up for angelscript usage.
 	 */
 	{
-		FAngelscriptPreprocessor BlueprintImportPreloader(ConfigSettings->BlueprintBindings);
-                                                                                                 
-		FAngelscriptTypeGenerationContext TypeContext;
-		TypeContext.Preprocessor = &BlueprintImportPreloader;
-		FString TypeError;
-		if (!DispatchAngelscriptTypeGeneration(TypeContext, TypeError))
-			UE_LOG(Angelscript, Fatal, TEXT("%s"), *TypeError);
-                                                                                               
-		if (!bUsePrecompiledData || bScriptDevelopmentMode)
-		{
-			TArray<FFilenamePair> BlueprintImportFiles;
-			FindAllScriptFilenames(BlueprintImportFiles);
-			for (const FFilenamePair& Filename : BlueprintImportFiles)
-				BlueprintImportPreloader.AddFile(Filename.RelativePath, Filename.AbsolutePath);
-			BlueprintImportPreloader.PreloadBlueprintImportAssets();
-		}
-
 		FAngelscriptScopeTimer Timer(TEXT("== bindings total =="));
 		BindScriptTypes();
 	}
@@ -639,35 +552,7 @@ void FAngelscriptManager::Initialize_AnyThread()
 	if ((IsRunningCommandlet() && !bSkipWriteBindDB && !bIsCookWorker) || bForceWriteBindDB)
 	{
 		UE_LOG(Angelscript, Log, TEXT("Writing angelscript bind database to Binds.Cache file"));
-                                                                                                                    
-		FString CuvissCachePrepareError;
-		if (!PrepareAngelscriptExtensionCachePublish(
-			EAngelscriptExtensionCacheArtifactFamily::Binds,
-			GetScriptRootDirectory() / TEXT("Binds.Cache"),
-			CuvissCachePrepareError))
-		{
-			UE_LOG(
-				Angelscript,
-				Fatal,
-				TEXT("Binds.Cache publish preparation failed: %s"),
-				*CuvissCachePrepareError);
-		}
-                                                                                                                  
 		FAngelscriptBindDatabase::Get().Save(GetScriptRootDirectory() / TEXT("Binds.Cache"));
-                                                                                                                   
-		FString CuvissCacheError;
-		if (!WriteAngelscriptExtensionCacheCompanion(
-			EAngelscriptExtensionCacheArtifactFamily::Binds,
-			GetScriptRootDirectory() / TEXT("Binds.Cache"),
-			CuvissCacheError))
-		{
-			UE_LOG(
-				Angelscript,
-				Fatal,
-				TEXT("Binds.Cache companion write failed: %s"),
-				*CuvissCacheError);
-		}
-                                                                                                                 
 	}
 
 #elif AS_USE_BIND_DB
@@ -693,148 +578,8 @@ void FAngelscriptManager::Initialize_AnyThread()
 		if (!IFileManager::Get().FileExists(*Filename))
 			Filename = GetScriptRootDirectory() / TEXT("PrecompiledScript.Cache");
 
-		                                                                                                  
-		bool bCuvissLoadedModuleCacheSet = false;
-		const FString CuvissModuleCacheDirectory = GetScriptRootDirectory() / TEXT("ModuleCaches");
-		if (IFileManager::Get().FileExists(*(CuvissModuleCacheDirectory / TEXT("ModuleCaches.json"))))
-		{
-			TArray<FAngelscriptPrecompiledCacheFile> CacheFiles;
-			FString CacheSetError;
-			bool bCacheSetValid = FAngelscriptPrecompiledData::ReadModuleCacheSet(
-				CuvissModuleCacheDirectory, CacheFiles, CacheSetError);
-			TSet<FGuid> SeenModuleGuids;
-			if (bCacheSetValid)
-			{
-				for (const FAngelscriptPrecompiledCacheFile& CacheFile : CacheFiles)
-				{
-					if (CacheFile.ModuleName.StartsWith(TEXT("Mods.")))
-					{
-						bCacheSetValid = false;
-						CacheSetError = TEXT("project cache set contains a ModKit leaf module");
-						break;
-					}
 
-					FString CachePath = CuvissModuleCacheDirectory / CacheFile.FileName;
-					FAngelscriptValidatedCacheSnapshot ModuleCacheSnapshot;
-					if (IsAngelscriptExtensionProviderRegistered())
-					{
-						if (!CreateValidatedAngelscriptExtensionCacheSnapshot(
-								EAngelscriptExtensionCacheArtifactFamily::Precompiled,
-								CachePath,
-								ModuleCacheSnapshot,
-								CacheSetError))
-						{
-							bCacheSetValid = false;
-							break;
-						}
-						if (ModuleCacheSnapshot.IsValid())
-							CachePath = ModuleCacheSnapshot.GetPath();
-					}
-
-					FAngelscriptPrecompiledData* ModuleData = new FAngelscriptPrecompiledData(Engine);
-					ModuleData->Load(CachePath);
-					FAngelscriptPrecompiledModule* CachedModule = ModuleData->Modules.Find(CacheFile.ModuleName);
-					if (!ModuleData->IsValidForCurrentBuild()
-						|| ModuleData->Modules.Num() != 1
-						|| CachedModule == nullptr
-						|| ModuleData->DataGuid != CacheFile.DataGuid
-						|| SeenModuleGuids.Contains(ModuleData->DataGuid))
-					{
-						delete ModuleData;
-						bCacheSetValid = false;
-						CacheSetError = TEXT("module cache is invalid, repeated or does not match its manifest entry");
-						break;
-					}
-					CachedModule->Dependencies = CacheFile.Dependencies;
-					SeenModuleGuids.Add(ModuleData->DataGuid);
-					PrecompiledDataInstances.Add(ModuleData);
-				}
-			}
-			if (bCacheSetValid)
-			{
-				const FStaticJITCompiledInfo* ModuleCacheInfo = FStaticJITCompiledInfo::Get();
-				if (ModuleCacheInfo != nullptr && ModuleCacheInfo->ModuleDataGuidCount > 0)
-				{
-					bCacheSetValid = ModuleCacheInfo->ModuleDataGuidCount == (uint32)CacheFiles.Num();
-					for (FAngelscriptPrecompiledData* ModuleData : PrecompiledDataInstances)
-					{
-						for (const TPair<FString, FAngelscriptPrecompiledModule>& ModulePair : ModuleData->Modules)
-						{
-							FGuid ExpectedGuid;
-						if (!ModuleCacheInfo->GetModuleDataGuid(ModulePair.Key, ExpectedGuid)
-							|| ExpectedGuid != ModuleData->DataGuid)
-							bCacheSetValid = false;
-						}
-					}
-					if (!bCacheSetValid)
-						CacheSetError = TEXT("module cache assembly does not match the linked JIT module set");
-				}
-			}
-
-			if (bCacheSetValid && PrecompiledDataInstances.Num() > 0)
-			{
-				for (FAngelscriptPrecompiledData* ModuleData : PrecompiledDataInstances)
-					ModuleData->ClassesLoadedFromPrecompiledData = PrecompiledDataInstances[0]->ClassesLoadedFromPrecompiledData;
-				bCuvissLoadedModuleCacheSet = true;
-				PrecompiledData = PrecompiledDataInstances[0];
-				for (FAngelscriptPrecompiledData* ModuleData : PrecompiledDataInstances)
-				{
-					if (!bScriptDevelopmentMode)
-						ModuleData->bMinimizeMemoryUsage = true;
-				}
-				if (StaticJIT != nullptr)
-					StaticJIT->PrecompiledData = PrecompiledData;
-			}
-			else
-			{
-				for (int32 Index = PrecompiledDataInstances.Num() - 1; Index >= 0; --Index)
-					delete PrecompiledDataInstances[Index];
-				PrecompiledDataInstances.Reset();
-				PrecompiledData = nullptr;
-				UE_LOG(Angelscript, Warning, TEXT("Ignoring invalid precompiled module cache set: %s"), *CacheSetError);
-			}
-			Filename.Reset();
-		}
-		                                                                                                
-
-                                                                                                                        
-		FAngelscriptValidatedCacheSnapshot CuvissPrecompiledCacheSnapshot;
-		const bool bCuvissExtensionProviderRegistered =
-			IsAngelscriptExtensionProviderRegistered();
-		bool bCuvissPrecompiledCacheCompatible = !bCuvissExtensionProviderRegistered;
-		if (bCuvissExtensionProviderRegistered
-			&& IFileManager::Get().FileExists(*Filename))
-		{
-			FString CuvissCacheError;
-			bCuvissPrecompiledCacheCompatible =
-				CreateValidatedAngelscriptExtensionCacheSnapshot(
-					EAngelscriptExtensionCacheArtifactFamily::Precompiled,
-					Filename,
-					CuvissPrecompiledCacheSnapshot,
-					CuvissCacheError);
-			if (!bCuvissPrecompiledCacheCompatible)
-			{
-				UE_LOG(
-					Angelscript,
-					Warning,
-					TEXT("Ignoring incompatible precompiled cache and preprocessing source: %s"),
-					*CuvissCacheError);
-			}
-			else if (CuvissPrecompiledCacheSnapshot.IsValid())
-			{
-				Filename = CuvissPrecompiledCacheSnapshot.GetPath();
-			}
-			else
-			{
-				bCuvissPrecompiledCacheCompatible = true;
-			}
-		}
-                                                                                                                      
-                                                                                                                          
-		if (bCuvissPrecompiledCacheCompatible)
-		{
-                                                                                                                        
-		if (bCuvissPrecompiledCacheCompatible && IFileManager::Get().FileExists(*Filename))
+		if (IFileManager::Get().FileExists(*Filename))
 		{
 			PrecompiledData = new FAngelscriptPrecompiledData(Engine);
 			PrecompiledData->Load(Filename);
@@ -850,9 +595,8 @@ void FAngelscriptManager::Initialize_AnyThread()
 			{
 				if (StaticJIT != nullptr)
 					StaticJIT->PrecompiledData = PrecompiledData;
-                                                                                                             
-				PrecompiledData->bMinimizeMemoryUsage = false;
-                                                                                                           
+				if (!bScriptDevelopmentMode)
+					PrecompiledData->bMinimizeMemoryUsage = true;
 
 				// If we have compiled in JIT code, we can only use it if it matches the precompiled data
 				const FStaticJITCompiledInfo* CompiledInfo = FStaticJITCompiledInfo::Get();
@@ -864,50 +608,9 @@ void FAngelscriptManager::Initialize_AnyThread()
 			}
 		}
 
-                                                                                                                        
-		}
-                                                                                                                      
-		                                                                                                  
-		if (PrecompiledData != nullptr && PrecompiledDataInstances.IsEmpty())
-			PrecompiledDataInstances.Add(PrecompiledData);
-		                                                                                                
-		                                                                                                  
-		if (PrecompiledData != nullptr)
-		{
-			const FStaticJITCompiledInfo* CompiledInfo = FStaticJITCompiledInfo::Get();
-			bool bJitCachePairValid = true;
-			if (bCuvissLoadedModuleCacheSet)
-			{
-				for (FAngelscriptPrecompiledData* ModuleData : PrecompiledDataInstances)
-				{
-					for (const TPair<FString, FAngelscriptPrecompiledModule>& ModulePair : ModuleData->Modules)
-					{
-						FGuid CompiledModuleGuid;
-						if (CompiledInfo == nullptr
-							|| !CompiledInfo->GetModuleDataGuid(ModulePair.Key, CompiledModuleGuid)
-							|| CompiledModuleGuid != ModuleData->DataGuid)
-						{
-							bJitCachePairValid = false;
-							break;
-						}
+                                                                                                                    
 					}
-					if (!bJitCachePairValid)
-						break;
-				}
-			}
-			else if (CompiledInfo != nullptr && CompiledInfo->PrecompiledDataGuid != PrecompiledData->DataGuid)
-			{
-				bJitCachePairValid = false;
-			}
-
-			if (!bJitCachePairValid)
-			{
-				UE_LOG(Angelscript, Warning, TEXT("Loaded angelscript precompiled data does not match the transpiled C++ in the game binary. Transpiled code will not be used!"));
-				FJITDatabase::Get().Clear();
-			}
-		}
-		                                                                                                
-	}
+                                                                                                                  
 	else
 	{
 		StaticNames.Reserve(7000);
@@ -934,70 +637,8 @@ void FAngelscriptManager::Initialize_AnyThread()
 	if (bGeneratePrecompiledData)
 	{
 		FString Filename = GetScriptRootDirectory() / TEXT("PrecompiledScript.Cache");
-                                                                                                  
-		// Cache-save gate block of the static JIT generation gate : a
-		// batch-skipped generation must leave the cache file untouched as well.
-		// The cache embeds the process-specific precompiled reference table that
-		// pairs with the JIT output of the SAME generation run; re-saving it
-		// during a skipped pass would silently pair a fresh reference table with
-		// the previous JIT files (the content-addressed DataGuid stays equal and
-		// hides the divergence). Empty registry -> flag never set -> upstream.
-		if (FAngelscriptModdingStaticJITGenerationGateRuntime::ConsumeBatchSkippedThisRun())
-		{
-			UE_LOG(Angelscript, Display, TEXT("Static JIT generation gate: batch skipped, precompiled cache save suppressed (closure unchanged)."));
-			bForcedExit = true;
-		}
-		else
-                                                                                                
-		{
 		PrecompiledData->InitFromActiveScript();
-		                                                                                                  
-		FString CuvissCacheUnitId;
-		const bool bCuvissGenerateUnitCache = FParse::Value(
-			FCommandLine::Get(), TEXT("as-cache-unit="), CuvissCacheUnitId)
-			&& !CuvissCacheUnitId.IsEmpty();
-		if (bCuvissGenerateUnitCache)
-		{
-			FString CuvissModuleCacheError;
-			if (!PrecompiledData->SaveModuleCacheSets(CuvissModuleCacheError))
-			{
-				UE_LOG(Angelscript, Fatal, TEXT("Selected unit cache publish failed: %s"), *CuvissModuleCacheError);
-			}
-		}
-		                                                                                                
-		else
-		{
-                                                                                                                          
-		FString CuvissCachePrepareError;
-		if (!PrepareAngelscriptExtensionCachePublish(
-			EAngelscriptExtensionCacheArtifactFamily::Precompiled,
-			Filename,
-			CuvissCachePrepareError))
-		{
-			UE_LOG(
-				Angelscript,
-				Fatal,
-				TEXT("PrecompiledScript.Cache publish preparation failed: %s"),
-				*CuvissCachePrepareError);
-		}
-                                                                                                                        
 		PrecompiledData->Save(Filename);
-                                                                                                                         
-		FString CuvissCacheError;
-		if (!WriteAngelscriptExtensionCacheCompanion(
-			EAngelscriptExtensionCacheArtifactFamily::Precompiled,
-			Filename,
-			CuvissCacheError))
-		{
-			UE_LOG(
-				Angelscript,
-				Fatal,
-				TEXT("PrecompiledScript.Cache companion write failed: %s"),
-				*CuvissCacheError);
-		}
-                                                                                                                       
-		}
-		}
 		bForcedExit = true;
 	}
 
@@ -1007,36 +648,26 @@ void FAngelscriptManager::Initialize_AnyThread()
 		bStaticJITTranspiledCodeLoaded = FJITDatabase::Get().Functions.Num() > 0;
 
 		// Delete any precompiled data we used during initial compile
+                                                                                                                    
         if (!bScriptDevelopmentMode && !bGeneratePrecompiledData)
         {
-                                                                                                  
-            if (!FAngelscriptCacheCompileSurfaceGateRuntime::AnyPreserve())
-                                                                                                
-                                                                                                                 
-                if (!bHasSourceScriptUnits)
-                                                                                                               
                     PrecompiledData->ClearUnneededRuntimeData();
         }
+                                                                                                                  
 
-		                                                                                                  
-		for (int32 Index = PrecompiledDataInstances.Num() - 1; Index >= 0; --Index)
-		{
-			delete PrecompiledDataInstances[Index];
-		}
-		PrecompiledDataInstances.Reset();
+                                                                                                                    
+				delete PrecompiledData;
+                                                                                                                  
 		PrecompiledData = nullptr;
-		                                                                                                
 		FJITDatabase::Clear();
 	}
 
 	// We may have requested an exit due to compilation
-                                                                                                                              
-	if (bGeneratePrecompiledData && !IsRunningCommandlet())
-		bForcedExit = false;
-                                                                                                                            
 	if (bForcedExit)
 	{
-		FPlatformMisc::RequestExitWithStatus(false, 0);
+                                                                                             
+		SoloASBridge::Compat::RequestScriptGenerationExit();
+                                                                                           
 	}
 
 #if AS_CAN_HOTRELOAD
@@ -1046,9 +677,7 @@ void FAngelscriptManager::Initialize_AnyThread()
 	// Use the checker thread if we want to detect hot reloads,
 	// but we don't have access to the editor. In editor, the AngelscriptEditor
 	// module will use the directory watcher system to detect reloads instead.
-                                                                                                     
-	bUseHotReloadCheckerThread = (bScriptDevelopmentMode || bHasSourceScriptUnits) && !GIsEditor;
-                                                                                                   
+	bUseHotReloadCheckerThread = bScriptDevelopmentMode && !GIsEditor;
 	if (bUseHotReloadCheckerThread)
 		StartHotReloadThread();
 
@@ -1080,28 +709,12 @@ bool FAngelscriptManager::IsGeneratingPrecompiledData()
 
 void FAngelscriptManager::PostInitialize_GameThread()
 {
-                                                                                                                                  
-	if (bGeneratePrecompiledData && !IsRunningCommandlet())
-	{
-		check(IsInGameThread());
-		FCoreDelegates::OnEndFrame.AddLambda([]()
-		{
-			static bool bCuvissGenerationExitRequested = false;
-			if (bCuvissGenerationExitRequested)
-				return;
-			bCuvissGenerationExitRequested = true;
-			FPlatformMisc::RequestExitWithStatus(false, 0);
-		});
-	}
-                                                                                                                                
 	FAngelscriptCodeModule::GetOnInitialCompileFinished().Broadcast();
 }
 
 void FAngelscriptManager::StartHotReloadThread()
 {
-                                                                                                             
-	if (bUsedPrecompiledDataForPreprocessor && !bHasSourceScriptUnits)
-                                                                                                           
+	if (bUsedPrecompiledDataForPreprocessor)
 		return;
 	if (!bUseHotReloadCheckerThread)
 		return;
@@ -1219,23 +832,6 @@ asCContext* FAngelscriptManager::CreateContext()
 #elif !UE_BUILD_TEST && !UE_BUILD_SHIPPING
 	Context->SetLoopDetectionCallback(AngelscriptLoopDetectionCallback);
 #endif
-                                                                                                    
-	{
-		// Registration point (empty by default): when no budget handler is
-		// registered AnyBudget() is false and no loop-detection callback is
-		// installed, keeping cooked builds bit-for-bit upstream. When a
-		// handler returns a positive budget it replaces any built-in callback
-		// (SetLoopDetectionCallback is a single slot).
-		extern float GAngelscriptExecutionBudgetSeconds;
-		void AngelscriptExecutionBudgetCallback(asCContext* Context);
-		float CuvissBudgetSeconds = -1.0f;
-		if (FAngelscriptModdingScriptExecutionBudgetRuntime::AnyBudget(CuvissBudgetSeconds, *Context) && CuvissBudgetSeconds > 0.0f)
-		{
-			GAngelscriptExecutionBudgetSeconds = CuvissBudgetSeconds;
-			Context->SetLoopDetectionCallback(AngelscriptExecutionBudgetCallback);
-		}
-	}
-                                                                                                  
 	return Context;
 }
 
@@ -1497,50 +1093,6 @@ void FAngelscriptManager::FindAllScriptFilenames(TArray<FFilenamePair>& OutFilen
 		}
 	}
                                                                                                    
-	                                                                                                      
-	FString CuvissCacheGenerationUnitId;
-	if (FParse::Value(FCommandLine::Get(), TEXT("as-cache-unit="), CuvissCacheGenerationUnitId)
-		&& !CuvissCacheGenerationUnitId.IsEmpty()
-		&& CuvissCacheGenerationUnitId == FPaths::GetCleanFilename(CuvissCacheGenerationUnitId)
-		&& !CuvissCacheGenerationUnitId.Contains(TEXT("..")))
-	{
-		FString SourceRoot;
-		if (!FParse::Value(FCommandLine::Get(), TEXT("as-cache-source-root="), SourceRoot)
-			|| SourceRoot.IsEmpty() || !FPaths::IsRelative(SourceRoot) || SourceRoot.Contains(TEXT("..")))
-		{
-			UE_LOG(Angelscript, Fatal, TEXT("Selected cache generation requires a project-relative as-cache-source-root"));
-		}
-		const TArray<FString> RelativeRoots = { SourceRoot };
-		TMap<FString, int32> SourceFileIndices;
-		for (int32 Index = 0; Index < OutFilenames.Num(); ++Index)
-			SourceFileIndices.Add(MakeAngelscriptPathIdentity(OutFilenames[Index].AbsolutePath), Index);
-		for (const FString& RelativeRoot : RelativeRoots)
-		{
-			TArray<FFilenamePair> SourceFiles;
-			FindScriptFiles(
-				IFileManager::Get(),
-				RelativeRoot,
-				FPaths::ProjectDir() / RelativeRoot,
-				TEXT("*.as"),
-				SourceFiles,
-				bSkipDevelopmentScripts,
-				bSkipEditorScripts);
-			for (FFilenamePair& Filename : SourceFiles)
-			{
-				const FString Identity = MakeAngelscriptPathIdentity(Filename.AbsolutePath);
-				if (const int32* ExistingIndex = SourceFileIndices.Find(Identity))
-				{
-					OutFilenames[*ExistingIndex].RelativePath = Filename.RelativePath;
-				}
-				else
-				{
-					SourceFileIndices.Add(Identity, OutFilenames.Num());
-					OutFilenames.Add(MoveTemp(Filename));
-				}
-			}
-		}
-	}
-	                                                                                                    
 }
 
 bool FAngelscriptManager::HasAnyDebugServerClients()
@@ -1582,31 +1134,10 @@ void FAngelscriptManager::InitialCompile()
 
 		// Use precompiled data instead of the preprocessor
 		bUsedPrecompiledDataForPreprocessor = true;
-                                                                                                          
-		AllRootPaths = MakeAllScriptRoots();
-		FindAllScriptFilenames(Filenames);
-		FAngelscriptScriptUnitManager Units;
-		Units.Discover();
-        FAngelscriptPreprocessor ModuleNames;
-        for (const auto& Filename : Filenames)
-        {
-            const auto Unit = Units.ResolveOwner(Filename.AbsolutePath);
-            if (Unit.Layer != EAngelscriptScriptLayer::Leaf) continue;
-            auto Module = MakeShared<FAngelscriptModuleDesc>();
-            Module->ScriptUnit = Unit;
-            Module->ModuleName = Unit.Id + TEXT(".") + ModuleNames.FilenameToModuleName(Filename.RelativePath);
-            Module->bNeedsSourcePreprocess = true;
-            Module->Code.Add({Filename.RelativePath, Filename.AbsolutePath, FString()});
-            ModulesToCompile.Add(Module);
-        }
-                                                                                                        
 
-		                                                                                                  
-		for (FAngelscriptPrecompiledData* ModuleData : PrecompiledDataInstances)
-		{
-			ModulesToCompile.Append(ModuleData->GetModulesToCompile());
-		}
-		                                                                                                
+                                                                                                                     
+				ModulesToCompile.Append(PrecompiledData->GetModulesToCompile());
+                                                                                                                   
 		
 #if AS_CAN_HOTRELOAD
 		UE_LOG(Angelscript, Warning, TEXT("Using fully precompiled scripts. Hot reloading is disabled for this run."));
@@ -1623,7 +1154,7 @@ void FAngelscriptManager::InitialCompile()
 		}
 
 		// Use preprocessor to read script files from disk
-		FAngelscriptPreprocessor Preprocessor(ConfigSettings->BlueprintBindings);
+		FAngelscriptPreprocessor Preprocessor;
 
 		{
 			FAngelscriptScopeTimer Timer(TEXT("load script files from disk"));
@@ -1648,8 +1179,7 @@ void FAngelscriptManager::InitialCompile()
 				for (const TCHAR* CacheName : CacheNames)
 				{
 					const FString CachePath = GetScriptRootDirectory() / CacheName;
-					if (IFileManager::Get().FileExists(*CachePath)
-						|| IFileManager::Get().FileExists(*(CachePath + TEXT(".cuviss-cache-v2"))))
+					if (IFileManager::Get().FileExists(*CachePath))
 					{
 					UE_LOG(Angelscript, Fatal,
 						TEXT("ASR-PRECOMPILED-NO-SOURCE: No compatible precompiled script cache and "
@@ -1859,7 +1389,25 @@ void FAngelscriptManager::InitialCompile()
 	if (FParse::Param(FCommandLine::Get(), TEXT("dump-as-doc")))
 	{
 		FAngelscriptDocs::DumpDocumentation(Engine);
-		FPlatformMisc::RequestExit(false);
+		                                                                                                
+		// The editor still loads its startup map after engine-loop initialization.
+		auto QueueDocumentationExit = []()
+		{
+			FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([](float)
+			{
+				FPlatformMisc::RequestExit(false);
+				return false;
+			}));
+		};
+		if (GIsRunning)
+		{
+			QueueDocumentationExit();
+		}
+		else
+		{
+			FCoreDelegates::OnFEngineLoopInitComplete.AddLambda(QueueDocumentationExit);
+		}
+		                                                                                              
 	}
 #endif
 }
@@ -1885,135 +1433,6 @@ void FAngelscriptManager::DiscoverTests()
 #endif
 }
 
-                                                                                                       
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-bool FAngelscriptManager::CanonicalizeExplicitFullReloadFilename(const FString& Filename, FString& OutCanonicalFilename)
-{
-	if (Filename.IsEmpty() || FPaths::IsRelative(Filename)
-		|| !FPaths::GetExtension(Filename, false).Equals(TEXT("as"), ESearchCase::CaseSensitive))
-		return false;
-
-	OutCanonicalFilename = FPaths::ConvertRelativePathToFull(Filename);
-	FPaths::NormalizeFilename(OutCanonicalFilename);
-	FPaths::CollapseRelativeDirectories(OutCanonicalFilename);
-	return !OutCanonicalFilename.IsEmpty();
-}
-
-bool FAngelscriptManager::IsExplicitFullReloadTarget(const FString& CanonicalPath, const FString& CandidatePath)
-{
-	#if PLATFORM_WINDOWS
-	return CanonicalPath.Equals(CandidatePath, ESearchCase::IgnoreCase);
-	#else
-	return CanonicalPath.Equals(CandidatePath, ESearchCase::CaseSensitive);
-	#endif
-}
-
-#endif
-                                                                                                     
-                                                                                                           
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-FAngelscriptManager::FForcedFullReloadOutcome FAngelscriptManager::ForceExplicitFullReloadScriptFile(const FFilenamePair& Target)
-{
-	FForcedFullReloadOutcome Outcome;
-	if (!IsInGameThread() || Target.AbsolutePath.IsEmpty() || Target.RelativePath.IsEmpty())
-		return Outcome;
-	{
-		FAngelscriptExecutionWriteScope Boundary(FAngelscriptExecutionWriteScope::EAcquire::Try);
-		if (!Boundary.IsAcquired()) { Outcome.bDeferred = true; return Outcome; }
-	}
-	if (AngelscriptReloadSafety::ShouldDeferForPackageLoading())
-	{
-		Outcome.bDeferred = true;
-		return Outcome;
-	}
-
-	FString CanonicalTarget;
-	if (!CanonicalizeExplicitFullReloadFilename(Target.AbsolutePath, CanonicalTarget)
-		|| !IsExplicitFullReloadTarget(CanonicalTarget, Target.AbsolutePath)
-		|| !IFileManager::Get().FileExists(*CanonicalTarget))
-		return Outcome;
-	if (bIsHotReloading || bIsCompilingModules
-		|| PreviouslyFailedReloadFiles.Num() != 0 || QueuedFullReloadFiles.Num() != 0)
-		return Outcome;
-
-	ForcedFullReloadFile = Target;
-	bForcedFullReloadBindingValidated = false;
-	ForcedFullReloadMarkerOldClass = nullptr;
-	ForcedFullReloadMarkerNewClass = nullptr;
-	TArray<UClass*> CandidateNewClasses;
-	const FDelegateHandle ClassReloadHandle = FAngelscriptClassGenerator::OnClassReload.AddLambda(
-		[&CandidateNewClasses, this](UClass* OldClass, UClass* NewClass)
-		{
-			if (OldClass == nullptr || NewClass == nullptr || OldClass == NewClass)
-				return;
-
-			CandidateNewClasses.Add(NewClass);
-			if (OldClass == ForcedFullReloadMarkerOldClass)
-			{
-				UASClass* NewASClass = Cast<UASClass>(NewClass);
-				if (NewASClass != nullptr && NewASClass != ForcedFullReloadMarkerOldClass)
-					ForcedFullReloadMarkerNewClass = NewASClass;
-			}
-		});
-	Outcome.bReloadCompleted = PerformHotReload(ECompileType::FullReload, { Target }, true, &Outcome.CompileResult);
-	Outcome.bDeferred = Outcome.CompileResult == ECompileResult::Deferred;
-	FAngelscriptClassGenerator::OnClassReload.Remove(ClassReloadHandle);
-
-	for (UClass* CandidateNewClass : CandidateNewClasses)
-	{
-		const UASClass* NewASClass = Cast<UASClass>(CandidateNewClass);
-		if (NewASClass != nullptr
-			&& IsExplicitFullReloadTarget(Target.AbsolutePath, NewASClass->GetSourceFilePath()))
-		{
-			Outcome.bObservedTargetClassSource = true;
-			break;
-		}
-	}
-	const bool bMarkerPairCandidatesPresent = ForcedFullReloadMarkerOldClass != nullptr
-		&& ForcedFullReloadMarkerNewClass != nullptr;
-	const bool bObservedMarkerSpecificPair = bMarkerPairCandidatesPresent
-		&& FAngelscriptClassGenerator::HasDistinctExplicitFullReloadMarkerPair(
-			ForcedFullReloadMarkerOldClass,
-			ForcedFullReloadMarkerNewClass);
-	Outcome.bBindingValidated = bForcedFullReloadBindingValidated;
-	Outcome.bObservedActualFullReload = bObservedMarkerSpecificPair && Outcome.bObservedTargetClassSource;
-
-	ForcedFullReloadFile = FFilenamePair();
-	bForcedFullReloadBindingValidated = false;
-	ForcedFullReloadMarkerOldClass = nullptr;
-	ForcedFullReloadMarkerNewClass = nullptr;
-	return Outcome;
-}
-#endif
-                                                                                                         
-                                                                                                                      
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-bool FAngelscriptManager::PerformHotReload(
-	ECompileType CompileType,
-	const TArray<FFilenamePair>& InReloadFiles,
-	bool bForceFullReload,
-	ECompileResult* OutCompileResult)
-{
-	if (OutCompileResult != nullptr)
-		*OutCompileResult = ECompileResult::Error;
-	if (!bForceFullReload)
-		return PerformHotReload(CompileType, InReloadFiles, OutCompileResult);
-
-	const bool bPreviousForcedFullReloadExecution = bForcedFullReloadExecution;
-	bForcedFullReloadExecution = true;
-	bForcedFullReloadBindingValidated = false;
-	ForcedFullReloadMarkerOldClass = nullptr;
-	ForcedFullReloadMarkerNewClass = nullptr;
-	PreviouslyFailedReloadFiles.Empty();
-	QueuedFullReloadFiles.Empty();
-	const bool bReloadCompleted = PerformHotReload(CompileType, InReloadFiles, OutCompileResult);
-	PreviouslyFailedReloadFiles.Empty();
-	QueuedFullReloadFiles.Empty();
-	bForcedFullReloadExecution = bPreviousForcedFullReloadExecution;
-	return bReloadCompleted;
-}
-#endif
-                                                                                                                    
                                                                                                             
 bool FAngelscriptManager::ReportNativeReloadFailure()
 {
@@ -2027,16 +1446,10 @@ bool FAngelscriptManager::ReportNativeReloadFailure()
 	return false;
 }
                                                                                                           
-                                                                                                                              
-bool FAngelscriptManager::PerformHotReload(
-	ECompileType CompileType,
-	const TArray<FFilenamePair>& InReloadFiles,
-	ECompileResult* OutCompileResult)
-                                                                                                                            
+bool FAngelscriptManager::PerformHotReload(ECompileType CompileType, const TArray<FFilenamePair>& InReloadFiles)
 {
-	if (OutCompileResult != nullptr)
-		*OutCompileResult = ECompileResult::Error;
 	TGuardValue<bool> ScopeHotReloading(FAngelscriptManager::bIsHotReloading, true);
+                                                                                                                     
 #if WITH_EDITOR
 	if (CompileType == ECompileType::FullReload && IsInGameThread())
 	{
@@ -2048,7 +1461,6 @@ bool FAngelscriptManager::PerformHotReload(
 			|| ThreadContext.IsRoutingPostLoad || ThreadContext.GetSerializeContext()->SerializedObject != nullptr)
 		{
 			AngelscriptReloadSafety::ShouldDeferForPackageLoading();
-			if (!bForcedFullReloadExecution)
 			{
 				PreviouslyFailedReloadFiles.Append(InReloadFiles);
 				QueueAngelscriptRuntimeGcCompilationRetry();
@@ -2059,6 +1471,7 @@ bool FAngelscriptManager::PerformHotReload(
 			FlushAsyncLoading();
 	}
 #endif
+                                                                                                                   
 	FAngelscriptScopeTimer Timer(TEXT("==script reload total =="));
 
 	// Create progress indicator
@@ -2067,7 +1480,7 @@ bool FAngelscriptManager::PerformHotReload(
 		SlowTask.MakeDialogDelayed(0.5f);
 	SlowTask.EnterProgressFrame(0.5f);
 
-	FAngelscriptPreprocessor Preprocessor(ConfigSettings->BlueprintBindings);
+	FAngelscriptPreprocessor Preprocessor;
 
 	TSet<FFilenamePair> AlreadyDeletedFiles;
 	TArray<FFilenamePair> FileList;
@@ -2085,10 +1498,6 @@ bool FAngelscriptManager::PerformHotReload(
 	}
 	PreviouslyFailedReloadFiles.Empty();
 
-                                                                                                                                 
-	if (bForcedFullReloadExecution)
-		PreviouslyFailedReloadFiles.Empty();
-                                                                                                                               
 	// Build a set of all files which are dependent on any of the modified files,
 	// such that we can hot reload all of them.
 	TSet<FFilenamePair> FilesToHotReload;
@@ -2099,12 +1508,6 @@ bool FAngelscriptManager::PerformHotReload(
 		FilesToHotReload.Append(FileList);
 	}
 
-                                                                                              
-	TArray<FString> ReloadSources;
-	for (const auto& File : FilesToHotReload) ReloadSources.Add(File.AbsolutePath);
-	Preprocessor.ScriptUnits.Discover(ReloadSources);
-	Preprocessor.bHasScriptUnitCatalog = true;
-                                                                                            
 	// Mark all needed files for preprocessing
 	for (const auto& PathPair : FilesToHotReload)
 	{
@@ -2117,10 +1520,6 @@ bool FAngelscriptManager::PerformHotReload(
 	{
 		UE_LOG(Angelscript, Error, TEXT("Hot reload failed in preprocessing. Keeping all old angelscript code."));
 		PreviouslyFailedReloadFiles.Append(FileList);
-                                                                                                                          
-		if (bForcedFullReloadExecution)
-			PreviouslyFailedReloadFiles.Empty();
-                                                                                                                        
 		EmitDiagnostics();
 		return false;
 	}
@@ -2129,13 +1528,7 @@ bool FAngelscriptManager::PerformHotReload(
 	SlowTask.EnterProgressFrame(2.5f);
 
 	TArray<TSharedRef<FAngelscriptModuleDesc>> CompiledModules;
-                                                                                               
-	ECompileResult Result = CompileModules(CompileType, Preprocessor.GetModulesToCompile(), CompiledModules, Preprocessor.ScriptUnits);
-                                                                                             
-                                                                                                                         
-	if (OutCompileResult != nullptr)
-		*OutCompileResult = Result;
-                                                                                                                       
+	ECompileResult Result = CompileModules(CompileType, Preprocessor.GetModulesToCompile(), CompiledModules);
                                                                                                                   
 	if (Result == ECompileResult::NativeReloadFailed || Result == ECompileResult::Deferred)
 		return false;
@@ -2403,9 +1796,7 @@ bool FAngelscriptManager::VerifyBlueprintGetFunc(FString* FuncName,
 void FAngelscriptManager::CheckForHotReload(ECompileType CompileType)
 {
 	// If we used precompiled data we can't hot reload at all
-                                                                                                                
-	if (bUsedPrecompiledDataForPreprocessor && !bHasSourceScriptUnits)
-                                                                                                              
+	if (bUsedPrecompiledDataForPreprocessor)
 		return;
 
 	if (bUseHotReloadCheckerThread)
@@ -2424,7 +1815,7 @@ void FAngelscriptManager::CheckForHotReload(ECompileType CompileType)
 
                                                                                                                                       
 	// Leave watcher events queued during compile/reload callouts, including explicit transactions.
-	if (!IsInGameThread() || bIsHotReloading || bIsCompilingModules || bForcedFullReloadExecution)
+	if (!IsInGameThread() || bIsHotReloading || bIsCompilingModules)
 		return;
 
 	// Check if anything is queued for hot reload
@@ -2450,17 +1841,6 @@ void FAngelscriptManager::CheckForHotReload(ECompileType CompileType)
 	}
 
                                                                                                                                     
-                                                                                                                
-	if (bUsedPrecompiledDataForPreprocessor)
-	{
-		FAngelscriptScriptUnitManager Units;
-		Units.Discover();
-		FileList.RemoveAll([&](const FFilenamePair& File)
-		{
-			return Units.ResolveOwner(File.AbsolutePath).Layer != EAngelscriptScriptLayer::Leaf;
-		});
-	}
-                                                                                                              
                                                                                                                                      
 	const bool bGcCompilationAvailable = IsAngelscriptRuntimeGcCompilationAvailable();
 	if (bGcCompilationAvailable && ConsumeAngelscriptRuntimeGcCompilationRetry())
@@ -2515,9 +1895,7 @@ void FAngelscriptManager::Tick(float DeltaTime)
                                                                                                  
 
 #if AS_CAN_HOTRELOAD
-                                                                                                  
-	if (bScriptDevelopmentMode || bHasSourceScriptUnits)
-                                                                                                
+	if (bScriptDevelopmentMode)
 	{
 		// In the scenario where the initial compile fails and the user press "Try Again" GEngine is nullptr.
 		// Since the unit tests assumes an existing GEngine we need to skip the unit testing in that case.
@@ -2530,11 +1908,6 @@ void FAngelscriptManager::Tick(float DeltaTime)
 			}
 		}
 
-                                                                                                           
-#if WITH_EDITOR && !UE_BUILD_SHIPPING
-		OnScriptReloadTick.Broadcast();
-#endif
-                                                                                                         
 		// Only check for hot reloads periodically instead of every tick
 		if (bUseHotReloadCheckerThread)
 		{
@@ -2563,13 +1936,6 @@ void FAngelscriptManager::Tick(float DeltaTime)
 		DebugServer->Tick();
 #endif
 
-                                                                                                     
-	// ModKit runtime-integrity checks : empty registry -> no-op.
-	if (FAngelscriptModdingMemoryIntegrityRuntime::HasHandlers())
-	{
-		FAngelscriptModdingMemoryIntegrityRuntime::RunChecks();
-	}
-                                                                                                   
 
 	// If this is ever not null during this tick, something changed
 	// the world context without resetting it. Very bad
@@ -2662,11 +2028,6 @@ void FAngelscriptManager::SwapInModules(const TArray<TSharedRef<struct FAngelscr
 		ActiveModules.Add(Module->ModuleName, Module);
 	}
 
-                                                                                                         
-	bHasSourceScriptUnits = false;
-	for (const auto& Pair : ActiveModules)
-		bHasSourceScriptUnits |= Pair.Value->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf;
-                                                                                                       
 	// Update dependencies for discarded modules
 	for (auto OldModule : DiscardedModules)
 	{
@@ -2686,13 +2047,11 @@ void FAngelscriptManager::SwapInModules(const TArray<TSharedRef<struct FAngelscr
 		auto Module = ModuleElem.Value;
 		for (auto Class : Module->Classes)
 		{
+                                                                                                                     
 			if (Class->ScriptType == nullptr && Class->Class == nullptr && Class->Struct == nullptr)
 				continue;
-                                                                                                   
-			if (Module->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf && Class->QualifiedName.IsEmpty())
-				Class->QualifiedName = Module->ScriptUnit.Id + TEXT("::") + Class->ClassName;
-			ActiveClassesByName.Add(Class->QualifiedName.IsEmpty() ? Class->ClassName : Class->QualifiedName,
-                                                                                                 
+                                                                                                                   
+			ActiveClassesByName.Add(Class->ClassName,
 				TPair<TSharedPtr<FAngelscriptModuleDesc>,TSharedPtr<FAngelscriptClassDesc>>{
 					Module, Class
 			});
@@ -2700,11 +2059,7 @@ void FAngelscriptManager::SwapInModules(const TArray<TSharedRef<struct FAngelscr
 
 		for (auto Delegate : Module->Delegates)
 		{
-                                                                                                      
-			if (Module->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf && Delegate->QualifiedName.IsEmpty())
-				Delegate->QualifiedName = Module->ScriptUnit.Id + TEXT("::") + Delegate->DelegateName;
-			ActiveDelegatesByName.Add(Delegate->QualifiedName.IsEmpty() ? Delegate->DelegateName : Delegate->QualifiedName,
-                                                                                                    
+			ActiveDelegatesByName.Add(Delegate->DelegateName,
 				TPair<TSharedPtr<FAngelscriptModuleDesc>,TSharedPtr<FAngelscriptDelegateDesc>>{
 					Module, Delegate
 			});
@@ -2712,11 +2067,7 @@ void FAngelscriptManager::SwapInModules(const TArray<TSharedRef<struct FAngelscr
 
 		for (auto Enum : Module->Enums)
 		{
-                                                                                                  
-			if (Module->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf && Enum->QualifiedName.IsEmpty())
-				Enum->QualifiedName = Module->ScriptUnit.Id + TEXT("::") + Enum->EnumName;
-			ActiveEnumsByName.Add(Enum->QualifiedName.IsEmpty() ? Enum->EnumName : Enum->QualifiedName,
-                                                                                                
+			ActiveEnumsByName.Add(Enum->EnumName,
 				TPair<TSharedPtr<FAngelscriptModuleDesc>,TSharedPtr<FAngelscriptEnumDesc>>{
 					Module, Enum
 			});
@@ -2796,85 +2147,62 @@ TSharedPtr<struct FAngelscriptModuleDesc> FAngelscriptManager::GetModuleByFilena
 }
 
 
-                                                                                            
-bool FAngelscriptManager::ValidateScriptUnitReferences(
-	const TArray<TSharedRef<FAngelscriptModuleDesc>>& Modules,
-	const FAngelscriptScriptUnitManager& Units, bool bFromCache)
-{
-	TMap<FString, FString> CachedUnitIds;
-	if (bFromCache && bUsePrecompiledData)
-	{
-		TArray<FAngelscriptPrecompiledData*> DataContexts = PrecompiledDataInstances;
-		if (PrecompiledData != nullptr) DataContexts.AddUnique(PrecompiledData);
-		for (const auto* DataContext : DataContexts)
-			for (const auto& CachedModule : DataContext->Modules)
-				CachedUnitIds.Add(CachedModule.Key, CachedModule.Value.ScriptUnitId.UnrealString());
-	}
-	bool bValid = true;
-	for (const auto& Module : Modules)
-	{
-		auto Check = [&](const FString& TargetUnit, int32 Row, int32 Column)
-		{
-			FString Error;
-			if (Units.CanReference(Module->ScriptUnit.Id, TargetUnit, Error)) return;
-			FDiagnostic Diagnostic;
-			Diagnostic.Message = Error;
-			Diagnostic.Row = FMath::Max(1, Row);
-			Diagnostic.Column = FMath::Max(1, Column);
-			Diagnostic.bIsError = true;
-			Diagnostic.bIsInfo = false;
-			ScriptCompileError(Module->Code.IsEmpty() ? Module->ModuleName : Module->Code[0].AbsoluteFilename, Diagnostic);
-			Module->bCompileError = true;
-			bValid = false;
-		};
-		if (bFromCache)
-		{
-			const auto* DataContext = Module->PrecompiledDataContext != nullptr ? Module->PrecompiledDataContext : PrecompiledData;
-			if (!DataContext || !bUsePrecompiledData || Module->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf) continue;
-			const auto* Cached = DataContext->Modules.Find(Module->ModuleName);
-			if (!Cached) continue;
-			for (const auto& Reference : Cached->ModuleReferences)
-			{
-				const auto* TargetUnit = CachedUnitIds.Find(Reference.ModuleName.UnrealString());
-				Check(TargetUnit ? *TargetUnit : FString(), Reference.Row, Reference.Column);
-			}
-		}
-		else if (Module->ScriptModule)
-		{
-			for (const auto& Dependency : Module->ScriptModule->moduleDependencies)
-				Check(ANSI_TO_TCHAR(Dependency.Key->scriptUnitId.AddressOf()), Dependency.Value.FirstLineNumber, Dependency.Value.FirstColumn);
-		}
-	}
-	return bValid;
-}
-                                                                                          
 
-                                                                                              
-ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
-	const TArray<TSharedRef<FAngelscriptModuleDesc>>& InModules,
-	TArray<TSharedRef<FAngelscriptModuleDesc>>& OutCompiledModules,
-	const FAngelscriptScriptUnitManager& ScriptUnits)
+                                                                                                    
+void FAngelscriptManager::DrainDeferredSourceCompilations()
 {
-                                                                                            
+	if (DeferredSourceCompilations.IsEmpty() || bDrainingDeferredSourceCompilations
+		|| bIsCompilingModules || IsAngelscriptExecutionShutdownStarted()) return;
+	FAngelscriptExecutionWriteScope Boundary(FAngelscriptExecutionWriteScope::EAcquire::Try);
+	if (!Boundary.IsAcquired()) return;
+	TGuardValue<bool> Draining(bDrainingDeferredSourceCompilations, true);
+	auto Requests = MoveTemp(DeferredSourceCompilations);
+	DeferredSourceCompilations.Reset();
+	for (const auto& Request : Requests)
+	{
+		TArray<TSharedRef<FAngelscriptModuleDesc>> Compiled;
+		const ECompileResult Result = CompileModules(Request.CompileType, Request.Modules, Compiled);
+		if (Result != ECompileResult::FullyHandled && Result != ECompileResult::PartiallyHandled)
+			UE_LOG(Angelscript, Warning, TEXT("Deferred source reload failed; inspect compilation diagnostics."));
+	}
+}
+
                                                                                                   
-    ON_SCOPE_EXIT
-    {
-        FAngelscriptTypeGenerationContext Context;
-        Context.Point = EAngelscriptTypeGenerationPoint::AbortModules;
-        Context.Modules = &InModules;
-        FString Error;
-        if (!DispatchAngelscriptTypeGeneration(Context, Error))
-            UE_LOG(Angelscript, Error, TEXT("SCRIPT_EXTENSION_ABORT_FAILED reason=%s"), *Error);
-    };
-                                                                                                
-                                                                                                                  
-	if (!ValidateScriptUnitReferences(InModules, ScriptUnits, true)) return ECompileResult::Error;
-                                                                                                                
+
+                                                                                                                     
+ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
+	const TArray<TSharedRef<FAngelscriptModuleDesc>>& InModules,
+	TArray<TSharedRef<FAngelscriptModuleDesc>>& OutCompiledModules)
+{
+                                                                                                                   
+                                                                                                        
+	check(IsInGameThread());
+	TUniquePtr<FAngelscriptExecutionWriteScope> Admission;
+	if (CompileType != ECompileType::Initial)
+	{
+		// Compilation callbacks cannot start a second transaction.
+		if (bIsCompilingModules || IsAngelscriptExecutionShutdownStarted())
+			return ECompileResult::Error;
+		Admission = MakeUnique<FAngelscriptExecutionWriteScope>(FAngelscriptExecutionWriteScope::EAcquire::Try);
+		if (!Admission->IsAcquired()
+			|| (!bDrainingDeferredSourceCompilations && !DeferredSourceCompilations.IsEmpty()))
+		{
+			// Cache data is borrowed from the synchronous caller and cannot outlive it.
+			for (const auto& Module : InModules)
+				if (Module->PrecompiledData || Module->ScriptModule)
+					return ECompileResult::Error;
+			DeferredSourceCompilations.Add({CompileType, InModules});
+			OutCompiledModules.Reset();
+			return ECompileResult::Deferred;
+		}
+	}
+
+                                                                                                      
+
                                                                                                             
     if (CompileType != ECompileType::Initial && IsInGameThread()
         && AngelscriptReloadSafety::ShouldDeferForPackageLoading())
     {
-        if (!bForcedFullReloadExecution)
         {
             for (const auto& Module : InModules)
                 for (const auto& Section : Module->Code)
@@ -2888,7 +2216,7 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 	if (!GcCompilationScope.IsAdmitted())
 	{
 		// Refuse before PreCompile and engine mutations; retain ordinary failed-file retry input.
-		if (CompileType != ECompileType::Initial && IsInGameThread() && !bForcedFullReloadExecution)
+		if (CompileType != ECompileType::Initial && IsInGameThread())
 		{
 			for (const auto& Module : InModules)
 				for (const auto& Section : Module->Code)
@@ -2901,11 +2229,6 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 		return ECompileResult::Error;
 	}
                                                                                                           
-                                                                                             
-	TGuardValue<const FAngelscriptScriptUnit*> UnitContext(CurrentScriptUnit, &InModules[0]->ScriptUnit);
-	TSet<FString> CompileUnitIds;
-	for (const auto& Module : InModules) CompileUnitIds.Add(Module->ScriptUnit.Id);
-                                                                                           
 
                                                                                                     
 	bool bNativeReloadFailed = false;
@@ -2984,15 +2307,6 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 					ensureMsgf(!CompilingModulesByName.Contains(Module->ModuleName), TEXT("Duplicate module %s"), *Module->ModuleName);
 					CompilingModulesByName.Add(Module->ModuleName, Module);
 					CompiledModules.Add(Module);
-                                                                                            
-					if (Module->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf)
-						for (const auto& Class : Module->Classes)
-							for (const auto& Active : GetActiveModules())
-								if (Active->ScriptUnit.Layer != EAngelscriptScriptLayer::Leaf && Active->GetClass(Class->ClassName).IsValid())
-									ScriptCompileError(Module, Class->LineNumber,
-										FString::Printf(TEXT("FeatureMod type '%s' shadows a trunk/branch type; the local type takes priority"),
-										    *Class->ClassName), false);
-                                                                                          
 
 					// Remove the old module so the script engine can no longer see it
 					if (CompileType != ECompileType::Initial)
@@ -3177,10 +2491,6 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 						for (auto ModuleElem : ActiveModules)
 						{
 							auto OldModule = ModuleElem.Value;
-                                                                                                   
-							if (!CompileUnitIds.Contains(OldModule->ScriptUnit.Id))
-								continue;
-                                                                                                 
 							asCModule* OldScriptModule = OldModule->ScriptModule;
 							if (OldScriptModule == nullptr)
 								continue;
@@ -3642,9 +2952,6 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 			}
 		}
 
-                                                                                                          
-		if (!ValidateScriptUnitReferences(CompiledModules, ScriptUnits, false)) bHadCompileErrors = true;
-                                                                                                        
 		// If we added any precompiled modules, finalize them now
 		if (PrecompiledData != nullptr && bUsePrecompiledData)
 		{
@@ -3662,6 +2969,7 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 
 			if (builder.numErrors > 0)
 				bHadCompileErrors = true;
+
 
 			if (!bHadCompileErrors)
 			{
@@ -3703,312 +3011,9 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 		bShouldSwapInModules = false;
 	}
 
-                                                                                             
-	// Cuviss Modding registration point: post-compile leaf-direction audit.
-	// Runs after a clean compile batch, before the swap-in decision. A
-	// violation raises a script compile error, marks the module swap-in
-	// rejected, and fails the batch. An empty registry skips the audit
-	// entirely, keeping upstream behavior bit-for-bit.
-	if (!bHadCompileErrors && FAngelscriptModdingLeafDirectionAuditRuntime::HasHandlers())
-	{
-		for (auto& CuvissModule : CompiledModules)
-		{
-			auto* CuvissScriptModule = (asCModule*)CuvissModule->ScriptModule;
-			if (CuvissScriptModule == nullptr)
-			{
-				continue;
-			}
-			TArray<FString> CuvissDependencyNames;
-			for (const auto& CuvissDependencyElement : CuvissScriptModule->moduleDependencies)
-			{
-				if (CuvissDependencyElement.Key != nullptr)
-				{
-					CuvissDependencyNames.Add(UTF8_TO_TCHAR(CuvissDependencyElement.Key->GetName()));
-				}
-			}
-			FString CuvissError;
-			if (FAngelscriptModdingLeafDirectionAuditRuntime::AnyViolation(CuvissModule->ModuleName, CuvissDependencyNames, CuvissError))
-			{
-				ScriptCompileError(CuvissModule, 0, CuvissError);
-				CuvissModule->bModuleSwapInError = true;
-				bShouldSwapInModules = false;
-				bHadCompileErrors = true;
-			}
-		}
-	}
-                                                                                           
 
-                                                                                            
-	extern UFunction* GetBlueprintEventByScriptName(UClass* Class, const FString& ScriptName);
-	// Cuviss Modding registration point: post-compile API allowlist audit.
-	// Runs after a clean compile batch, before the swap-in decision. For each
-	// compiled module the hook mechanically extracts the external (system) API
-	// surface as declaration strings and asks the registered handler to match
-	// it against a configured allowlist. A violation raises a script compile
-	// error, marks the module swap-in rejected, and fails the batch. An empty
-	// registry skips extraction entirely, keeping upstream behavior bit-for-bit.
-	if (!bHadCompileErrors && FAngelscriptModdingApiAllowlistAuditRuntime::HasHandlers())
-	{
-		for (auto& CuvissModule : CompiledModules)
-		{
-			auto* CuvissScriptModule = (asCModule*)CuvissModule->ScriptModule;
-			if (CuvissScriptModule == nullptr)
-			{
-				continue;
-			}
 
-			FAngelscriptModdingApiAllowlistAudit::FModApiUsage CuvissApiUsage;
 
-			auto CuvissAddUnique = [](TArray<FString>& OutDeclarations, FString Declaration)
-			{
-				if (!OutDeclarations.Contains(Declaration))
-				{
-					OutDeclarations.Add(MoveTemp(Declaration));
-				}
-			};
-
-			// Records a declaration string for system functions only; script,
-			// imported, interface, funcdef and delegate functions are skipped.
-			auto CuvissRecordSystemFunction = [&CuvissAddUnique, &CuvissApiUsage](asIScriptFunction* Function)
-			{
-				if (Function == nullptr || Function->GetFuncType() != asFUNC_SYSTEM)
-				{
-					return;
-				}
-				CuvissAddUnique(CuvissApiUsage.SystemCallDeclarations, UTF8_TO_TCHAR(Function->GetDeclaration(true, true)));
-			};
-
-			// Walks the final optimized bytecode of one compiled function and
-			// collects the system functions it calls directly: CALLSYS/
-			// Thiscall1 (function pointer operand), CALLINTF (funcId operand,
-			// native virtual/interface calls), ALLOC (constructor funcId) and
-			// FREE (destructor resolved from the freed type). FuncPtr binding
-			// targets are recorded when system; the CallPtr data-flow link to
-			// the funcptr variable and string-reflection targets are not
-			// statically resolvable and are documented out of scope.
-			auto CuvissCollectFunction = [&CuvissRecordSystemFunction, ScriptEngine](asIScriptFunction* Function)
-			{
-				asCScriptFunction* CuvissFunction = (asCScriptFunction*)Function;
-				if (CuvissFunction == nullptr)
-				{
-					return;
-				}
-				asUINT CuvissBytecodeLength = 0;
-				asDWORD* CuvissBytecode = CuvissFunction->GetByteCode(&CuvissBytecodeLength);
-				if (CuvissBytecode == nullptr)
-				{
-					return;
-				}
-				for (asUINT CuvissOffset = 0; CuvissOffset < CuvissBytecodeLength; )
-				{
-					const asEBCInstr CuvissOp = (asEBCInstr)(CuvissBytecode[CuvissOffset] & 0xFF);
-					const asEBCType CuvissType = asBCInfo[CuvissOp].type;
-					asDWORD* CuvissArgs = CuvissBytecode + CuvissOffset + 1;
-					switch (CuvissOp)
-					{
-					case asBC_CALLSYS:
-					case asBC_Thiscall1:
-						CuvissRecordSystemFunction((asIScriptFunction*)asBC_PTRARG(CuvissBytecode + CuvissOffset));
-						break;
-					case asBC_CALLINTF:
-						CuvissRecordSystemFunction(ScriptEngine->GetFunctionById(asBC_DWORDARG(CuvissBytecode + CuvissOffset)));
-						break;
-					case asBC_ALLOC:
-						CuvissRecordSystemFunction(ScriptEngine->GetFunctionById(*(int*)(CuvissArgs + AS_PTR_SIZE)));
-						break;
-					case asBC_FREE:
-						{
-							asCObjectType* CuvissFreedType = (asCObjectType*)asBC_PTRARG(CuvissBytecode + CuvissOffset);
-							if (CuvissFreedType != nullptr && CuvissFreedType->beh.destruct != 0)
-							{
-								CuvissRecordSystemFunction(ScriptEngine->GetFunctionById(CuvissFreedType->beh.destruct));
-							}
-						}
-						break;
-					case asBC_FuncPtr:
-						CuvissRecordSystemFunction((asIScriptFunction*)asBC_PTRARG(CuvissBytecode + CuvissOffset));
-						break;
-					default:
-						break;
-					}
-					// asBCTypeSize already includes the opcode dword (engine
-					// precedent: as_module.cpp anonymous-function scan).
-					CuvissOffset += asBCTypeSize[CuvissType];
-				}
-			};
-
-			// Base-class facts come from the manager's class descriptors (the
-			// module type enumeration does not surface base types pre-swap-in),
-			// while method bytecode comes from the module type enumeration
-			// (ClassDesc::ScriptType is not yet attached at this stage). The
-			// two sources are complementary; both are mechanical extraction.
-			for (const TSharedRef<FAngelscriptClassDesc>& CuvissClass : CuvissModule->Classes)
-			{
-				if (CuvissClass->bIsStaticsClass || CuvissClass->bIsStruct)
-				{
-					continue;
-				}
-
-				// Inherited system base classes (script bases are left to the
-				// direction rules audited by the leaf-direction hook).
-				if (CuvissClass->bSuperIsCodeClass && !CuvissClass->SuperClass.IsEmpty())
-				{
-					CuvissAddUnique(CuvissApiUsage.BaseTypeDeclarations, CuvissClass->SuperClass);
-				}
-
-				// UFUNCTION(BlueprintOverride) methods use an Unreal _Implementation
-				// thunk rather than AngelScript's override trait. CodeSuperClass points
-				// to the native ancestor even when this class inherits through scripts.
-				if (CuvissClass->CodeSuperClass != nullptr)
-				{
-					FString CuvissNativeSuperName;
-					asITypeInfo* CuvissNativeSuperType = nullptr;
-					bool bCuvissNativeSuperResolved = false;
-					for (const TSharedRef<FAngelscriptFunctionDesc>& CuvissMethodDesc : CuvissClass->Methods)
-					{
-						if (!CuvissMethodDesc->bBlueprintOverride)
-						{
-							continue;
-						}
-
-						TArray<FString> CuvissOverrideNames;
-						if (!CuvissMethodDesc->OriginalFunctionName.IsEmpty())
-						{
-							CuvissOverrideNames.Add(CuvissMethodDesc->OriginalFunctionName);
-						}
-						if (!CuvissMethodDesc->FunctionName.IsEmpty() && !CuvissOverrideNames.Contains(CuvissMethodDesc->FunctionName))
-						{
-							CuvissOverrideNames.Add(CuvissMethodDesc->FunctionName);
-						}
-						if (!CuvissMethodDesc->ScriptFunctionName.IsEmpty() && !CuvissOverrideNames.Contains(CuvissMethodDesc->ScriptFunctionName))
-						{
-							CuvissOverrideNames.Add(CuvissMethodDesc->ScriptFunctionName);
-						}
-
-						// Script-only BlueprintEvents are checked by script inheritance
-						// rules. Record only overrides that resolve to native events.
-						bool bCuvissNativeEvent = false;
-						for (const FString& CuvissOverrideName : CuvissOverrideNames)
-						{
-							if (GetBlueprintEventByScriptName(CuvissClass->CodeSuperClass, CuvissOverrideName) != nullptr)
-							{
-								bCuvissNativeEvent = true;
-								break;
-							}
-						}
-						if (!bCuvissNativeEvent)
-						{
-							continue;
-						}
-						if (!bCuvissNativeSuperResolved)
-						{
-							CuvissNativeSuperName = FAngelscriptType::GetBoundClassName(CuvissClass->CodeSuperClass);
-							CuvissNativeSuperType = ScriptEngine->GetTypeInfoByDecl(TCHAR_TO_UTF8(*CuvissNativeSuperName));
-							bCuvissNativeSuperResolved = true;
-						}
-
-						bool bCuvissOverrideRecorded = false;
-						if (CuvissNativeSuperType != nullptr)
-						{
-							for (const FString& CuvissOverrideName : CuvissOverrideNames)
-							{
-								asIScriptFunction* CuvissNativeParentMethod = CuvissNativeSuperType->GetMethodByName(TCHAR_TO_UTF8(*CuvissOverrideName));
-								if (CuvissNativeParentMethod != nullptr && CuvissNativeParentMethod->GetFuncType() == asFUNC_SYSTEM)
-								{
-									CuvissAddUnique(CuvissApiUsage.OverrideDeclarations, UTF8_TO_TCHAR(CuvissNativeParentMethod->GetDeclaration(true, true)));
-									bCuvissOverrideRecorded = true;
-									break;
-								}
-							}
-						}
-
-						if (!bCuvissOverrideRecorded)
-						{
-							CuvissAddUnique(CuvissApiUsage.OverrideDeclarations,
-								FString::Printf(TEXT("%s::%s"), *CuvissNativeSuperName,
-									CuvissOverrideNames.Num() != 0 ? *CuvissOverrideNames[0] : TEXT("<unresolved>")));
-						}
-					}
-				}
-			}
-
-			const asUINT CuvissTypeCount = CuvissScriptModule->GetObjectTypeCount();
-			for (asUINT CuvissTypeIndex = 0; CuvissTypeIndex < CuvissTypeCount; ++CuvissTypeIndex)
-			{
-				asITypeInfo* CuvissType = CuvissScriptModule->GetObjectTypeByIndex(CuvissTypeIndex);
-				if (CuvissType == nullptr)
-				{
-					continue;
-				}
-
-				// Methods and behaviours carry the module's executable code.
-				const asUINT CuvissMethodCount = CuvissType->GetMethodCount();
-				for (asUINT CuvissMethodIndex = 0; CuvissMethodIndex < CuvissMethodCount; ++CuvissMethodIndex)
-				{
-					asIScriptFunction* CuvissMethod = CuvissType->GetMethodByIndex(CuvissMethodIndex);
-					if (CuvissMethod == nullptr)
-					{
-						continue;
-					}
-					CuvissCollectFunction(CuvissMethod);
-
-					// Native virtual overrides: the parent function is the
-					// virtualFunctionTable slot at the function's vfTableIdx.
-					asCScriptFunction* CuvissMethodImpl = (asCScriptFunction*)CuvissMethod;
-					if (CuvissMethodImpl->IsOverride())
-					{
-						asCObjectType* CuvissObjectType = CuvissMethodImpl->objectType;
-						if (CuvissObjectType != nullptr && CuvissObjectType->derivedFrom != nullptr
-							&& CuvissMethodImpl->vfTableIdx >= 0
-							&& (asUINT)CuvissMethodImpl->vfTableIdx < CuvissObjectType->derivedFrom->virtualFunctionTable.GetLength())
-						{
-							asCScriptFunction* CuvissParentFunction = CuvissObjectType->derivedFrom->virtualFunctionTable[CuvissMethodImpl->vfTableIdx];
-							if (CuvissParentFunction != nullptr && CuvissParentFunction->funcType == asFUNC_SYSTEM)
-							{
-								CuvissAddUnique(CuvissApiUsage.OverrideDeclarations, UTF8_TO_TCHAR(CuvissParentFunction->GetDeclaration(true, true)));
-							}
-						}
-					}
-				}
-
-				const asUINT CuvissBehaviourCount = CuvissType->GetBehaviourCount();
-				for (asUINT CuvissBehaviourIndex = 0; CuvissBehaviourIndex < CuvissBehaviourCount; ++CuvissBehaviourIndex)
-				{
-					asIScriptFunction* CuvissBehaviour = CuvissType->GetBehaviourByIndex(CuvissBehaviourIndex, nullptr);
-					if (CuvissBehaviour == nullptr)
-					{
-						continue;
-					}
-					CuvissCollectFunction(CuvissBehaviour);
-				}
-			}
-
-			const asUINT CuvissGlobalFunctionCount = CuvissScriptModule->GetFunctionCount();
-			for (asUINT CuvissGlobalIndex = 0; CuvissGlobalIndex < CuvissGlobalFunctionCount; ++CuvissGlobalIndex)
-			{
-				CuvissCollectFunction(CuvissScriptModule->GetFunctionByIndex(CuvissGlobalIndex));
-			}
-
-			FString CuvissError;
-			if (FAngelscriptModdingApiAllowlistAuditRuntime::AnyViolation(CuvissModule->ModuleName, CuvissApiUsage, CuvissError))
-			{
-				ScriptCompileError(CuvissModule, 0, CuvissError);
-				CuvissModule->bModuleSwapInError = true;
-				bShouldSwapInModules = false;
-				bHadCompileErrors = true;
-			}
-		}
-	}
-                                                                                          
-
-                                                                                                     
-	// ModKit runtime-integrity checks : one deterministic check per
-	// compile batch before the swap-in decision; empty registry -> no-op.
-	if (FAngelscriptModdingMemoryIntegrityRuntime::HasHandlers())
-	{
-		FAngelscriptModdingMemoryIntegrityRuntime::RunChecks();
-	}
-                                                                                                   
 
 #if WITH_EDITOR
 	// If any script modules specified usage restrictions we should check those now
@@ -4022,51 +3027,6 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 	if (CompileType != ECompileType::Initial)
 		ExecutionWriteScope = MakeUnique<FAngelscriptExecutionWriteScope>();
                                                                                                       
-                                                                                                   
-    bool bExtensionModulesSwapped = false;
-    bool bPrepareExtensionClassGeneration = false;
-    auto PrepareExtensionCommit = [&]()
-    {
-        if (!IsAngelscriptExtensionStageRegistered(EAngelscriptExtensionStage::TypeGeneration)) return true;
-        FAngelscriptTypeGenerationContext Context;
-        Context.Point = EAngelscriptTypeGenerationPoint::PrepareModuleCommit;
-        Context.Modules = &CompiledModules;
-        // Report real VM edges, including indirect consumers, to the provider.
-        TSet<asCModule*> Closure;
-        for (const auto& Module : GetActiveModules())
-            if (Module->ScriptModule && CompileUnitIds.Contains(Module->ScriptUnit.Id))
-                Closure.Add(Module->ScriptModule);
-        for (const auto& Module : CompiledModules)
-            if (Module->ScriptModule) Closure.Add(Module->ScriptModule);
-        bool bAdded = true;
-        while (bAdded)
-        {
-            bAdded = false;
-            for (const auto& Module : GetActiveModules())
-            {
-                if (!Module->ScriptModule || Closure.Contains(Module->ScriptModule)) continue;
-                for (const auto& Dependency : Module->ScriptModule->moduleDependencies)
-                    if (Closure.Contains(Dependency.Key))
-                    {
-                        Closure.Add(Module->ScriptModule);
-                        Context.bHasExternalModuleConsumers |= !CompileUnitIds.Contains(Module->ScriptUnit.Id);
-                        bAdded = true;
-                        break;
-                    }
-            }
-        }
-        FString Error;
-        if (DispatchAngelscriptTypeGeneration(Context, Error))
-        {
-            bPrepareExtensionClassGeneration = Context.bPrepareClassGeneration;
-            return true;
-        }
-        UE_LOG(Angelscript, Error, TEXT("SCRIPT_EXTENSION_ADMISSION_REJECTED before_swap=1 reason=%s"), *Error);
-        bShouldSwapInModules = false;
-        bHadCompileErrors = true;
-        return false;
-    };
-                                                                                                 
 	if (bShouldSwapInModules)
 	{
 		FAngelscriptClassGenerator ClassGenerator;
@@ -4086,48 +3046,6 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 		// Update progress indicator
 		SlowTask.EnterProgressFrame(0.5f, FText::FromString(TEXT("Class Generator Setup")));
 
-                                                                                                              
-        auto PerformExtensionTransaction = [&]()
-        {
-            FString Error;
-            bool bReady = ClassGenerator.PrepareModuleTransaction(Error);
-            if (bReady)
-            {
-                FAngelscriptTypeGenerationContext Context;
-                Context.Point = EAngelscriptTypeGenerationPoint::PrepareInstanceCommit;
-                Context.Modules = &CompiledModules;
-                bReady = DispatchAngelscriptTypeGeneration(Context, Error);
-            }
-            if (!bReady)
-            {
-                // Provider-owned instances and holder writes unwind while candidate
-                // functions/types are live, before the compiler's existing reverse map.
-                FAngelscriptTypeGenerationContext Abort;
-                Abort.Point = EAngelscriptTypeGenerationPoint::AbortModules;
-                Abort.Modules = &CompiledModules;
-                FString AbortError;
-                if (!DispatchAngelscriptTypeGeneration(Abort, AbortError))
-                {
-                    UE_LOG(Angelscript, Error, TEXT("SCRIPT_EXTENSION_ABORT_FAILED reason=%s"), *AbortError);
-                    bNativeReloadFailed = true;
-                }
-                ClassGenerator.AbortModuleTransaction();
-                UE_LOG(Angelscript, Error, TEXT("SCRIPT_EXTENSION_ADMISSION_REJECTED before_swap=1 reason=%s"), *Error);
-                bShouldSwapInModules = false;
-                bHadCompileErrors = true;
-                return;
-            }
-            // All recoverable provider work has completed. No old module/class has
-            // been retired before this boundary; later callback failures are partial.
-            bExtensionModulesSwapped = true;
-            SwapInModules(CompiledModules, DiscardedModules);
-            if (!ClassGenerator.CommitModuleTransaction(Error))
-            {
-                UE_LOG(Angelscript, Error, TEXT("SCRIPT_EXTENSION_COMMIT_FAILED after_swap=1 reason=%s"), *Error);
-                bNativeReloadFailed = true;
-            }
-        };
-                                                                                                            
 		// Perform the actual reload
 		auto ReloadReq = ClassGenerator.Setup();
 
@@ -4141,7 +3059,8 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
                                                                                                              
         const bool bActualFullReload = CompileType != ECompileType::SoftReloadOnly
             && (ReloadReq == FAngelscriptClassGenerator::EReloadRequirement::FullReloadSuggested
-                || ReloadReq == FAngelscriptClassGenerator::EReloadRequirement::FullReloadRequired);
+                || ReloadReq == FAngelscriptClassGenerator::EReloadRequirement::FullReloadRequired
+                );
         TOptional<AngelscriptReloadSafety::FPreparedPayloadReloadScope> PreparedPayloadScope;
         if (bVerifiedProperties && bActualFullReload)
         {
@@ -4188,22 +3107,10 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 				{
 					TOptional<AngelscriptReloadSafety::FCommittedReloadScope> CommittedReloadScope;
 					if (bIsInitialCompileFinished) CommittedReloadScope.Emplace();
-					TOptional<TGuardValue<bool*>> NativeReloadOutcomeScope;
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-					if (bForcedFullReloadExecution && IsInGameThread())
-						NativeReloadOutcomeScope.Emplace(ActiveNativeReloadFailure, &bNativeReloadFailed);
-#endif
                                                                                                
-					                                                                                                   
-                    if (!PrepareExtensionCommit()) break;
-                    if (bPrepareExtensionClassGeneration)
-                    {
-                        PerformExtensionTransaction();
-                        break;
-                    }
-                    bExtensionModulesSwapped = true;
-                                                                                                 
-                    SwapInModules(CompiledModules, DiscardedModules);
+                                                                                                                     
+					                    SwapInModules(CompiledModules, DiscardedModules);
+                                                                                                                   
 					ClassGenerator.PerformSoftReload();
                                                                                                     
 				}
@@ -4233,22 +3140,10 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
                                                                                                           
 						TOptional<AngelscriptReloadSafety::FCommittedReloadScope> CommittedReloadScope;
 						if (bIsInitialCompileFinished) CommittedReloadScope.Emplace();
-						TOptional<TGuardValue<bool*>> NativeReloadOutcomeScope;
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-						if (bForcedFullReloadExecution && IsInGameThread())
-							NativeReloadOutcomeScope.Emplace(ActiveNativeReloadFailure, &bNativeReloadFailed);
-#endif
                                                                                                         
-						                                                                                                   
-                    if (!PrepareExtensionCommit()) break;
-                    if (bPrepareExtensionClassGeneration)
-                    {
-                        PerformExtensionTransaction();
-                        break;
-                    }
-                    bExtensionModulesSwapped = true;
-                                                                                                 
-                    SwapInModules(CompiledModules, DiscardedModules);
+                                                                                                                     
+						                    SwapInModules(CompiledModules, DiscardedModules);
+                                                                                                                   
 						ClassGenerator.PerformSoftReload();
 					}
 					else
@@ -4260,16 +3155,9 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 						if (IsInGameThread())
 							NativeReloadOutcomeScope.Emplace(ActiveNativeReloadFailure, &bNativeReloadFailed);
                                                                                                     
-						                                                                                                   
-                    if (!PrepareExtensionCommit()) break;
-                    if (bPrepareExtensionClassGeneration)
-                    {
-                        PerformExtensionTransaction();
-                        break;
-                    }
-                    bExtensionModulesSwapped = true;
-                                                                                                 
-                    SwapInModules(CompiledModules, DiscardedModules);
+                                                                                                                     
+						                    SwapInModules(CompiledModules, DiscardedModules);
+                                                                                                                   
 						ClassGenerator.PerformFullReload();
 					}
 					break;
@@ -4303,16 +3191,9 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 						if (IsInGameThread())
 							NativeReloadOutcomeScope.Emplace(ActiveNativeReloadFailure, &bNativeReloadFailed);
                                                                                                    
-						                                                                                                   
-                    if (!PrepareExtensionCommit()) break;
-                    if (bPrepareExtensionClassGeneration)
-                    {
-                        PerformExtensionTransaction();
-                        break;
-                    }
-                    bExtensionModulesSwapped = true;
-                                                                                                 
-                    SwapInModules(CompiledModules, DiscardedModules);
+                                                                                                                     
+						                    SwapInModules(CompiledModules, DiscardedModules);
+                                                                                                                   
 						ClassGenerator.PerformFullReload();
 					}
 					break;
@@ -4327,22 +3208,6 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 		}
 	}
 
-                                                                                               
-    if (bExtensionModulesSwapped)
-    {
-        FAngelscriptTypeGenerationContext Context;
-        Context.Point = bNativeReloadFailed ? EAngelscriptTypeGenerationPoint::AbortModules
-            : EAngelscriptTypeGenerationPoint::CommitModules;
-        Context.Modules = &CompiledModules;
-        Context.bModulesSwapped = true;
-        FString Error;
-        if (!DispatchAngelscriptTypeGeneration(Context, Error))
-        {
-            UE_LOG(Angelscript, Error, TEXT("SCRIPT_EXTENSION_COMMIT_FAILED after_swap=1 reason=%s"), *Error);
-            bNativeReloadFailed = true;
-        }
-    }
-                                                                                             
 	if (bShouldSwapInModules)
 	{
 		// Actually delete old modules
@@ -4433,11 +3298,6 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 			{
 				auto* OldScriptModule = (asCModule*)Module->ScriptModule;
 				OldScriptModule->RemoveTypesAndGlobalsFromEngineAvailability();
-                                                                                                                    
-                // Generated candidate CDOs/metadata can await GC after an aborted
-                // publication. Their existing type leases protect this module.
-                if (bPrepareExtensionClassGeneration && AngelscriptRetiredModules::DeferDiscard(Module)) continue;
-                                                                                                                  
 				OldScriptModule->InternalReset();
 				Engine->DiscardModule(OldScriptModule->GetName());
 
@@ -4446,25 +3306,6 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 		}
 	}
 
-                                                                                                       
-	if (!bShouldSwapInModules)
-	{
-		for (const auto& Module : CompiledModules)
-		{
-			const auto* Old = ActiveModules.Find(Module->ModuleName);
-			if (Old == nullptr || (*Old)->ScriptModule == nullptr) continue;
-			auto* OldScript = (*Old)->ScriptModule;
-			for (asUINT Index = 0; Index < OldScript->classTypes.GetLength(); ++Index)
-				ScriptEngine->allScriptDeclaredTypes.Add(OldScript->classTypes[Index]);
-			for (asUINT Index = 0; Index < OldScript->enumTypes.GetLength(); ++Index)
-				ScriptEngine->allScriptDeclaredTypes.Add(OldScript->enumTypes[Index]);
-			for (asUINT Index = 0; Index < OldScript->scriptGlobalsList.GetLength(); ++Index)
-				ScriptEngine->allScriptGlobalVariables.Add(OldScript->scriptGlobalsList[Index]);
-			for (asUINT Index = 0; Index < OldScript->globalFunctionList.GetLength(); ++Index)
-				ScriptEngine->allScriptGlobalFunctions.Add(OldScript->globalFunctionList[Index]);
-		}
-	}
-                                                                                                     
 
 	// If we have any new diagnostics, emit them again
 	if (bDiagnosticsDirty)
@@ -4572,217 +3413,10 @@ ECompileResult FAngelscriptManager::CompileScriptUnit(ECompileType CompileType,
 		}
 	}
 
-                                                                                                                              
-	if (bForcedFullReloadExecution)
-	{
-		QueuedFullReloadFiles.Empty();
-		PreviouslyFailedReloadFiles.Empty();
-	}
-                                                                                                                            
 	OutCompiledModules = MoveTemp(CompiledModules);
 
 	return Result;
 }
-
-                                                                                                  
-ECompileResult FAngelscriptManager::CompilePrecompiledModuleCacheDirectory(
-	const FString& CacheDirectory,
-	const FString& RequiredModulePrefix,
-	TArray<TSharedRef<FAngelscriptModuleDesc>>& OutCompiledModules,
-	const TMap<FString, TArray<uint8>>* VerifiedPackageFiles)
-{
-	check(IsInGameThread());
-	if (bIsCompilingModules || RequiredModulePrefix.IsEmpty())
-		return ECompileResult::Error;
-
-	TArray<FAngelscriptPrecompiledCacheFile> CacheFiles;
-	FString CacheError;
-	const TArray<uint8>* ManifestBytes = VerifiedPackageFiles ? VerifiedPackageFiles->Find(FPaths::ConvertRelativePathToFull(CacheDirectory /
-	    TEXT("ModuleCaches.json")).ToLower()) : nullptr;
-	if ((VerifiedPackageFiles && !ManifestBytes) || !FAngelscriptPrecompiledData::ReadModuleCacheSet(CacheDirectory, CacheFiles, CacheError, ManifestBytes))
-	{
-		UE_LOG(Angelscript, Warning, TEXT("Rejected precompiled module cache set: %s"), *CacheError);
-		return ECompileResult::Error;
-	}
-
-	TArray<FAngelscriptPrecompiledData*> CacheDataInstances;
-	TArray<TSharedRef<FAngelscriptModuleDesc>> ModulesToCompile;
-	TSet<FString> SeenModuleNames;
-	TSet<FGuid> SeenDataGuids;
-	auto DestroyCacheData = [&CacheDataInstances]()
-	{
-		for (int32 Index = CacheDataInstances.Num() - 1; Index >= 0; --Index)
-			delete CacheDataInstances[Index];
-		CacheDataInstances.Reset();
-	};
-
-	for (const FAngelscriptPrecompiledCacheFile& CacheFile : CacheFiles)
-	{
-		if ((CacheFile.ModuleName != RequiredModulePrefix
-			&& !CacheFile.ModuleName.StartsWith(RequiredModulePrefix + TEXT(".")))
-			|| SeenModuleNames.Contains(CacheFile.ModuleName))
-		{
-			DestroyCacheData();
-			return ECompileResult::Error;
-		}
-		SeenModuleNames.Add(CacheFile.ModuleName);
-
-		FString CachePath = CacheDirectory / CacheFile.FileName;
-		FAngelscriptValidatedCacheSnapshot CacheSnapshot;
-		if (IsAngelscriptExtensionProviderRegistered())
-		{
-			if (!CreateValidatedAngelscriptExtensionCacheSnapshot(
-					EAngelscriptExtensionCacheArtifactFamily::Precompiled,
-					CachePath,
-					CacheSnapshot,
-					CacheError))
-			{
-				UE_LOG(Angelscript, Warning, TEXT("Rejected precompiled module cache %s: %s"), *CachePath, *CacheError);
-				DestroyCacheData();
-				return ECompileResult::Error;
-			}
-			if (CacheSnapshot.IsValid())
-				CachePath = CacheSnapshot.GetPath();
-		}
-
-		FAngelscriptPrecompiledData* Data = new FAngelscriptPrecompiledData(Engine);
-		CacheDataInstances.Add(Data);
-		const TArray<uint8>* VerifiedBytes = VerifiedPackageFiles ? VerifiedPackageFiles->Find(FPaths::ConvertRelativePathToFull(CacheDirectory
-		    / CacheFile.FileName).ToLower()) : nullptr;
-		if (VerifiedPackageFiles && !VerifiedBytes) { DestroyCacheData(); return ECompileResult::Error; }
-		Data->Load(CachePath, VerifiedBytes);
-		FAngelscriptPrecompiledModule* CachedModule = Data->Modules.Find(CacheFile.ModuleName);
-		if (!Data->IsValidForCurrentBuild()
-			|| Data->Modules.Num() != 1
-			|| CachedModule == nullptr
-			|| Data->DataGuid != CacheFile.DataGuid
-			|| SeenDataGuids.Contains(Data->DataGuid))
-		{
-			UE_LOG(Angelscript, Warning, TEXT("Rejected invalid or repeated module cache %s"), *CacheFile.ModuleName);
-			DestroyCacheData();
-			return ECompileResult::Error;
-		}
-		CachedModule->Dependencies = CacheFile.Dependencies;
-		SeenDataGuids.Add(Data->DataGuid);
-
-		FGuid ExpectedJitGuid;
-		const FStaticJITCompiledInfo* CompiledInfo = FStaticJITCompiledInfo::Get();
-		// An absent module entry means there is no linked JIT body for this mod;
-		// its serialized bytecode remains the interpreter entry. A linked entry
-		// must match the cache DataGuid before the module can be instantiated.
-		if (CompiledInfo != nullptr
-			&& CompiledInfo->GetModuleDataGuid(CacheFile.ModuleName, ExpectedJitGuid)
-			&& ExpectedJitGuid != Data->DataGuid)
-		{
-			UE_LOG(Angelscript, Warning, TEXT("Rejected module cache %s because its DataGuid does not match the linked JIT module"), *CacheFile.ModuleName);
-			DestroyCacheData();
-			return ECompileResult::Error;
-		}
-
-	}
-
-	if (CacheDataInstances.IsEmpty())
-	{
-		DestroyCacheData();
-		return ECompileResult::Error;
-	}
-	const TArray<FStringInArchive>& SharedStaticNames = CacheDataInstances[0]->StaticNames;
-	for (FAngelscriptPrecompiledData* Data : CacheDataInstances)
-	{
-		if (Data->StaticNames.Num() != SharedStaticNames.Num())
-		{
-			DestroyCacheData();
-			return ECompileResult::Error;
-		}
-		for (int32 Index = 0; Index < SharedStaticNames.Num(); ++Index)
-		{
-			if (Data->StaticNames[Index].UnrealString() != SharedStaticNames[Index].UnrealString())
-			{
-				DestroyCacheData();
-				return ECompileResult::Error;
-			}
-		}
-	}
-	if (!CacheDataInstances[0]->AppendStaticNames(CacheError))
-	{
-		UE_LOG(Angelscript, Warning, TEXT("Rejected module cache static-name table: %s"), *CacheError);
-		DestroyCacheData();
-		return ECompileResult::Error;
-	}
-	for (FAngelscriptPrecompiledData* Data : CacheDataInstances)
-		Data->ClassesLoadedFromPrecompiledData = CacheDataInstances[0]->ClassesLoadedFromPrecompiledData;
-	for (FAngelscriptPrecompiledData* Data : CacheDataInstances)
-		ModulesToCompile.Append(Data->GetModulesToCompile());
-	FAngelscriptScriptUnitManager CurrentUnits;
-	CurrentUnits.Discover();
-	const int32 FeatureModsMarker = RequiredModulePrefix.Find(TEXT("FeatureMods."), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
-	const FString CacheFeatureModUnitId = FeatureModsMarker == INDEX_NONE
-		? RequiredModulePrefix
-		: RequiredModulePrefix.Mid(FeatureModsMarker + FString(TEXT("FeatureMods.")).Len());
-	for (TSharedRef<FAngelscriptModuleDesc>& Module : ModulesToCompile)
-	{
-		if (Module->Code.IsEmpty())
-			continue;
-		FAngelscriptScriptUnit Unit = Module->ScriptUnit;
-		const FAngelscriptScriptUnit CurrentOwner = CurrentUnits.ResolveOwner(Module->Code[0].AbsoluteFilename);
-		if (CurrentOwner.Layer == EAngelscriptScriptLayer::Leaf)
-			Unit = CurrentOwner;
-		else if (Unit.Layer != EAngelscriptScriptLayer::Leaf && !CacheFeatureModUnitId.IsEmpty())
-		{
-			Unit.Id = CacheFeatureModUnitId;
-			Unit.Layer = EAngelscriptScriptLayer::Leaf;
-			if (const FAngelscriptScriptUnit* CurrentUnit = CurrentUnits.Find(Unit.Id))
-			{
-				Unit.Dependencies = CurrentUnit->Dependencies;
-				Unit.AccessMask = CurrentUnit->AccessMask;
-			}
-		}
-		if (Unit.Layer != EAngelscriptScriptLayer::Leaf)
-			continue;
-		Module->ScriptUnit = Unit;
-	}
-
-	const ECompileResult Result = CompileModules(ECompileType::FullReload, ModulesToCompile, OutCompiledModules);
-	for (TSharedRef<FAngelscriptModuleDesc>& Module : ModulesToCompile)
-	{
-		Module->PrecompiledData = nullptr;
-		Module->PrecompiledDataContext = nullptr;
-	}
-	DestroyCacheData();
-	return Result;
-}
-
-ECompileResult FAngelscriptManager::RemovePrecompiledModuleSet(
-	const FString& ModulePrefix,
-	TArray<TSharedRef<FAngelscriptModuleDesc>>& OutCompiledModules)
-{
-	check(IsInGameThread());
-	if (bIsCompilingModules || ModulePrefix.IsEmpty())
-		return ECompileResult::Error;
-
-	TArray<FFilenamePair> DeletedFiles;
-	for (const TSharedRef<FAngelscriptModuleDesc>& ActiveModule : GetActiveModules())
-	{
-		if ((ActiveModule->ModuleName == ModulePrefix
-			|| ActiveModule->ModuleName.StartsWith(ModulePrefix + TEXT(".")))
-			&& !ActiveModule->Code.IsEmpty())
-		{
-			for (const FAngelscriptModuleDesc::FCodeSection& Section : ActiveModule->Code)
-				DeletedFiles.AddUnique(FFilenamePair{ Section.AbsoluteFilename, Section.RelativeFilename });
-		}
-	}
-	if (DeletedFiles.IsEmpty())
-		return ECompileResult::Error;
-
-	FAngelscriptPreprocessor Preprocessor;
-	for (const FFilenamePair& File : DeletedFiles)
-		Preprocessor.AddFile(File.RelativePath, File.AbsolutePath, false, /*bTreatAsDeleted=*/true);
-	if (!Preprocessor.Preprocess())
-		return ECompileResult::Error;
-
-	return CompileModules(ECompileType::FullReload, Preprocessor.GetModulesToCompile(), OutCompiledModules);
-}
-                                                                                                
 
 void FAngelscriptManager::UpdateScriptReferencesInUnrealData(struct asModuleReferenceUpdateMap& UpdateMap, TSharedRef<FAngelscriptModuleDesc> Module)
 {
@@ -4838,7 +3472,6 @@ void FAngelscriptManager::UpdateScriptReferencesInUnrealData(struct asModuleRefe
 
 void FAngelscriptManager::CompileModule_Types_Stage1(ECompileType CompileType, TSharedRef<struct FAngelscriptModuleDesc> Module)
 {
-	TGuardValue<const FAngelscriptScriptUnit*> ModuleUnitContext(CurrentScriptUnit, &Module->ScriptUnit);
 	// Modules always compile with a temporary name, the code
 	// then later decides whether to use them and rename them.
 	FString TempName = Module->ModuleName;
@@ -4851,39 +3484,10 @@ void FAngelscriptManager::CompileModule_Types_Stage1(ECompileType CompileType, T
 	// Generate the angelscript module
 	auto* ScriptModule = (asCModule*)Engine->GetModule(TCHAR_TO_ANSI(*TempName), asGM_ALWAYS_CREATE);
 	ScriptModule->baseModuleName = TCHAR_TO_ANSI(*Module->ModuleName);
-                                                                                                     
-	ScriptModule->scriptUnitId = TCHAR_TO_ANSI(*Module->ScriptUnit.Id);
-	ScriptModule->scriptUnitLayer = uint8(Module->ScriptUnit.Layer);
-	ScriptModule->SetAccessMask(Module->ScriptUnit.AccessMask);
-	if (Module->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf)
-	{
-		ScriptModule->SetDefaultNamespace(TCHAR_TO_ANSI(*Module->ScriptUnit.Id));
-		for (const FString& Id : Module->ScriptUnit.Dependencies)
-			for (const auto& Active : GetActiveModules())
-				if (Active->ScriptUnit.Id == Id && Active->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf)
-				{
-					ScriptModule->scriptUnitTypeDependencies.AddUnique(Engine->AddNameSpace(TCHAR_TO_ANSI(*Id)));
-					break;
-				}
-	}
-                                                                                                   
 
 	// Check if we have precompiled data for this module and use it if we can
-	                                                                                                  
-	if (Module->PrecompiledDataContext != nullptr && Module->PrecompiledData != nullptr)
-	{
-		const FAngelscriptPrecompiledModule* CompiledModule = Module->PrecompiledData;
-		CompiledModule->ApplyToModule_Stage1(*Module->PrecompiledDataContext, ScriptModule);
-		Module->bCompileError = false;
-		Module->ScriptModule = ScriptModule;
-		Module->bLoadedPrecompiledCode = true;
-		return;
-	}
-	                                                                                                
 
-	                                                                                                         
-	if (PrecompiledData != nullptr && bUsePrecompiledData && Module->ScriptUnit.Layer != EAngelscriptScriptLayer::Leaf)
-	                                                                                                       
+	if (PrecompiledData != nullptr && bUsePrecompiledData)
 	{
 		const FAngelscriptPrecompiledModule* CompiledModule = PrecompiledData->Modules.Find(Module->ModuleName);
 		if (CompiledModule != nullptr)
@@ -4891,10 +3495,9 @@ void FAngelscriptManager::CompileModule_Types_Stage1(ECompileType CompileType, T
 			CompiledModule->ApplyToModule_Stage1(*PrecompiledData, ScriptModule);
 
 			Module->PrecompiledData = CompiledModule;
-			                                                                                                  
-			Module->PrecompiledDataContext = PrecompiledData;
-			                                                                                                
-			Module->bCompileError = false;
+                                                                                                                     
+						Module->bCompileError = false;
+                                                                                                                   
 			Module->ScriptModule = ScriptModule;
 			Module->bLoadedPrecompiledCode = true;
 			return;
@@ -4958,7 +3561,6 @@ void FAngelscriptManager::CompileModule_Types_Stage1(ECompileType CompileType, T
 
 void FAngelscriptManager::CompileModule_Functions_Stage2(ECompileType CompileType, TSharedRef<struct FAngelscriptModuleDesc> Module)
 {
-	TGuardValue<const FAngelscriptScriptUnit*> ModuleUnitContext(CurrentScriptUnit, &Module->ScriptUnit);
 	auto* ScriptModule = (asCModule*)Module->ScriptModule;
 	if (Module->bCompileError)
 		return;
@@ -4967,17 +3569,9 @@ void FAngelscriptManager::CompileModule_Functions_Stage2(ECompileType CompileTyp
 
 	if (Module->bLoadedPrecompiledCode)
 	{
-		                                                                                                  
-		FAngelscriptPrecompiledData* DataContext = Module->PrecompiledDataContext != nullptr
-			? Module->PrecompiledDataContext
-			: PrecompiledData;
-		if (DataContext == nullptr || Module->PrecompiledData == nullptr)
-		{
-			Module->bCompileError = true;
-			return;
-		}
-		Module->PrecompiledData->ApplyToModule_Stage2(*DataContext, ScriptModule);
-		                                                                                                
+                                                                                                                     
+				Module->PrecompiledData->ApplyToModule_Stage2(*PrecompiledData, ScriptModule);
+                                                                                                                   
 		return;
 	}
 
@@ -4992,24 +3586,15 @@ void FAngelscriptManager::CompileModule_Functions_Stage2(ECompileType CompileTyp
 
 void FAngelscriptManager::CompileModule_Code_Stage3(ECompileType CompileType, TSharedRef<struct FAngelscriptModuleDesc> Module)
 {
-	TGuardValue<const FAngelscriptScriptUnit*> ModuleUnitContext(CurrentScriptUnit, &Module->ScriptUnit);
 	auto* ScriptModule = (asCModule*)Module->ScriptModule;
 	if (ScriptModule == nullptr)
 		return;
 
 	if (Module->bLoadedPrecompiledCode)
 	{
-		                                                                                                  
-		FAngelscriptPrecompiledData* DataContext = Module->PrecompiledDataContext != nullptr
-			? Module->PrecompiledDataContext
-			: PrecompiledData;
-		if (DataContext == nullptr || Module->PrecompiledData == nullptr)
-		{
-			Module->bCompileError = true;
-			return;
-		}
-		Module->PrecompiledData->ApplyToModule_Stage3(*DataContext, ScriptModule);
-		                                                                                                
+                                                                                                                     
+				Module->PrecompiledData->ApplyToModule_Stage3(*PrecompiledData, ScriptModule);
+                                                                                                                   
 		return;
 	}
 
@@ -5025,7 +3610,6 @@ void FAngelscriptManager::CompileModule_Code_Stage3(ECompileType CompileType, TS
 
 void FAngelscriptManager::CompileModule_Globals_Stage4(ECompileType CompileType, TSharedRef<struct FAngelscriptModuleDesc> Module)
 {
-	TGuardValue<const FAngelscriptScriptUnit*> ModuleUnitContext(CurrentScriptUnit, &Module->ScriptUnit);
 	auto* ScriptModule = (asCModule*)Module->ScriptModule;
 	if (ScriptModule == nullptr)
 		return;
@@ -5307,37 +3891,6 @@ void FAngelscriptManager::SetOutdated(asIScriptModule* OldModule)
 
 TSharedPtr<FAngelscriptClassDesc> FAngelscriptManager::GetClass(const FString& ClassName, TSharedPtr<FAngelscriptModuleDesc>* FoundInModule)
 {
-                                                                                                   
-	if (CurrentScriptUnit && !ClassName.Contains(TEXT("::")))
-	{
-		TSharedPtr<FAngelscriptClassDesc> Found;
-		TSharedPtr<FAngelscriptModuleDesc> FoundModule;
-		for (const auto& Pair : ActiveModules)
-			if (Pair.Value->ScriptUnit.Id == CurrentScriptUnit->Id)
-				for (const auto& Desc : Pair.Value->Classes)
-					if ((Desc->ScriptType != nullptr || Desc->Class != nullptr || Desc->Struct != nullptr)
-						&& Desc->ClassName == ClassName)
-					{
-						if (FoundInModule) *FoundInModule = Pair.Value;
-						return Desc;
-					}
-		for (const FString& Id : CurrentScriptUnit->Dependencies)
-			for (const auto& Pair : ActiveModules)
-				if (Pair.Value->ScriptUnit.Id == Id && Pair.Value->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf)
-					for (const auto& Desc : Pair.Value->Classes)
-						if (Desc->ClassName == ClassName)
-						{
-							if (Found.IsValid() && Found != Desc) return nullptr;
-							Found = Desc;
-							FoundModule = Pair.Value;
-						}
-		if (Found.IsValid())
-		{
-			if (FoundInModule) *FoundInModule = FoundModule;
-			return Found;
-		}
-	}
-                                                                                                 
 
 #if AS_CAN_HOTRELOAD
 	if (ActiveClassesByName.Num() != 0)
@@ -5361,11 +3914,9 @@ TSharedPtr<FAngelscriptClassDesc> FAngelscriptManager::GetClass(const FString& C
 		auto Module = ModulePair.Value;
 		for (auto Class : Module->Classes)
 		{
-                                                                                                   
-			if ((Class->ScriptType != nullptr || Class->Class != nullptr || Class->Struct != nullptr)
-				&& ((!Class->QualifiedName.IsEmpty() && Class->QualifiedName == ClassName)
-					|| (Module->ScriptUnit.Layer != EAngelscriptScriptLayer::Leaf && Class->ClassName == ClassName)))
-                                                                                                 
+                                                                                                                     
+			if ((Class->ScriptType != nullptr || Class->Class != nullptr || Class->Struct != nullptr) && Class->ClassName == ClassName)
+                                                                                                                   
 			{
 				if (FoundInModule != nullptr)
 					*FoundInModule = Module;
@@ -5381,36 +3932,6 @@ TSharedPtr<FAngelscriptClassDesc> FAngelscriptManager::GetClass(const FString& C
 
 TSharedPtr<FAngelscriptEnumDesc> FAngelscriptManager::GetEnum(const FString& EnumName, TSharedPtr<FAngelscriptModuleDesc>* FoundInModule)
 {
-                                                                                                  
-	if (CurrentScriptUnit && !EnumName.Contains(TEXT("::")))
-	{
-		TSharedPtr<FAngelscriptEnumDesc> Found;
-		TSharedPtr<FAngelscriptModuleDesc> FoundModule;
-		for (const auto& Pair : ActiveModules)
-			if (Pair.Value->ScriptUnit.Id == CurrentScriptUnit->Id)
-				for (const auto& Desc : Pair.Value->Enums)
-					if (Desc->EnumName == EnumName)
-					{
-						if (FoundInModule) *FoundInModule = Pair.Value;
-						return Desc;
-					}
-		for (const FString& Id : CurrentScriptUnit->Dependencies)
-			for (const auto& Pair : ActiveModules)
-				if (Pair.Value->ScriptUnit.Id == Id && Pair.Value->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf)
-					for (const auto& Desc : Pair.Value->Enums)
-						if (Desc->EnumName == EnumName)
-						{
-							if (Found.IsValid() && Found != Desc) return nullptr;
-							Found = Desc;
-							FoundModule = Pair.Value;
-						}
-		if (Found.IsValid())
-		{
-			if (FoundInModule) *FoundInModule = FoundModule;
-			return Found;
-		}
-	}
-                                                                                                
 
 #if AS_CAN_HOTRELOAD
 	if (ActiveEnumsByName.Num() != 0)
@@ -5434,10 +3955,9 @@ TSharedPtr<FAngelscriptEnumDesc> FAngelscriptManager::GetEnum(const FString& Enu
 		auto Module = ModulePair.Value;
 		for (auto EnumDesc : Module->Enums)
 		{
-                                                                                                  
-			if ((!EnumDesc->QualifiedName.IsEmpty() && EnumDesc->QualifiedName == EnumName) || (Module->ScriptUnit.Layer !=
-			    EAngelscriptScriptLayer::Leaf && EnumDesc->EnumName == EnumName))
-                                                                                                
+                                                                                                                     
+			if (EnumDesc->EnumName == EnumName)
+                                                                                                                   
 			{
 				if (FoundInModule != nullptr)
 					*FoundInModule = Module;
@@ -5453,36 +3973,6 @@ TSharedPtr<FAngelscriptEnumDesc> FAngelscriptManager::GetEnum(const FString& Enu
 
 TSharedPtr<FAngelscriptDelegateDesc> FAngelscriptManager::GetDelegate(const FString& DelegateName, TSharedPtr<FAngelscriptModuleDesc>* FoundInModule)
 {
-                                                                                                      
-	if (CurrentScriptUnit && !DelegateName.Contains(TEXT("::")))
-	{
-		TSharedPtr<FAngelscriptDelegateDesc> Found;
-		TSharedPtr<FAngelscriptModuleDesc> FoundModule;
-		for (const auto& Pair : ActiveModules)
-			if (Pair.Value->ScriptUnit.Id == CurrentScriptUnit->Id)
-				for (const auto& Desc : Pair.Value->Delegates)
-					if (Desc->DelegateName == DelegateName)
-					{
-						if (FoundInModule) *FoundInModule = Pair.Value;
-						return Desc;
-					}
-		for (const FString& Id : CurrentScriptUnit->Dependencies)
-			for (const auto& Pair : ActiveModules)
-				if (Pair.Value->ScriptUnit.Id == Id && Pair.Value->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf)
-					for (const auto& Desc : Pair.Value->Delegates)
-						if (Desc->DelegateName == DelegateName)
-						{
-							if (Found.IsValid() && Found != Desc) return nullptr;
-							Found = Desc;
-							FoundModule = Pair.Value;
-						}
-		if (Found.IsValid())
-		{
-			if (FoundInModule) *FoundInModule = FoundModule;
-			return Found;
-		}
-	}
-                                                                                                    
 
 #if AS_CAN_HOTRELOAD
 	if (ActiveDelegatesByName.Num() != 0)
@@ -5506,10 +3996,9 @@ TSharedPtr<FAngelscriptDelegateDesc> FAngelscriptManager::GetDelegate(const FStr
 		auto Module = ModulePair.Value;
 		for (auto DelegateDesc : Module->Delegates)
 		{
-                                                                                                      
-			if ((!DelegateDesc->QualifiedName.IsEmpty() && DelegateDesc->QualifiedName == DelegateName) || (Module->ScriptUnit.Layer !=
-			    EAngelscriptScriptLayer::Leaf && DelegateDesc->DelegateName == DelegateName))
-                                                                                                    
+                                                                                                                     
+			if (DelegateDesc->DelegateName == DelegateName)
+                                                                                                                   
 			{
 				if (FoundInModule != nullptr)
 					*FoundInModule = Module;
@@ -6167,49 +4656,6 @@ void AngelscriptLoopDetectionCallback(asCContext* Context)
 	}
 }
 
-                                                                                                    
-float GAngelscriptExecutionBudgetSeconds = -1.0f;
-
-void AngelscriptExecutionBudgetCallback(asCContext* Context)
-{
-	// A registered wall-clock budget interrupts through the script exception
-	// path. Attribution and policy decisions belong to the registered handler.
-	if (GAngelscriptExecutionBudgetSeconds <= 0.0f)
-	{
-		return;
-	}
-
-	double CuvissCurrentTime = FPlatformTime::Seconds();
-	if (Context->m_loopDetectionTimer == -1.0)
-	{
-		// No time established for this context yet: seed the timer and let
-		// the next sample decide (same semantics as the built-in callback).
-		Context->m_loopDetectionTimer = CuvissCurrentTime;
-		return;
-	}
-
-	if (Context->m_loopDetectionTimer < CuvissCurrentTime - GAngelscriptExecutionBudgetSeconds)
-	{
-		const double CuvissElapsed = CuvissCurrentTime - Context->m_loopDetectionTimer;
-
-		// GetFunction(0) returns the currently executing frame in this fork;
-		// its module is the timeout attribution target.
-		FString CuvissModuleName = TEXT("unknown");
-		asIScriptFunction* CuvissFunction = Context->GetFunction(0);
-		if (CuvissFunction != nullptr && CuvissFunction->GetModuleName() != nullptr)
-		{
-			CuvissModuleName = UTF8_TO_TCHAR(CuvissFunction->GetModuleName());
-		}
-
-		UE_LOG(Angelscript, Error, TEXT("ANGELSCRIPT_EXECUTION_TIMEOUT module=%s elapsed=%.3f budget=%.1f"),
-			*CuvissModuleName, CuvissElapsed, GAngelscriptExecutionBudgetSeconds);
-
-		FAngelscriptModdingScriptExecutionBudgetRuntime::NotifyTimeout(CuvissModuleName, CuvissElapsed);
-
-		Context->SetException("Script execution exceeded the configured timeout budget.");
-	}
-}
-                                                                                                  
 
 #if WITH_EDITOR
 FAngelscriptExcludeScopeFromLoopTimeout::FAngelscriptExcludeScopeFromLoopTimeout()

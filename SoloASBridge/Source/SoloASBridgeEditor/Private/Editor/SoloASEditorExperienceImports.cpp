@@ -1,4 +1,5 @@
 #include "Editor/SoloASEditorExperienceImports.h"
+#include "Misc/StringBuilder.h"
 
 #include "CoreMinimal.h"
 
@@ -63,10 +64,7 @@ using FIsNativeFunction = bool (*)(const FField*);
 using FIsFunctionHiddenFunction = bool (*)(const UFunction*, const UClass*);
 using FCheckVerifyFailedVFunction = bool (*)(
     const ANSICHAR*, const ANSICHAR*, int32, const TCHAR*, va_list);
-using FTryFindTypeSlowFunction = UField* (*)(
-    UClass*, FStringView, EFindFirstObjectOptions);
-using FSetLinkerFunction = void (*)(
-    UObject*, FLinkerLoad*, int32, bool, bool);
+#include "SoloASExperienceAbi.inl"
 
 FCheckVerifyFailedVFunction OriginalCheckVerifyFailedV = nullptr;
 FSetLinkerFunction OriginalSetLinker = nullptr;
@@ -157,7 +155,7 @@ bool IsDuplicateDetailLayoutCheck(
 
 UField* CallEngineTryFindTypeSlow(
     UClass* TypeClass,
-    FStringView Name,
+    FExperienceName Name,
     EFindFirstObjectOptions Options)
 {
     return UClass::TryFindTypeSlow(TypeClass, Name, Options);
@@ -249,7 +247,7 @@ bool HookCheckVerifyFailedImpl2(
 
 UField* HookTryFindTypeSlow(
     UClass* TypeClass,
-    FStringView Name,
+    FExperienceName Name,
     EFindFirstObjectOptions Options)
 {
     if (CVarEditorExperienceImports.GetValueOnAnyThread() != 0
@@ -293,7 +291,7 @@ void CallOriginalSetLinker(
         ? OriginalSetLinker : EngineSetLinker;
     if (Original != nullptr)
     {
-        Original(Object, LinkerLoad, LinkerIndex,
+        InvokeSetLinker(Original, Object, LinkerLoad, LinkerIndex,
             bShouldDetachExisting, bSilenceLogs);
     }
     else
@@ -302,7 +300,7 @@ void CallOriginalSetLinker(
     }
 }
 
-void HookSetLinkerImport(
+void HookSetLinkerImportImpl(
     UObject* Object, FLinkerLoad* LinkerLoad, int32 LinkerIndex,
     bool bShouldDetachExisting, bool bSilenceLogs)
 {
@@ -319,7 +317,7 @@ void HookSetLinkerImport(
 
 bool IsCoreUObjectCallSite(const void* Address);
 
-void HookSetLinkerEntry(
+void HookSetLinkerEntryImpl(
     UObject* Object, FLinkerLoad* LinkerLoad, int32 LinkerIndex,
     bool bShouldDetachExisting, bool bSilenceLogs)
 {
@@ -339,6 +337,8 @@ void HookSetLinkerEntry(
     CallOriginalSetLinker(Object, LinkerLoad, LinkerIndex,
         bShouldDetachExisting, bSilenceLogs);
 }
+
+#include "SoloASExperienceThunks.inl"
 
 enum class EExperienceImport : uint8
 {
@@ -381,13 +381,13 @@ const FImportSpec ImportSpecs[] =
         reinterpret_cast<void*>(&HookCheckVerifyFailedImpl2)},
     {EExperienceImport::TryFindTypeSlow,
         "UnrealEditor-PropertyEditor", "UnrealEditor-CoreUObject.dll",
-        "?TryFindTypeSlow@UClass@@SAPEAVUField@@PEAV1@V?$TStringView@_W@@W4EFindFirstObjectOptions@@@Z",
-        "__ZN6UClass15TryFindTypeSlowEPS_11TStringViewIDsE23EFindFirstObjectOptions",
+        EnumLookupWindowsSymbol,
+        EnumLookupMacSymbol,
         reinterpret_cast<void*>(&HookTryFindTypeSlow)},
     {EExperienceImport::LinkerDetach,
         "*", "UnrealEditor-CoreUObject.dll",
-        "?SetLinker@UObject@@QEAAXPEAVFLinkerLoad@@H_N1@Z",
-        "__ZN7UObject9SetLinkerEP11FLinkerLoadibb",
+        SetLinkerWindowsSymbol,
+        SetLinkerMacSymbol,
         reinterpret_cast<void*>(&HookSetLinkerImport)},
 };
 
@@ -643,9 +643,25 @@ void* ResolveOriginal(const FImportSpec& Spec)
 #endif
 }
 
+// SOLOAS-COMPAT-BEGIN(<5.6) Core does not export the va_list helper; forward through the public assertion API [test: SoloAS.EditorHookInstallation] [id: CS.Compatibility.Bridge.SoloASEditorExperienceImports.CheckVerifyPublicForwarder]
+#if SOLOAS_UE_BEFORE(5, 6)
+bool ForwardCheckVerifyFailedV(const ANSICHAR* Expression, const ANSICHAR* File,
+    int32 Line, const TCHAR* Format, va_list Arguments)
+{
+    TStringBuilder<512> Message;
+    Message.AppendV(Format, Arguments);
+    // Only PropertyEditor imports are rebound. This module retains the original Core import.
+    return FDebug::CheckVerifyFailedImpl2(Expression, File, Line, TEXT("%s"), Message.ToString());
+}
+#endif
+// SOLOAS-COMPAT-END
+
+// SOLOAS-COMPAT-BEGIN(<5.6) Select the public forwarding adapter when Core has no va_list export [test: SoloAS.EditorHookInstallation] [id: CS.Compatibility.Bridge.SoloASEditorExperienceImports.CheckVerifyOriginalResolver]
 void* ResolveOriginalCheckVerifyFailedV()
 {
-#if PLATFORM_WINDOWS
+#if SOLOAS_UE_BEFORE(5, 6)
+    return reinterpret_cast<void*>(&ForwardCheckVerifyFailedV);
+#elif PLATFORM_WINDOWS
     HMODULE Provider = GetModuleHandleA("UnrealEditor-Core.dll");
     return Provider != nullptr
         ? reinterpret_cast<void*>(GetProcAddress(Provider, CheckVerifyFailedVSymbol))
@@ -661,6 +677,8 @@ void* ResolveOriginalCheckVerifyFailedV()
     return nullptr;
 #endif
 }
+
+// SOLOAS-COMPAT-END
 
 #if PLATFORM_MAC
 bool IsFieldIsNativeImporter(const FString& ImageName)
@@ -1035,8 +1053,10 @@ bool ApplySlot(
     void** Slot,
     const FImportSpec& Spec,
     void* OriginalAddress,
-    bool bUnboundLazySlot)
+    bool bUnboundLazySlot, const TCHAR* Mode)
 {
+    RecordEditorHookInstallation(ANSI_TO_TCHAR(Spec.WindowsSymbol), *ImageName, Mode,
+        OriginalAddress, OriginalAddress, Spec.Replacement, Slot);
     if (FInstalledImport* Existing = InstalledImports.Find(Slot))
     {
         return *Slot == Existing->Replacement;
@@ -1088,6 +1108,7 @@ void RestoreSlot(void** Slot)
     {
         WarnOnce(TEXT("an import slot changed owner before restoration"));
     }
+    ForgetEditorHookInstallation(Slot);
     InstalledImports.Remove(Slot);
 }
 
@@ -1222,7 +1243,7 @@ int32 RebindWindowsImage(uint8* Base, const FString& ImageName)
             void** Slot = reinterpret_cast<void**>(Base + SlotRva);
             const bool bWasInstalled = InstalledImports.Contains(Slot);
             const bool bApplied = ApplySlot(Base, ImageName, Slot, *Spec,
-                reinterpret_cast<void*>(OriginalAddress), false);
+                reinterpret_cast<void*>(OriginalAddress), false, TEXT("IAT"));
             Changed += bApplied ? 1 : 0;
             if (bApplied) InstalledImportKinds |= 1u << static_cast<uint8>(Spec->Id);
             if (bApplied && !bWasInstalled && Spec->Id == EExperienceImport::LinkerDetach)
@@ -1441,7 +1462,8 @@ int32 RebindMachImage(const mach_header_64* Header, intptr_t Slide, const FStrin
                     const bool bUnboundLazySlot = SectionType == S_LAZY_SYMBOL_POINTERS
                         && Current >= ImageStart && Current < ImageEnd;
                     Changed += ApplySlot(const_cast<mach_header_64*>(Header), ImageName,
-                        Slot, *Spec, OriginalAddress, bUnboundLazySlot) ? 1 : 0;
+                        Slot, *Spec, OriginalAddress, bUnboundLazySlot,
+                        SectionType == S_LAZY_SYMBOL_POINTERS ? TEXT("lazy") : TEXT("GOT")) ? 1 : 0;
                 }
             }
         }
@@ -1533,6 +1555,7 @@ void RestoreImports()
         {
             WarnOnce(TEXT("an import slot changed owner before restoration"));
         }
+        ForgetEditorHookInstallation(It.Value().Slot);
         It.RemoveCurrent();
     }
 }
@@ -1571,6 +1594,7 @@ void ApplyImportState(FName LoadedModule = NAME_None)
         {
             WarnOnce(TEXT("an import slot changed owner before restoration"));
         }
+        ForgetEditorHookInstallation(It.Value().Slot);
         It.RemoveCurrent();
     }
     if (bExperienceEnabled || bLinkerDetachEnabled)
@@ -1626,7 +1650,8 @@ void OnModulesChanged(FName ModuleName, EModuleChangeReason Reason)
             if (NormalizeImageName(*It.Value().ImageName) == ImageName)
             {
                 // The target image is unloading; never dereference its import slots.
-                It.RemoveCurrent();
+                ForgetEditorHookInstallation(It.Value().Slot);
+        It.RemoveCurrent();
             }
         }
 #if PLATFORM_MAC
@@ -1662,7 +1687,7 @@ UField* FindTypeForScriptEditCondition(
     FStringView Name,
     EFindFirstObjectOptions Options)
 {
-    return HookTryFindTypeSlow(TypeClass, Name, Options);
+    return HookTryFindTypeSlow(TypeClass, FString(Name), Options);
 }
 
 void InitializeEditorExperienceImports()

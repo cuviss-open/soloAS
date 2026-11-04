@@ -1,7 +1,7 @@
 #include "ClassGenerator/AngelscriptClassGenerator.h"
-                                                                                                  
-#include "Extensions/AngelscriptExtensionHooks.h"
-                                                                                                
+                                                                                                               
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                             
                                                                                                                               
 #include "Runtime/Launch/Resources/Version.h"
                                                                                                                             
@@ -408,9 +408,6 @@ void FAngelscriptClassGenerator::Analyze(FModuleData& ModuleData, FClassData& Cl
 
 	// Make sure the previous class is actually replacable
 	FString UnrealName = GetUnrealName(ClassData.NewClass->bIsStruct, ClassData.NewClass->ClassName);
-                                                                                                       
-	if (ModuleData.NewModule->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf) UnrealName += TEXT("__") + ModuleData.NewModule->ScriptUnit.Id;
-                                                                                                     
 	UObject* ReplacedObj = FindObject<UObject>(FAngelscriptManager::GetPackage(), *UnrealName);
 	if (ReplacedObj != nullptr)
 	{
@@ -950,22 +947,6 @@ void FAngelscriptClassGenerator::Analyze(FModuleData& ModuleData, FClassData& Cl
 			// Check if we should use a displayname override for this function
 			FunctionDesc->OriginalFunctionName = FunctionDesc->FunctionName;
 			auto* ParentFunction = GetBlueprintEventByScriptName(CodeSuperClass, FunctionDesc->FunctionName);
-                                                                                                 
-            if (ParentFunction == nullptr)
-            {
-                FAngelscriptTypeGenerationContext Context;
-                Context.Point = EAngelscriptTypeGenerationPoint::ResolveFunction;
-                Context.Class = ClassData.NewClass.Get();
-                Context.Function = &FunctionDesc.Get();
-                FString Error;
-                if (!DispatchAngelscriptTypeGeneration(Context, Error))
-                {
-                    FAngelscriptManager::Get().ScriptCompileError(ModuleData.NewModule, FunctionDesc->LineNumber, Error);
-                    ClassData.ReloadReq = EReloadRequirement::Error;
-                }
-                ParentFunction = Context.ResolvedFunction;
-            }
-                                                                                               
 
 			if (ParentFunction != nullptr)
 				FunctionDesc->FunctionName = ParentFunction->GetName();
@@ -1631,10 +1612,7 @@ void FAngelscriptClassGenerator::Analyze(FModuleData& ModuleData, FDelegateData&
 
 	// Check already compiled modules for conflicting delegates
 	TSharedPtr<FAngelscriptModuleDesc> FoundInModule;
-                                                                                                              
-	auto ExistingDelegate = FAngelscriptManager::Get().GetDelegate(ModuleData.NewModule->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf
-		? ModuleData.NewModule->ScriptUnit.Id + TEXT("::") + DelegateDesc->DelegateName : DelegateDesc->DelegateName, &FoundInModule);
-                                                                                                            
+	auto ExistingDelegate = FAngelscriptManager::Get().GetDelegate(DelegateDesc->DelegateName, &FoundInModule);
 	if (ExistingDelegate.IsValid() && FoundInModule.IsValid())
 	{
 		// Only allow this if the module it was in is being reloaded
@@ -1878,10 +1856,9 @@ void FAngelscriptClassGenerator::AnalyzeEnums(FModuleData& ModuleData)
 
 		// Check already compiled modules
 		TSharedPtr<FAngelscriptModuleDesc> FoundInModule;
-                                                                                                          
-	auto ExistingEnum = FAngelscriptManager::Get().GetEnum(ModuleData.NewModule->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf
-		? ModuleData.NewModule->ScriptUnit.Id + TEXT("::") + EnumDesc->EnumName : EnumDesc->EnumName, &FoundInModule);
-                                                                                                        
+                                                                                                                             
+	auto ExistingEnum = FAngelscriptManager::Get().GetEnum(EnumDesc->EnumName, &FoundInModule);
+                                                                                                                           
 		if (ExistingEnum.IsValid() && FoundInModule.IsValid())
 		{
 			// Only allow this if the module it was in is being reloaded
@@ -1897,9 +1874,6 @@ void FAngelscriptClassGenerator::AnalyzeEnums(FModuleData& ModuleData)
 		// Make sure the unreal name is not being used
 		// NB: Enums here actually _do_ have the `E` prefix in their unreal name!
 		FString UnrealName = EnumDesc->EnumName;
-                                                                                                           
-	if (ModuleData.NewModule->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf) UnrealName += TEXT("__") + ModuleData.NewModule->ScriptUnit.Id;
-                                                                                                         
 		if (UsedUnrealNames.Contains(UnrealName))
 		{
 			FAngelscriptManager::Get().ScriptCompileError(ModuleData.NewModule, EnumDesc->LineNumber, FString::Printf(
@@ -2107,157 +2081,6 @@ void FAngelscriptClassGenerator::Analyze(FModuleData& ModuleData)
 	}
 }
 
-                                                                                                                          
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-bool FAngelscriptClassGenerator::ValidateExplicitFullReloadBindingShape(
-	const FString& CanonicalTarget,
-	const TArray<TArray<FString>>& CanonicalModuleCodePaths,
-	int32& OutTargetModuleIndex,
-	int32 QualifyingWitnessCount)
-{
-	OutTargetModuleIndex = INDEX_NONE;
-	int32 MatchingTargetModules = 0;
-	for (int32 ModuleIndex = 0; ModuleIndex < CanonicalModuleCodePaths.Num(); ++ModuleIndex)
-	{
-		int32 MatchingTargetSections = 0;
-		for (const FString& CanonicalSection : CanonicalModuleCodePaths[ModuleIndex])
-		{
-#if PLATFORM_WINDOWS
-			if (CanonicalTarget.Equals(CanonicalSection, ESearchCase::IgnoreCase))
-#else
-			if (CanonicalTarget.Equals(CanonicalSection, ESearchCase::CaseSensitive))
-#endif
-			{
-				++MatchingTargetSections;
-			}
-		}
-
-		if (MatchingTargetSections == 0)
-			continue;
-
-		++MatchingTargetModules;
-		if (MatchingTargetModules > 1
-			|| MatchingTargetSections != 1
-			|| CanonicalModuleCodePaths[ModuleIndex].Num() != 1)
-		{
-			return false;
-		}
-		OutTargetModuleIndex = ModuleIndex;
-	}
-
-	return MatchingTargetModules == 1
-		&& OutTargetModuleIndex != INDEX_NONE
-		&& (QualifyingWitnessCount == INDEX_NONE || QualifyingWitnessCount > 0);
-}
-
-bool FAngelscriptClassGenerator::HasDistinctExplicitFullReloadMarkerPair(
-	const UASClass* OldClass,
-	const UASClass* NewClass)
-{
-	return OldClass != nullptr && NewClass != nullptr && OldClass != NewClass;
-}
-
-#endif
-                                                                                                                        
-                                                                                                                               
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-
-bool FAngelscriptClassGenerator::ValidateAndMarkExplicitFullReloadTarget()
-{
-	FAngelscriptManager& Manager = FAngelscriptManager::Get();
-	if (!Manager.bForcedFullReloadExecution)
-		return true;
-
-	Manager.bForcedFullReloadBindingValidated = false;
-	Manager.ForcedFullReloadMarkerOldClass = nullptr;
-	Manager.ForcedFullReloadMarkerNewClass = nullptr;
-
-	FString CanonicalTarget;
-	if (!Manager.CanonicalizeExplicitFullReloadFilename(
-		Manager.ForcedFullReloadFile.AbsolutePath,
-		CanonicalTarget))
-	{
-		return false;
-	}
-
-	TArray<TArray<FString>> CanonicalModuleCodePaths;
-	CanonicalModuleCodePaths.Reserve(Modules.Num());
-
-                                                                                                                             
-                                                                                                                                   
-	for (FModuleData& ModuleData : Modules)
-	{
-		TArray<FString>& CanonicalCodePaths = CanonicalModuleCodePaths.AddDefaulted_GetRef();
-		if (!ModuleData.NewModule.IsValid())
-			continue;
-
-		for (const FAngelscriptModuleDesc::FCodeSection& Section : ModuleData.NewModule->Code)
-		{
-			FString CanonicalSection;
-			if (!Manager.CanonicalizeExplicitFullReloadFilename(Section.AbsoluteFilename, CanonicalSection))
-				return false;
-			CanonicalCodePaths.Add(MoveTemp(CanonicalSection));
-		}
-	}
-
-	int32 TargetModuleIndex = INDEX_NONE;
-	if (!ValidateExplicitFullReloadBindingShape(
-		CanonicalTarget,
-		CanonicalModuleCodePaths,
-		TargetModuleIndex))
-	{
-		return false;
-	}
-	FModuleData& TargetModule = Modules[TargetModuleIndex];
-	if (!Manager.IsExplicitFullReloadTarget(
-		CanonicalTarget,
-		CanonicalModuleCodePaths[TargetModuleIndex][0]))
-	{
-		return false;
-	}
-
-	UASClass* WitnessOldClass = nullptr;
-	for (FClassData& ClassData : TargetModule.Classes)
-	{
-		if (!ClassData.NewClass.IsValid()
-			|| ClassData.NewClass->bIsStaticsClass
-			|| ClassData.NewClass->bIsStruct
-			|| !ClassData.OldClass.IsValid())
-		{
-			continue;
-		}
-
-		WitnessOldClass = Cast<UASClass>(ClassData.OldClass->Class);
-		if (WitnessOldClass != nullptr)
-			break;
-	}
-
-	// Setup runs before PerformReload creates new UASClass objects.  The old side
-	// is therefore the available witness here; the callback records its new pair.
-	if (WitnessOldClass == nullptr)
-		return false;
-	if (!ValidateExplicitFullReloadBindingShape(
-		CanonicalTarget,
-		CanonicalModuleCodePaths,
-		TargetModuleIndex,
-		1))
-	{
-		return false;
-	}
-
-	for (FClassData& ClassData : TargetModule.Classes)
-	{
-		if (ClassData.NewClass.IsValid() && !ClassData.NewClass->bIsStaticsClass)
-			ClassData.bExplicitFullReloadTarget = true;
-	}
-
-	Manager.ForcedFullReloadMarkerOldClass = WitnessOldClass;
-	Manager.ForcedFullReloadMarkerNewClass = nullptr;
-	Manager.bForcedFullReloadBindingValidated = true;
-	return true;
-}
-#endif
-                                                                                                                                 
 FAngelscriptClassGenerator::EReloadRequirement FAngelscriptClassGenerator::Setup()
 {
 	FAngelscriptScopeTimer Timer(TEXT("class generator analysis"));
@@ -2301,7 +2124,7 @@ FAngelscriptClassGenerator::EReloadRequirement FAngelscriptClassGenerator::Setup
 
 			const FString Reason = InvalidBlueprintAncestor != nullptr
 				? FString::Printf(
-					TEXT("Blueprint ancestor '%s' is not registered as a BlueprintDependencyClass."),
+					TEXT("Blueprint ancestor '%s' is not supported by the script UClass carrier."),
 					*InvalidBlueprintAncestor->GetPathName())
 				: TEXT("The script class ancestry contains a cycle.");
 			FAngelscriptManager::Get().ScriptCompileError(
@@ -2318,15 +2141,6 @@ FAngelscriptClassGenerator::EReloadRequirement FAngelscriptClassGenerator::Setup
 	}
 	                                                                                                           
 
-                                                                                                                              
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-	if (FAngelscriptManager::Get().bForcedFullReloadExecution
-		&& !ValidateAndMarkExplicitFullReloadTarget())
-	{
-		return EReloadRequirement::Error;
-	}
-#endif
-                                                                                                                            
 	// Determine what kind of reload we require
 	EReloadRequirement ReloadReq = EReloadRequirement::SoftReload;
 	for (auto& ModuleData : Modules)
@@ -2512,10 +2326,6 @@ void FAngelscriptClassGenerator::ResolvePendingReloadDependees(FReloadPropagatio
 
 bool FAngelscriptClassGenerator::ShouldFullReload(FClassData& Class)
 {
-                                                                                                                                     
-	if (bIsDoingFullReload && Class.bExplicitFullReloadTarget)
-		return true;
-                                                                                                                                   
 	return bIsDoingFullReload && Class.ReloadReq >= EReloadRequirement::FullReloadSuggested;
 }
 
@@ -2529,105 +2339,6 @@ bool FAngelscriptClassGenerator::ShouldFullReload(FDelegateData& Delegate)
 	return bIsDoingFullReload && Delegate.ReloadReq >= EReloadRequirement::FullReloadSuggested;
 }
 
-                                                                                                                     
-bool FAngelscriptClassGenerator::PrepareModuleTransaction(FString& Error)
-{
-	check(!bModuleTransactionPrepared && !bPreparingModuleTransaction);
-	for (auto& Module : Modules)
-	{
-		auto Reject = [&](const FString& Identity)
-		{
-			Error = FString::Printf(TEXT("Isolated class generation cannot prepare shared or lifecycle identity '%s::%s'; the previous generation is unchanged."),
-				*Module.NewModule->ModuleName, *Identity);
-			return false;
-		};
-		for (const auto& Enum : Module.Enums) return Reject(Enum.NewEnum->EnumName);
-		for (const auto& Delegate : Module.Delegates) return Reject(Delegate.NewDelegate->DelegateName);
-		for (const auto& Removed : Module.RemovedClasses) return Reject(Removed->ClassName);
-		for (auto& Class : Module.Classes)
-		{
-			const auto& Desc = Class.NewClass;
-			if (Desc->bIsStruct || Desc->CodeSuperClass->IsChildOf(UDynamicSubsystem::StaticClass())
-				|| Desc->CodeSuperClass->IsChildOf(UWorldSubsystem::StaticClass())) return Reject(Desc->ClassName);
-		}
-	}
-	// An otherwise-soft class would mutate its old UClass and instances in place.
-	// Give every class in this admitted closure a separate candidate instead.
-	for (auto& Module : Modules)
-		for (auto& Class : Module.Classes) Class.ReloadReq = EReloadRequirement::FullReloadRequired;
-	TGuardValue<bool> Preparing(bPreparingModuleTransaction, true);
-	PerformReload(true);
-	for (const auto& Module : Modules)
-		if (Module.NewModule->bModuleSwapInError || Module.NewModule->bCompileError)
-		{
-			Error = FString::Printf(TEXT("Candidate class generation failed for module '%s'; the previous generation is unchanged."), *Module.NewModule->ModuleName);
-			return false;
-		}
-	for (const auto& Module : Modules)
-		for (const auto& Class : Module.Classes)
-			if (Class.ReplacedClass)
-			{
-				const FString Retired = FString::Printf(TEXT("%s_REPLACED_%d"), *Class.ReplacedClass->GetName(), UniqueCounter());
-				if (!Class.ReplacedClass->Rename(*Retired, nullptr, REN_DontCreateRedirectors | REN_Test))
-				{ Error = TEXT("The previous class cannot enter its retained namespace; the previous generation is unchanged."); return false; }
-			}
-	return true;
-}
-
-bool FAngelscriptClassGenerator::CommitModuleTransaction(FString& Error)
-{
-	check(bModuleTransactionPrepared && !bPreparingModuleTransaction);
-#if WITH_EDITOR
-	if (FAngelscriptManager::bIsInitialCompileFinished)
-	{
-		TArray<UObject*> PreviousTypes;
-		for (const auto& Module : Modules)
-			for (const auto& Class : Module.Classes)
-				if (Class.ReplacedClass) PreviousTypes.Add(Class.ReplacedClass);
-		OnPreFullReload.Broadcast(PreviousTypes);
-	}
-#endif
-	for (auto& Module : Modules)
-		for (auto& Class : Module.Classes)
-		{
-			UASClass* Candidate = CastChecked<UASClass>(Class.NewClass->Class);
-			FString Canonical = GetUnrealName(false, Class.NewClass->ClassName);
-			if (Module.NewModule->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf)
-				Canonical += TEXT("__") + Module.NewModule->ScriptUnit.Id;
-			if (Class.ReplacedClass)
-			{
-				const FString Retired = FString::Printf(TEXT("%s_REPLACED_%d"), *Canonical, UniqueCounter());
-				if (!Class.ReplacedClass->Rename(*Retired, nullptr, REN_DontCreateRedirectors))
-				{ Error = TEXT("Previous class retirement failed at the generation commit boundary."); return false; }
-				Class.ReplacedClass->ClassFlags |= CLASS_NewerVersionExists;
-				Class.ReplacedClass->NewerVersion = Candidate;
-			}
-			if (!Candidate->Rename(*Canonical, nullptr, REN_DontCreateRedirectors))
-			{ Error = TEXT("Candidate class publication failed at the generation commit boundary."); return false; }
-			PublishClassRegistration(Candidate);
-		}
-	bModuleTransactionPrepared = false;
-	FScopedSlowTask SlowTask(1.f);
-	CompleteReload(SlowTask);
-	return true;
-}
-
-void FAngelscriptClassGenerator::AbortModuleTransaction()
-{
-	if (!bModuleTransactionPrepared) return;
-	// Candidate receivers are already released by the provider, while their VM
-	// types are still valid. Retain the module for remaining CDO/metadata GC owners.
-	for (auto& Module : Modules)
-		for (auto& Class : Module.Classes)
-		{
-			UASClass* Candidate = Cast<UASClass>(Class.NewClass->Class);
-			if (!Candidate) continue;
-			AngelscriptRuntimeGcMirror::DestroyRuntimeTrackedObjectsForClass(Candidate);
-			CleanupRemovedClass(Class.NewClass);
-		}
-	bModuleTransactionPrepared = false;
-}
-                                                                                                                   
 
 void FAngelscriptClassGenerator::PerformFullReload()
 {
@@ -2636,15 +2347,6 @@ void FAngelscriptClassGenerator::PerformFullReload()
 
 void FAngelscriptClassGenerator::PerformSoftReload()
 {
-                                                                                                                     
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-	if (FAngelscriptManager::Get().bForcedFullReloadExecution)
-	{
-		PerformReload(true);
-		return;
-	}
-#endif
-                                                                                                                   
 	PerformReload(false);
 }
 
@@ -2658,7 +2360,7 @@ void FAngelscriptClassGenerator::PerformReload(bool bFullReload)
 	bIsDoingFullReload = bFullReload;
                                                                                                                      
 #if WITH_EDITOR
-	if (!bPreparingModuleTransaction && bFullReload && FAngelscriptManager::bIsInitialCompileFinished)
+	if (bFullReload && FAngelscriptManager::bIsInitialCompileFinished)
 	{
 		TArray<UObject*> PreviousTypes;
 		for (FModuleData& Module : Modules)
@@ -2675,16 +2377,6 @@ void FAngelscriptClassGenerator::PerformReload(bool bFullReload)
 #endif
                                                                                                                    
 
-                                                                                                                       
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-	if (FAngelscriptManager::Get().bForcedFullReloadExecution)
-	{
-		// Setup validates the exact target module and marks only its actual classes
-		// before this method is entered; no reload requirement is promoted here.
-		check(FAngelscriptManager::Get().bForcedFullReloadBindingValidated);
-	}
-#endif
-                                                                                                                     
 	{
 		FAngelscriptScopeTimer Timer(TEXT("class generator reload"));
 
@@ -2867,18 +2559,6 @@ void FAngelscriptClassGenerator::PerformReload(bool bFullReload)
 		}
 	}
 
-                                                                                                                        
-	if (bPreparingModuleTransaction)
-	{
-		bModuleTransactionPrepared = true;
-		return;
-	}
-	CompleteReload(SlowTask);
-}
-
-void FAngelscriptClassGenerator::CompleteReload(FScopedSlowTask& SlowTask)
-{
-                                                                                                                      
 
 	if (bIsDoingFullReload)
 	{
@@ -2978,9 +2658,10 @@ void FAngelscriptClassGenerator::CompleteReload(FScopedSlowTask& SlowTask)
 						AngelscriptRuntimeGcMirror::DestroyRuntimeTrackedObjectsForClass(ClassData.ReplacedClass);
 						ClassData.ReplacedClass->RetainRetiredScriptTypeForGc();
 #if !SOLOAS_LEGACY_TERMINAL_LIFECYCLE
-                        if (ClassData.ReplacedClass->IsRooted())
+                        if (ClassData.ReplacedClass->ScriptTypePtr && ClassData.ReplacedClass->IsRooted())
                             ClassData.ReplacedClass->RemoveFromRoot();
-                        ClassData.ReplacedClass->ClearFlags(RF_Standalone);
+                        if (ClassData.ReplacedClass->ScriptTypePtr)
+                            ClassData.ReplacedClass->ClearFlags(RF_Standalone);
 #endif
                                                                                                               
 						if (ClassData.ReplacedClass->ScriptTypePtr != nullptr)
@@ -3066,14 +2747,16 @@ void FAngelscriptClassGenerator::CompleteReload(FScopedSlowTask& SlowTask)
 				TArray<TWeakObjectPtr<UClass>> AddedSubsystems;
 				for (UClass* Subsystem : ReinstancedSubsystems) AddedSubsystems.Add(Subsystem);
 				const TSharedRef<FDelegateHandle> Handle = MakeShared<FDelegateHandle>();
-				*Handle = FCoreDelegates::GetOnPostEngineInit().AddLambda([AddedSubsystems = MoveTemp(AddedSubsystems), Handle]()
+                                                                                              
+				*Handle = SoloASBridge::Compat::OnPostEngineInit().AddLambda([AddedSubsystems = MoveTemp(AddedSubsystems), Handle]()
 					{
 						for (const TWeakObjectPtr<UClass>& Subsystem : AddedSubsystems)
 							if (UClass* Class = Subsystem.Get())
 								if (!Class->HasAnyClassFlags(CLASS_NewerVersionExists))
 									FSubsystemCollectionBase::ActivateExternalSubsystem(Class);
-						FCoreDelegates::GetOnPostEngineInit().Remove(*Handle);
+						SoloASBridge::Compat::OnPostEngineInit().Remove(*Handle);
 					});
+// SOLOAS-COMPAT-END
                                                                                                           
 			}
 		}
@@ -3182,25 +2865,16 @@ void FAngelscriptClassGenerator::CreateFullReloadClass(FModuleData& ModuleData, 
 
 	FString ClassName = ClassDesc->ClassName;
 	FString UnrealName = GetUnrealName(false, ClassName);
-                                                                                                   
-	if (ModuleDesc->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf) UnrealName += TEXT("__") + ModuleDesc->ScriptUnit.Id;
-                                                                                                 
 
 	// Check if we're replacing a class
 	UASClass* ReplacedClass = FindObject<UASClass>(FAngelscriptManager::GetPackage(), *UnrealName);
-                                                                                                                      
-	if (ReplacedClass && !bPreparingModuleTransaction)
+	if (ReplacedClass)
 	{
 		FString OldClassName = FString::Printf(TEXT("%s_REPLACED_%d"), *ReplacedClass->GetName(), UniqueCounter());
 		ReplacedClass->Rename(*OldClassName, nullptr, REN_DontCreateRedirectors);
 		ReplacedClass->ClassFlags |= CLASS_NewerVersionExists;
 	}
-                                                                                                                    
 
-                                                                                                                      
-	if (bPreparingModuleTransaction)
-		UnrealName += FString::Printf(TEXT("_CANDIDATE_%d"), UniqueCounter());
-                                                                                                                    
 	UASClass* NewClass = NewObject<UASClass>(
 		FAngelscriptManager::GetPackage(),
 		UASClass::StaticClass(),
@@ -3249,9 +2923,6 @@ void FAngelscriptClassGenerator::CreateFullReloadStruct(FModuleData& ModuleData,
 
 	FString ClassName = ClassDesc->ClassName;
 	FString UnrealName = GetUnrealName(true, ClassName);
-                                                                                                    
-	if (ModuleDesc->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf) UnrealName += TEXT("__") + ModuleDesc->ScriptUnit.Id;
-                                                                                                  
 
 	// Check if we're replacing a struct
 	UASStruct* ReplacedStruct = FindObject<UASStruct>(FAngelscriptManager::GetPackage(), *UnrealName);
@@ -3285,9 +2956,7 @@ void FAngelscriptClassGenerator::CreateFullReloadStruct(FModuleData& ModuleData,
 	else
 		NewStruct->SetGuid(NewStruct->GetFName());
 
-                                                                                                     
-	FString DisplayString = ModuleDesc->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf ? GetUnrealName(true, ClassName) : NewStruct->GetName();
-                                                                                                   
+	FString DisplayString = NewStruct->GetName();
 	DisplayString = FName::NameToDisplayString(DisplayString, false);
 
 #if WITH_EDITOR
@@ -3321,10 +2990,6 @@ void FAngelscriptClassGenerator::CreateFullReloadDelegate(FModuleData& Module, F
 			*DelegateDesc->DelegateName
 		) + HEADER_GENERATED_DELEGATE_SIGNATURE_SUFFIX);
 
-                                                                                                      
-	if (Module.NewModule->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf)
-		FunctionName = FName(*(FunctionName.ToString() + TEXT("__") + Module.NewModule->ScriptUnit.Id));
-                                                                                                    
 	UDelegateFunction* ReplacedFunction = FindObject<UDelegateFunction>(FAngelscriptManager::GetPackage(), *FunctionName.ToString());
 	if (ReplacedFunction)
 	{
@@ -3889,16 +3554,6 @@ void FAngelscriptClassGenerator::DoFullReloadClass(FModuleData& ModuleData, FCla
 
 	NewClass->PropertyLink = SuperClass->PropertyLink;
 	NewClass->SetSuperStruct(SuperClass);
-                                                                                                
-    {
-        FAngelscriptTypeGenerationContext Context;
-        Context.Point = EAngelscriptTypeGenerationPoint::ConfigureClass;
-        Context.Class = ClassDesc.Get();
-        FString Error;
-        if (!DispatchAngelscriptTypeGeneration(Context, Error))
-            FAngelscriptManager::Get().ScriptCompileError(ModuleDesc, ClassDesc->LineNumber, Error);
-    }
-                                                                                              
 
 
 #if WITH_EDITOR
@@ -3920,11 +3575,7 @@ void FAngelscriptClassGenerator::DoFullReloadClass(FModuleData& ModuleData, FCla
 
 	if (!ClassDesc->Meta.Contains("DisplayName"))
 	{
-                                                                                                    
-		FString DisplayString = ModuleData.NewModule->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf
-			? GetUnrealName(false, ClassDesc->ClassName)
-			: NewClass->GetName();
-                                                                                                  
+		FString DisplayString = NewClass->GetName();
 		DisplayString = FName::NameToDisplayString(DisplayString, false);
 		NewClass->SetMetaData(NAME_DisplayName, *DisplayString);
 	}
@@ -4143,12 +3794,14 @@ void FAngelscriptClassGenerator::DoFullReloadClass(FModuleData& ModuleData, FCla
 			// Copy some flags we need from the parent
 			NewFunction->FunctionFlags |= (ParentFunction->FunctionFlags & (FUNC_FuncInherit | FUNC_Public | FUNC_Protected | FUNC_Private | FUNC_BlueprintPure | FUNC_HasOutParms));
 #if WITH_EDITOR
+                                                                                                                                  
 			// Copy the source values before adding metadata for NewFunction. Creating the
 			// destination entry can reallocate the package map and invalidate a same-package
 			// source-map pointer held by FMetaData::CopyMetadata.
+                                                                                                                                
 			                                                                                                             
 			TMap<FName, FString> ParentMetadataSnapshot;
-			if (const TMap<FName, FString>* ParentMetadata = FMetaData::GetMapForObject(ParentFunction))
+			if (const TMap<FName, FString>* ParentMetadata = SoloASBridge::Compat::GetObjectMetadata(ParentFunction))
 				ParentMetadataSnapshot = *ParentMetadata;
 
 			for (const TPair<FName, FString>& MetadataEntry : ParentMetadataSnapshot)
@@ -4406,10 +4059,7 @@ void FAngelscriptClassGenerator::DoFullReloadClass(FModuleData& ModuleData, FCla
 	if (ReplacedClass != nullptr)
 	{
 		bReinstancingAny = true;
-                                                                                                                   
-		if (!bPreparingModuleTransaction)
-			ReplacedClass->NewerVersion = NewClass;
-                                                                                                                 
+		ReplacedClass->NewerVersion = NewClass;
 	}
 	else
 	{
@@ -4432,7 +4082,9 @@ static const TArray<FName> InheritedMetaData = {
 static const FName NAME_IgnoreCategoryKeywords("IgnoreCategoryKeywordsInSubclasses");
 void FAngelscriptClassGenerator::CopyClassInheritedMetaData(UClass* SuperClass, UClass* NewClass)
 {
-	auto* SuperMeta = FMetaData::GetMapForObject(SuperClass);
+                                                                                               
+	auto* SuperMeta = SoloASBridge::Compat::GetObjectMetadata(SuperClass);
+                                                                                             
 	if (SuperMeta != nullptr)
 	{
 		// Need to copy, because calling SetMetaData could invalidate the SuperMeta pointer,
@@ -4443,7 +4095,9 @@ void FAngelscriptClassGenerator::CopyClassInheritedMetaData(UClass* SuperClass, 
 		{
 			for (FName MetaName : InheritedCategoryKeywords)
 			{
-				FString* MetaValue = SuperMeta->Find(MetaName);
+                                                                                                     
+				const FString* MetaValue = SuperMeta->Find(MetaName);
+                                                                                                   
 				if (MetaValue != nullptr)
 					CopiedMetaData.Add(TPair<FName, FString>{MetaName, *MetaValue});
 			}
@@ -4451,7 +4105,9 @@ void FAngelscriptClassGenerator::CopyClassInheritedMetaData(UClass* SuperClass, 
 
 		for (FName MetaName : InheritedMetaData)
 		{
-			FString* MetaValue = SuperMeta->Find(MetaName);
+                                                                                                     
+			const FString* MetaValue = SuperMeta->Find(MetaName);
+                                                                                                   
 			if (MetaValue != nullptr)
 				CopiedMetaData.Add(TPair<FName, FString>{MetaName, *MetaValue});
 		}
@@ -4476,10 +4132,9 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& ModuleData, FEnumData
 		UE_LOG(Angelscript, Log, TEXT("Full Reload: %s"), *EnumData.NewEnum->EnumName);
 
 	auto EnumDesc = EnumData.NewEnum;
-                                                                                                  
+                                                                                                                       
 	FString UnrealName = EnumDesc->EnumName;
-	if (ModuleData.NewModule->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf) UnrealName += TEXT("__") + ModuleData.NewModule->ScriptUnit.Id;
-                                                                                                
+                                                                                                                     
 
 	UUserDefinedEnum* Enum = nullptr;
 	TArray<TPair<FName, int64>> OldNames;
@@ -4532,23 +4187,19 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& ModuleData, FEnumData
                                                                                             
 
 		TArray<TPair<FName, int64>> EmptyNames;
-		Enum->SetEnums(
-			EmptyNames,
-			UEnum::ECppForm::EnumClass,
-			UEnum::EUnderlyingType::int8,
-			EEnumFlags::None,
-			UEnum::EAddMaxKeyIfMissing::Yes
-		);
+                                                                                         
+                                                                                                   
+		SoloASBridge::Compat::SetScriptEnumValues(Enum, EmptyNames);
+                                                                                                 
+// SOLOAS-COMPAT-END
 
 #if WITH_EDITOR
 		Enum->SetMetaData(TEXT("BlueprintType"), TEXT("true"));
 #endif
 
 		// Tell the loading system the enum exists
-                                                                                                              
-		NotifyRegistrationEvent(TEXT("/Script/Angelscript"), *UnrealName, ENotifyRegistrationType::NRT_Enum,
+		NotifyRegistrationEvent(TEXT("/Script/Angelscript"), *EnumDesc->EnumName, ENotifyRegistrationType::NRT_Enum,
 			ENotifyRegistrationPhase::NRP_Finished, nullptr, false, Enum);
-                                                                                                            
 	}
 
 	if (bHasChanged)
@@ -4562,13 +4213,11 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& ModuleData, FEnumData
 			Values.Emplace(*FullNameStr, EnumDesc->EnumValues[i]);
 		}
 
-		Enum->SetEnums(
-			Values,
-			UEnum::ECppForm::EnumClass,
-			UEnum::EUnderlyingType::int8,
-			EEnumFlags::None,
-			UEnum::EAddMaxKeyIfMissing::Yes
-		);
+                                                                                         
+                                                                                               
+		SoloASBridge::Compat::SetScriptEnumValues(Enum, Values);
+                                                                                             
+// SOLOAS-COMPAT-END
 
 		for (int32 i = 0, Count = Values.Num(); i < Count; ++i)
 		{
@@ -4967,14 +4616,7 @@ void FAngelscriptClassGenerator::DoSoftReload(FModuleData& ModuleData, FClassDat
 #if !SOLOASBRIDGE_ENGINE_PROFILE_MATCHED
 #error Class generator requires the configured engine schema layout.
 #endif
-	const FUnversionedStructSchema* PreviousGameSchema =
-		Class->UnversionedGameSchema.exchange(nullptr, std::memory_order_acq_rel);
-	FMemory::Free(const_cast<FUnversionedStructSchema*>(PreviousGameSchema));
-#if WITH_EDITORONLY_DATA
-	const FUnversionedStructSchema* PreviousEditorSchema =
-		Class->UnversionedEditorSchema.exchange(nullptr, std::memory_order_acq_rel);
-	FMemory::Free(const_cast<FUnversionedStructSchema*>(PreviousEditorSchema));
-#endif
+	SoloASBridge::Compat::ClearUnversionedSchemas(Class);
                                                                                                                           
 
 	// If the class has default components, update the offsets to match the new property offsets
@@ -5176,24 +4818,7 @@ void FAngelscriptClassGenerator::DoSoftReload(FModuleData& ModuleData, FClassDat
 #if !SOLOASBRIDGE_ENGINE_PROFILE_MATCHED
 #error Class generator requires the configured engine schema layout.
 #endif
-			const FUnversionedStructSchema* PreviousGameSchema =
-				CheckClass->UnversionedGameSchema.exchange(
-					nullptr,
-					std::memory_order_acq_rel
-				);
-			FMemory::Free(
-				const_cast<FUnversionedStructSchema*>(PreviousGameSchema)
-			);
-#if WITH_EDITORONLY_DATA
-			const FUnversionedStructSchema* PreviousEditorSchema =
-				CheckClass->UnversionedEditorSchema.exchange(
-					nullptr,
-					std::memory_order_acq_rel
-				);
-			FMemory::Free(
-				const_cast<FUnversionedStructSchema*>(PreviousEditorSchema)
-			);
-#endif
+			SoloASBridge::Compat::ClearUnversionedSchemas(CheckClass);
                                                                                                                                      
 
 			// Poke the reference token stream so we update our property offsets
@@ -5340,7 +4965,9 @@ void FAngelscriptClassGenerator::DoSoftReload(FModuleData& ModuleData, FClassDat
 					}
 					else
 					{
-						int32 ElementSize = Property->GetElementSize();
+                                                                                                                  
+						int32 ElementSize = SoloASBridge::Compat::GetPropertyElementSize(Property);
+                                                                                                                
 						for (int32 i = 0; i < Property->ArrayDim; ++i)
 						{
 							FString IndexedPropertyName = FString::Printf(TEXT("%s[%d]"), *Property->GetName(), i);
@@ -5946,11 +5573,6 @@ void FAngelscriptClassGenerator::CleanupRemovedClass(TSharedPtr<FAngelscriptClas
 	{
                                                                                                            
         Class->RetainRetiredScriptTypeForGc();
-#if !SOLOAS_LEGACY_TERMINAL_LIFECYCLE
-        if (Class->IsRooted())
-            Class->RemoveFromRoot();
-        Class->ClearFlags(RF_Standalone);
-#endif
                                                                                                          
 		Class->ScriptTypePtr = nullptr;
 		Class->ConstructFunction = nullptr;
@@ -6020,20 +5642,6 @@ void FAngelscriptClassGenerator::FinalizeClass(FModuleData& ModuleData, FClassDa
 	else
 		FinalizeObjectClass(ClassDesc);
 
-                                                                                                                        
-	UASClass* Candidate = CastChecked<UASClass>(NewClass);
-	if (bPreparingModuleTransaction)
-	{
-		if (!Candidate->HasValidScriptClassCarrier()
-			|| !SoloASBridge::PrepareScriptClassRegistration(Candidate, UASClass::StaticClass()))
-			UE_LOG(Angelscript, Fatal, TEXT("ASR-CLASS-CARRIER-REGISTRATION-FAILED: %s"), *Candidate->GetPathName());
-	}
-	else PublishClassRegistration(Candidate);
-}
-
-void FAngelscriptClassGenerator::PublishClassRegistration(UASClass* NewClass)
-{
-                                                                                                                      
                                                                                                           
 	UASClass* ScriptClass = CastChecked<UASClass>(NewClass);
 	check(ScriptClass->HasValidScriptClassCarrier());
@@ -6885,9 +6493,9 @@ bool FAngelscriptClassGenerator::ValidatePayloadReloads(FString& Error) const
             if (Class.OldClass.IsValid() && !Class.OldClass->bIsStruct)
                 Type.PreviousObjectClass = Class.OldClass->Class;
             Type.bWillReplace = Type.Previous && Class.NewClass->bIsStruct
-                && (Class.ReloadReq >= EReloadRequirement::FullReloadSuggested || Class.bExplicitFullReloadTarget);
+                && (Class.ReloadReq >= EReloadRequirement::FullReloadSuggested);
             Type.bWillReplaceObjectClass = Type.PreviousObjectClass && !Class.NewClass->bIsStruct
-                && (Class.ReloadReq >= EReloadRequirement::FullReloadSuggested || Class.bExplicitFullReloadTarget);
+                && (Class.ReloadReq >= EReloadRequirement::FullReloadSuggested);
             bHasReplacedStruct |= Type.bWillReplace;
         }
     }
@@ -6900,7 +6508,7 @@ bool FAngelscriptClassGenerator::ValidatePayloadReloads(FString& Error) const
         {
             if (!Class.OldClass.IsValid() || !Class.NewClass.IsValid() || Class.NewClass->bIsStruct
                 || !Class.OldClass->Class || !Class.OldClass->ScriptType) continue;
-            const bool bReplace = Class.ReloadReq >= EReloadRequirement::FullReloadSuggested || Class.bExplicitFullReloadTarget;
+            const bool bReplace = Class.ReloadReq >= EReloadRequirement::FullReloadSuggested;
             Prepared->Plans.Add({Class.OldClass->Class, FObjectKey(Class.OldClass->Class), Class.OldClass->ScriptType,
                 Class.NewClass->ScriptType, bReplace ? AngelscriptRuntimeGcMirror::EScriptObjectReloadPlan::RequiresReplacement
                     : AngelscriptRuntimeGcMirror::EScriptObjectReloadPlan::SoftReconstruction});

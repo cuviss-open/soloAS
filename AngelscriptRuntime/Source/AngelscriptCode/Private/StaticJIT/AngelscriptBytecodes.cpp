@@ -3,9 +3,9 @@
 #include "StaticJIT/StaticJITBinds.h"
 #include "AngelscriptType.h"
 #include "AngelscriptManager.h"
-                                                                                                 
+                                                                                                         
 #include "AngelscriptCallableDispatchAdapter.h"
-                                                                                               
+                                                                                                       
 
 #include "StartAngelscriptHeaders.h"
 #include "as_scriptfunction.h"
@@ -665,7 +665,7 @@ struct FScriptSystemCall
 
 	void MakePointerCall(FStaticJITContext& Context)
 	{
-                                                                                                 
+                                                                                                             
 		// Pointer calls cannot execute the encoded reflected-dispatch record.
 		if (IsAngelscriptCallableDispatchCaller(SysFunc->caller))
 		{
@@ -673,7 +673,7 @@ struct FScriptSystemCall
 			MakeDynamicCall(Context);
 			return;
 		}
-                                                                                               
+                                                                                                           
 
 		Context.Line("{");
 
@@ -1693,7 +1693,7 @@ void FDestructorCall::CallDestroy(FStaticJITContext& Context, const FString& Add
 	// System function:
 	if (DestroyFunc->sysFuncIntf != nullptr)
 	{
-                                                                                                 
+                                                                                                          
 		if (IsAngelscriptCallableDispatchCaller(DestroyFunc->sysFuncIntf->caller))
 		{
 			Context.Line("{");
@@ -1707,7 +1707,7 @@ void FDestructorCall::CallDestroy(FStaticJITContext& Context, const FString& Add
 			Context.Line("}");
 			return;
 		}
-                                                                                               
+                                                                                                        
 
 		check((ObjectType->GetFlags() & asOBJ_SCRIPT_OBJECT) == 0);
 
@@ -1855,7 +1855,7 @@ void FDefaultConstructCall::CallDefaultConstruct(FStaticJITContext& Context, con
 	// System function:
 	if (BehFunc->sysFuncIntf != nullptr)
 	{
-                                                                                                 
+                                                                                                                  
 		if (IsAngelscriptCallableDispatchCaller(BehFunc->sysFuncIntf->caller))
 		{
 			Context.Line("{");
@@ -1869,7 +1869,7 @@ void FDefaultConstructCall::CallDefaultConstruct(FStaticJITContext& Context, con
 			Context.Line("}");
 			return;
 		}
-                                                                                               
+                                                                                                                
 
 		check((ObjectType->GetFlags() & asOBJ_SCRIPT_OBJECT) == 0);
 		if (BehFunc->sysFuncIntf->passFirstParamMetaData != asEFirstParamMetaData::None)
@@ -2023,7 +2023,7 @@ void FAssignCall::CallAssign(FStaticJITContext& Context, const FString& AddressE
 	// System function:
 	if (BehFunc->sysFuncIntf != nullptr)
 	{
-                                                                                                 
+                                                                                                        
 		if (IsAngelscriptCallableDispatchCaller(BehFunc->sysFuncIntf->caller))
 		{
 			Context.Line("{");
@@ -2038,7 +2038,7 @@ void FAssignCall::CallAssign(FStaticJITContext& Context, const FString& AddressE
 			Context.Line("}");
 			return;
 		}
-                                                                                               
+                                                                                                      
 
 		if ((ObjectType->GetFlags() & asOBJ_SCRIPT_OBJECT) == 0)
 		{
@@ -2228,7 +2228,7 @@ void FCopyConstructCall::CallCopyConstruct(FStaticJITContext& Context, const FSt
 	// System function:
 	if (BehFunc->sysFuncIntf != nullptr)
 	{
-                                                                                                 
+                                                                                                               
 		if (IsAngelscriptCallableDispatchCaller(BehFunc->sysFuncIntf->caller))
 		{
 			Context.Line("{");
@@ -2243,7 +2243,7 @@ void FCopyConstructCall::CallCopyConstruct(FStaticJITContext& Context, const FSt
 			Context.Line("}");
 			return;
 		}
-                                                                                               
+                                                                                                             
 
 		if ((ObjectType->GetFlags() & asOBJ_SCRIPT_OBJECT) == 0)
 		{
@@ -2475,7 +2475,16 @@ FNativeFunctionCall GenerateCustomCall_MulticastExecute(FNativeFunctionContext& 
 	check(Context.ObjectAddress.Len() == 0);
 	check(!JITContext.bParmIsExecuted);
 
+                                                                                          
+                                                                                                          
+#if 0
 	JITContext.Line("((FMulticastScriptDelegate*){0})->ProcessDelegate<UObject>(&l_ParmStruct[0]);", Context.ArgumentValues[0]);
+#else
+	JITContext.AddHeader(TEXT("#include \"Compat/SoloASRuntimeCompat.h\""));
+	JITContext.Line("SoloASBridge::Compat::ProcessMulticastDelegate(*((FMulticastScriptDelegate*){0}), &l_ParmStruct[0]);", Context.ArgumentValues[0]);
+#endif
+                                                                                                        
+// SOLOAS-COMPAT-END
 	CleanupPropertiesInParm(Context, JITContext);
 	return FNativeFunctionCall();
 }

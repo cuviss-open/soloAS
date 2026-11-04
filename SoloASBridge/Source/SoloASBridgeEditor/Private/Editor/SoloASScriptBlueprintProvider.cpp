@@ -28,8 +28,26 @@ void RegisterScriptClassBlueprintType(UClass* ScriptClass)
         FModuleManager::LoadModuleChecked<IKismetCompilerInterface>(
             "KismetCompiler"
         );
-    // Script classes use the Bridge-owned Blueprint route regardless of native
-    // Blueprint specializations.
+    // Resolve at the native boundary: an ancestor script class may already be
+    // mapped to the Bridge route, and registration order is not guaranteed.
+    UClass* NativeParent = ScriptClass;
+    while (NativeParent != nullptr && !NativeParent->HasAllClassFlags(CLASS_Native))
+    {
+        NativeParent = NativeParent->GetSuperClass();
+    }
+    if (NativeParent != nullptr)
+    {
+        UClass* BlueprintType = nullptr;
+        UClass* GeneratedClassType = nullptr;
+        Compiler.GetBlueprintTypesForClass(NativeParent, BlueprintType, GeneratedClassType);
+        // Widget and Anim Blueprints need their native asset, compiler and
+        // generated class to retain Designer/AnimGraph support.
+        if (BlueprintType != UBlueprint::StaticClass()
+            && BlueprintType != USoloASScriptBlueprint::StaticClass())
+        {
+            return;
+        }
+    }
     Compiler.OverrideBPTypeForClass(
         ScriptClass,
         USoloASScriptBlueprint::StaticClass()
@@ -72,9 +90,8 @@ bool IsSupportedScriptBlueprintParent(
         return false;
     }
 
-    // The Bridge compiler owns the generated class and its persistent-frame
-    // reference collector. It intentionally uses one stable Blueprint route
-    // even when the native boundary is normally a Widget or Anim Blueprint.
+    // Standard specialized assets retain their native compiler/generated class;
+    // ordinary script Blueprints use the Bridge persistent-frame collector.
     return true;
 }
 

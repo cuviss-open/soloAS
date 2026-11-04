@@ -1,3 +1,8 @@
+                                                                                                    
+// Windows headers can precede AngelScript in unity builds.
+#pragma push_macro("RegisterClass")
+#undef RegisterClass
+                                                                                                  
 // Need to disable some casting warnings. Trust us MSVC we know what we're doing
 #ifdef _MSC_VER
 #pragma warning(push)

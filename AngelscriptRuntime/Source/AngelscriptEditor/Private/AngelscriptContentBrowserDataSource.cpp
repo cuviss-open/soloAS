@@ -1,4 +1,7 @@
 #include "AngelscriptContentBrowserDataSource.h"
+                                                                                                    
+#include "SoloASEngineCompat.h"
+                                                                                                  
 #include "AngelscriptManager.h"
 #include "AssetThumbnail.h"
 
@@ -25,7 +28,15 @@ FContentBrowserItemData UAngelscriptContentBrowserDataSource::CreateAssetItem(UO
 	return FContentBrowserItemData(
 		this,
 		EContentBrowserItemFlags::Type_File | EContentBrowserItemFlags::Category_Asset,
+                                                                                                      
+                                                                                                   
+#if SOLOAS_UE_BEFORE(5, 5)
+		*(TEXT("/All/Angelscript/") + Asset->GetName()), Asset->GetFName(), FText::FromString(DisplayName), Payload);
+#else
 		*(TEXT("/All/Angelscript/") + Asset->GetName()), Asset->GetFName(), FText::FromString(DisplayName), Payload, NAME_None);
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                    
 }
 
 void UAngelscriptContentBrowserDataSource::CompileFilter(const FName InPath, const FContentBrowserDataFilter& InFilter, FContentBrowserDataCompiledFilter& OutCompiledFilter)

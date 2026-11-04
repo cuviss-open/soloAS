@@ -46,6 +46,7 @@ TArray<UFunction*> UScriptActorMenuExtension::GatherExtensionFunctions() const
 	return Functions.FilterByPredicate([&](UFunction* Function)
 	{
 		FObjectProperty* FirstParamProperty = nullptr;
+                                                                                                                   
 		TFieldIterator<FProperty> FirstParam(Function);
 		if (FirstParam && FirstParam->HasAnyPropertyFlags(CPF_Parm))
 		{
@@ -53,6 +54,7 @@ TArray<UFunction*> UScriptActorMenuExtension::GatherExtensionFunctions() const
 			if (ObjectField != nullptr)
 				FirstParamProperty = ObjectField;
 		}
+                                                                                                                 
 
 		if (FirstParamProperty == nullptr)
 			return true;

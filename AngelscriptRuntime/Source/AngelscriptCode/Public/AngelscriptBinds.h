@@ -3,7 +3,16 @@
 #include "CoreMinimal.h"
 #include "UObject/Class.h"
 
+                                                                                           
+#include "SoloASEngineCompat.h"
+                                                                                            
+#if SOLOAS_UE_BEFORE(5, 6)
+#include "Containers/EnumAsByte.h"
+#else
 #include "Traits/IsTEnumAsByte.h"
+#endif
+// SOLOAS-COMPAT-END
+                                                                                         
 #include "Templates/IsEnum.h"
 #include "Templates/UnrealTypeTraits.h"
 
@@ -253,22 +262,6 @@ struct FSystemFunctionBind
 
 struct ANGELSCRIPTCODE_API FAngelscriptBinds
 {
-	#if WITH_EDITOR
-	enum class ERegistrationObjectKind : uint8
-	{
-		Function,
-		Type,
-		GlobalProperty,
-		Property
-	};
-
-	/** Returns the module containing the FBind registration object for one registered SDK object. */
-	static bool TryGetRegistrationModule(
-		ERegistrationObjectKind Kind,
-		int32 ObjectId,
-		FString& OutModule,
-		const FString& ObjectName = FString());
-	#endif
 
 	/* 
 	* Class-specific binding.
@@ -580,37 +573,25 @@ struct ANGELSCRIPTCODE_API FAngelscriptBinds
 	{
 		FBind(int32 BindOrder, TFunction<void()> Function)
 		{
-			#if WITH_EDITOR
-			FAngelscriptBinds::RegisterBinds(BindOrder, Function, this);
-			#else
 			FAngelscriptBinds::RegisterBinds(BindOrder, Function);
-			#endif
+
 		}
 
 		FBind(EOrder BindOrder, TFunction<void()> Function)
 		{
-			#if WITH_EDITOR
-			FAngelscriptBinds::RegisterBinds((int32)BindOrder, Function, this);
-			#else
 			FAngelscriptBinds::RegisterBinds((int32)BindOrder, Function);
-			#endif
+
 		}
 
 		FBind(TFunction<void()> Function)
 		{
-			#if WITH_EDITOR
-			FAngelscriptBinds::RegisterBinds(0, Function, this);
-			#else
 			FAngelscriptBinds::RegisterBinds(0, Function);
-			#endif
+
 		}
 	};
 
-	#if WITH_EDITOR
-	static void RegisterBinds(int32 BindOrder, TFunction<void()> Function, const void* RegistrationObjectAddress = nullptr);
-	#else
 	static void RegisterBinds(int32 BindOrder, TFunction<void()> Function);
-	#endif
+
 
 	struct ANGELSCRIPTCODE_API FNamespace
 	{

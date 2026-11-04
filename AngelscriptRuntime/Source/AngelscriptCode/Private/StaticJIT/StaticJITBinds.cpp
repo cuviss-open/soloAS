@@ -237,13 +237,6 @@ struct FScriptNativeUObjectCast : public FScriptFunctionNativeForm
 
 		FAngelscriptTypeUsage Usage;
 		Usage = FAngelscriptTypeUsage::FromTypeId(Context.LastPushedTypeInfo->GetTypeId());
-                                                                                                  
-        if (Usage.IsValid())
-        {
-            UClass* Class = Usage.GetClass();
-            if (Class && Class->HasAnyClassFlags(CLASS_Interface)) return false;
-        }
-                                                                                                
 		if (Usage.IsValid())
 			return true;
 		else

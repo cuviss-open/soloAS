@@ -1,8 +1,5 @@
 #include "Preprocessor/AngelscriptPreprocessor.h"
 
-                                                                                                          
-#include "Extensions/AngelscriptExtensionPipelineInternal.h"
-                                                                                                        
 #include "GameFramework/Actor.h"
 #include "Misc/ScopedSlowTask.h"
 
@@ -11,23 +8,24 @@
 #include "AngelscriptSettings.h"
 #include "AngelscriptType.h"
 
+                                                                                                                         
 #include "Misc/PackageName.h"
 #include "Modules/ModuleManager.h"
+                                                                                                                       
                                                                                                                       
 #include "UObject/TextProperty.h"
                                                                                                                     
 
+                                                                                                                         
 #include "StartAngelscriptHeaders.h"
 #include "as_scriptengine.h"
 #include "EndAngelscriptHeaders.h"
+                                                                                                                       
 
 #include "Async/Async.h"
 #include "Async/AsyncFileHandle.h"
 #include "Internationalization/Regex.h"
 #include "HAL/PlatformFileManager.h"
-                                                                                                                          
-#include "HAL/FileManager.h"
-                                                                                                                        
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 
@@ -53,8 +51,7 @@ FOnAngelscriptModifyFunctionDefaults FAngelscriptPreprocessor::OnModifyFunctionD
 FOnAngelscriptModifyPropertyDefaults FAngelscriptPreprocessor::OnModifyPropertyDefaults;
 FAngelscriptShouldRemoveFunctionOutsideEditor FAngelscriptPreprocessor::ShouldRemoveFunctionOutsideEditor;
 
-FAngelscriptPreprocessor::FAngelscriptPreprocessor(const TMap<FName, FString>& InBlueprintBindings)
-	: ProjectBlueprintBindings(InBlueprintBindings)
+FAngelscriptPreprocessor::FAngelscriptPreprocessor()
 {
 	PreprocessorFlags.Add(TEXT("EDITOR"), FAngelscriptManager::bUseEditorScripts);
 	PreprocessorFlags.Add(TEXT("EDITORONLY_DATA"), WITH_EDITORONLY_DATA && ((!IsRunningGame() && !IsRunningDedicatedServer()) || FAngelscriptManager::bUseEditorScripts));
@@ -117,18 +114,13 @@ void FAngelscriptPreprocessor::AddFile(const FString& RelativeFilename, const FS
 
 	TSharedRef<FAngelscriptModuleDesc> Module = MakeShared<FAngelscriptModuleDesc>();
 	Module->ModuleName = FilenameToModuleName(RelativeFilename);
-                                                                                              
-	if (Files.Num() == 1 && !bHasScriptUnitCatalog)
-		ScriptUnits.Discover();
-	Module->ScriptUnit = ScriptUnits.ResolveOwner(AbsoluteFilename);
-	Module->ModuleName = ScriptUnits.ResolveModuleName(AbsoluteFilename, RelativeFilename);
-	Module->bTreatAsDeleted = bTreatAsDeleted;
-                                                                                            
 
 	File.Module = Module;
 	File.AbsoluteFilename = AbsoluteFilename;
 	File.RelativeFilename = RelativeFilename;
+                                                                                                                         
 	File.bTreatAsDeleted = bTreatAsDeleted;
+                                                                                                                       
 
 #if WITH_EDITOR
 	File.bEditorOnlyModule = Module->ModuleName.StartsWith(TEXT("Editor.")) || Module->ModuleName.Contains(TEXT(".Editor."));
@@ -150,29 +142,7 @@ void FAngelscriptPreprocessor::AddFile(const FString& RelativeFilename, const FS
 		int32 Tries = 0;
 		for (; Tries < 6; ++Tries)
 		{
-                                                                                                                  
-			bool bReadWithinBudget = false;
-			if (!OnProcessChunks.IsBound())
-				bReadWithinBudget = FFileHelper::LoadFileToString(File.RawCode, *AbsoluteFilename);
-			else
-			{
-				TUniquePtr<FArchive> Source(IFileManager::Get().CreateFileReader(*AbsoluteFilename, FILEREAD_Silent));
-				if (Source)
-				{
-					const int64 Size = Source->TotalSize();
-					if (Size >= 0 && Size <= 16 * 1024 * 1024)
-					{
-						TArray<uint8> Bytes; Bytes.SetNumUninitialized(static_cast<int32>(Size));
-						if (Size != 0) Source->Serialize(Bytes.GetData(), Size);
-						if (!Source->IsError())
-						{ FFileHelper::BufferToString(File.RawCode, Bytes.GetData(), Bytes.Num()); bReadWithinBudget = true; }
-					}
-					else { bHasError = true; File.Module->bCompileError = true; }
-				}
-			}
-
-			if (bReadWithinBudget)
-                                                                                                                
+			if (FFileHelper::LoadFileToString(File.RawCode, *AbsoluteFilename))
 			{
 				bLoaded = true;
 				break;
@@ -203,13 +173,9 @@ void FAngelscriptPreprocessor::PerformAsynchronousLoads()
 			continue;
 
 		auto* AsyncReadHandle = FPlatformFileManager::Get().GetPlatformFile().OpenAsyncRead(*File.AbsoluteFilename);
-                                                                                                                       
-		const bool bAuditSource = OnProcessChunks.IsBound();
-		FAsyncFileCallBack SizeCallback = [&File, AsyncReadHandle, bAuditSource](bool bCancelled, IAsyncReadRequest* Request)
+		FAsyncFileCallBack SizeCallback = [&File, AsyncReadHandle](bool bCancelled, IAsyncReadRequest* Request)
 		{
-			if (bAuditSource && Request->GetSizeResults() > 16 * 1024 * 1024) File.Module->bCompileError = true;
-			if (bCancelled || Request->GetSizeResults() <= 0 || (bAuditSource && Request->GetSizeResults() > 16 * 1024 * 1024))
-                                                                                                                     
+			if (bCancelled || Request->GetSizeResults() <= 0)
 			{
 				File.RawCode = TEXT("");
 
@@ -269,20 +235,6 @@ void FAngelscriptPreprocessor::PerformAsynchronousLoads()
 	}
 }
 
-                                                                                               
-void FAngelscriptPreprocessor::PreloadBlueprintImportAssets()
-{
-    if (bLoadingAnyFilesAsynchronous) PerformAsynchronousLoads();
-    FAngelscriptTypeGenerationContext Context;
-    Context.Point = EAngelscriptTypeGenerationPoint::PrepareSource;
-    Context.Preprocessor = this;
-    Context.bPreloadOnly = true;
-    FString Error;
-    if (!DispatchAngelscriptTypeGeneration(Context, Error))
-        UE_LOG(Angelscript, Fatal, TEXT("%s"), *Error);
-}
-
-                                                                                             
 bool FAngelscriptPreprocessor::Preprocess()
 {
 	ConfigSettings = FAngelscriptManager::Get().ConfigSettings;
@@ -299,93 +251,40 @@ bool FAngelscriptPreprocessor::Preprocess()
 	if (bLoadingAnyFilesAsynchronous)
 		PerformAsynchronousLoads();
 
-                                                                                                                     
-	const bool bAuditSource = OnProcessChunks.IsBound();
-	if (bAuditSource)
-		for (FFile& File : Files)
-		{
-			if (File.Module->bCompileError) bHasError = true;
-			File.LoadedSource = File.RawCode;
-		}
-                                                                                                                   
-                                                                                               
-    FAngelscriptTypeGenerationContext SourceContext;
-    SourceContext.Point = EAngelscriptTypeGenerationPoint::PrepareSource;
-    SourceContext.Preprocessor = this;
-    FString SourceError;
-    if (!DispatchAngelscriptTypeGeneration(SourceContext, SourceError))
-    {
-        if (!Files.IsEmpty()) LineError(Files[0], 1, SourceError);
-        bHasError = true;
-        return false;
-    }
-                                                                                             
 
-                                                                                            
-	// Import errors mark their source module; keep preprocessing unrelated units.
-	// Generate proxies before wrapping so the top-level import parser sees them,
-	// and every generated type remains in its source unit namespace.
-	for (FFile& File : Files)
-		if (File.Module->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf)
-			File.RawCode = TEXT("namespace ") + File.Module->ScriptUnit.Id + TEXT(" { ") + File.RawCode + TEXT("\n}");
-                                                                                          
-                                                                                                           
-	FString ExtensionPipelineError;
-	if (!DispatchAngelscriptPreParse(*this, ExtensionPipelineError))
-	{
-		bHasError = true;
-		if (Files.Num() != 0)
-			FileWideError(Files[0], ExtensionPipelineError);
-		return false;
-	}
-                                                                                                         
 	// First step, parse into chunks
 	for (FFile& File : Files)
 		ParseIntoChunks(File);
 
-                                                                                                        
-	// Failed files retain diagnostics and descriptors; other units continue preprocessing.
-                                                                                                      
+                                                                                                                         
+	if (bHasError) return false;
+                                                                                                                       
 
 	// Record which classes are created by the angelscript code
-                                                                                                                
 	for (FFile& File : Files)
-		if (!File.Module->bCompileError) DetectClasses(File);
-                                                                                                              
+		DetectClasses(File);
 
-                                                                                                         
-	// The unit scheduler rejects every file belonging to an erroneous unit.
-                                                                                                       
+                                                                                                                         
+	if (bHasError) return false;
+                                                                                                                       
 
 	// Analyze the classes in the files
-                                                                                                                 
 	for (FFile& File : Files)
-		if (!File.Module->bCompileError) AnalyzeClasses(File);
-                                                                                                               
+		AnalyzeClasses(File);
 
 	// Process found macros in the chunks
-                                                                                                                
 	for (FFile& File : Files)
-		if (!File.Module->bCompileError) ProcessMacros(File);
-                                                                                                              
+		ProcessMacros(File);
 
 	// Process any delegate signatures we have
-                                                                                                                   
 	for (FFile& File : Files)
-		if (!File.Module->bCompileError) ProcessDelegates(File);
-                                                                                                                 
+		ProcessDelegates(File);
 
 	OnProcessChunks.Broadcast(*this);
-                                                                                                                     
-	if (bAuditSource) for (FFile& File : Files) File.LoadedSource.Reset();
-                                                                                                                   
 
 	// Process any class default statements
 	for (FFile& File : Files)
 	{
-                                                                                                           
-		if (File.Module->bCompileError) continue;
-                                                                                                         
 		for(FChunk& Chunk : File.ChunkedCode)
 		{
 			ProcessDefaults(File, Chunk);
@@ -393,17 +292,12 @@ bool FAngelscriptPreprocessor::Preprocess()
 	}
 	
 	// Condense the chunks back into final processed code
-                                                                                                                     
 	for (FFile& File : Files)
-		if (!File.Module->bCompileError) CondenseFromChunks(File);
-                                                                                                                   
+		CondenseFromChunks(File);
 
 	// Run post-processing steps
 	for (FFile& File : Files)
 	{
-                                                                                                              
-		if (File.Module->bCompileError) continue;
-                                                                                                            
 		PostProcessRangeBasedFor(File);
 		PostProcessLiteralAssets(File);
 	}
@@ -421,9 +315,7 @@ bool FAngelscriptPreprocessor::Preprocess()
 		File.Module->Code.Emplace(MoveTemp(Section));
 	}
 
-                                                                                                          
-	return !bHasError || Files.ContainsByPredicate([](const FFile& File) { return !File.Module->bCompileError; });
-                                                                                                        
+	return !bHasError;
 }
 
 struct FSpecifier
@@ -859,10 +751,6 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 	ClassDesc->LineNumber = Chunk.FileLineNumber;
 	ClassDesc->ClassName = ClassName;
 	ClassDesc->Namespace = Chunk.Namespace;
-                                                                                                   
-	if (File.Module->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf)
-		ClassDesc->QualifiedName = ClassDesc->Namespace.Get(File.Module->ScriptUnit.Id) + TEXT("::") + ClassName;
-                                                                                                 
 
 #if WITH_EDITOR
 	if (Chunk.Comment.Len() != 0)
@@ -874,10 +762,6 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 
 	// Determine the direct superclass of this type
 	ClassDesc->SuperClass = MatchClass.GetCaptureGroup(5);
-                                                                                                  
-	if (!MatchClass.GetCaptureGroup(4).IsEmpty())
-		ClassDesc->SuperClass = MatchClass.GetCaptureGroup(4).Replace(TEXT(" "), TEXT("")).Replace(TEXT("\t"), TEXT("")) + ClassDesc->SuperClass;
-                                                                                                
 	if (ClassDesc->SuperClass.Len() == 0)
 	{
 		if (!ClassDesc->bIsStruct)
@@ -894,9 +778,7 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 	TSharedPtr<FAngelscriptClassDesc> ExistingClass;
 	TSharedPtr<FAngelscriptModuleDesc> ExistingModule;
 
-                                                                                                     
-	ExistingClass = FAngelscriptManager::Get().GetClass(ClassDesc->QualifiedName.IsEmpty() ? ClassName : ClassDesc->QualifiedName, &ExistingModule);
-                                                                                                   
+	ExistingClass = FAngelscriptManager::Get().GetClass(ClassName, &ExistingModule);
 
 	if (ExistingClass.IsValid())
 	{
@@ -915,9 +797,7 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 				if (OtherFile.Module == File.Module)
 					continue;
 
-                                                                                                      
-				if (OtherFile.Module->ScriptUnit.Id == File.Module->ScriptUnit.Id && OtherFile.Module->GetClass(ClassName).IsValid())
-                                                                                                    
+				if (OtherFile.Module->GetClass(ClassName).IsValid())
 				{
 					ChunkError(File, Chunk, FString::Printf(TEXT("Cannot declare class %s in module %s. A class with this name already exists in module %s."),
 						*ClassName, *File.Module->ModuleName, *OtherFile.Module->ModuleName));
@@ -927,9 +807,7 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 		}
 	}
 
-                                                                                                                   
-	PreprocessingClasses.Add(ClassDesc->QualifiedName.IsEmpty() ? ClassDesc->ClassName : ClassDesc->QualifiedName, ClassDesc);
-                                                                                                                 
+	PreprocessingClasses.Add(ClassDesc->ClassName, ClassDesc);
 
 	// Genarate the script chunk containing the static class global variable that will be set
 	// to the correct class by AngelscriptClassGenerator later.
@@ -1003,14 +881,7 @@ TSharedPtr<FAngelscriptClassDesc> FAngelscriptPreprocessor::GetOrCreateStaticsCl
 	ClassDesc->Meta.Add(TEXT("DisplayName"), FPaths::GetBaseFilename(File.RelativeFilename));
 
 	File.Module->Classes.Add(ClassDesc);
-                                                                                                                  
-	if (File.Module->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf)
-	{
-		ClassDesc->Namespace = File.Module->ScriptUnit.Id;
-		ClassDesc->QualifiedName = File.Module->ScriptUnit.Id + TEXT("::") + ClassDesc->ClassName;
-	}
-	PreprocessingClasses.Add(ClassDesc->QualifiedName.IsEmpty() ? ClassDesc->ClassName : ClassDesc->QualifiedName, ClassDesc);
-                                                                                                                
+	PreprocessingClasses.Add(ClassDesc->ClassName, ClassDesc);
 
 	File.StaticsClass = ClassDesc;
 	return ClassDesc;
@@ -1057,9 +928,6 @@ static FString GetScriptNameFromClassName(const FString& OriginalClassName)
 
 void FAngelscriptPreprocessor::AnalyzeClasses(FFile& File)
 {
-                                                                                                
-	TGuardValue<const FAngelscriptScriptUnit*> Scope(FAngelscriptManager::Get().CurrentScriptUnit, &File.Module->ScriptUnit);
-                                                                                              
 	for (FChunk& Chunk : File.ChunkedCode)
 	{
 		if (Chunk.Type == EChunkType::Class)
@@ -2957,21 +2825,6 @@ void FAngelscriptPreprocessor::DetectEnum(FFile& File, FChunk& Chunk)
 
 TSharedPtr<FAngelscriptClassDesc> FAngelscriptPreprocessor::GetClassDescFor(const FString& ClassName)
 {
-                                                                                                   
-	const auto* Unit = FAngelscriptManager::Get().CurrentScriptUnit;
-	if (Unit && !ClassName.Contains(TEXT("::")))
-	{
-		if (auto* Own = PreprocessingClasses.Find(Unit->Id + TEXT("::") + ClassName)) return *Own;
-		TSharedPtr<FAngelscriptClassDesc> Dependency;
-		for (const FString& Id : Unit->Dependencies)
-			if (auto* Found = PreprocessingClasses.Find(Id + TEXT("::") + ClassName))
-			{
-				if (Dependency.IsValid() && Dependency != *Found) return nullptr;
-				Dependency = *Found;
-			}
-		if (Dependency.IsValid()) return Dependency;
-	}
-                                                                                                 
 	auto* Found = PreprocessingClasses.Find(ClassName);
 	if (Found != nullptr)
 		return *Found;
@@ -2999,16 +2852,6 @@ FAngelscriptPreprocessor::FFile* FAngelscriptPreprocessor::GetFileForClass(TShar
 static FName CP_NAME_CannotDeriveAngelscript("CannotDeriveAngelscript");
 void FAngelscriptPreprocessor::ResolveSuperClass(TSharedPtr<FAngelscriptClassDesc> ClassDesc, bool bShowError)
 {
-                                                                                                
-	TSharedPtr<FAngelscriptModuleDesc> Owner;
-	for (const auto& File : Files)
-		if (File.Module->Classes.Contains(ClassDesc.ToSharedRef())) { Owner = File.Module; break; }
-	if (!Owner.IsValid())
-		for (const auto& Active : FAngelscriptManager::Get().GetActiveModules())
-			if (Active->Classes.Contains(ClassDesc.ToSharedRef())) { Owner = Active; break; }
-	TGuardValue<const FAngelscriptScriptUnit*> UnitContext(FAngelscriptManager::Get().CurrentScriptUnit,
-		Owner.IsValid() ? &Owner->ScriptUnit : FAngelscriptManager::Get().CurrentScriptUnit);
-                                                                                              
 
 	if (ClassDesc->CodeSuperClass != nullptr)
 		return; // Already resolved earlier
@@ -3041,24 +2884,6 @@ void FAngelscriptPreprocessor::ResolveSuperClass(TSharedPtr<FAngelscriptClassDes
 		}
 	}
 
-                                                                                               
-	if (!ClassDesc->bSuperIsCodeClass)
-	{
-		FAngelscriptTypeGenerationContext Context;
-		Context.Point = EAngelscriptTypeGenerationPoint::ResolveSuperClass;
-		Context.Preprocessor = this;
-		Context.Class = ClassDesc.Get();
-		FString Error;
-		if (!DispatchAngelscriptTypeGeneration(Context, Error))
-		{
-			if (auto* File = GetFileForClass(ClassDesc))
-				LineError(*File, ClassDesc->LineNumber, Error);
-			bHasError = true;
-			ResolvingClasses.Remove(ClassDesc);
-			return;
-		}
-	}
-                                                                                             
 
 	if (!ClassDesc->bSuperIsCodeClass)
 	{
@@ -4424,9 +4249,6 @@ void FAngelscriptPreprocessor::ReplaceWithBlankFilePos(FFile& File, int32 StartP
 
 void FAngelscriptPreprocessor::FileWideError(FFile& File, const FString& Message)
 {
-                                                                                                                
-	File.Module->bCompileError = true;
-                                                                                                              
 	FAngelscriptManager::FDiagnostic Diagnostic;
 	Diagnostic.Message = Message;
 	Diagnostic.Row = 1;
@@ -4451,9 +4273,6 @@ void FAngelscriptPreprocessor::FileWideWarning(FFile& File, const FString& Messa
 
 void FAngelscriptPreprocessor::LineError(FFile& File, int32 Line, const FString& Message)
 {
-                                                                                                            
-	File.Module->bCompileError = true;
-                                                                                                          
 	FAngelscriptManager::FDiagnostic Diagnostic;
 	Diagnostic.Message = Message;
 	Diagnostic.Row = Line;
@@ -4478,9 +4297,6 @@ void FAngelscriptPreprocessor::LineWarning(FFile& File, int32 Line, const FStrin
 
 void FAngelscriptPreprocessor::ChunkError(FFile& File, FChunk& Chunk, const FString& Message)
 {
-                                                                                                             
-	File.Module->bCompileError = true;
-                                                                                                           
 	FAngelscriptManager::FDiagnostic Diagnostic;
 	Diagnostic.Message = Message;
 	Diagnostic.Row = Chunk.FileLineNumber;
@@ -4493,9 +4309,6 @@ void FAngelscriptPreprocessor::ChunkError(FFile& File, FChunk& Chunk, const FStr
 
 void FAngelscriptPreprocessor::MacroError(FFile& File, FMacro& Macro, const FString& Message)
 {
-                                                                                                             
-	File.Module->bCompileError = true;
-                                                                                                           
 	FAngelscriptManager::FDiagnostic Diagnostic;
 	Diagnostic.Message = Message;
 	Diagnostic.Row = Macro.FileLineNumber;

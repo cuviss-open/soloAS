@@ -18,7 +18,9 @@
 #include "HAL/Platform.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FeedbackContext.h"
+                                                                                                          
 #include "Misc/OutputDeviceRedirector.h"
+                                                                                                        
 #include "NavigationSystem.h"
 #include "Templates/Models.h"
 #include "UObject/UObjectGlobals.h"
@@ -35,10 +37,12 @@
 #if WITH_EDITOR
 #include "Editor.h"
 #include "Misc/ScopedSlowTask.h"
+                                                                                                          
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Misc/ScopeExit.h"
 #include "HAL/FileManager.h"
+                                                                                                        
 #endif
 
 class FAngelscriptUnitTest : public FAngelscriptTest, public TSharedFromThis<FAngelscriptUnitTest>
@@ -178,16 +182,20 @@ void BindForceGarbageCollectionNow(FAngelscriptBinds& T)
 class FUnitTestHotReloadFeedbackContext : public FFeedbackContext
 {
 public:
+                                                                                                          
 	// FFeedbackContext's newer overloads do not dispatch the legacy callback.
 	virtual void Serialize(const TCHAR* V, ELogVerbosity::Type Verbosity, const FName& Category, double) override
 	{
 		Serialize(V, Verbosity, Category);
 	}
+                                                                                                        
 
+                                                                                                          
 	virtual void SerializeRecord(const UE::FLogRecord& Record) override
 	{
 		FOutputDevice::SerializeRecord(Record);
 	}
+                                                                                                        
 
 	// FOutputDevice interface.
 	virtual void Serialize(const TCHAR* V, ELogVerbosity::Type Verbosity, const class FName& Category) override
@@ -360,7 +368,9 @@ bool RunOneUnitTestHotReload(FAngelscriptTest& T)
 
 	// On hot reload we need to install our own log device so we pick up Error-level logs outside the
 	// test framework.
+                                                                                                          
 	GLog->FlushThreadedLogs();
+                                                                                                        
 	FUnitTestHotReloadFeedbackContext LogDevice;
 	FFeedbackContext* OriginalGWarn = GWarn;
 	GWarn = &LogDevice;
@@ -371,7 +381,9 @@ bool RunOneUnitTestHotReload(FAngelscriptTest& T)
 
 	RunOneUnitTest(T);
 
+                                                                                                          
 	GLog->FlushThreadedLogs();
+                                                                                                        
 	GLog->RemoveOutputDevice(&LogDevice);
 	GWarn = OriginalGWarn;
 	double ElapsedSecs = FPlatformTime::Seconds() - TestStartTime;
@@ -755,18 +767,23 @@ void FAngelscriptUnitTests::GetTests(
 
 #endif // WITH_DEV_AUTOMATION_TESTS
 
+                                                                                                          
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAngelscriptAssertionIntegrityTest,
     "Angelscript.CppTests.Assertions.FailurePropagation",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+                                                                                                        
 
+                                                                                                          
 bool FAngelscriptAssertionIntegrityTest::RunTest(const FString&)
 {
     FUnitTestHotReloadFeedbackContext TimestampedLog;
     static_cast<FFeedbackContext&>(TimestampedLog).Serialize(
         TEXT("Timestamped assertion regression"), ELogVerbosity::Error, NAME_None, 1.0);
     TestEqual(TEXT("Timestamped errors use the same collector"), TimestampedLog.GetErrorMessages().Num(), 1);
+                                                                                                        
 
+                                                                                                          
     auto& Manager = FAngelscriptManager::Get();
     const char* Source =
         "void TrueFailure(FUnitTest& T) { T.AssertTrue(false, \"ASSERT-REGRESSION true\"); }\n"
@@ -778,7 +795,7 @@ bool FAngelscriptAssertionIntegrityTest::RunTest(const FString&)
     ON_SCOPE_EXIT { IFileManager::Get().Delete(*Filename); };
     if (!TestTrue(TEXT("Assertion source is written"), FFileHelper::SaveStringToFile(UTF8_TO_TCHAR(Source), *Filename)))
         return false;
-    FAngelscriptPreprocessor Preprocessor(Manager.ConfigSettings->BlueprintBindings);
+    FAngelscriptPreprocessor Preprocessor;
     Preprocessor.AddFile(ProbeModuleName + TEXT(".as"), Filename);
     if (!TestTrue(TEXT("Assertion source is preprocessed"), Preprocessor.Preprocess())) return false;
     TArray<TSharedRef<FAngelscriptModuleDesc>> Compiled;
@@ -798,3 +815,4 @@ bool FAngelscriptAssertionIntegrityTest::RunTest(const FString&)
     return true;
 }
 #endif
+                                                                                                        

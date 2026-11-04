@@ -35,7 +35,11 @@ public:
 	// GarbageCollection only finalizes dying objects; it never permits source
 	// publication. The current script reader remains visible to Try acquisition.
 	// With no current reader it acquires the same waiting writer as Wait.
-	enum class EAcquire : uint8 { Wait, Try, GarbageCollection };
+	enum class EAcquire : uint8 { Wait, Try, GarbageCollection
+#if WITH_EDITOR
+        , StructLayoutEdit
+#endif
+    };
 	FAngelscriptExecutionWriteScope(EAcquire Acquire = EAcquire::Wait);
 	/** Try never waits or upgrades a reader. A held scope fences retirement. */
 	bool IsAcquired() const { return bAcquired; }

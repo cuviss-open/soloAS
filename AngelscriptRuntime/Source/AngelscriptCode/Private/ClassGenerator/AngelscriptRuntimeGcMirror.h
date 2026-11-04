@@ -55,6 +55,8 @@ struct FRuntimeTrackedObject
 	uint64 TrackSequence = 0;
 	FObjectKey SavedClassKey;
 	bool bReplacementCaptureExcluded = false;
+	// The reload cookie is non-owning; GC must resolve its owner without calling into a retired VM type.
+	FObjectKey SavedTypeOwnerKey;
 	asIScriptModule* RetainedModule = nullptr;
 	uint64 TerminalPlanId = 0;
 	bool bOrdinaryRemovedAdmissionRequired = false;
@@ -84,7 +86,6 @@ bool IsRuntimeReconstructionFaultTarget(const UObject* Object);
 bool ClaimRuntimeTrackedMirrorForSoftReload(UObject* Object, asITypeInfo* ExpectedCookie);
 bool CommitRuntimeReconstructionRevision(UObject* Object, asITypeInfo* PreviousCookie, asITypeInfo* CurrentCookie);
 
-bool IsRuntimeGcTraceEnabled();
 // Terminal lookup uses the original tracked key only inside the private callback certificate.
 FObjectKey ResolveRuntimeDestructorKey(UObject* Object);
 bool MatchesRuntimeDestructorTracking(UObject* Object, const UObjectBase* Identity,

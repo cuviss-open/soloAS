@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "AngelscriptRuntimeGcLifecycle.h"
+#include "Compat/SoloASRuntimeCompat.h"
 #include "AngelscriptReloadSafety.h"
 
 #include "ClassGenerator/ASClass.h"
+#include "ClassGenerator/ASStruct.h"
+#include "ClassGenerator/AngelscriptPropertyInitialization.h"
 #include "ClassGenerator/AngelscriptRuntimeGcMirror.h"
 #include "UObject/GCObject.h"
 #include "ClassGenerator/AngelscriptRetiredModules.h"
@@ -27,6 +30,7 @@
 #include "Misc/ScopeLock.h"
 
 #include "UObject/UnrealType.h"
+#include "UObject/PropertyOptional.h"
 #if WITH_EDITOR
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
@@ -43,15 +47,11 @@
 
 DEFINE_LOG_CATEGORY(LogAngelscriptRuntimeGcLifecycle);
 
-bool AngelscriptRuntimeGcMirror::IsRuntimeGcTraceEnabled()
-{
-    return FParse::Param(FCommandLine::Get(), TEXT("SoloASExperimentalGcTrace"));
-}
-
 namespace
 {
 FDelegateHandle RuntimeLifecyclePreExitHandle;
 FDelegateHandle RuntimeLifecyclePostGcHandle;
+FDelegateHandle RemovedClassTypePostGcHandle;
 bool bRuntimeLifecycleShutdownOwnerCalled = false;
 
 void StopAngelscriptRuntimeAtPreExit()
@@ -291,11 +291,15 @@ class FTerminalNativeTailProperty final : public FStructProperty
 {
 public:
     FTerminalNativeTailProperty(UASClass* Owner, const FStructProperty& Original)
-        : FStructProperty(Owner, Original.GetFName())
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 requires explicit field object flags [test: SoloAS.RuntimeGcLifecycle] | CS.Runtime.CoreSurface.AngelscriptRuntimeGcLifecycle.Compat1
+        : FStructProperty(Owner, Original.GetFName(), RF_NoFlags)
+// SOLOAS-COMPAT-END
     {
         Struct = Original.Struct;
         ArrayDim = Original.ArrayDim;
-        ElementSize = Original.GetElementSize();
+                                                                                                                      
+        ElementSize = SoloASBridge::Compat::GetPropertyElementSize(&Original);
+                                                                                                                    
         SetOffset_Internal(Original.GetOffset_ForInternal());
         SetPropertyFlags(Original.GetPropertyFlags());
     }
@@ -307,9 +311,13 @@ class FTerminalNativeOwnedProperty final : public FStructProperty
 {
 public:
     FTerminalNativeOwnedProperty(UASClass* Owner, const FStructProperty& Original)
-        : FStructProperty(Owner, Original.GetFName())
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 requires explicit field object flags [test: SoloAS.RuntimeGcLifecycle] | CS.Runtime.CoreSurface.AngelscriptRuntimeGcLifecycle.Compat2
+        : FStructProperty(Owner, Original.GetFName(), RF_NoFlags)
+// SOLOAS-COMPAT-END
     {
-        Struct = Original.Struct; ArrayDim = Original.ArrayDim; ElementSize = Original.GetElementSize();
+                                                                                                                      
+        Struct = Original.Struct; ArrayDim = Original.ArrayDim; ElementSize = SoloASBridge::Compat::GetPropertyElementSize(&Original);
+                                                                                                                    
         SetOffset_Internal(Original.GetOffset_ForInternal()); SetPropertyFlags(Original.GetPropertyFlags());
     }
     void DestroyValueInternal(void* Data) const override { DestroyTerminalNativeOwned(*this, Data); }
@@ -471,7 +479,9 @@ bool ValidateTerminalIndependentNativeTailChain(const FTerminalNativeTailChain& 
             || Class->UeDelayedDestroyFields.Num() != (Index ? 0 : 1)
             || Class->GetPropertiesSize() != Head.ContainerSize || Head.ContainerSize < C.PropertiesSize
             || Head.ContainerSize < int32(Head.TypeSize)
-            || Class->GetPropertiesStartOffset() != 0 || Class->ChildProperties != Head.Children
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 properties have UObject-relative offsets and no class partials [test: SoloAS.RuntimeGcLifecycle] | CS.Runtime.CoreSurface.AngelscriptRuntimeGcLifecycle.Compat3
+            || SoloASBridge::Compat::GetClassPropertiesStartOffset(Class) != 0 || Class->ChildProperties != Head.Children
+// SOLOAS-COMPAT-END
             || (Index && Head.Children) || Class->PropertyLink != Head.Properties || Head.Properties != C.PropertyLink
             || Class->RefLink != Head.References || Class->PostConstructLink != Head.PostConstruct
             || Head.OriginalHead != C.Owned || Class->DestructorLink != (bInstalled ? Head.OwnedProxy.Get() : Head.OriginalHead)
@@ -516,7 +526,9 @@ bool ValidateTerminalNativeTailChain(const FTerminalNativeTailChain& C, bool bIn
         || C.Native->GetSuperClass() != UObject::StaticClass() || !C.Native->HasAnyClassFlags(CLASS_Native)
         || C.Native->bLayoutChanging || C.Native->HasAnyClassFlags(CLASS_NewerVersionExists)
         || C.Native->GetPropertiesSize() != C.NativePrefix || C.NativePrefix <= int32(sizeof(UObject))
-        || C.Class->ScriptPropertyOffset < C.NativePrefix || C.Class->GetPropertiesStartOffset() != 0
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 properties have UObject-relative offsets and no class partials [test: SoloAS.RuntimeGcLifecycle] | CS.Runtime.CoreSurface.AngelscriptRuntimeGcLifecycle.Compat4
+        || C.Class->ScriptPropertyOffset < C.NativePrefix || SoloASBridge::Compat::GetClassPropertiesStartOffset(C.Class) != 0
+// SOLOAS-COMPAT-END
         || C.Class->GetPropertiesSize() != C.PropertiesSize
         || C.Class->ChildProperties != C.ChildProperties || C.Class->PropertyLink != C.PropertyLink
         || C.Class->RefLink != C.RefLink || C.Class->PostConstructLink != C.PostConstructLink
@@ -639,7 +651,7 @@ bool HasTerminalFieldStorageIdentity(const FTerminalDestroyPlan& Plan, const voi
 bool SameTerminalItem(int32 Index, int32 Serial, const UObject* Object)
 {
     const FUObjectItem* Item = Index >= 0 ? GUObjectArray.IndexToObject(Index) : nullptr;
-    return Serial != 0 && Item && Item->GetSerialNumber() == Serial && Item->GetObject() == Object;
+    return Serial != 0 && Item && Item->GetSerialNumber() == Serial && SoloASBridge::Compat::ObjectFromItem(Item) == Object;
 }
 
 // This proof reads only receiver metadata. It never calls the admission registry or a log sink.
@@ -657,7 +669,9 @@ bool IsTerminalBlueprintReceiverMetadata(const UClass* ReceiverClass, const UASC
         || Owner->UeDelayedDestroyFields.Num() != 1 || !Owner->UeDelayedDestroyFields.Contains(Property)
         || Property->GetOwnerStruct() != Owner || Property->Struct != FInstancedStruct::StaticStruct()
         || Property->ArrayDim != 1 || Property->GetSize() != sizeof(FInstancedStruct)
-        || Property->GetElementSize() != sizeof(FInstancedStruct)
+                                                                                                                      
+        || SoloASBridge::Compat::GetPropertyElementSize(Property) != sizeof(FInstancedStruct)
+                                                                                                                    
         || Owner->DestructorLink != Property || ReceiverClass->DestructorLink != Property
         || Property->DestructorLinkNext) return false;
     const auto* Blueprint = Cast<UBlueprint>(ReceiverClass->ClassGeneratedBy);
@@ -857,7 +871,7 @@ bool HasOrdinaryRemovedFieldShape(const FRemovedRuntimeAssociation& Record)
             Seen.Add(Property);
             if (Property->GetOwnerClass() != Owner) continue;
             TArray<const FStructProperty*> Encountered;
-            if (Property->ContainsFinishDestroy(Encountered)) return false;
+            if (SoloASBridge::Compat::PropertyContainsFinishDestroy(Property, Encountered)) return false;
         }
         Type = Type->derivedFrom;
     }
@@ -1128,7 +1142,9 @@ bool ValidateTerminalOwners(const FTerminalDestroyPlan& Plan, bool bValidateCode
             || !ValidateTerminalOwnerAssociation(Plan, Field.Owner, Field.OwnerCookie)
             || !Field.Owner->UeDelayedDestroyFields.Contains(Property) || Property->Struct != FInstancedStruct::StaticStruct()
             || Property->ArrayDim != 1 || Property->GetOffset_ForInternal() != Field.Offset
-            || Property->GetElementSize() != sizeof(FInstancedStruct) || Property->GetSize() != sizeof(FInstancedStruct)
+                                                                                                                      
+            || SoloASBridge::Compat::GetPropertyElementSize(Property) != sizeof(FInstancedStruct) || Property->GetSize() != sizeof(FInstancedStruct)
+                                                                                                                    
             || uint64(Property->GetPropertyFlags()) != Field.Flags
             || Property->ContainerPtrToValuePtr<void>(Plan.Token.Object) != Field.Storage
             || !Field.Storage || reinterpret_cast<UPTRINT>(Field.Storage) % alignof(FInstancedStruct) != 0
@@ -1211,7 +1227,7 @@ bool CaptureTerminalOwnedFields(FTerminalDestroyPlan& Plan)
                 Field.ValueCookie = Member->type.GetTypeInfo();
             }
             TArray<const FStructProperty*> Encountered;
-            if (!Field.Member || !Field.ValueCookie || !Property->ContainsFinishDestroy(Encountered)) return false;
+            if (!Field.Member || !Field.ValueCookie || !SoloASBridge::Compat::PropertyContainsFinishDestroy(Property, Encountered)) return false;
             uint32 Matches = 0;
             for (uint32 Index = 0; Index != Plan.ChainLength; ++Index)
                 if (Plan.Chain[Index] == TerminalOwnedExecutionNode(Plan, Property)) { Field.ChainIndex = Index; ++Matches; }
@@ -1234,7 +1250,9 @@ bool ValidateTerminalInt32SlotMetadata(const FTerminalDestroyPlan& Plan)
     UASClass* Declaration = TerminalFieldDeclarationOwner(Plan);
     if (Plan.ActualReceiverClass != Plan.Class && !ValidateTerminalActualReceiverMetadata(Plan)) return false;
     if (Slot.bRuntimeOwnedOriginal && (!Slot.FinalProviderEpoch || !HasRuntimeOwnedTerminalScalar(Plan)
-        || Plan.ActualReceiverClass != Plan.Class || Plan.Class->GetPropertiesStartOffset() != 0)) return false;
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 properties have UObject-relative offsets and no class partials [test: SoloAS.RuntimeGcLifecycle] | CS.Runtime.CoreSurface.AngelscriptRuntimeGcLifecycle.Compat5
+        || Plan.ActualReceiverClass != Plan.Class || SoloASBridge::Compat::GetClassPropertiesStartOffset(Plan.Class) != 0)) return false;
+// SOLOAS-COMPAT-END
     if (!Slot.Property)
         return Slot == FInt32Slot() && Plan.Int32Phase == EInt32SlotPhase::Absent
             && !Plan.FreshInt32 && !Plan.FreshInt32Epoch;
@@ -1272,7 +1290,9 @@ bool ValidateTerminalInt32SlotMetadata(const FTerminalDestroyPlan& Plan)
     const auto* Property = Slot.Property;
     if (Property->GetClass() != FIntProperty::StaticClass() || Property->GetOwnerStruct() != Slot.Owner
         || Property->GetFName() != Slot.Name || Property->ArrayDim != 1
-        || Property->GetSize() != sizeof(int32) || Property->GetElementSize() != sizeof(int32)
+                                                                                                                      
+        || Property->GetSize() != sizeof(int32) || SoloASBridge::Compat::GetPropertyElementSize(Property) != sizeof(int32)
+                                                                                                                    
         || Property->GetOffset_ForInternal() != Slot.Offset || uint64(Property->GetPropertyFlags()) != Slot.PropertyFlags
         || Declaration->UeDelayedDestroyFields.Contains(Property)) return false;
     for (uint32 Index = 0; Index < Plan.ChainLength; ++Index)
@@ -1479,7 +1499,9 @@ bool ValidateTerminalPlan(const FTerminalDestroyPlan& Plan, bool bAfterOriginal)
     const auto* Property = Plan.Property;
     if (!Property || Property->Struct != FInstancedStruct::StaticStruct()
         || Property->ArrayDim != 1 || Property->GetOffset_ForInternal() != Plan.Offset
-        || Property->GetSize() != sizeof(FInstancedStruct) || Property->GetElementSize() != sizeof(FInstancedStruct)
+                                                                                                                      
+        || Property->GetSize() != sizeof(FInstancedStruct) || SoloASBridge::Compat::GetPropertyElementSize(Property) != sizeof(FInstancedStruct)
+                                                                                                                    
         || static_cast<uint64>(Property->GetPropertyFlags()) != Plan.PropertyFlags
         || Property->ContainerPtrToValuePtr<void>(Token.Object) != Plan.Storage
         || !ValidateTerminalOwners(Plan) || !ValidateTerminalInt32SlotMetadata(Plan)) return false;
@@ -1552,7 +1574,9 @@ bool CanCleanupTerminalFreshField(const FTerminalDestroyPlan& Plan, const FTermi
     if (!Current || Current != Field.Property || Current->GetOwnerStruct() != Code->Owner
         || !Code->Owner->UeDelayedDestroyFields.Contains(Current) || Current->Struct != FInstancedStruct::StaticStruct()
         || Current->ArrayDim != 1 || Current->GetSize() != sizeof(FInstancedStruct)
-        || Current->GetElementSize() != sizeof(FInstancedStruct) || Current->GetOffset_ForInternal() != Field.Offset
+                                                                                                                      
+        || SoloASBridge::Compat::GetPropertyElementSize(Current) != sizeof(FInstancedStruct) || Current->GetOffset_ForInternal() != Field.Offset
+                                                                                                                    
         || uint64(Current->GetPropertyFlags()) != Field.Flags || Field.Offset < Code->Owner->ScriptPropertyOffset
         || Field.Offset > Plan.PropertiesSize - int32(sizeof(FInstancedStruct))
         || !Field.Storage || reinterpret_cast<UPTRINT>(Field.Storage) % alignof(FInstancedStruct) != 0) return false;
@@ -1610,7 +1634,9 @@ bool ValidateRuntimeOwnedTerminalInt32LateFence(const FTerminalDestroyPlan& Plan
         || Provider->Registration.Receiver != Plan.Token.Object || Provider->Registration.Scalar != Slot.Property
         || Provider->Registration.Owned != Plan.Property || Provider->Registration.ProviderEpoch != Slot.FinalProviderEpoch
         || Provider->ReceiverKey != Plan.Token.Key || !Plan.ModulePin
-        || Plan.Class->GetPropertiesStartOffset() != 0
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 properties have UObject-relative offsets and no class partials [test: SoloAS.RuntimeGcLifecycle] | CS.Runtime.CoreSurface.AngelscriptRuntimeGcLifecycle.Compat6
+        || SoloASBridge::Compat::GetClassPropertiesStartOffset(Plan.Class) != 0
+// SOLOAS-COMPAT-END
         || (Plan.NativeTailChain ? (TerminalFieldDeclarationOwner(Plan)->GetSuperClass() != Plan.NativeTailChain->Native
                 || TerminalFieldDeclarationOwner(Plan)->CodeSuperClass != Plan.NativeTailChain->Native
                 || Slot.Offset < Plan.NativeTailChain->NativePrefix)
@@ -1736,7 +1762,9 @@ ETerminalCaptureResult CaptureTerminalPlan(FTerminalDestroyPlan& Plan, UObject* 
     const auto* DeclaredOwner = Cast<UASClass>(Property.GetOwnerStruct());
     if (!DeclaredOwner || !Plan.Class->IsChildOf(DeclaredOwner) || !DeclaredOwner->UeDelayedDestroyFields.Contains(&Property)
         || Property.Struct != FInstancedStruct::StaticStruct() || Property.ArrayDim != 1
-        || Property.GetSize() != sizeof(FInstancedStruct) || Property.GetElementSize() != sizeof(FInstancedStruct))
+                                                                                                                      
+        || Property.GetSize() != sizeof(FInstancedStruct) || SoloASBridge::Compat::GetPropertyElementSize(&Property) != sizeof(FInstancedStruct))
+                                                                                                                    
         return ETerminalCaptureResult::InvalidIdentity;
     Plan.PropertiesSize = Plan.Class->GetPropertiesSize();
     Plan.ClassKey = FObjectKey(Plan.Class);
@@ -2253,6 +2281,236 @@ bool RevalidateTerminalDestroy(const SoloASBridge::FRuntimeTerminalDestroyTokenF
 #endif
 }
 
+namespace
+{
+// A removed class stays rooted and hidden. Its retained type lives until no tracked object uses it;
+// objects constructed from it after the removal never use that type.
+FCriticalSection RemovedRuntimeClassesMutex;
+TSet<FObjectKey> RemovedRuntimeClasses;
+TSet<FObjectKey> RemovedClassConstructions;
+
+// UE keeps script class fields out of its own destructor chains, because the script destructor owns them.
+struct FRemovedClassFieldAccess : FProperty
+{
+    static void Destroy(const FProperty& Property, void* Data)
+    {
+        using FDestroyValue = void (FProperty::*)(void*) const;
+        const FDestroyValue DestroyValue = &FRemovedClassFieldAccess::DestroyValueInternal;
+        (Property.*DestroyValue)(Data);
+    }
+};
+}
+
+bool IsRemovedRuntimeScriptClass(const UASClass* Class)
+{
+    if (!Class || Class->ScriptTypePtr) return false;
+    FScopeLock Lock(&RemovedRuntimeClassesMutex);
+    return RemovedRuntimeClasses.Contains(FObjectKey(Class));
+}
+
+void ConstructRemovedRuntimeScriptFields(UObject* Object, UASClass* Class)
+{
+    // The class constructor runs while the object is still pending construction, so each reflected script
+    // field constructs natively here; the stock property copy then fills it from the archetype.
+    for (const UASClass* Owner = Class; Owner; Owner = Cast<UASClass>(Owner->GetSuperClass()))
+        for (TFieldIterator<FProperty> It(Owner, EFieldIteratorFlags::ExcludeSuper); It; ++It)
+            It->InitializeValue_InContainer(Object);
+}
+
+void RecordRemovedClassConstruction(UObject* Object)
+{
+    FScopeLock Lock(&RemovedRuntimeClassesMutex);
+    RemovedClassConstructions.Add(FObjectKey(Object));
+}
+
+bool ConsumeRemovedClassConstruction(UObject* Object)
+{
+    FScopeLock Lock(&RemovedRuntimeClassesMutex);
+    return RemovedClassConstructions.Remove(FObjectKey(Object)) != 0;
+}
+
+bool IsRemovedClassConstruction(const UObject* Object)
+{
+    FScopeLock Lock(&RemovedRuntimeClassesMutex);
+    return RemovedClassConstructions.Contains(FObjectKey(Object));
+}
+
+void DestroyRemovedRuntimeScriptFields(UObject* Object, const UASClass* Class)
+{
+    for (const UASClass* Owner = Class; Owner; Owner = Cast<UASClass>(Owner->GetSuperClass()))
+        for (TFieldIterator<FProperty> It(Owner, EFieldIteratorFlags::ExcludeSuper); It; ++It)
+            FRemovedClassFieldAccess::Destroy(**It, It->ContainerPtrToValuePtr<void>(Object));
+}
+
+namespace AngelscriptRuntimeGcMirror
+{
+bool UntrackRemovedClassDefaults(asITypeInfo* Type);
+}
+
+static void ForgetRemovedDefaultStructValue(const FProperty* Property, void* Data);
+
+static void ForgetRemovedDefaultStructValue(const UScriptStruct* Struct, void* Data)
+{
+    if (Struct == FInstancedStruct::StaticStruct())
+    {
+        FInstancedStruct& Instanced = *static_cast<FInstancedStruct*>(Data);
+        if (const UScriptStruct* Payload = Instanced.GetScriptStruct())
+            ForgetRemovedDefaultStructValue(Payload, Instanced.GetMutableMemory());
+        return;
+    }
+    if (Struct->IsA<UASStruct>())
+        ForgetAngelscriptStructScriptType(Data, nullptr);
+    for (TFieldIterator<FProperty> It(Struct); It; ++It)
+        for (int32 Index = 0; Index < It->ArrayDim; ++Index)
+            ForgetRemovedDefaultStructValue(*It, It->ContainerPtrToValuePtr<void>(Data, Index));
+}
+
+static void ForgetRemovedDefaultStructValue(const FProperty* Property, void* Data)
+{
+    if (const FStructProperty* Field = CastField<FStructProperty>(Property))
+    {
+        ForgetRemovedDefaultStructValue(Field->Struct, Data);
+    }
+    else if (const FOptionalProperty* Optional = CastField<FOptionalProperty>(Property))
+    {
+        if (void* Content = Optional->GetValuePointerForReplaceIfSet(Data))
+            ForgetRemovedDefaultStructValue(Optional->GetValueProperty(), Content);
+    }
+    else if (const FArrayProperty* Array = CastField<FArrayProperty>(Property))
+    {
+        FScriptArrayHelper Helper(Array, Data);
+        for (int32 Index = 0; Index < Helper.Num(); ++Index)
+            ForgetRemovedDefaultStructValue(Array->Inner, Helper.GetRawPtr(Index));
+    }
+    else if (const FMapProperty* Map = CastField<FMapProperty>(Property))
+    {
+        FScriptMapHelper Helper(Map, Data);
+        for (int32 Index = 0; Index < Helper.GetMaxIndex(); ++Index)
+        {
+            if (!Helper.IsValidIndex(Index)) continue;
+            ForgetRemovedDefaultStructValue(Map->KeyProp, Helper.GetKeyPtr(Index));
+            ForgetRemovedDefaultStructValue(Map->ValueProp, Helper.GetValuePtr(Index));
+        }
+    }
+    else if (const FSetProperty* Set = CastField<FSetProperty>(Property))
+    {
+        FScriptSetHelper Helper(Set, Data);
+        for (int32 Index = 0; Index < Helper.GetMaxIndex(); ++Index)
+            if (Helper.IsValidIndex(Index)) ForgetRemovedDefaultStructValue(Set->ElementProp, Helper.GetElementPtr(Index));
+    }
+}
+
+// Whether a script member type can hold script struct values, with every struct type in it still resolved.
+static bool HoldsResolvedStructs(const FAngelscriptTypeUsage& Usage, bool& bHoldsStruct)
+{
+    if (!Usage.IsValid()) return false;
+    const UStruct* Struct = Usage.GetUnrealStruct();
+    if (Usage.Type->IsUnrealStruct() && !Struct) return false;
+    bHoldsStruct |= Struct && Struct->IsA<UScriptStruct>();
+    for (const FAngelscriptTypeUsage& SubType : Usage.SubTypes)
+        if (!HoldsResolvedStructs(SubType, bHoldsStruct)) return false;
+    return true;
+}
+
+// Script members without UPROPERTY have no reflected field. A field made for the member, as the class generator
+// makes the fields of reflected script members, takes the same walk through the values it holds.
+static void ForgetRemovedDefaultScriptMemberValues(UObject* Object, asITypeInfo* Type)
+{
+    TSet<int32> Reflected;
+    for (TFieldIterator<FProperty> It(Object->GetClass()); It; ++It)
+        Reflected.Add(It->GetOffset_ForInternal());
+    FArchive ArDummy;
+    for (asUINT Index = 0, Count = Type->GetPropertyCount(); Index < Count; ++Index)
+    {
+        const char* Name = nullptr;
+        int Offset = 0;
+        Type->GetProperty(Index, &Name, nullptr, nullptr, nullptr, &Offset);
+        if (Reflected.Contains(Offset)) continue;
+        const FAngelscriptTypeUsage Usage = FAngelscriptTypeUsage::FromProperty(Type, Index);
+        bool bHoldsStruct = false;
+        if (!HoldsResolvedStructs(Usage, bHoldsStruct) || !bHoldsStruct || !Usage.CanCreateProperty()) continue;
+        FAngelscriptType::FPropertyParams Params;
+        Params.PropertyName = FName(ANSI_TO_TCHAR(Name));
+        TUniquePtr<FProperty> Field(Usage.CreateProperty(Params));
+        if (!Field) continue;
+        Field->Link(ArDummy);
+        ForgetRemovedDefaultStructValue(Field.Get(), reinterpret_cast<uint8*>(Object) + Offset);
+    }
+}
+
+// The rooted default object of a removed class and its subobjects are never destroyed, so the script struct
+// values they hold never destruct. Once the class gives up its type, those values keep no type either, as in
+// the fork, and no module stays only for them. Members without UPROPERTY are reached through the script type
+// of the nearest script class, which is still retained or live here.
+static void ForgetRemovedClassDefaultStructValues(UASClass* Class)
+{
+    UObject* Default = Class->GetDefaultObject(false);
+    if (!Default) return;
+    TArray<UObject*> Objects;
+    GetObjectsWithOuter(Default, Objects, true);
+    Objects.Add(Default);
+    for (UObject* Object : Objects)
+    {
+        for (TFieldIterator<FProperty> It(Object->GetClass()); It; ++It)
+            for (int32 Index = 0; Index < It->ArrayDim; ++Index)
+                ForgetRemovedDefaultStructValue(*It, It->ContainerPtrToValuePtr<void>(Object, Index));
+        for (UClass* Owner = Object->GetClass(); Owner; Owner = Owner->GetSuperClass())
+        {
+            const UASClass* ScriptClass = Cast<UASClass>(Owner);
+            if (!ScriptClass) continue;
+            asITypeInfo* Type = ScriptClass->ScriptTypePtr ? static_cast<asITypeInfo*>(ScriptClass->ScriptTypePtr)
+                : ScriptClass->RetiredScriptTypeForGc;
+            if (Type) ForgetRemovedDefaultScriptMemberValues(Object, Type);
+            break;
+        }
+    }
+}
+
+// After a collection, a removed class whose retained type no tracked object uses any more gives it up.
+// Default objects of removed classes and their subobjects stay rooted and are never destructed, so they
+// stop being tracked and their script struct values keep no type first; the deferred module discard then
+// runs its global destructors. Every class released by one collection keeps its type until the values of all
+// of them are done, since a default object may hold a subobject of another removed class.
+static void ReleaseUnusedRemovedRuntimeClassTypes()
+{
+    check(IsInGameThread());
+    if (!FAngelscriptManager::IsInitialized() || FAngelscriptManager::Get().bIsCompilingModules
+        || IsAngelscriptExecutionShutdownStarted() || IsGarbageCollecting()) return;
+    TArray<UASClass*> Candidates;
+    {
+        FScopeLock Lock(&RemovedRuntimeClassesMutex);
+        for (auto It = RemovedClassConstructions.CreateIterator(); It; ++It)
+            if (!It->ResolveObjectPtrEvenIfUnreachable()) It.RemoveCurrent();
+        for (const FObjectKey& Key : RemovedRuntimeClasses)
+        {
+            UASClass* Class = Cast<UASClass>(Key.ResolveObjectPtrEvenIfUnreachable());
+            if (Class && !Class->ScriptTypePtr && Class->RetiredScriptTypeForGc && !Class->IsUnreachable())
+                Candidates.Add(Class);
+        }
+    }
+    if (Candidates.IsEmpty()) return;
+    // A collection requested from a script frame must not wait for its reader.
+    FAngelscriptExecutionWriteScope Writer(FAngelscriptExecutionWriteScope::EAcquire::Try);
+    if (!Writer.IsAcquired()) return;
+    TArray<UASClass*> Released;
+    for (UASClass* Class : Candidates)
+    {
+        asITypeInfo* Type = Class->RetiredScriptTypeForGc;
+        bool bReceiverLeft = false;
+        for (const auto& Pair : RemovedRuntimeAssociations)
+            bReceiverLeft |= Pair.Value.Class == Class || Pair.Value.Type == Type;
+        if (bReceiverLeft || !AngelscriptRuntimeGcMirror::UntrackRemovedClassDefaults(Type)) continue;
+        Released.Add(Class);
+    }
+    for (UASClass* Class : Released)
+        ForgetRemovedClassDefaultStructValues(Class);
+    for (UASClass* Class : Released)
+    {
+        Class->ReleaseRetiredScriptTypeForGc();
+        UE_LOG(LogAngelscriptRuntimeGcLifecycle, Verbose, TEXT("REMOVED_CLASS_TYPE_RELEASED class=%s"), *Class->GetPathName());
+    }
+}
+
 void RetireRemovedRuntimeClass(UClass* Class)
 {
     if (!Class) return;
@@ -2263,6 +2521,8 @@ void RetireRemovedRuntimeClass(UClass* Class)
         UE_LOG(LogAngelscriptRuntimeGcLifecycle, Fatal, TEXT("REMOVED_CLASS_TRANSITION_INVALID"));
     TGuardValue<UASClass*> RemovingGuard(RemovingRuntimeClass, Owner);
     AngelscriptRuntimeGcMirror::DestroyRuntimeTrackedObjectsForClass(Class, true);
+    FScopeLock Lock(&RemovedRuntimeClassesMutex);
+    RemovedRuntimeClasses.Add(FObjectKey(Class));
 }
 
 void RecordRemovedRuntimeReceiver(UObject* Object, asITypeInfo* Type, asIScriptModule* Module, uint64 Sequence)
@@ -2936,7 +3196,11 @@ void DestroyTerminalNativeOwned(const FTerminalNativeOwnedProperty& Property, vo
     {
         TGuardValue<bool> OwnedCallout(C->bOwnedCallout, true);
         TGuardValue<FTerminalDestroyPlan*> OwnedOperation(ActiveTerminalOperation, Selected);
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 rejects native-tail finish-clear qualification [test: SoloAS.RuntimeGcLifecycle] | CS.Runtime.CoreSurface.AngelscriptRuntimeGcLifecycle.Compat7
+#if SOLOAS_UE_AT_LEAST(5, 5)
         C->Owned->FinishDestroy(Data);
+#endif
+// SOLOAS-COMPAT-END
     }
     if (!ValidateTerminalNativeTailChain(*C))
         UE_LOG(LogAngelscriptRuntimeGcLifecycle, Fatal, TEXT("TERMINAL_NATIVE_OWNED_AFTER_ORIGINAL_DRIFT_NO_RETRY"));
@@ -3003,7 +3267,11 @@ void DestroyTerminalNativeTail(const FTerminalNativeTailProperty& Property, void
     {
         TGuardValue<bool> NativeCallout(C->bNativeCallout, true);
         TGuardValue<FTerminalDestroyPlan*> NativeOperation(ActiveTerminalOperation, Selected);
+// SOLOAS-COMPAT-BEGIN(<5.5) Native-tail finish-clear qualification is unavailable on UE 5.4 [test: SoloAS.RuntimeGcLifecycle] | CS.Runtime.CoreSurface.AngelscriptRuntimeGcLifecycle.Compat8
+#if SOLOAS_UE_AT_LEAST(5, 5)
         C->Original->FinishDestroy(Data);
+#endif
+// SOLOAS-COMPAT-END
     }
     if (!ValidateTerminalNativeTailChain(*C))
         UE_LOG(LogAngelscriptRuntimeGcLifecycle, Fatal, TEXT("TERMINAL_NATIVE_TAIL_AFTER_ORIGINAL_DRIFT_NO_RETRY"));
@@ -3214,8 +3482,13 @@ void CollectRuntimeOwnerReferences(UObject* Object, void* TypeCookie, FReference
 {
     // A reinstanced receiver's current class can differ from its saved AS owner.
     // Trace the owner from the receiver, so unreachable receivers never root it.
-    auto* Type = static_cast<asITypeInfo*>(TypeCookie);
-    UASClass* Owner = Type ? static_cast<UASClass*>(Type->GetUserData()) : nullptr;
+    UASClass* Owner = nullptr;
+    {
+        FScopeLock Lock(&RuntimeTrackedObjectsMutex);
+        const auto* Entry = RuntimeTrackedObjects.Find(FObjectKey(Object));
+        if (Entry && Entry->SavedTypeCookie == TypeCookie)
+            Owner = Cast<UASClass>(Entry->SavedTypeOwnerKey.ResolveObjectPtrEvenIfUnreachable());
+    }
     if (Owner)
     {
         check(!Owner->HasAnyFlags(RF_FinishDestroyed));
@@ -3517,7 +3790,13 @@ bool UASClass::RuntimeDestroyObject(UObject* Object, asITypeInfo* TypeCookie)
         TEXT("ASR_SCRIPT_FINISH object=%s class=%s phase=begin exit_purge=%d"), *Object->GetPathName(), *GetPathName(), GExitPurge);
     for (const UASClass* Owner = this; Owner; Owner = Cast<UASClass>(Owner->GetSuperClass()))
         for (const FProperty* Field : Owner->ScriptFinishDestroyFields)
+// SOLOAS-COMPAT-BEGIN(<5.7) UE 5.4-5.6 clear script fields through the AS property adapter before the script destructor, as 5.7+ FinishDestroy_InContainer does [test: SoloAS.RuntimeReloadCrossModuleDestructorException] | CS.Runtime.CoreSurface.AngelscriptRuntimeGcLifecycle.Compat9
+#if SOLOAS_UE_BEFORE(5, 7)
+            FinishDestroyAngelscriptProperty(*Field, Object);
+#else
+// SOLOAS-COMPAT-END
             Field->FinishDestroy_InContainer(Object);
+#endif
     reinterpret_cast<asCScriptObject*>(Object)->CallDestructor(static_cast<asCObjectType*>(TypeCookie));
     UE_LOG(LogAngelscriptRuntimeGcLifecycle, VeryVerbose,
         TEXT("ASR_SCRIPT_FINISH object=%s class=%s phase=end exit_purge=%d"), *Object->GetPathName(), *GetPathName(), GExitPurge);
@@ -3537,11 +3816,6 @@ bool UASClass::RuntimeDestroyObject(UObject* Object, asITypeInfo* TypeCookie)
     if (AngelscriptRuntimeGcMirror::IsRuntimeTerminalDestructorActive()
         && (ActiveRuntimeTerminalPlan->Class != this || ActiveRuntimeTerminalPlan->Token.TypeCookie != TypeCookie
             || !AngelscriptRuntimeGcMirror::IsRuntimeDestructorContextValid(Object, TypeCookie))) return false;
-	if (AngelscriptRuntimeGcMirror::IsRuntimeGcTraceEnabled())
-	{
-		UE_LOG(LogTemp, Log, TEXT("SOLOAS_GC_AS_DESTRUCTOR_BEGIN class=%s object=%p"),
-			*GetName(), Object);
-	}
 	if (GExitPurge && !AngelscriptRuntimeGcMirror::IsRuntimeTerminalDestructorActive())
 	{
 		TSet<const FProperty*> DelayedFields;
@@ -3588,11 +3862,6 @@ bool UASClass::RuntimeDestroyObject(UObject* Object, asITypeInfo* TypeCookie)
         FailTerminalPlan(*ActiveRuntimeTerminalPlan, TEXT("TERMINAL_AS_CONTEXT_DID_NOT_COMPLETE_NO_RETRY"));
         return false;
     }
-	if (AngelscriptRuntimeGcMirror::IsRuntimeGcTraceEnabled())
-	{
-		UE_LOG(LogTemp, Log, TEXT("SOLOAS_GC_AS_DESTRUCTOR_END class=%s object=%p"),
-			*GetName(), Object);
-	}
 	return true;
 #endif
 }
@@ -3640,6 +3909,8 @@ void UASClass::RegisterRuntimeGcLifecycleAdapter()
 	AngelscriptRetiredModules::Startup();
     RuntimeLifecyclePostGcHandle = FCoreUObjectDelegates::GetPostGarbageCollect().AddStatic(
         &AngelscriptRuntimeGcMirror::CollectReleasedScriptDestructorClaims);
+    RemovedClassTypePostGcHandle = FCoreUObjectDelegates::GetPostGarbageCollect().AddStatic(
+        &ReleaseUnusedRemovedRuntimeClassTypes);
 	checkf(RuntimeLifecycleGeneration != 0,
 		TEXT("Runtime lifecycle generation must be non-zero."));
 	// verifyf: the callback registration must execute in Shipping too; a
@@ -3672,6 +3943,8 @@ void UASClass::ShutdownGcLifecycleAdapter()
 	}
     FCoreUObjectDelegates::GetPostGarbageCollect().Remove(RuntimeLifecyclePostGcHandle);
     RuntimeLifecyclePostGcHandle.Reset();
+    FCoreUObjectDelegates::GetPostGarbageCollect().Remove(RemovedClassTypePostGcHandle);
+    RemovedClassTypePostGcHandle.Reset();
 	BeginAngelscriptExecutionShutdown();
 	AngelscriptRuntimeGcMirror::BeginRuntimeLifecycleShutdown();
 	FAngelscriptExecutionWriteScope TypeLifetimeScope;
@@ -3760,6 +4033,7 @@ bool UpdateRetainedRuntimeCookie(UObject* Object, asITypeInfo* ExpectedCookie, a
         if (!NewModule) FailRuntimeMirror(TEXT("RETIRED_OBJECT_MODULE_MISSING"), Object);
     }
     const FObjectKey NewClassKey(Object->GetClass());
+    const FObjectKey NewTypeOwnerKey(static_cast<UASClass*>(NewCookie->GetUserData()));
     const bool bReplacementCaptureExcluded = Cast<UASClass>(Object) != nullptr
         || Object->IsTemplate() || Object->HasAnyFlags(RF_ClassDefaultObject
             | RF_ArchetypeObject | RF_DefaultSubObject);
@@ -3773,6 +4047,7 @@ bool UpdateRetainedRuntimeCookie(UObject* Object, asITypeInfo* ExpectedCookie, a
         {
             Entry->RetainedModule = NewModule;
             Entry->SavedTypeCookie = NewCookie;
+            Entry->SavedTypeOwnerKey = NewTypeOwnerKey;
             Entry->State = NewState;
             Entry->SavedClassKey = NewClassKey;
             Entry->bReplacementCaptureExcluded = bReplacementCaptureExcluded;
@@ -4138,7 +4413,9 @@ static bool RegisterTerminalFinalInt32(const FAngelscriptTerminalFinalInt32Regis
     if (!Class || Class->GetClass() != UASClass::StaticClass()
         || !Declaration || Declaration->GetSuperClass() != (Chain ? Chain->Native : UObject::StaticClass())
         || Declaration->CodeSuperClass != (Chain ? Chain->Native : UObject::StaticClass()) || Class->bLayoutChanging
-        || (R.bRuntimeOwnedOriginal && Class->GetPropertiesStartOffset() != 0)
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 properties have UObject-relative offsets and no class partials [test: SoloAS.RuntimeGcLifecycle] | CS.Runtime.CoreSurface.AngelscriptRuntimeGcLifecycle.Compat10
+        || (R.bRuntimeOwnedOriginal && SoloASBridge::Compat::GetClassPropertiesStartOffset(Class) != 0)
+// SOLOAS-COMPAT-END
         || Declaration->ScriptPropertyOffset < NativePrefix || !Class->ScriptTypePtr
         || FindFProperty<FIntProperty>(Class, R.Scalar->GetFName()) != R.Scalar
         || FindFProperty<FStructProperty>(Class, R.Owned->GetFName()) != R.Owned
@@ -4412,7 +4689,7 @@ FAngelscriptTerminalNativeTailScopeForTest::FAngelscriptTerminalNativeTailScopeF
         if (It->GetClass() == R.Class && !It->HasAnyFlags(RF_ClassDefaultObject)) return;
     TArray<const FStructProperty*> Encountered;
     const auto* Ops = R.NativeTail->Struct ? R.NativeTail->Struct->GetCppStructOps() : nullptr;
-    if (!Ops || !Ops->HasClearOnFinishDestroy() || !R.NativeTail->ContainsFinishDestroy(Encountered)
+    if (!Ops || !SoloASBridge::Compat::StructOpsHasClearOnFinishDestroy(Ops) || !SoloASBridge::Compat::PropertyContainsFinishDestroy(R.NativeTail, Encountered)
         || C->OwnedOffset > C->PropertiesSize - int32(sizeof(FInstancedStruct))
         || C->ScalarOffset > C->PropertiesSize - int32(sizeof(int32))
         || Cuviss::TerminalAdmission::TerminalStorageRangesOverlap(C->OwnedOffset, sizeof(FInstancedStruct), C->ScalarOffset, sizeof(int32))) return;

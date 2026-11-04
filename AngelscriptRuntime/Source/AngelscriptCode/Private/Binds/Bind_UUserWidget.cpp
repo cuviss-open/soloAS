@@ -16,6 +16,9 @@
 #include "Brushes/SlateNoResource.h"
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
+                                                                                               
+#include "Styling/SlateTypes.h"
+                                                                                             
 
 static const FName NAME_Slate_WhiteBrush("WhiteBrush");
 

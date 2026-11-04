@@ -1,10 +1,11 @@
 #include "AngelscriptStaticJIT.h"
 #include "HAL/FileManager.h"
+                                                                                                                          
 #include "HAL/PlatformProcess.h"
+                                                                                                                        
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 
-#include "Extensions/AngelscriptModdingInternal.h"
 
 #include "StaticJIT/PrecompiledData.h"
 
@@ -67,14 +68,6 @@ int FAngelscriptStaticJIT::CompileFunction(asIScriptFunction* ScriptFunction, as
 	// In generate mode, output the C++ that represents the script function
 	if (bGenerateOutputCode)
 	{
-                                                                                                        
-		if (((asCScriptFunction*)ScriptFunction)->module != nullptr
-			&& ((asCScriptFunction*)ScriptFunction)->module->scriptUnitLayer == uint8(EAngelscriptScriptLayer::Leaf))
-		{
-			*OutJITFunction = nullptr;
-			return 1;
-		}
-                                                                                                      
 		FunctionsToGenerate.Add((asCScriptFunction*)ScriptFunction, FGenerateFunction());
 		*OutJITFunction = nullptr;
 		return 1;
@@ -1283,6 +1276,12 @@ void FStaticJITContext::GenerateNewFunction(asIScriptFunction* InScriptFunction)
 			bShouldRegisterFunction = false;
 		}
 	}
+
+                                                                                                  
+	// Virtual calls may re-enter the VM even for generated helper methods.
+	if (ScriptFunction->vfTableIdx != -1)
+		bShouldRegisterFunction = true;
+                                                                                                
 
 	if (bShouldRegisterFunction)
 	{
@@ -3750,140 +3749,30 @@ void FAngelscriptStaticJIT::AnalyzeScriptFunction(asCScriptFunction* ScriptFunct
 {
 	FJITFile& File = GetFile(ScriptFunction->GetModule());
 	Generate.FunctionSymbolName = GetUniqueFunctionName(File, ScriptFunction, 0);
+                                                                                                                          
 
-                                                                                                                
-	// Source-only units may introduce overrides after the base cache has been generated.
-	if (FunctionsWithVirtualOverrides.Contains(ScriptFunction))
+	if (!FunctionsWithVirtualOverrides.Contains(ScriptFunction))
+		ScriptFunction->traits.SetTrait(asTRAIT_FINAL, true);
+	else
 		check(!ScriptFunction->traits.GetTrait(asTRAIT_FINAL));
-                                                                                                              
 }
+                                                                                                                        
 
 void FAngelscriptStaticJIT::WriteOutputCode()
 {
 	Engine = (asCScriptEngine*)FAngelscriptManager::Get().Engine;
-                                                                                                             
-	bAllowDevirtualize = false;
-	bAllowComprehensiveJIT = false;
-                                                                                                           
+                                                                                                                          
 
-                                                                                                  
-	// Cuviss Modding registration point: static JIT generation gate .
-	// Mechanical body: gather the generation inputs the handler cannot see
-	// (module names, per-module relative filenames, engine build identifier),
-	// query the gate policy, assign the content-addressed DataGuid (B2), and
-	// early-return on an all-or-nothing whole-batch skip (B1). An empty
-	// registry keeps upstream behavior bit-for-bit: no skip, DataGuid stays
-	// the constructor NewGuid.
-	FAngelscriptModdingStaticJITGenerationGate::FPolicy CuvissJitPolicy;
-	bool CuvissJitPolicyValid = false;
-	{
-		TArray<FString> CuvissModuleNames;
-		TArray<FString> CuvissRelativeFilenames;
-		TMap<FString, TArray<FString>> CuvissModuleRelativeFilenames;
-		for (int32 i = 0, Count = Engine->scriptModules.GetLength(); i < Count; ++i)
-		{
-			auto* CuvissModule = Engine->scriptModules[i];
-			if (CuvissModule == nullptr)
-				continue;
-			const FString CuvissModuleName(CuvissModule->GetName());
-			CuvissModuleNames.Add(CuvissModuleName);
-			TArray<FString>& CuvissModuleFilenames = CuvissModuleRelativeFilenames.FindOrAdd(CuvissModuleName);
-			auto CuvissModuleDesc = FAngelscriptManager::Get().GetModule(CuvissModule);
-			if (CuvissModuleDesc.IsValid())
-			{
-				for (const FAngelscriptModuleDesc::FCodeSection& CuvissSection : CuvissModuleDesc->Code)
-				{
-					CuvissRelativeFilenames.Add(CuvissSection.RelativeFilename);
-					CuvissModuleFilenames.Add(CuvissSection.RelativeFilename);
-				}
-			}
-		}
-		CuvissJitPolicyValid = FAngelscriptModdingStaticJITGenerationGateRuntime::GetPolicy(
-			CuvissModuleNames,
-			CuvissRelativeFilenames,
-			PrecompiledData->GetCurrentBuildIdentifier(),
-			CuvissJitPolicy);
-		if (CuvissJitPolicyValid && CuvissJitPolicy.bApply)
-		{
-			PrecompiledData->ModuleDataGuids.Reset();
-			for (const TPair<FString, TArray<FString>>& CuvissModulePair : CuvissModuleRelativeFilenames)
-			{
-				if (FAngelscriptModdingCacheGenerationFilterRuntime::AnyExclude(CuvissModulePair.Key, CuvissModulePair.Value))
-					continue;
-				if (const FGuid* ModuleGuid = CuvissJitPolicy.ModuleDataGuids.Find(CuvissModulePair.Key))
-					PrecompiledData->ModuleDataGuids.Add(CuvissModulePair.Key, *ModuleGuid);
-			}
-			if (CuvissJitPolicy.DataGuid.IsValid())
-			{
-				PrecompiledData->DataGuid = CuvissJitPolicy.DataGuid;
-			}
-			if (CuvissJitPolicy.bSkipBatch)
-			{
-				// B1 all-or-nothing skip: leave the filesystem untouched. The
-				// cache-save gate block in AngelscriptManager consumes this
-				// flag so the cache re-save is skipped too (the cache embeds
-				// the process-specific reference table that pairs with the JIT
-				// output of the same generation).
-				FAngelscriptModdingStaticJITGenerationGateRuntime::MarkBatchSkippedThisRun();
-				return;
-			}
-		}
-	}
-                                                                                                
 
-                                                                                                      
-	// Second call site of the cache-generation module filter :
-	// modules excluded from the precompiled cache are also excluded from the
-	// static JIT output set. Every function of an excluded module is removed
-	// from FunctionsToGenerate before analysis/generation, so no JIT file is
-	// produced for it. Relative filenames are passed (a module-name-only match
-	// would miss the path-prefix semantics).
-	TArray<asCScriptFunction*> CuvissFunctionsToRemove;
-	{
-		for (const auto& CuvissElem : FunctionsToGenerate)
-		{
-			asCScriptFunction* CuvissFunction = CuvissElem.Key;
-			asIScriptModule* CuvissModule = CuvissFunction->GetModule();
-			if (CuvissModule == nullptr)
-			{
-				continue;
-			}
-			TSharedPtr<FAngelscriptModuleDesc> CuvissDesc = FAngelscriptManager::Get().GetModule(CuvissModule);
-			TArray<FString> CuvissRelativeFilenames;
-			if (CuvissDesc.IsValid())
-			{
-				for (const FAngelscriptModuleDesc::FCodeSection& CuvissSection : CuvissDesc->Code)
-				{
-					CuvissRelativeFilenames.Add(CuvissSection.RelativeFilename);
-				}
-			}
-			if (CuvissDesc.IsValid()
-				&& FAngelscriptModdingCacheGenerationFilterRuntime::IsGameCacheExcludedProjectScriptUnit(CuvissDesc->ScriptUnit.Id))
-			{
-				CuvissFunctionsToRemove.Add(CuvissFunction);
-				continue;
-			}
-			const FString CuvissModuleName(CuvissModule->GetName());
-			if (FAngelscriptModdingCacheGenerationFilterRuntime::AnyExclude(CuvissModuleName, CuvissRelativeFilenames)
-				|| FAngelscriptModdingCacheGenerationFilterRuntime::AnyJitExclude(CuvissModuleName, CuvissRelativeFilenames))
-			{
-				CuvissFunctionsToRemove.Add(CuvissFunction);
-			}
-		}
-		for (asCScriptFunction* CuvissFunction : CuvissFunctionsToRemove)
-		{
-			FunctionsToGenerate.Remove(CuvissFunction);
-		}
-	}
-                                                                                                    
+                                                                                                                        
 
 	// Detect all script types in the engine
 	for (int32 i = 0, Count = Engine->scriptModules.GetLength(); i < Count; ++i)
 	{
 		auto* Module = Engine->scriptModules[i];
-                                                                                                            
-		if (Module == nullptr || Module->scriptUnitLayer == uint8(EAngelscriptScriptLayer::Leaf)) continue;
-                                                                                                          
+                                                                                                                        
+		if (Module == nullptr) continue;
+                                                                                                                      
 		for (int32 j = 0, jCount = Module->classTypes.GetLength(); j < jCount; ++j)
 		{
 			asCObjectType* objType = Module->classTypes[j];
@@ -3903,192 +3792,6 @@ void FAngelscriptStaticJIT::WriteOutputCode()
 
 	FString GenDir = FPaths::RootDir() / TEXT("AS_JITTED_CODE");
 
-                                                                                                  
-	// GenDir redirect + relative-include rewrite pass (B3). An empty registry
-	// (or no redirect) keeps the engine-root GenDir and no rewrite runs.
-	{
-		const FString CuvissUpstreamGenDir = FPaths::ConvertRelativePathToFull(
-			FString(FPlatformProcess::BaseDir()), FPaths::RootDir() / TEXT("AS_JITTED_CODE"));
-		const bool CuvissDoRedirect = CuvissJitPolicyValid && CuvissJitPolicy.bApply
-			&& !CuvissJitPolicy.JitOutputDirectory.IsEmpty()
-			&& CuvissJitPolicy.JitOutputDirectory != CuvissUpstreamGenDir;
-		if (CuvissDoRedirect)
-		{
-			GenDir = CuvissJitPolicy.JitOutputDirectory;
-		}
-		if (CuvissDoRedirect)
-		{
-			// Resolve every header include to an absolute path (absolute entries
-			// are used directly; relative entries resolve against the upstream
-			// engine-root GenDir, which is where the engine-side relativization
-			// produced them) and re-relativize it against the final GenDir, so
-			// the generated .hpp includes stay correct after the redirect.
-			auto CuvissRelativize = [](const FString& CuvissTarget, const FString& CuvissBaseDir) -> FString
-			{
-				FString CuvissResult = CuvissTarget;
-				FString CuvissBase = CuvissBaseDir;
-				if (!CuvissBase.EndsWith(TEXT("/")))
-					CuvissBase.AppendChar(TEXT('/'));
-				FPaths::MakePathRelativeTo(CuvissResult, *CuvissBase);
-				return CuvissResult;
-			};
-			auto CuvissGetVolumeRoot = [](FString CuvissPath) -> FString
-			{
-				FPaths::NormalizeFilename(CuvissPath);
-				if (CuvissPath.Len() >= 2 && CuvissPath[1] == TEXT(':'))
-				{
-					return CuvissPath.Left(2);
-				}
-				if (CuvissPath.StartsWith(TEXT("//")))
-				{
-					TArray<FString> CuvissParts;
-					CuvissPath.ParseIntoArray(CuvissParts, TEXT("/"), true);
-					if (CuvissParts.Num() >= 2)
-					{
-						return TEXT("//") + CuvissParts[0] + TEXT("/") + CuvissParts[1];
-					}
-				}
-				if (CuvissPath.StartsWith(TEXT("/Volumes/")))
-				{
-					TArray<FString> CuvissParts;
-					CuvissPath.ParseIntoArray(CuvissParts, TEXT("/"), true);
-					if (CuvissParts.Num() >= 2)
-					{
-						return TEXT("/Volumes/") + CuvissParts[1];
-					}
-				}
-				return CuvissPath.StartsWith(TEXT("/")) ? TEXT("/") : TEXT("");
-			};
-			const FString CuvissUpstreamVolume = CuvissGetVolumeRoot(CuvissUpstreamGenDir);
-			const FString CuvissJitOutputVolume = CuvissGetVolumeRoot(GenDir);
-			const bool CuvissCrossDriveJitOutput = CuvissUpstreamVolume.Len() == 2
-				&& CuvissUpstreamVolume[1] == TEXT(':') && CuvissJitOutputVolume.Len() == 2
-				&& CuvissJitOutputVolume[1] == TEXT(':')
-				&& !CuvissUpstreamVolume.Equals(CuvissJitOutputVolume, ESearchCase::IgnoreCase);
-			FString CuvissEngineDir = FPaths::ConvertRelativePathToFull(
-				FString(FPlatformProcess::BaseDir()), FPaths::EngineDir());
-			FPaths::NormalizeFilename(CuvissEngineDir);
-			if (!CuvissEngineDir.EndsWith(TEXT("/"))) CuvissEngineDir.AppendChar(TEXT('/'));
-			auto CuvissRewriteInclude = [CuvissUpstreamGenDir, CuvissEngineDir, &GenDir, CuvissRelativize,
-										 CuvissGetVolumeRoot, CuvissCrossDriveJitOutput](const FString& CuvissEntry) -> FString
-			{
-				FString CuvissOut;
-				const TCHAR* CuvissRest = *CuvissEntry;
-				while (CuvissRest != nullptr && *CuvissRest != TEXT('\0'))
-				{
-					const TCHAR* CuvissHash = FCString::Strstr(CuvissRest, TEXT("#include \""));
-					if (CuvissHash == nullptr)
-					{
-						CuvissOut.Append(CuvissRest);
-						break;
-					}
-					CuvissOut.AppendChars(CuvissRest, CuvissHash - CuvissRest);
-					const TCHAR* CuvissPathStart = CuvissHash + 10;
-					const TCHAR* CuvissPathEnd = FCString::Strchr(CuvissPathStart, TEXT('"'));
-					if (CuvissPathEnd == nullptr)
-					{
-						CuvissOut.Append(CuvissRest);
-						break;
-					}
-					FString CuvissRawPath(CuvissPathEnd - CuvissPathStart, CuvissPathStart);
-					CuvissRawPath.ReplaceInline(TEXT("\\"), TEXT("/"));
-					// Prefer the active EngineDir for engine-rooted includes when their prefix is relative or stale.
-					FString CuvissAbsPath = CuvissRawPath;
-					const int32 CuvissEngineMarker = CuvissAbsPath.Find(TEXT("Engine/"));
-					if (CuvissEngineMarker >= 0)
-					{
-						TArray<FString> CuvissPrefixParts;
-						CuvissAbsPath.Left(CuvissEngineMarker).ParseIntoArray(CuvissPrefixParts, TEXT("/"), true);
-						bool bRelativeEnginePrefix = true;
-						for (const FString& CuvissPrefixPart : CuvissPrefixParts)
-						{
-							bRelativeEnginePrefix &= CuvissPrefixPart == TEXT("..") || CuvissPrefixPart == TEXT(".");
-						}
-						const bool bCurrentEnginePrefix = CuvissAbsPath.StartsWith(CuvissEngineDir, ESearchCase::IgnoreCase);
-						if (bRelativeEnginePrefix || !bCurrentEnginePrefix)
-						{
-							CuvissAbsPath = CuvissEngineDir / CuvissAbsPath.Mid(CuvissEngineMarker + 7);
-						}
-					}
-					const int32 CuvissDriveMarker = CuvissAbsPath.Find(TEXT(":"));
-					if (CuvissDriveMarker > 1 && CuvissDriveMarker + 1 < CuvissAbsPath.Len()
-						&& CuvissAbsPath[CuvissDriveMarker + 1] == TEXT('/')
-						&& FChar::IsAlpha(CuvissAbsPath[CuvissDriveMarker - 1])
-						&& CuvissAbsPath[CuvissDriveMarker - 2] == TEXT('/'))
-					{
-						FString CuvissPrefix = CuvissAbsPath.Left(CuvissDriveMarker - 1);
-						CuvissPrefix.ReplaceInline(TEXT("../"), TEXT(""));
-						CuvissPrefix.ReplaceInline(TEXT("./"), TEXT(""));
-						if (CuvissPrefix.IsEmpty())
-						{
-							CuvissAbsPath = CuvissAbsPath.Mid(CuvissDriveMarker - 1);
-						}
-					}
-					if (FPaths::IsRelative(CuvissAbsPath))
-					{
-						CuvissAbsPath = CuvissUpstreamGenDir / CuvissAbsPath;
-						FPaths::CollapseRelativeDirectories(CuvissAbsPath);
-					}
-					FPaths::NormalizeFilename(CuvissAbsPath);
-					const FString CuvissTargetVolume = CuvissGetVolumeRoot(CuvissAbsPath);
-					const FString CuvissOutputVolume = CuvissGetVolumeRoot(GenDir);
-					const bool CuvissCrossDriveInclude = CuvissCrossDriveJitOutput
-						|| (CuvissTargetVolume.Len() == 2 && CuvissTargetVolume[1] == TEXT(':')
-							&& CuvissOutputVolume.Len() == 2 && CuvissOutputVolume[1] == TEXT(':')
-							&& !CuvissTargetVolume.Equals(CuvissOutputVolume, ESearchCase::IgnoreCase));
-					if (CuvissCrossDriveInclude)
-					{
-						const int32 CuvissPublicMarker = CuvissAbsPath.Find(TEXT("/Public/"));
-						const int32 CuvissClassesMarker = CuvissAbsPath.Find(TEXT("/Classes/"));
-						if (CuvissPublicMarker != INDEX_NONE || CuvissClassesMarker != INDEX_NONE)
-						{
-							const int32 CuvissMarker = CuvissPublicMarker != INDEX_NONE ? CuvissPublicMarker + 8 : CuvissClassesMarker + 9;
-							CuvissOut.Append(TEXT("#include \""));
-							CuvissOut.Append(CuvissAbsPath.Mid(CuvissMarker));
-							CuvissOut.AppendChar(TEXT('"'));
-							CuvissRest = CuvissPathEnd + 1;
-							continue;
-						}
-					}
-					if (!CuvissTargetVolume.IsEmpty() && !CuvissOutputVolume.IsEmpty()
-						&& !CuvissTargetVolume.Equals(CuvissOutputVolume, ESearchCase::IgnoreCase))
-					{
-						CuvissOut.Append(TEXT("#include \""));
-						CuvissOut.Append(CuvissAbsPath);
-						CuvissOut.AppendChar(TEXT('"'));
-						CuvissRest = CuvissPathEnd + 1;
-						continue;
-					}
-					CuvissOut.Append(TEXT("#include \""));
-					CuvissOut.Append(CuvissRelativize(CuvissAbsPath, GenDir));
-					CuvissOut.AppendChar(TEXT('"'));
-					CuvissRest = CuvissPathEnd + 1;
-				}
-				return CuvissOut;
-			};
-			for (auto& CuvissFileElem : JITFiles)
-			{
-				FJITFile& CuvissFile = *CuvissFileElem.Value;
-				TSet<FString> CuvissRewrittenHeaders;
-				for (const FString& CuvissHeader : CuvissFile.Headers)
-				{
-					CuvissRewrittenHeaders.Add(CuvissRewriteInclude(CuvissHeader));
-				}
-				CuvissFile.Headers = MoveTemp(CuvissRewrittenHeaders);
-			}
-			for (auto& CuvissHeaderElem : SharedHeaders)
-			{
-				FSharedHeader& CuvissHeader = *CuvissHeaderElem.Value;
-				TSet<FString> CuvissRewrittenIncludes;
-				for (const FString& CuvissInclude : CuvissHeader.Includes)
-				{
-					CuvissRewrittenIncludes.Add(CuvissRewriteInclude(CuvissInclude));
-				}
-				CuvissHeader.Includes = MoveTemp(CuvissRewrittenIncludes);
-			}
-		}
-	}
-                                                                                                
 
 	// Delete and recreate the folder so we don't keep any old code
 	auto& FileManager =	IFileManager::Get();
@@ -4298,209 +4001,20 @@ void FAngelscriptStaticJIT::WriteOutputCode()
 		FileIndex += 1;
 	}
 
+                                                                                                                      
+                                                                                                                    
 	FString InfoFile = TEXT("AngelscriptJitInfo.jit.cpp");
-	FString InfoContent;
+	FString InfoContent = FString::Printf(
+		TEXT("#include \"StaticJIT/StaticJITHeader.h\"\n")
+		TEXT("\n")
+		TEXT("AS_FORCE_LINK static const FStaticJITCompiledInfo JitInfo(FGuid(%d, %d, %d, %d));\n"),
+		PrecompiledData->DataGuid.A,
+		PrecompiledData->DataGuid.B,
+		PrecompiledData->DataGuid.C,
+		PrecompiledData->DataGuid.D
+	);
 
-                                                                                                  
-	// InfoFile content-compare write (identical content is left untouched so
-	// the mtime stays unchanged and UBT does not rebuild) + closure-manifest
-	// notify. An empty registry keeps the unconditional upstream rewrite.
-	if (CuvissJitPolicyValid && CuvissJitPolicy.bApply)
-	{
-		// Finalize the same closure GUID that the subsequent PrecompiledData::Save
-		// serializes. Reassert it at the InfoFile boundary so the compiled JIT
-		// identity cannot retain a pre-policy random GUID.
-		const FGuid CuvissFinalDataGuid = CuvissJitPolicy.DataGuid.IsValid()
-			? CuvissJitPolicy.DataGuid
-			: PrecompiledData->DataGuid;
-		PrecompiledData->DataGuid = CuvissFinalDataGuid;
-		UE_LOG(Angelscript, Display, TEXT("AS-JIT-GUID-FINALIZED %d,%d,%d,%d"),
-			CuvissFinalDataGuid.A, CuvissFinalDataGuid.B,
-			CuvissFinalDataGuid.C, CuvissFinalDataGuid.D);
-		if (PrecompiledData->ModuleDataGuids.IsEmpty())
-		{
-			InfoContent = FString::Printf(
-				TEXT("#include \"StaticJIT/StaticJITHeader.h\"\n")
-				TEXT("\n")
-				TEXT("AS_FORCE_LINK static const FStaticJITCompiledInfo JitInfo(FGuid(%d, %d, %d, %d));\n"),
-				CuvissFinalDataGuid.A,
-				CuvissFinalDataGuid.B,
-				CuvissFinalDataGuid.C,
-				CuvissFinalDataGuid.D
-			);
-		}
-		else
-		{
-			TArray<FString> CuvissSortedModuleNames;
-			PrecompiledData->ModuleDataGuids.GetKeys(CuvissSortedModuleNames);
-			CuvissSortedModuleNames.Sort();
-			FString CuvissModuleGuidEntries;
-			for (const FString& CuvissModuleName : CuvissSortedModuleNames)
-			{
-				const FGuid& CuvissModuleGuid = PrecompiledData->ModuleDataGuids.FindChecked(CuvissModuleName);
-				CuvissModuleGuidEntries += FString::Printf(
-					TEXT("\t{ TEXT(\"%s\"), FGuid(%d, %d, %d, %d) },\n"),
-					*CuvissModuleName,
-					CuvissModuleGuid.A,
-					CuvissModuleGuid.B,
-					CuvissModuleGuid.C,
-					CuvissModuleGuid.D);
-			}
-			InfoContent = FString::Printf(
-				TEXT("#include \"StaticJIT/StaticJITHeader.h\"\n")
-				TEXT("\n")
-				TEXT("static const FStaticJITModuleDataGuid CuvissModuleDataGuids[] = {\n%s};\n")
-				TEXT("AS_FORCE_LINK static const FStaticJITCompiledInfo JitInfo(FGuid(%d, %d, %d, %d), CuvissModuleDataGuids, UE_ARRAY_COUNT(CuvissModuleDataGuids));\n"),
-				*CuvissModuleGuidEntries,
-				CuvissFinalDataGuid.A,
-				CuvissFinalDataGuid.B,
-				CuvissFinalDataGuid.C,
-				CuvissFinalDataGuid.D);
-		}
-		FString CuvissExistingInfoFile;
-		bool bCuvissInfoFileSaved = true;
-		if (FFileHelper::LoadFileToString(CuvissExistingInfoFile, *(GenDir / InfoFile))
-			&& CuvissExistingInfoFile == InfoContent)
-		{
-			// identical: keep the existing file byte-for-byte.
-		}
-		else
-		{
-			bCuvissInfoFileSaved = FFileHelper::SaveStringToFile(InfoContent, *(GenDir / InfoFile));
-		}
-		FString CuvissPersistedInfoContent;
-		if (!bCuvissInfoFileSaved
-			|| !FFileHelper::LoadFileToString(CuvissPersistedInfoContent, *(GenDir / InfoFile))
-			|| CuvissPersistedInfoContent != InfoContent)
-		{
-			UE_LOG(Angelscript, Fatal, TEXT("AS-JIT-GUID-INFO-WRITE-MISMATCH guid=%s path=%s"),
-				*CuvissFinalDataGuid.ToString(), *(GenDir / InfoFile));
-		}
-		UE_LOG(Angelscript, Display, TEXT("AS-JIT-GUID-INFO-PAIRED guid=%s path=%s"),
-			*CuvissFinalDataGuid.ToString(), *(GenDir / InfoFile));
-	}
-	else
-	{
-		InfoContent = FString::Printf(
-			TEXT("#include \"StaticJIT/StaticJITHeader.h\"\n")
-			TEXT("\n")
-			TEXT("AS_FORCE_LINK static const FStaticJITCompiledInfo JitInfo(FGuid(%d, %d, %d, %d));\n"),
-			PrecompiledData->DataGuid.A,
-			PrecompiledData->DataGuid.B,
-			PrecompiledData->DataGuid.C,
-			PrecompiledData->DataGuid.D
-		);
-		FFileHelper::SaveStringToFile(InfoContent, *(GenDir / InfoFile));
-	}
-	if (CuvissJitPolicyValid && CuvissJitPolicy.bApply && !CuvissJitPolicy.ManifestPath.IsEmpty())
-	{
-		TArray<FString> CuvissCoveredModuleNames;
-		for (const auto& CuvissFileElem : JITFiles)
-		{
-			CuvissCoveredModuleNames.Add(CuvissFileElem.Value->ModuleName);
-		}
-
-		// Derive function coverage from the generated native registration table,
-		// not merely from the presence of a module output file. Any malformed
-		// registration line or duplicate FunctionId disables function stripping
-		// for this generation; the cache transform then retains bytecode.
-		TMap<uint32, int32> CuvissFunctionIdCounts;
-		for (const auto& CuvissFunctionElem : FunctionsToGenerate)
-		{
-			if (CuvissFunctionElem.Key != nullptr)
-			{
-				++CuvissFunctionIdCounts.FindOrAdd(PrecompiledData->CreateFunctionId(CuvissFunctionElem.Key));
-			}
-		}
-
-		TMap<uint32, int32> CuvissRegisteredFunctionIdCounts;
-		bool bCuvissFunctionIdentityComplete = true;
-		for (const auto& CuvissFileElem : JITFiles)
-		{
-			TArray<FString> CuvissRegistrationLines;
-			CuvissFileElem.Value->StaticInitializationCode.ParseIntoArrayLines(CuvissRegistrationLines);
-			for (const FString& CuvissLine : CuvissRegistrationLines)
-			{
-				const int32 CuvissRegistrationAt = CuvissLine.Find(TEXT("FStaticJITFunction::Register("), ESearchCase::CaseSensitive);
-				if (CuvissRegistrationAt == INDEX_NONE)
-				{
-					continue;
-				}
-
-				const int32 CuvissHexStart = CuvissLine.Find(TEXT("0x"), ESearchCase::CaseSensitive, ESearchDir::FromStart, CuvissRegistrationAt);
-				const int32 CuvissHexEnd = CuvissHexStart == INDEX_NONE
-					? INDEX_NONE
-					: CuvissLine.Find(TEXT("u,"), ESearchCase::CaseSensitive, ESearchDir::FromStart, CuvissHexStart + 2);
-				if (CuvissHexStart == INDEX_NONE || CuvissHexEnd == INDEX_NONE)
-				{
-					bCuvissFunctionIdentityComplete = false;
-					break;
-				}
-
-				const FString CuvissHexDigits = CuvissLine.Mid(CuvissHexStart + 2, CuvissHexEnd - CuvissHexStart - 2);
-				if (CuvissHexDigits.IsEmpty() || CuvissHexDigits.Len() > 8)
-				{
-					bCuvissFunctionIdentityComplete = false;
-					break;
-				}
-				uint32 CuvissFunctionId = 0;
-				for (TCHAR CuvissDigit : CuvissHexDigits)
-				{
-					uint32 CuvissNibble = MAX_uint32;
-					if (CuvissDigit >= TEXT('0') && CuvissDigit <= TEXT('9')) CuvissNibble = (uint32)(CuvissDigit - TEXT('0'));
-					else if (CuvissDigit >= TEXT('a') && CuvissDigit <= TEXT('f')) CuvissNibble = 10u + (uint32)(CuvissDigit - TEXT('a'));
-					else if (CuvissDigit >= TEXT('A') && CuvissDigit <= TEXT('F')) CuvissNibble = 10u + (uint32)(CuvissDigit - TEXT('A'));
-					if (CuvissNibble == MAX_uint32)
-					{
-						bCuvissFunctionIdentityComplete = false;
-						break;
-					}
-					CuvissFunctionId = (CuvissFunctionId << 4) | CuvissNibble;
-				}
-				if (!bCuvissFunctionIdentityComplete)
-				{
-					break;
-				}
-				++CuvissRegisteredFunctionIdCounts.FindOrAdd(CuvissFunctionId);
-			}
-			if (!bCuvissFunctionIdentityComplete)
-			{
-				break;
-			}
-		}
-
-		TArray<FString> CuvissCoveredFunctionIdentities;
-		if (bCuvissFunctionIdentityComplete)
-		{
-			for (const auto& CuvissFunctionElem : FunctionsToGenerate)
-			{
-				asCScriptFunction* CuvissFunction = CuvissFunctionElem.Key;
-				if (CuvissFunction == nullptr || CuvissFunction->GetModule() == nullptr)
-				{
-					continue;
-				}
-				const uint32 CuvissFunctionId = PrecompiledData->CreateFunctionId(CuvissFunction);
-				const int32* CuvissFunctionIdCount = CuvissFunctionIdCounts.Find(CuvissFunctionId);
-				const int32* CuvissRegistrationCount = CuvissRegisteredFunctionIdCounts.Find(CuvissFunctionId);
-				const FString CuvissFunctionName = ANSI_TO_TCHAR(CuvissFunction->GetName());
-				if (CuvissFunctionName.IsEmpty() || CuvissFunctionIdCount == nullptr || *CuvissFunctionIdCount != 1
-					|| CuvissRegistrationCount == nullptr || *CuvissRegistrationCount != 1)
-				{
-					continue;
-				}
-				const FString CuvissModuleName = ANSI_TO_TCHAR(CuvissFunction->GetModule()->GetName());
-				CuvissCoveredFunctionIdentities.Add(FString::Printf(TEXT("%d:%s|%d:%s|%08x"),
-					CuvissModuleName.Len(), *CuvissModuleName, CuvissFunctionName.Len(), *CuvissFunctionName, CuvissFunctionId));
-			}
-			CuvissCoveredFunctionIdentities.Sort();
-		}
-		FAngelscriptModdingStaticJITGenerationGateRuntime::NotifyComplete(
-			CuvissJitPolicy.ManifestPath,
-			CurrentFiles.Array(),
-			CuvissCoveredModuleNames,
-			CuvissCoveredFunctionIdentities);
-	}
-                                                                                                
+	FFileHelper::SaveStringToFile(InfoContent, *(GenDir / InfoFile));
 	CurrentFiles.Add(InfoFile);
 
 	// Delete files we no longer want to have

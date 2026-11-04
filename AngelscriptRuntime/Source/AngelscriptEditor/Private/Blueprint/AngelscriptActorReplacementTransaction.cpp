@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "Blueprint/AngelscriptActorReplacementTransaction.h"
+                                                                                                                                                                   
+#include "Compat/SoloASRuntimeCompat.h"
+// SOLOAS-COMPAT-END
 #include "Editor/SoloASCopyProperties.h"
 #include "Editor/SoloASRetiredLoadingExportRepair.h"
 
@@ -32,7 +35,9 @@ namespace
 {
 bool bRunning = false;
 constexpr EObjectFlags ReinstanceFlags = RF_Public | RF_ArchetypeObject | RF_Transactional
-	| RF_Transient | RF_TextExportTransient | RF_InheritableComponentTemplate | RF_Standalone | RF_HasDynamicImports;
+                                                                                                                                                                   
+	| RF_Transient | RF_TextExportTransient | RF_InheritableComponentTemplate | RF_Standalone | SoloASBridge::Compat::DynamicImportObjectFlag;
+// SOLOAS-COMPAT-END
 
 void Require(bool bCondition, const TCHAR* Detail)
 {
@@ -100,7 +105,9 @@ bool HasUnsupportedObjectState(const UObject* Object)
 	return !IsValid(Object) || Object->IsUnreachable() || Object->GetExternalPackage() || Object->GetLinker()
 		|| Object->HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed | RF_NeedLoad | RF_NeedPostLoad
 			| RF_NeedPostLoadSubobjects | RF_NeedInitialization)
-		|| Object->HasAnyInternalFlags(EInternalObjectFlags::Async | EInternalObjectFlags_AsyncLoading
+                                                                                                                               
+		|| Object->HasAnyInternalFlags(EInternalObjectFlags::Async | SoloASBridge::Compat::AsyncLoadingObjectFlags
+                                                                                                                             
 			| EInternalObjectFlags::PendingConstruction);
 }
 
@@ -108,7 +115,9 @@ bool IncludeDefaults(UObject* OldOuter, UObject* NewOuter, const TMap<UClass*, U
 	TMap<UObject*, UObject*>& Map, FString& OutError)
 {
 	TArray<UObject*> OldChildren;
-	GetObjectsWithOuter(OldOuter, OldChildren, EGetObjectsFlags::None);
+                                                                                                                                                                   
+	SoloASBridge::Compat::GetDirectObjects(OldOuter, OldChildren);
+// SOLOAS-COMPAT-END
 	for (UObject* OldChild : OldChildren)
 	{
 		UObject* NewChild = NewOuter->GetDefaultSubobjectByName(OldChild->GetFName());
@@ -187,7 +196,7 @@ bool Admit(const TMap<UClass*, UClass*>& Classes,
 		UWorld* World = Actor ? Actor->GetWorld() : nullptr;
 		UClass* ActorClass = Object->GetClass();
 		if (!Actor || HasUnsupportedObjectState(Actor) || Actor->IsTemplate()
-			|| !World || !World->IsInitialized() || World->IsCleanedUp() || World->IsGameWorld()
+			|| !World || !World->IsInitialized() || SoloASBridge::Compat::IsWorldRetired(*World) || World->IsGameWorld()
 			|| World->GetNetDriver() || !Actor->GetLevel()
 			|| Actor->GetOuter() != Actor->GetLevel() || Actor->IsSelectedInEditor()
 			|| Actor->CurrentTransactionAnnotation.IsValid() || Actor->IsActorInitialized() || Actor->HasActorBegunPlay()
@@ -199,7 +208,9 @@ bool Admit(const TMap<UClass*, UClass*>& Classes,
 		TArray<UActorComponent*> Components;
 		Actor->GetComponents(Components);
 		TArray<UObject*> InnerObjects;
-		GetObjectsWithOuter(Actor, InnerObjects, EGetObjectsFlags::IncludeNestedObjects);
+                                                                                                                                                                   
+		SoloASBridge::Compat::GetNestedObjects(Actor, InnerObjects);
+// SOLOAS-COMPAT-END
 		if (!Root || Components.IsEmpty() || HasUnsupportedObjectState(Root) || Root->GetOuter() != Actor
 			|| Root->GetOwner() != Actor || Root->GetWorld() != World || Root->IsTemplate()
 			|| !Root->HasAnyFlags(RF_DefaultSubObject) || Root->CreationMethod != EComponentCreationMethod::Native
@@ -277,7 +288,13 @@ bool Run(const TMap<UClass*, UClass*>& Classes, FString& OutError)
 	TMap<UObject*, UObject*> Map;
 	if (!Admit(Classes, Actors, Map, OutError)) return false;
 	TGuardValue<bool> RunningGuard(bRunning, true);
+                                                                                                                                                         
+#if SOLOAS_UE_BEFORE(5, 5)
+    TGuardValue<bool> ReinstancingGuard(GIsReinstancing, true);
+#else
 	TGuardValue<std::atomic<bool>, bool> ReinstancingGuard(GIsReinstancing, true);
+#endif
+// SOLOAS-COMPAT-END
 	TGuardValue<bool> ReconstructingGuard(GIsReconstructingBlueprintInstances, true);
 	TArray<TStrongObjectPtr<UObject>> Retained;
 	TSet<UObject*> Excluded;
@@ -294,7 +311,9 @@ bool Run(const TMap<UClass*, UClass*>& Classes, FString& OutError)
 	for (const auto& Pair : Classes)
 	{
 		TArray<UObject*> OldMembers;
-		GetObjectsWithOuter(Pair.Key, OldMembers, EGetObjectsFlags::IncludeNestedObjects);
+                                                                                                                                                                   
+		SoloASBridge::Compat::GetNestedObjects(Pair.Key, OldMembers);
+// SOLOAS-COMPAT-END
 		Excluded.Append(OldMembers);
 	}
 	for (const FActorState& Actor : Actors)
@@ -336,7 +355,7 @@ bool Run(const TMap<UClass*, UClass*>& Classes, FString& OutError)
 			Actor.OldRoot->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 		Actor.Transform = Actor.OldRoot->GetComponentTransform();
 		Require(Actor.Old->UObject::Rename(nullptr, Actor.Old->GetOuter(),
-			REN_DoNotDirty | REN_DontCreateRedirectors | REN_AllowPackageLinkerMismatch), TEXT("Old Actor rename failed"));
+			REN_DoNotDirty | REN_DontCreateRedirectors | SoloASBridge::Compat::AllowPackageLinkerMismatchRenameFlag), TEXT("Old Actor rename failed"));
 		Actor.Old->UnregisterAllComponents();
 		FActorSpawnParameters Spawn;
 		Spawn.Name = Actor.Name;
@@ -497,7 +516,7 @@ bool Run(const TMap<UClass*, UClass*>& Classes, FString& OutError)
 		LogTemp,
 		Display,
 		TEXT("SOLOAS_OWNED_ACTOR_TRANSACTION phase=final-notification actors=%d map_entries=%d referencers=%d final_notifications=1 g_is_reinstancing=%d g_is_reconstructing=%d gc_during_transaction=0 whole093_credit=0"),
-		Actors.Num(), Map.Num(), Referencers.Num(), GIsReinstancing.load(), GIsReconstructingBlueprintInstances);
+		Actors.Num(), Map.Num(), Referencers.Num(), bool(GIsReinstancing), bool(GIsReconstructingBlueprintInstances));
 	FCoreUObjectDelegates::OnObjectsReinstanced.Broadcast(Map);
 	return true;
 }

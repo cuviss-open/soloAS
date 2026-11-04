@@ -2,3 +2,6 @@
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
+                                                                                                   
+#pragma pop_macro("RegisterClass")
+                                                                                                 

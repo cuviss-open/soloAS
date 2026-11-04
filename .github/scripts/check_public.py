@@ -10,10 +10,12 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE_SUFFIXES = {'.h', '.hpp', '.c', '.cpp', '.cs', '.as', '.py', '.sh', '.S', '.s', '.asm', '.ps1', '.psm1', '.bat', '.cmd', '.mjs', '.js', '.mm', '.m', '.cc', '.cxx'}
+TEXT_SUFFIXES = SOURCE_SUFFIXES | {'.md', '.rst', '.txt', '.json', '.ini', '.uplugin', '.yml', '.yaml'}
 
 
 # Longest directory prefix wins; Cuviss changes follow their plugin's license.
 SOURCE_LICENSES = {
+    'SoloASBridge/Source/ThirdParty/Detours/src/': ('MIT',),
     'AngelscriptRuntime/ThirdParty/': ('Zlib',),
     'AngelscriptRuntime/': ('MIT',),
     'AngelscriptManualBindPlugins/AngelscriptGAS/':
@@ -46,6 +48,24 @@ def notices(path):
     text = path.read_text(errors='replace')
     return [line.strip() for line in text.splitlines()
             if re.search(r'SPDX-License-Identifier:|copyright|all rights reserved', line, re.I)]
+
+
+def terminology_errors(name, text):
+    path = Path(name)
+    if path.name.upper().startswith(('LICENSE', 'COPYING', 'NOTICE')):
+        return []
+    if path.suffix.lower() not in TEXT_SUFFIXES:
+        return []
+    prose = re.sub(r'https?://[^\s<>)]+', '', text.replace('\0', ''))
+    return [name + ': unqualified upstream fork reference'] if re.search(r'\bHaze\b', prose, re.I) else []
+
+
+def terminology():
+    errors = []
+    for path in ROOT.rglob('*'):
+        if path.is_file() and path.suffix.lower() in TEXT_SUFFIXES and '.git' not in path.relative_to(ROOT).parts:
+            errors.extend(terminology_errors(path.relative_to(ROOT).as_posix(), path.read_text(errors='replace')))
+    return errors
 
 
 def licenses():
@@ -111,10 +131,10 @@ def links(site=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('check', choices=['links', 'licenses'])
+    parser.add_argument('check', choices=['links', 'licenses', 'terminology'])
     parser.add_argument('--site')
     args = parser.parse_args()
-    errors = links(args.site) if args.check == 'links' else licenses()
+    errors = links(args.site) if args.check == 'links' else (licenses() if args.check == 'licenses' else terminology())
     for error in errors:
         print(error)
     print(f'{args.check}: {len(errors)} problems')

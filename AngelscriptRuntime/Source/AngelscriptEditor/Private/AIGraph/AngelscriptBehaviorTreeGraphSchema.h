@@ -23,7 +23,7 @@ class FObjectPostSaveContext;
 class FObjectPreSaveContext;
 
 /** Stock Behavior Tree schema with an explicit script-class action supplement. */
-UCLASS()
+UCLASS(meta = (NotInAngelscript))
 class UAngelscriptBehaviorTreeGraphSchema : public UEdGraphSchema_BehaviorTree
 {
 	GENERATED_UCLASS_BODY()
@@ -36,7 +36,7 @@ class UAngelscriptBehaviorTreeGraphSchema : public UEdGraphSchema_BehaviorTree
 };
 
 /** Stock decorator schema with an explicit script-class action supplement. */
-UCLASS()
+UCLASS(meta = (NotInAngelscript))
 class UAngelscriptBehaviorTreeDecoratorGraphSchema : public UEdGraphSchema_BehaviorTreeDecorator
 {
 	GENERATED_UCLASS_BODY()
@@ -44,7 +44,7 @@ class UAngelscriptBehaviorTreeDecoratorGraphSchema : public UEdGraphSchema_Behav
 	virtual void GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const override;
 };
 
-UCLASS()
+UCLASS(meta = (NotInAngelscript))
 class UAngelscriptBehaviorTreeGraphNodeComposite : public UBehaviorTreeGraphNode_Composite
 {
 	GENERATED_BODY()
@@ -53,7 +53,7 @@ public:
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 };
 
-UCLASS()
+UCLASS(meta = (NotInAngelscript))
 class UAngelscriptBehaviorTreeGraphNodeTask : public UBehaviorTreeGraphNode_Task
 {
 	GENERATED_BODY()
@@ -62,7 +62,7 @@ public:
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 };
 
-UCLASS()
+UCLASS(meta = (NotInAngelscript))
 class UAngelscriptBehaviorTreeGraphNodeDecorator : public UBehaviorTreeGraphNode_Decorator
 {
 	GENERATED_BODY()
@@ -71,7 +71,7 @@ public:
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 };
 
-UCLASS()
+UCLASS(meta = (NotInAngelscript))
 class UAngelscriptBehaviorTreeGraphNodeService : public UBehaviorTreeGraphNode_Service
 {
 	GENERATED_BODY()
@@ -81,7 +81,7 @@ public:
 };
 
 /** Installs the schemas only while editing, and removes them before package serialization. */
-UCLASS()
+UCLASS(meta = (NotInAngelscript))
 class UAngelscriptAIGraphSchemaSubsystem : public UEditorSubsystem
 {
 	GENERATED_BODY()

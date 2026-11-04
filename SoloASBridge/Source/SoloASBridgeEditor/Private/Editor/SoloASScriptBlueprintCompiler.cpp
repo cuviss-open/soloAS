@@ -1,11 +1,11 @@
 #include "Editor/SoloASScriptBlueprintEditorInternal.h"
 #include "Editor/SoloASCopyProperties.h"
+#include "Editor/SoloASScriptBlueprintDependencies.h"
 #include "Editor/SoloASRetiredLoadingExportRepair.h"
 
 #include "Kismet2/KismetReinstanceUtilities.h"
 #include "KismetCompiler.h"
 #include "KismetCompilerMisc.h"
-#include "K2Node_CustomEvent.h"
 #include "Shared/SoloASScriptBlueprint.h"
 #include "Engine/Engine.h"
 #include "UObject/StrongObjectPtr.h"
@@ -14,6 +14,11 @@ DEFINE_LOG_CATEGORY_STATIC(LogSoloASBlueprintCdoCopy, Log, All);
 
 namespace
 {
+// SOLOAS-COMPAT-BEGIN(5.4) Only explicitly queued requests receive default options [test: SoloAS.BlueprintHierarchyFullReload] [id: CS.Compatibility.Bridge.SoloASScriptBlueprintCompiler.QueuedDefaultOptionsStorage]
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 4
+TMap<TWeakObjectPtr<UBlueprint>, EBlueprintCompileOptions> QueuedDefaultCompileOptions;
+#endif
+// SOLOAS-COMPAT-END
 constexpr EObjectFlags UnreadyDefaultFlags = RF_NeedLoad | RF_NeedPostLoad
     | RF_NeedPostLoadSubobjects | RF_NeedInitialization | RF_BeginDestroyed | RF_FinishDestroyed;
 constexpr EInternalObjectFlags UnreadyDefaultInternalFlags = EInternalObjectFlags::Garbage
@@ -163,34 +168,6 @@ private:
     bool bGeneratedClassChanged = false;
 
 protected:
-    virtual void MergeUbergraphPagesIn(UEdGraph* Ubergraph) override
-    {
-        FKismetCompilerContext::MergeUbergraphPagesIn(Ubergraph);
-        // Only discard compiler clones. The authored event remains available for
-        // the user to rename, and skeleton compilation must also avoid generating
-        // a stub that asks the event for inherited Blueprint replication flags.
-        const TArray<TObjectPtr<UEdGraphNode>> Nodes = Ubergraph->Nodes;
-        for (UEdGraphNode* Node : Nodes)
-        {
-            const UK2Node_CustomEvent* Event = Cast<UK2Node_CustomEvent>(Node);
-            UFunction* ParentFunction = Event != nullptr && Blueprint->ParentClass != nullptr
-                ? Blueprint->ParentClass->FindFunctionByName(Event->CustomFunctionName) : nullptr;
-            if (ParentFunction == nullptr
-                || !SoloASBridge::IsRegisteredScriptClass(ParentFunction->GetOwnerClass()))
-            {
-                continue;
-            }
-            if (bIsFullCompile)
-            {
-                MessageLog.Error(*FString::Printf(
-                    TEXT("@@ name conflicts with a '%s' function"),
-                    *ParentFunction->GetOwnerClass()->GetName()), Event);
-            }
-            Node->BreakAllNodeLinks();
-            Ubergraph->RemoveNode(Node);
-        }
-    }
-
     virtual void SpawnNewClass(const FString& NewClassName) override
     {
         UClass* ExistingClass = FindObject<UClass>(
@@ -261,6 +238,27 @@ protected:
 
 namespace SoloASBridge::Editor
 {
+// SOLOAS-COMPAT-BEGIN(5.4) Capture before queueing, as UE 5.5+ FBPCompileRequest does [test: SoloAS.BlueprintHierarchyFullReload] [id: CS.Compatibility.Bridge.SoloASScriptBlueprintCompiler.QueuedDefaultOptionsCapture]
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 4
+void QueueScriptBlueprintForCompilation(UBlueprint* Blueprint)
+{
+    if (!Blueprint->bQueuedForCompilation)
+    {
+        if (const USoloASScriptBlueprint* ScriptBlueprint = Cast<USoloASScriptBlueprint>(Blueprint))
+        {
+            QueuedDefaultCompileOptions.Add(Blueprint, ScriptBlueprint->ComputeScriptDefaultCompileOptions());
+        }
+    }
+    FBlueprintCompilationManager::QueueForCompilation(Blueprint);
+}
+
+void ClearScriptBlueprintCompileOptions()
+{
+    QueuedDefaultCompileOptions.Reset();
+}
+#endif
+// SOLOAS-COMPAT-END
+
 void InitializeScriptBlueprintCompiler()
 {
     FKismetCompilerContext::RegisterCompilerForBP(
@@ -269,6 +267,19 @@ void InitializeScriptBlueprintCompiler()
            FCompilerResultsLog& Results,
            const FKismetCompilerOptions& Options)
         {
+// SOLOAS-COMPAT-BEGIN(5.4) FCompilerData owns the mutable options passed by reference [test: SoloAS.BlueprintHierarchyFullReload] [id: CS.Compatibility.Bridge.SoloASScriptBlueprintCompiler.QueuedDefaultOptionsApply]
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 4
+            EBlueprintCompileOptions Defaults;
+            if (QueuedDefaultCompileOptions.RemoveAndCopyValue(Blueprint, Defaults))
+            {
+                FKismetCompilerOptions& InternalOptions = const_cast<FKismetCompilerOptions&>(Options);
+                InternalOptions.bUseDeltaSerializationDuringReinstancing |= EnumHasAnyFlags(Defaults,
+                    EBlueprintCompileOptions::UseDeltaSerializationDuringReinstancing);
+                InternalOptions.bSkipNewVariableDefaultsDetection |= EnumHasAnyFlags(Defaults,
+                    EBlueprintCompileOptions::SkipNewVariableDefaultsDetection);
+            }
+#endif
+// SOLOAS-COMPAT-END
             return MakeShared<FSoloASScriptBlueprintCompilerContext>(
                 Blueprint,
                 Results,

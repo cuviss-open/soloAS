@@ -8,11 +8,13 @@ namespace UnrealBuildTool.Rules
 		public AngelscriptCode(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+                                                                                                   
 			PrecompileForTargets = PrecompileTargetsType.Any;
 			bUsePrecompiled = SoloASBridgeBuildPath.ShouldUsePrecompiled(this, Target, bUsePrecompiled);
+                                                                                                 
                                                                                           
 			SetupIrisSupport(Target);
-			PrivateIncludePaths.Add(Path.Combine(EngineDirectory, "Source", "Runtime", "Net", "Iris", "Private"));
+			PrivateIncludePaths.Add(Path.Combine(GetModuleDirectory("IrisCore"), "Private"));
                                                                                         
                                                                                            
 			string KismetSystemLibraryHeader = Path.Combine(
@@ -38,30 +40,20 @@ namespace UnrealBuildTool.Rules
 				{
 					"Binds.Cache",
 					"Binds.Cache.Headers",
-					"Binds.Cache.cuviss-cache-v2",
-					"PrecompiledScript.Cache",
-					"PrecompiledScript.Cache.cuviss-cache-v2"
+					"PrecompiledScript.Cache"
 				};
 				bool HasCompleteScriptCache = true;
-				int CompanionCount = 0;
 				foreach (string Cache in ScriptCaches)
 				{
 					FileInfo CacheFile = new FileInfo(
 						Path.Combine(ScriptDirectory, Cache)
 					);
-					bool IsCompanion = Cache.EndsWith(".cuviss-cache-v2");
-					if (IsCompanion && CacheFile.Exists)
-					{
-						++CompanionCount;
-					}
-					if ((!CacheFile.Exists && !IsCompanion)
-						|| (CacheFile.Exists && CacheFile.Length <= 0))
+					if (!CacheFile.Exists || CacheFile.Length <= 0)
 					{
 						HasCompleteScriptCache = false;
 						break;
 					}
 				}
-				HasCompleteScriptCache &= CompanionCount == 0 || CompanionCount == 2;
 				bool IsShippingRuntime =
 					Target.Configuration == UnrealTargetConfiguration.Shipping
 					&& (Target.Type == TargetType.Game
@@ -85,11 +77,14 @@ namespace UnrealBuildTool.Rules
 				{
 					RuntimeDependencies.Add(
 						"$(ProjectDir)/Script/...",
-						StagedFileType.UFS
+						StagedFileType.NonUFS
 					);
 				}
 			}
                                                                                       
+                                                                                 
+#if UE_5_5_OR_LATER
+                                                                               
                                                                                                         
 				ForceIncludeFiles.Add(Path.Combine(
 					ModuleDirectory, "Public", "AngelscriptReflectionAdapter.h"
@@ -119,6 +114,11 @@ namespace UnrealBuildTool.Rules
 				ForceIncludeFiles.Add("HAL/CriticalSection.h");
 				ForceIncludeFiles.Add("Misc/ScopeLock.h");
                                                                                                 
+                                                                                         
+#else
+                PrivatePCHHeaderFile = "Public/AngelscriptModulePCH.h";
+#endif
+                                                                                       
                                                                                                     
 			PublicDependencyModuleNames.Add("SoloASBridge");
 			PublicDependencyModuleNames.Add("StructUtils");

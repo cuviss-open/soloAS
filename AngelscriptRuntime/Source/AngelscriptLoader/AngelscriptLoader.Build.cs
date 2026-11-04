@@ -8,8 +8,10 @@ namespace UnrealBuildTool.Rules
 		public AngelscriptLoader(ReadOnlyTargetRules Target) : base(Target)
 		{
 			PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+                                                                                                     
 			PrecompileForTargets = PrecompileTargetsType.Any;
 			bUsePrecompiled = SoloASBridgeBuildPath.ShouldUsePrecompiled(this, Target, bUsePrecompiled);
+                                                                                                   
 
 			PublicDependencyModuleNames.AddRange(new string[]
 			{

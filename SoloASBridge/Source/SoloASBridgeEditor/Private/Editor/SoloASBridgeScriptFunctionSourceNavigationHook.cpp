@@ -1,6 +1,7 @@
 // Copyright Cuviss Studio. All Rights Reserved.
 
 #include "Editor/SoloASBridgeScriptFunctionSourceNavigationHook.h"
+#include "SoloASEngineCompat.h"
 
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
 
@@ -143,8 +144,13 @@ void JumpToDefinitionHook(const UK2Node_CallFunction* Node)
 		if (FSourceCodeNavigation::FindClassHeaderPath(Function, HeaderPath)
 			&& IFileManager::Get().FileSize(*HeaderPath) != INDEX_NONE)
 		{
-			FSourceCodeNavigation::OpenSourceFileAsync(
-				FPaths::ConvertRelativePathToFull(HeaderPath));
+			                                                                                                                                                                                                   
+#if SOLOAS_UE_BEFORE(5, 8)
+            FSourceCodeNavigation::OpenSourceFile(FPaths::ConvertRelativePathToFull(HeaderPath));
+#else
+            FSourceCodeNavigation::OpenSourceFileAsync(FPaths::ConvertRelativePathToFull(HeaderPath));
+#endif
+// SOLOAS-COMPAT-END
 		}
 		return;
 	}

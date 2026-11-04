@@ -23,15 +23,6 @@ struct FAngelscriptPrecompiledReference
 	}
 };
 
-                                                                                                  
-struct FAngelscriptPrecompiledCacheFile
-{
-	FString ModuleName;
-	FString FileName;
-	FGuid DataGuid;
-	TArray<FString> Dependencies;
-};
-                                                                                                
 
 struct FAngelscriptPrecompiledDataType
 {
@@ -511,30 +502,8 @@ struct FAngelscriptPrecompiledGlobalVariable
 	void Process(FAngelscriptPrecompiledData& Context, class asCModule* Module, class asCGlobalProperty* Property) const;
 };
 
-                                                                                                  
-struct FAngelscriptPrecompiledModuleReference
-{
-	FStringInArchive ModuleName;
-	int32 Row = 1;
-	int32 Column = 1;
-	uint8 Flags = 0;
-	friend FArchive& operator<<(FArchive& Ar, FAngelscriptPrecompiledModuleReference& Data)
-	{
-		Ar << Data.ModuleName << Data.Row << Data.Column << Data.Flags;
-		return Ar;
-	}
-};
-                                                                                                
 struct FAngelscriptPrecompiledModule
 {
-                                                                                             
-	FStringInArchive ScriptUnitId;
-	uint8 ScriptLayer = 0;
-	TArray<FStringInArchive, TPrecompiledAllocator<>> ScriptUnitDependencies;
-                                                                                           
-                                                                                                    
-	TArray<FAngelscriptPrecompiledModuleReference, TPrecompiledAllocator<>> ModuleReferences;
-                                                                                                  
 	FStringInArchive ModuleName;
 	TArray<FAngelscriptPrecompiledFunction, TPrecompiledAllocator<>> Functions;
 	TArray<FAngelscriptPrecompiledClass, TPrecompiledAllocator<>> Classes;
@@ -546,7 +515,9 @@ struct FAngelscriptPrecompiledModule
 	TArray<FStringInArchive, TPrecompiledAllocator<>> DeclaredDelegates;
 	FStringInArchive ScriptRelativeFilename;
 	TArray<FStringInArchive, TPrecompiledAllocator<>> PostInitFunctions;
+                                                                                                                      
 	TArray<FString> Dependencies;
+                                                                                                                    
 
 	// TRANSIENT:
 	mutable TArray<class asCObjectType*> ClassTypes;
@@ -558,14 +529,6 @@ struct FAngelscriptPrecompiledModule
 	inline friend FArchive& operator<<(FArchive& Ar, FAngelscriptPrecompiledModule& Data)
 	{
 		Ar << Data.ModuleName;
-                                                                                                      
-		Ar << Data.ScriptUnitId;
-		Ar << Data.ScriptLayer;
-		Ar << Data.ScriptUnitDependencies;
-                                                                                                    
-                                                                                                       
-		Ar << Data.ModuleReferences;
-                                                                                                     
 		Ar << Data.Functions;
 		Ar << Data.Classes;
 		Ar << Data.Enums;
@@ -585,13 +548,6 @@ struct FAngelscriptPrecompiledModule
 	void ApplyToModule_Stage3(FAngelscriptPrecompiledData& Context, class asIScriptModule* Module) const;
 };
 
-                                                                                                  
-struct FAngelscriptPrecompiledClassOwner
-{
-	FAngelscriptPrecompiledData* Context = nullptr;
-	const FAngelscriptPrecompiledClass* Class = nullptr;
-};
-                                                                                                
 
 struct FAngelscriptTypeReference
 {
@@ -689,10 +645,9 @@ struct FAngelscriptPrecompiledData
 
 	// Saved data
 	FGuid DataGuid;
-	                                                                                                  
-	TMap<FString, FGuid> ModuleDataGuids;
-	                                                                                                
-	TMap<FString, FAngelscriptPrecompiledModule> Modules;
+                                                                                                                      
+		TMap<FString, FAngelscriptPrecompiledModule> Modules;
+                                                                                                                    
 	TMapAsPtr<int64, FAngelscriptTypeReference> TypeReferences;
 	TMap<int, int64> TypeIdReferenceToPointer;
 	TMapAsPtr<int64, FAngelscriptFunctionReference> FunctionReferences;
@@ -708,23 +663,11 @@ struct FAngelscriptPrecompiledData
 	// Minimize memory usage mode reduces the amount of memory we spend on
 	// angelscript data, but removes some debugging information.
 	bool bMinimizeMemoryUsage = false;
-                                                                                               
-	TSet<const void*> FinalizedJitSlots;
-	bool bStaticNamesFinalized = false;
-	bool IsReferenceReady(int64 Reference) const;
-                                                                                             
 
 	inline friend FArchive& operator<<(FArchive& Ar, FAngelscriptPrecompiledData& Data)
 	{
 		Ar << Data.DataGuid;
 		Ar << Data.BuildIdentifier;
-                                                                                                      
-		if (Ar.IsLoading() && Data.BuildIdentifier != Data.GetCurrentBuildIdentifier())
-		{
-			Ar.SetError();
-			return Ar;
-		}
-                                                                                                    
 		Ar << Data.Modules;
 		Ar << Data.TypeReferences;
 		Ar << Data.TypeIdReferenceToPointer;
@@ -746,14 +689,9 @@ struct FAngelscriptPrecompiledData
 	bool IsValidForCurrentBuild();
 
 	void Save(const FString& Filename);
-	                                                                                                  
-	bool SaveSerialized(const FString& Filename);
-	bool SaveModuleCacheSets(FString& OutError);
-	static bool ReadModuleCacheSet(const FString& CacheDirectory, TArray<FAngelscriptPrecompiledCacheFile>& OutFiles, FString& OutError, const TArray<uint8>* VerifiedManifestBytes = nullptr);
-	                                                                                                
-                                                                                                                                    
-	void Load(const FString& Filename, const TArray<uint8>* VerifiedBytes = nullptr);
-                                                                                                                                  
+                                                                                                                        
+		void Load(const FString& Filename);
+                                                                                                                      
 
 	struct asSNameSpace* GetNamespace(const FStringInArchive& Namespace);
 	void AddRefTo(const class asCDataType& DataType);
@@ -768,11 +706,9 @@ struct FAngelscriptPrecompiledData
 	TMap<asIScriptFunction*, uint32> ProcessedFunctionToId;
 	TMap<uint32, asIScriptFunction*> ProcessedIdToFunction;
 
-	                                                                                                  
-	TSharedPtr<TMap<void*, FAngelscriptPrecompiledClassOwner>> ClassesLoadedFromPrecompiledData;
-	void AddModuleDependencies(class asCModule* Module, const TArray<FString>& Dependencies) const;
-	bool AppendStaticNames(FString& OutError) const;
-	                                                                                                
+                                                                                                                            
+		TSharedPtr<TMap<void*, const FAngelscriptPrecompiledClass*>> ClassesLoadedFromPrecompiledData;
+                                                                                                                          
 	void ProcessProperties(asITypeInfo* TypeInfo);
 
 	uint32 CreateFunctionId(asIScriptFunction* Function);

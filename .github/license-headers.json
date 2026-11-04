@@ -559,18 +559,6 @@
   "AngelscriptRuntime/Source/AngelscriptCode/Private/Testing/UnitTest.h": [],
   "AngelscriptRuntime/Source/AngelscriptCode/Private/Preprocessor/AngelscriptPreprocessor.cpp": [],
   "AngelscriptRuntime/Source/AngelscriptCode/Private/Preprocessor/Helper_CommentFormat.h": [],
-  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptGeneratedClassFunctionStateAdapter.cpp": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
-  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptObjectDestructionAdapter.h": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
-  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptInstancedSubobjectReplacementAdapter.cpp": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
   "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptTerminalDestructorAdmission.h": [
     "// SPDX-License-Identifier: MIT",
     "// Copyright Cuviss Studio. All Rights Reserved."
@@ -581,10 +569,6 @@
   ],
   "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptClassGenerator.cpp": [],
   "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/ASStruct.cpp": [],
-  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptGeneratedClassFunctionStateAdapter.h": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
   "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRuntimeGcMirror.h": [
     "// SPDX-License-Identifier: MIT",
     "// Copyright Cuviss Studio. All Rights Reserved."
@@ -594,10 +578,6 @@
     "// Copyright Cuviss Studio. All Rights Reserved."
   ],
   "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptRetiredModules.cpp": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
-  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptInstancedSubobjectReplacementAdapter.h": [
     "// SPDX-License-Identifier: MIT",
     "// Copyright Cuviss Studio. All Rights Reserved."
   ],
@@ -618,19 +598,7 @@
     "// Copyright Cuviss Studio. All Rights Reserved."
   ],
   "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/ASClass.cpp": [],
-  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptScriptClassLifetimeTransitionAdapter.cpp": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
   "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptReplicationShadow.cpp": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
-  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptObjectDestructionAdapter.cpp": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
-  "AngelscriptRuntime/Source/AngelscriptCode/Private/ClassGenerator/AngelscriptScriptClassLifetimeTransitionAdapter.h": [
     "// SPDX-License-Identifier: MIT",
     "// Copyright Cuviss Studio. All Rights Reserved."
   ],
@@ -998,15 +966,7 @@
   ],
   "AngelscriptRuntime/Source/AngelscriptEditor/Private/ClassReloadHelper.h": [],
   "AngelscriptRuntime/Source/AngelscriptEditor/Private/AngelscriptEditorModule.cpp": [],
-  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintCompilationTransactionAdapter.h": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
   "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptRetiredClassDefaultScope.h": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
-  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintReinstancingOrchestrationAdapter.cpp": [
     "// SPDX-License-Identifier: MIT",
     "// Copyright Cuviss Studio. All Rights Reserved."
   ],
@@ -1018,10 +978,6 @@
     "// SPDX-License-Identifier: MIT",
     "// Copyright Cuviss Studio. All Rights Reserved."
   ],
-  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintActorComponentOrderingAdapter.h": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
   "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptInheritedComponentAttachmentRepairSupport.h": [
     "// SPDX-License-Identifier: MIT",
     "// Copyright Cuviss Studio. All Rights Reserved."
@@ -1030,15 +986,7 @@
     "// SPDX-License-Identifier: MIT",
     "// Copyright Cuviss Studio. All Rights Reserved."
   ],
-  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintReinstancingOrchestrationAdapter.h": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
   "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptInheritedComponentAttachmentRepair.h": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
-  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintActorComponentOrderingAdapter.cpp": [
     "// SPDX-License-Identifier: MIT",
     "// Copyright Cuviss Studio. All Rights Reserved."
   ],
@@ -1047,10 +995,6 @@
     "// Copyright Cuviss Studio. All Rights Reserved."
   ],
   "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptActorReplacementTransaction.cpp": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
-  "AngelscriptRuntime/Source/AngelscriptEditor/Private/Blueprint/AngelscriptBlueprintCompilationTransactionAdapter.cpp": [
     "// SPDX-License-Identifier: MIT",
     "// Copyright Cuviss Studio. All Rights Reserved."
   ],
@@ -1138,14 +1082,6 @@
     "// SPDX-License-Identifier: MIT",
     "// Copyright Cuviss Studio. All Rights Reserved."
   ],
-  "AngelscriptRuntime/Source/AngelscriptEditor/Private/UMG/AngelscriptListViewEntryAdapter.h": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
-  "AngelscriptRuntime/Source/AngelscriptEditor/Private/UMG/AngelscriptListViewEntryAdapter.cpp": [
-    "// SPDX-License-Identifier: MIT",
-    "// Copyright Cuviss Studio. All Rights Reserved."
-  ],
   "AngelscriptRuntime/Source/AngelscriptEditor/Public/FunctionLibraries/BlueprintMixinLibrary.h": [],
   "AngelscriptRuntime/Source/AngelscriptEditor/Public/FunctionLibraries/EditorSubsystemLibrary.h": [],
   "AngelscriptRuntime/Source/AngelscriptEditor/Public/EditorMenuExtensions/ScriptEditorMenuExtension.h": [],
@@ -1159,5 +1095,20 @@
   "AngelscriptRuntime/Source/AngelscriptEditor/Public/BaseClasses/ScriptEditorSubsystem.h": [],
   "AngelscriptManualBindPlugins/AngelscriptGAS/Source/Private/Bind_FActiveGameplayEffectHandle.cpp": [
     "// SPDX-License-Identifier: (Apache-2.0 OR MIT)"
+  ],
+  "SoloASBridge/Source/ThirdParty/Detours/src/detours.cpp": [
+    "//  Copyright (c) Microsoft Corporation.  All rights reserved."
+  ],
+  "SoloASBridge/Source/ThirdParty/Detours/src/detours.h": [
+    "//  Copyright (c) Microsoft Corporation.  All rights reserved."
+  ],
+  "SoloASBridge/Source/ThirdParty/Detours/src/detver.h": [
+    "//  Copyright (c) Microsoft Corporation.  All rights reserved."
+  ],
+  "SoloASBridge/Source/ThirdParty/Detours/src/disasm.cpp": [
+    "//  Copyright (c) Microsoft Corporation.  All rights reserved."
+  ],
+  "SoloASBridge/Source/ThirdParty/Detours/src/modules.cpp": [
+    "//  Copyright (c) Microsoft Corporation.  All rights reserved."
   ]
 }

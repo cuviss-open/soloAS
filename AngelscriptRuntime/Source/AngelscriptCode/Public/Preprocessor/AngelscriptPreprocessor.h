@@ -1,7 +1,4 @@
 #pragma once
-                                                                                                    
-#include "AngelscriptScriptUnit.h"
-                                                                                                  
 
 #include "CoreMinimal.h"
 
@@ -16,18 +13,13 @@ DECLARE_DELEGATE_RetVal_ThreeParams(bool, FAngelscriptShouldRemoveFunctionOutsid
 
 struct ANGELSCRIPTCODE_API FAngelscriptPreprocessor
 {
-                                                                                                         
-	FAngelscriptScriptUnitManager ScriptUnits;
-	bool bHasScriptUnitCatalog = false;
-                                                                                                       
-	FAngelscriptPreprocessor(const TMap<FName, FString>& InBlueprintBindings = {});
+	FAngelscriptPreprocessor();
 
 	/* Add a file to be preprocessed. */
 	void AddFile(const FString& ScriptRelativePath, const FString& ScriptAbsoluteFilename, bool bLoadAsynchronous = false, bool bTreatAsDeleted = false);
 
 	/* Perform preprocessing on all files. Returns true if successful. */
 	bool Preprocess();
-	void PreloadBlueprintImportAssets();
 
 	/* Retrieve preprocessed modules to pass into compilation. */
 	TArray<TSharedRef<FAngelscriptModuleDesc>> GetModulesToCompile();
@@ -141,9 +133,6 @@ struct ANGELSCRIPTCODE_API FAngelscriptPreprocessor
 
 		// Raw code read directly from the module file
 		FString RawCode;
-                                                                                                                    
-		FString LoadedSource;
-                                                                                                                  
 
 		// Chunked representation of raw code
 		TChunkedArray<FChunk> ChunkedCode;
@@ -158,7 +147,9 @@ struct ANGELSCRIPTCODE_API FAngelscriptPreprocessor
 		TArray<FDelegateDesc> Delegates;
 
 		bool bEditorOnlyModule = false;
+                                                                                                                 
 		bool bTreatAsDeleted = false;
+                                                                                                               
 
 		// Any asynchronous load we're doing on the file contents
 		volatile bool bLoadAsynchronous = false;
@@ -260,5 +251,4 @@ struct ANGELSCRIPTCODE_API FAngelscriptPreprocessor
 	bool ShallowCheckIsInComment(const FString& Content, int Offset);
 
 	UAngelscriptSettings* ConfigSettings;
-	TMap<FName, FString> ProjectBlueprintBindings;
 };

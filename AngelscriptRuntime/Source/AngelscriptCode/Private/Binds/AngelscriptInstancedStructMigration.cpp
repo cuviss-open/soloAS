@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "Binds/AngelscriptInstancedStructMigration.h"
-
+#include "Compat/SoloASRuntimeCompat.h"
 #include "ClassGenerator/ASStruct.h"
 #include "Serialization/MemoryReader.h"
 #include "Serialization/MemoryWriter.h"
@@ -72,7 +72,9 @@ bool HasObjectReference(const UScriptStruct* Struct)
 	TArray<const FStructProperty*> EncounteredStructProps;
 	for (const FProperty* Property = Struct->PropertyLink; Property; Property = Property->PropertyLinkNext)
 	{
-		if (Property->ContainsObjectReference(EncounteredStructProps, EPropertyObjectReferenceType_Any))
+// SOLOAS-COMPAT-BEGIN(<5.8) UE 5.7 uses individual object-reference flags [test: SoloAS.InstancedStructReferenceArrayFullReload] | CS.Runtime.VersionCompatibility.InstancedStructObjectReferences
+		if (SoloASBridge::Compat::ContainsAnyObjectReference(Property, EncounteredStructProps))
+// SOLOAS-COMPAT-END
 		{
 			return true;
 		}

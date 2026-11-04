@@ -7,15 +7,14 @@
                                                                                                             
 #include "Tickable.h"
 #include "UObject/WeakObjectPtr.h"
+                                                                                                            
 #include "UObject/SoftObjectPath.h"
+                                                                                                          
 #include "UObject/CoreNetTypes.h"
 #include "Misc/CoreDelegates.h"
 #include "ClassGenerator/AngelscriptAdditionalCompileChecks.h"
 
 #include "AngelscriptType.h"
-                                                                                               
-#include "AngelscriptScriptUnit.h"
-                                                                                             
 
 #define AS_CAN_HOTRELOAD (PLATFORM_DESKTOP)
 #define AS_MAX_POOLED_CONTEXTS 10
@@ -52,12 +51,6 @@ class asIScriptFunction;
 class asIScriptObject;
 class asITypeInfo;
 class asCContext;
-                                                                                                  
-struct FAngelscriptPrecompiledData;
-                                                                                                
-                                                                                                                      
-class UASClass;
-                                                                                                                    
 
 class FHotReloadTestRunner;
 
@@ -116,12 +109,11 @@ struct ANGELSCRIPTCODE_API FAngelscriptManager : FTickableGameObject
 	void Initialize();
 
                                                                                                     
-	// Source descriptors and unit catalog are retained, never caller output references.
+	// Source descriptors are retained, never caller output references.
 	struct FDeferredSourceCompilation
 	{
 		ECompileType CompileType;
 		TArray<TSharedRef<FAngelscriptModuleDesc>> Modules;
-		FAngelscriptScriptUnitManager Units;
 	};
 	TArray<FDeferredSourceCompilation> DeferredSourceCompilations;
 	bool bDrainingDeferredSourceCompilations = false;
@@ -139,33 +131,6 @@ struct ANGELSCRIPTCODE_API FAngelscriptManager : FTickableGameObject
 	 * Modules should already be pre-processed.
 	 * Modules array should already be sorted in dependency order. */
 	ECompileResult CompileModules(ECompileType CompileType, const TArray<TSharedRef<struct FAngelscriptModuleDesc>>& Modules, TArray<TSharedRef<struct FAngelscriptModuleDesc>>& OutCompiledModules);
-                                                                                                          
-	ECompileResult CompileModules(ECompileType CompileType,
-		const TArray<TSharedRef<struct FAngelscriptModuleDesc>>& Modules,
-		TArray<TSharedRef<struct FAngelscriptModuleDesc>>& OutCompiledModules,
-		const FAngelscriptScriptUnitManager& ScriptUnits);
-	ECompileResult CompileScriptUnit(ECompileType CompileType,
-		const TArray<TSharedRef<struct FAngelscriptModuleDesc>>& Modules,
-		TArray<TSharedRef<struct FAngelscriptModuleDesc>>& OutCompiledModules,
-		const FAngelscriptScriptUnitManager& ScriptUnits);
-    bool ValidateScriptUnitReferences(const TArray<TSharedRef<struct FAngelscriptModuleDesc>>& Modules,
-        const FAngelscriptScriptUnitManager& ScriptUnits, bool bFromCache);
-	const FAngelscriptScriptUnit* CurrentScriptUnit = nullptr;
-	bool bHasSourceScriptUnits = false;
-                                                                                                        
-	                                                                                                  
-	/** Compile a cache-only module set in one normal FullReload transaction. */
-	ECompileResult CompilePrecompiledModuleCacheDirectory(
-		const FString& CacheDirectory,
-		const FString& RequiredModulePrefix,
-		TArray<TSharedRef<struct FAngelscriptModuleDesc>>& OutCompiledModules,
-		const TMap<FString, TArray<uint8>>* VerifiedPackageFiles = nullptr);
-
-	/** Retire cache-backed modules by recompiling their recorded source sections as deleted. */
-	ECompileResult RemovePrecompiledModuleSet(
-		const FString& ModulePrefix,
-		TArray<TSharedRef<struct FAngelscriptModuleDesc>>& OutCompiledModules);
-	                                                                                                
 	void CompileModule_Types_Stage1(ECompileType CompileType, TSharedRef<struct FAngelscriptModuleDesc> Module);
 	void CompileModule_Functions_Stage2(ECompileType CompileType, TSharedRef<struct FAngelscriptModuleDesc> Module);
 	void CompileModule_Code_Stage3(ECompileType CompileType, TSharedRef<struct FAngelscriptModuleDesc> Module);
@@ -271,55 +236,6 @@ struct ANGELSCRIPTCODE_API FAngelscriptManager : FTickableGameObject
 	/* Root paths where all scripts are loaded from. */
 	TArray<FString> AllRootPaths;
 
-	/* Blueprint classes used only through import blueprint proxy declarations. */
-                                                                                                     
-	TSet<TWeakObjectPtr<UClass>> BlueprintImportProxyClasses;
-	void RegisterBlueprintImportProxyClass(UClass* Class)
-	{
-		for (auto It = BlueprintImportProxyClasses.CreateIterator(); It; ++It)
-			if (!It->IsValid()) It.RemoveCurrent();
-		if (Class) BlueprintImportProxyClasses.Add(Class);
-	}
-	bool IsBlueprintImportProxyClass(UClass* Class) const
-	{
-		return Class && BlueprintImportProxyClasses.Contains(TWeakObjectPtr<UClass>(Class));
-	}
-                                                                                                   
-                                                                                                        
-	struct FBlueprintDependencyClass
-    {
-        FSoftObjectPath Path;
-        TWeakObjectPtr<UClass> Identity;
-        FString SourcePath;
-    };
-    TMap<FName, FBlueprintDependencyClass> BlueprintDependencyClasses;
-	void RegisterBlueprintDependencyClass(FName Name, UClass* Class, const FString& SourcePath = FString())
-	{
-		BlueprintDependencyClasses.Add(Name, {FSoftObjectPath(Class), TWeakObjectPtr<UClass>(Class),
-			SourcePath.IsEmpty() ? GetPathNameSafe(Class) : SourcePath});
-	}
-	FString FindBlueprintDependencySourcePath(UClass* Class) const
-	{
-		if (!IsValid(Class)) return {};
-		for (const auto& Pair : BlueprintDependencyClasses)
-			if (Pair.Value.Identity.Get() == Class) return Pair.Value.SourcePath;
-		return {};
-	}
-                                                                                                      
-	UClass* FindBlueprintDependencyClass(FName Name) const
-	{
-		const FBlueprintDependencyClass* Entry = BlueprintDependencyClasses.Find(Name);
-		UClass* Class = Entry ? Cast<UClass>(Entry->Path.ResolveObject()) : nullptr;
-		return IsValid(Class) && Entry->Identity.Get() == Class ? Class : nullptr;
-	}
-	bool IsBlueprintDependencyClass(UClass* Class) const
-	{
-		if (!IsValid(Class)) return false;
-		for (const auto& Pair : BlueprintDependencyClasses)
-			if (Pair.Value.Identity.Get() == Class && Pair.Value.Path.ResolveObject() == Class) return true;
-		return false;
-	}
-
 	/* Internal script data. */
 	class asCScriptEngine* Engine = nullptr;
 
@@ -386,43 +302,8 @@ struct ANGELSCRIPTCODE_API FAngelscriptManager : FTickableGameObject
 		FString RelativePath;
 	};
 
-                                                                                                        
-	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnScriptFileChanged, const FFilenamePair&, bool);
-	DECLARE_MULTICAST_DELEGATE(FOnScriptWatcherBatchCompleted);
-	DECLARE_MULTICAST_DELEGATE(FOnScriptReloadTick);
-	DECLARE_MULTICAST_DELEGATE(FOnScriptEditorShutdown);
-	static FOnScriptFileChanged OnScriptFileChanged;
-	static FOnScriptWatcherBatchCompleted OnScriptWatcherBatchCompleted;
-	static FOnScriptReloadTick OnScriptReloadTick;
-	static FOnScriptEditorShutdown OnScriptEditorShutdown;
-                                                                                                      
 
-                                                                                                           
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-	struct FForcedFullReloadOutcome
-	{
-		bool bReloadCompleted = false;
-		bool bDeferred = false;
-		ECompileResult CompileResult = ECompileResult::Error;
-		bool bBindingValidated = false;
-		bool bObservedTargetClassSource = false;
-		bool bObservedActualFullReload = false;
-	};
 
-	/* Canonicalizes one absolute .as filename within the script root. */
-	static bool CanonicalizeExplicitFullReloadFilename(const FString& Filename, FString& OutCanonicalFilename);
-	static bool IsExplicitFullReloadTarget(const FString& CanonicalPath, const FString& CandidatePath);
-	FForcedFullReloadOutcome ForceExplicitFullReloadScriptFile(const FFilenamePair& Target);
-#endif
-                                                                                                         
-
-                                                                                                                
-#if AS_CAN_HOTRELOAD
-	TSet<FFilenamePair>& GetPreviouslyFailedReloadFiles() { return PreviouslyFailedReloadFiles; }
-	TSet<FFilenamePair>& GetQueuedFullReloadFiles() { return QueuedFullReloadFiles; }
-	bool IsCompilingModules() const { return bIsCompilingModules; }
-#endif
-                                                                                                              
 private:
                                                                                                    
 	// Game-thread-only pointer to a stack-owned result; restored after nested calls.
@@ -476,22 +357,9 @@ private:
 	double NextHotReloadCheck = -1.0;
 
 	void DiscoverTests();
-	bool PerformHotReload(ECompileType CompileType, const TArray<FFilenamePair>& FileList, ECompileResult* OutCompileResult = nullptr);
-                                                                                                                        
-	bool PerformHotReload(ECompileType CompileType, const TArray<FFilenamePair>& FileList, bool bForceFullReload, ECompileResult* OutCompileResult);
-                                                                                                                      
+	bool PerformHotReload(ECompileType CompileType, const TArray<FFilenamePair>& FileList);
 	void CheckForFileChanges();
 
-                                                                                                          
-	bool bForcedFullReloadExecution = false;
-#if WITH_EDITOR && AS_CAN_HOTRELOAD && !UE_BUILD_SHIPPING
-	friend struct FAngelscriptClassGenerator;
-	FFilenamePair ForcedFullReloadFile;
-	bool bForcedFullReloadBindingValidated = false;
-	UASClass* ForcedFullReloadMarkerOldClass = nullptr;
-	UASClass* ForcedFullReloadMarkerNewClass = nullptr;
-#endif
-                                                                                                        
 	void UpdateScriptReferencesInUnrealData(struct asModuleReferenceUpdateMap& UpdateMap, TSharedRef<FAngelscriptModuleDesc> Module);
 
 #if WITH_EDITOR
@@ -575,10 +443,9 @@ public:
 
 	friend struct FAngelscriptPrecompiledData;
 	struct FAngelscriptPrecompiledData* PrecompiledData = nullptr;
-	                                                                                                  
-	TArray<struct FAngelscriptPrecompiledData*> PrecompiledDataInstances;
-	                                                                                                
-	struct FAngelscriptStaticJIT* StaticJIT = nullptr;
+                                                                                                            
+		struct FAngelscriptStaticJIT* StaticJIT = nullptr;
+                                                                                                          
 	bool bUsePrecompiledData = false;
 	bool bUsedPrecompiledDataForPreprocessor = false;
 	static bool bScriptDevelopmentMode;
@@ -1083,9 +950,6 @@ struct FAngelscriptFunctionDesc
  */
 struct FAngelscriptClassDesc
 {
-                                                                                            
-	FString QualifiedName;
-                                                                                          
 	/* Name of the class that was compiled. */
 	FString ClassName;
 
@@ -1246,9 +1110,6 @@ struct FAngelscriptClassDesc
  */
 struct FAngelscriptEnumDesc
 {
-                                                                                           
-	FString QualifiedName;
-                                                                                         
 	/* Name of the enum that was compiled. */
 	FString EnumName;
 	FString Documentation;
@@ -1278,9 +1139,6 @@ struct FAngelscriptEnumDesc
  */
 struct FAngelscriptDelegateDesc
 {
-                                                                                               
-	FString QualifiedName;
-                                                                                             
 	/* Name of the delegate that was compiled. */
 	FString DelegateName;
 
@@ -1322,13 +1180,6 @@ struct FAngelscriptTestDesc
  */
 struct FAngelscriptModuleDesc
 {
-                                                                                              
-	FAngelscriptScriptUnit ScriptUnit;
-	// Cache startup delays source parsing until lower units have been installed.
-	bool bNeedsSourcePreprocess = false;
-	// Removed modules retain their identity without rejoining source reload closures.
-	bool bTreatAsDeleted = false;
-                                                                                            
 	/* Name of the module in angelscript. Usually Dir.SubDir.ModuleName */
 	FString ModuleName;
 
@@ -1374,10 +1225,9 @@ struct FAngelscriptModuleDesc
 	/* Internal angelscript data that get set during compilation. */
 	class asCModule* ScriptModule = nullptr;
 	const struct FAngelscriptPrecompiledModule* PrecompiledData = nullptr;
-	                                                                                                  
-	struct FAngelscriptPrecompiledData* PrecompiledDataContext = nullptr;
-	                                                                                                
-	bool bCompileError = false;
+                                                                                                            
+		bool bCompileError = false;
+                                                                                                          
 	bool bLoadedPrecompiledCode = false;
 	bool bModuleSwapInError = false;
 

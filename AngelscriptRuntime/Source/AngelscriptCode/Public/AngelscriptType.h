@@ -122,20 +122,8 @@ struct ANGELSCRIPTCODE_API FAngelscriptType : TSharedFromThis<FAngelscriptType>
 	// Not all FAngelscriptTypes will be associated with a UClass (eg primitives).
 	virtual UClass* GetClass(const FAngelscriptTypeUsage& Usage) const { return nullptr; }
 
-                                                                                                                  
-	// Returns a borrowed type pointer, or null when this type has no VM type info.
-	// Application-registered value types (including FInterfaceType::ScriptType) remain
-	// allocated when ClearUnneededRuntimeData erases raw-pointer lookup indexes;
-	// that cleanup does not Release or delete the registered asCObjectType.
-	// Cleanup requires a loaded cache, non-development/non-cache-generation mode,
-	// no preserve handler request and no source leaf units; normal Editor/PIE and
-	// Commandlet/Cook paths do not load that cache. Non-editor cached Game may clean.
-	// The retained pointer does not guarantee name lookup or method/property metadata.
-	// Do not Release without your own AddRef. Re-query module-owned script types
-	// after reload; their lifetime differs from application-registered value types.
-	// Engine teardown/recreation or actual registered-type removal ends this borrow;
-	// retire descriptors and binding userdata first, then rebuild on bind/cache restore.
-                                                                                                                
+                                                                                                         
+                                                                                                       
 	virtual class asITypeInfo* GetAngelscriptTypeInfo(const FAngelscriptTypeUsage& Usage) const { return nullptr; }
 
 	// get the UStruct that this angelscript type implements as a direct member.

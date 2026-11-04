@@ -3,7 +3,6 @@
 #include "Blueprint/AngelscriptBlueprintDefaultCopyFilterAdapter.h"
 
 #include "UObject/Class.h"
-#include "UObject/StrProperty.h"
 #include "UObject/TextProperty.h"
 #include "UObject/UnrealType.h"
 

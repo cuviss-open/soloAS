@@ -6,9 +6,6 @@
 
 #include "Kismet/KismetMathLibrary.h"
 #include "AngelscriptManager.h"
-                                                                                                      
-#include "AngelscriptExecutionQuiescence.h"
-                                                                                                    
                                                                                                                     
 class UClass;
 class asITypeInfo;
@@ -75,28 +72,15 @@ enum class EJITException : uint8
 	OutOfBounds,
 };
 
-                                                                                                  
-struct FStaticJITModuleDataGuid
-{
-	const TCHAR* ModuleName = nullptr;
-	FGuid DataGuid;
-};
-                                                                                                
 
 struct ANGELSCRIPTCODE_API FStaticJITCompiledInfo
 {
 	FGuid PrecompiledDataGuid;
-	                                                                                                  
-	const FStaticJITModuleDataGuid* ModuleDataGuids = nullptr;
-	uint32 ModuleDataGuidCount = 0;
-	                                                                                                
 
 	FStaticJITCompiledInfo(FGuid Guid);
-	                                                                                                  
-	FStaticJITCompiledInfo(FGuid Guid, const FStaticJITModuleDataGuid* InModuleDataGuids, uint32 InModuleDataGuidCount);
-	bool GetModuleDataGuid(const FString& ModuleName, FGuid& OutGuid) const;
-	                                                                                                
-	static const FStaticJITCompiledInfo* Get();
+                                                                                                                     
+		static const FStaticJITCompiledInfo* Get();
+                                                                                                                   
 };
 
 struct ANGELSCRIPTCODE_API FStaticJITFunction

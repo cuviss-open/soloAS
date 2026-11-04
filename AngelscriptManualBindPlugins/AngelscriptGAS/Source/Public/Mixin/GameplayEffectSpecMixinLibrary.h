@@ -1,10 +1,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
+                                                                                             
+#include "SoloASEngineCompat.h"
+                                                                                           
 
 #include "GameplayEffect.h"
 #include "GameplayEffectExecutionCalculation.h"
 
+                                                                                              
+#include "SoloASEngineCompat.h"
+                                                                                            
 #include "GameplayEffectSpecMixinLibrary.generated.h"
 
 // Wrapper type for FTagContainerAggregator
@@ -169,7 +175,20 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Gameplay Effect Spec")
 	static float GetModifierMagnitude(const FGameplayEffectSpec& Spec, int32 ModifierIdx)
 	{
+                                                                                                     
+#if 0
+                                                                                                   
 		return Spec.GetModifierMagnitude(ModifierIdx);
+                                                                                             
+#endif
+// SOLOAS-COMPAT-BEGIN(<5.6) Older definitions have no factor-in-stack field; preserve the newer default true [test: SoloAS.GAS.ModifierMagnitudeDefaultStack]
+#if SOLOAS_UE_BEFORE(5, 6)
+        return Spec.GetModifierMagnitude(ModifierIdx, true);
+#else
+        return Spec.GetModifierMagnitude(ModifierIdx);
+#endif
+// SOLOAS-COMPAT-END
+                                                                                           
 	}
 	
 	UFUNCTION(BlueprintPure, Category = "Gameplay Effect Spec Properties")

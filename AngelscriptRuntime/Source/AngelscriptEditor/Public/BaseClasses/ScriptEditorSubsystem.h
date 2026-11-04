@@ -1,11 +1,16 @@
 #pragma once
 #include "CoreMinimal.h"
+                                                                                                                    
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                                  
 #include "EditorSubsystem.h"
 #include "Editor.h"
 #include "ScriptEditorSubsystem.generated.h"
 
 UCLASS(NotBlueprintable, Abstract, Meta = (NoBlueprintsOfChildren))
-class ANGELSCRIPTEDITOR_API UScriptEditorSubsystem : public UEditorSubsystem, public FTickableGameObject
+                                                                                                                 
+class ANGELSCRIPTEDITOR_API UScriptEditorSubsystem : public UEditorSubsystem, public FSoloASTickableGameObject
+                                                                                                               
 {
 	GENERATED_BODY()
 
@@ -15,8 +20,12 @@ public:
 
 	UScriptEditorSubsystem(const FObjectInitializer& Initializer)
 		: Super()
-		, FTickableGameObject(IsTemplate() ? ETickableTickType::Never : ETickableTickType::NewObject)
-	{}
+                                                                                           
+// SOLOAS-COMPAT-BEGIN(<5.7) Keep a single constructor body visible to old UHT [test: SoloAS.EngineCompat.ReflectionSurface]
+        , FSoloASTickableGameObject(IsTemplate() ? ETickableTickType::Never : SoloASNewObjectTickType)
+    {}
+// SOLOAS-COMPAT-END
+                                                                                         
 
 	virtual UWorld* GetWorld() const override final
 	{

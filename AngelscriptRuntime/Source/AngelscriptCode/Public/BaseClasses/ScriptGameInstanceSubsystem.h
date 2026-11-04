@@ -1,11 +1,16 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Tickable.h"
+                                                                                                                          
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                                        
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "ScriptGameInstanceSubsystem.generated.h"
 
 UCLASS(NotBlueprintable, Abstract, Meta = (NoBlueprintsOfChildren))
-class ANGELSCRIPTCODE_API UScriptGameInstanceSubsystem : public UGameInstanceSubsystem, public FTickableGameObject
+                                                                                                                       
+class ANGELSCRIPTCODE_API UScriptGameInstanceSubsystem : public UGameInstanceSubsystem, public FSoloASTickableGameObject
+                                                                                                                     
 {
 	GENERATED_BODY()
 
@@ -13,8 +18,12 @@ public:
 
 	UScriptGameInstanceSubsystem(const FObjectInitializer& Initializer)
 		: Super()
-		, FTickableGameObject(IsTemplate() ? ETickableTickType::Never : ETickableTickType::NewObject)
-	{}
+                                                                                                 
+// SOLOAS-COMPAT-BEGIN(<5.7) Keep a single constructor body visible to old UHT [test: SoloAS.EngineCompat.ReflectionSurface]
+        , FSoloASTickableGameObject(IsTemplate() ? ETickableTickType::Never : SoloASNewObjectTickType)
+    {}
+// SOLOAS-COMPAT-END
+                                                                                               
 
 	bool bInitialized = false;
 

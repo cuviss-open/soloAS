@@ -109,7 +109,9 @@ struct ANGELSCRIPTCODE_API FAngelscriptOptionalType final : FAngelscriptType
                                                                                                                            
 #if 0
                                                                                                                          
+                                                                                                                
 		auto* OptionalProp = new FOptionalProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                              
                                                                                                                     
 #endif
 		auto* OptionalProp = CastFieldChecked<FOptionalProperty>(

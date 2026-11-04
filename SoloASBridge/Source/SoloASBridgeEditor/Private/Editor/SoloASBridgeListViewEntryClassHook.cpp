@@ -1,5 +1,6 @@
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "Editor/SoloASBridgeListViewEntryClassHook.h"
+#include "SoloASEngineCompat.h"
 
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
 
@@ -48,7 +49,11 @@ struct FListViewBuildAccess : UListViewBase
         auto& Table = List.*Resolve(FListViewTableTag{});
         Table = (List.*&FListViewBuildAccess::RebuildListWidget)();
         Table->SetIsScrollAnimationEnabled(List.*&FListViewBuildAccess::bEnableScrollAnimation);
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 has no configurable interpolation-speed field or setter [test: SoloAS.ListViewScriptEntryLifecycle] [id: CS.Compatibility.Bridge.SoloASBridgeListViewEntryClassHook.ScrollInterpolationSpeed]
+#if SOLOAS_UE_AT_LEAST(5, 5)
         Table->SetScrollingAnimationInterpolationSpeed(List.*&FListViewBuildAccess::ScrollingAnimationInterpolationSpeed);
+#endif
+// SOLOAS-COMPAT-END
         Table->SetEnableTouchAnimatedScrolling(List.*&FListViewBuildAccess::bInEnableTouchAnimatedScrolling);
         Table->SetIsRightClickScrollingEnabled(List.*&FListViewBuildAccess::bEnableRightClickScrolling);
         Table->SetIsTouchScrollingEnabled(List.*&FListViewBuildAccess::bEnableTouchScrolling);

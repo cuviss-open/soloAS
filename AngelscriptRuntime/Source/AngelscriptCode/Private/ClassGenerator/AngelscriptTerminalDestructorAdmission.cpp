@@ -3,6 +3,9 @@
 
 #include "ClassGenerator/AngelscriptTerminalDestructorAdmission.h"
 #include "AngelscriptRuntimeGcLifecycle.h"
+#include "SoloASEngineCompat.h"
+#include "Compat/SoloASStructOpsCompat.h"
+#include "Compat/SoloASRuntimeCompat.h"
 #include <cstdlib>
 #include <type_traits>
 #include <utility>
@@ -61,6 +64,102 @@ namespace
 constexpr uint32 MaxCodeWords = 4096;
 constexpr int32 MaxInstructions = 1024;
 
+// SOLOAS-COMPAT-BEGIN(<5.7) UE 5.6 native ops use a virtual dispatch identity [test: SoloAS.TerminalDestructorAdmission] | CS.Runtime.CoreSurface.AngelscriptTerminalDestructorAdmission.Compat1
+#if SOLOAS_UE_BEFORE(5, 7)
+struct FNativeValueWitness
+{
+    uint64 Generation = 0;
+    const asCScriptFunction* Constructor = nullptr;
+    asCObjectType* Type = nullptr;
+    asCScriptEngine* Engine = nullptr;
+    UScriptStruct* Provider = nullptr;
+    int32 Index = INDEX_NONE;
+    int32 Serial = 0;
+    int32 TypeId = 0;
+    uint32 Flags = 0;
+    EStructFlags StructFlags = STRUCT_NoFlags;
+    UScriptStruct::ICppStructOps* Ops = nullptr;
+    const void* Table = nullptr;
+    const void* Construct = nullptr;
+    const void* Copy = nullptr;
+    UScriptStruct::ICppStructOps::FCapabilities Capabilities = {};
+    bool MatchesCapabilities(const UScriptStruct::ICppStructOps::FCapabilities& Current) const
+    {
+        return Current.ComputedPropertyFlags == Capabilities.ComputedPropertyFlags
+            && Current.HasSerializerObjectReferences == Capabilities.HasSerializerObjectReferences
+            && Current.HasNoopConstructor == Capabilities.HasNoopConstructor
+            && Current.HasZeroConstructor == Capabilities.HasZeroConstructor
+            && Current.HasDestructor == Capabilities.HasDestructor
+            && Current.HasSerializer == Capabilities.HasSerializer
+            && Current.HasStructuredSerializer == Capabilities.HasStructuredSerializer
+            && Current.HasPostSerialize == Capabilities.HasPostSerialize
+            && Current.HasNetSerializer == Capabilities.HasNetSerializer
+            && Current.HasNetSharedSerialization == Capabilities.HasNetSharedSerialization
+            && Current.HasNetDeltaSerializer == Capabilities.HasNetDeltaSerializer
+            && Current.HasPostScriptConstruct == Capabilities.HasPostScriptConstruct
+            && Current.IsPlainOldData == Capabilities.IsPlainOldData
+            && Current.IsUECoreType == Capabilities.IsUECoreType
+            && Current.IsUECoreVariant == Capabilities.IsUECoreVariant
+            && Current.HasCopy == Capabilities.HasCopy
+            && Current.HasIdentical == Capabilities.HasIdentical
+            && Current.HasExportTextItem == Capabilities.HasExportTextItem
+            && Current.HasImportTextItem == Capabilities.HasImportTextItem
+            && Current.HasAddStructReferencedObjects == Capabilities.HasAddStructReferencedObjects
+            && Current.HasSerializeFromMismatchedTag == Capabilities.HasSerializeFromMismatchedTag
+            && Current.HasStructuredSerializeFromMismatchedTag == Capabilities.HasStructuredSerializeFromMismatchedTag
+            && Current.HasGetTypeHash == Capabilities.HasGetTypeHash
+#if SOLOAS_UE_AT_LEAST(5, 5)
+            && Current.HasIntrusiveUnsetOptionalState == Capabilities.HasIntrusiveUnsetOptionalState
+#endif
+            && Current.IsAbstract == Capabilities.IsAbstract
+            && Current.HasFindInnerPropertyInstance == Capabilities.HasFindInnerPropertyInstance
+#if SOLOAS_UE_AT_LEAST(5, 5)
+            && Current.ClearOnFinishDestroy == Capabilities.ClearOnFinishDestroy
+#endif
+#if WITH_EDITOR
+            && Current.HasCanEditChange == Capabilities.HasCanEditChange
+#endif
+#if SOLOAS_UE_AT_LEAST(5, 5)
+            && Current.HasVisitor == Capabilities.HasVisitor
+#endif
+            ;
+    }
+    bool Matches() const
+    {
+        const auto* Item = GUObjectArray.IndexToObject(Index);
+        if (!Generation || !Type || !Engine || !Provider || !Item || Item->GetSerialNumber() != Serial
+            || SoloASBridge::Compat::ObjectFromItem(Item) != Provider || Type->engine != Engine || Type->typeId != TypeId
+            || Engine->GetTypeInfoById(TypeId) != Type || Type->flags != Flags || Type->size != sizeof(FVector)
+            || Type->alignment != alignof(FVector)
+            || Type->plainUserData != reinterpret_cast<asPWORD>(Provider) || Type->GetSubTypeCount() != 0
+            || Type->module || Type->derivedFrom || Type->shadowType
+            || (Flags & (asOBJ_REF | asOBJ_SCRIPT_OBJECT | asOBJ_FUNCDEF))
+            || !(Flags & asOBJ_VALUE) || Provider->StructFlags != StructFlags
+            || Provider->GetCppStructOps() != Ops
+            || Provider->GetStructureSize() != sizeof(FVector) || Provider->GetMinAlignment() != alignof(FVector)
+            || Provider->GetPropertiesSize() > sizeof(FVector) || !Ops
+            || Provider != TBaseStructure<FVector>::Get()
+            || Ops->GetSize() != sizeof(FVector) || Ops->GetAlignment() != alignof(FVector)
+            || !Table || *reinterpret_cast<const void* const*>(Ops) != Table)
+            return false;
+        const auto Current = Ops->GetCapabilities();
+        const auto Handlers = SoloASBridge::Compat::ReadVirtualStructOpsHandlers(Ops);
+        if (Handlers.Construct != Construct || Handlers.Copy != Copy
+            || !SoloASBridge::Compat::HasCanonicalVectorHandlers(Handlers)) return false;
+        // Canonical binding registration owns the exact provider/ops/vtable snapshot.
+        // No lookup by name, caller expectation, or replacement operations is admitted.
+        return (StructFlags & STRUCT_Native) && (StructFlags & (STRUCT_IsPlainOldData | STRUCT_NoDestructor))
+            && !Current.HasDestructor && !Current.HasPostScriptConstruct
+            && !Current.HasAddStructReferencedObjects
+#if SOLOAS_UE_AT_LEAST(5, 5)
+            && !Current.ClearOnFinishDestroy
+#endif
+            && MatchesCapabilities(Current)
+            && ((StructFlags & STRUCT_CopyNative) ? Current.HasCopy : Current.IsPlainOldData);
+    }
+};
+
+#else
 using EOpsFlag = UE::CoreUObject::Private::EStructOpsFakeVTableFlags;
 using FOpsTable = UE::CoreUObject::Private::FStructOpsFakeVTable;
 // Retain the SDK getter's exact type for identity checks; these values are never invoked.
@@ -94,7 +193,7 @@ struct FNativeValueWitness
     {
         const auto* Item = GUObjectArray.IndexToObject(Index);
         if (!Generation || !Type || !Engine || !Provider || !Item || Item->GetSerialNumber() != Serial
-            || Item->GetObject() != Provider || Type->engine != Engine || Type->typeId != TypeId
+            || SoloASBridge::Compat::ObjectFromItem(Item) != Provider || Type->engine != Engine || Type->typeId != TypeId
             || Engine->GetTypeInfoById(TypeId) != Type || Type->flags != Flags || Type->size != sizeof(FVector)
             || Type->alignment != alignof(FVector)
             || Type->plainUserData != reinterpret_cast<asPWORD>(Provider) || Type->GetSubTypeCount() != 0
@@ -131,6 +230,9 @@ struct FNativeValueWitness
         return !!(StructFlags & STRUCT_IsPlainOldData);
     }
 };
+
+#endif
+// SOLOAS-COMPAT-END
 
 struct FLocalTypeWitness
 {
@@ -2180,7 +2282,13 @@ void RegisterVectorValueConstructor(asIScriptFunction* Function, UScriptStruct* 
     if (!Type || Type->plainUserData != reinterpret_cast<asPWORD>(Provider)) return;
     Provider->PrepareCppStructOps();
     auto* Ops = Provider->GetCppStructOps();
+    // SOLOAS-COMPAT-BEGIN(<5.7) UE 5.6 has no fake-vtable field [test: SoloAS.TerminalDestructorAdmission] | CS.Runtime.CoreSurface.AngelscriptTerminalDestructorAdmission.Compat2
+#if SOLOAS_UE_BEFORE(5, 7)
+    if (!Ops) return;
+#else
     if (!Ops || !Ops->FakeVPtr) return;
+#endif
+// SOLOAS-COMPAT-END
     FNativeValueWitness Value;
     Value.Constructor = Constructor;
     Value.Type = Type;
@@ -2192,6 +2300,14 @@ void RegisterVectorValueConstructor(asIScriptFunction* Function, UScriptStruct* 
     Value.Flags = Type->flags;
     Value.StructFlags = Provider->StructFlags;
     Value.Ops = Ops;
+// SOLOAS-COMPAT-BEGIN(<5.7) Snapshot the canonical virtual provider before admission [test: SoloAS.TerminalDestructorAdmission] | CS.Runtime.CoreSurface.AngelscriptTerminalDestructorAdmission.Compat3
+#if SOLOAS_UE_BEFORE(5, 7)
+    const auto Handlers = SoloASBridge::Compat::ReadVirtualStructOpsHandlers(Ops);
+    Value.Table = Handlers.Table;
+    Value.Construct = Handlers.Construct;
+    Value.Copy = Handlers.Copy;
+    Value.Capabilities = Ops->GetCapabilities();
+#else
     Value.Table = Ops->FakeVPtr;
     Value.OpsFlags = Value.Table->Flags;
     FMemory::Memcpy(&Value.Capabilities, &Value.Table->Capabilities, sizeof(Value.Capabilities));
@@ -2199,15 +2315,27 @@ void RegisterVectorValueConstructor(asIScriptFunction* Function, UScriptStruct* 
         Value.Construct = Value.Table->GetHandlingFunc<EOpsFlag::Construct>();
     if (!!(Value.OpsFlags & EOpsFlag::Copy))
         Value.Copy = Value.Table->GetHandlingFunc<EOpsFlag::Copy>();
+#endif
+// SOLOAS-COMPAT-END
     // Registration is at the canonical native binding, never inferred from a type
     // name, size, wildcard argument, or a consumer's later admission request.
     auto& State = Registry();
     FScopeLock Lock(&State.Mutex);
     const auto* Native = State.Natives.Find(Constructor);
     Value.Generation = Native ? Native->Generation : 0;
-    if (Value.Matches()) State.Values.Add(Type, MoveTemp(Value));
+    const bool Matches = Value.Matches();
+// SOLOAS-COMPAT-BEGIN(<5.7) Log all named capability comparisons at binding admission, not during quiet replay [test: SoloAS.RuntimeTerminalInt32StorageContract] | CS.Runtime.CoreSurface.AngelscriptTerminalDestructorAdmission.Compat4
+#if SOLOAS_UE_BEFORE(5, 7)
+    UE_LOG(LogTemp, Display, TEXT("SOLOAS_UE56_VECTOR_GATE3 capabilities_equal=%d"), Value.MatchesCapabilities(Ops->GetCapabilities()));
+#endif
+// SOLOAS-COMPAT-END
+    if (Matches) State.Values.Add(Type, MoveTemp(Value));
     else
     {
+// SOLOAS-COMPAT-BEGIN(<5.7) Keep rejection explicit without reading absent fake-vtable metadata [test: SoloAS.TerminalDestructorAdmission] | CS.Runtime.CoreSurface.AngelscriptTerminalDestructorAdmission.Compat5
+#if SOLOAS_UE_BEFORE(5, 7)
+        UE_LOG(LogTemp, Display, TEXT("SOLOAS_TERMINAL_VECTOR_WITNESS_REJECT type=%d"), Value.TypeId);
+#else
         const auto* Canonical = UE::CoreUObject::Private::TStructOpsFakeVTableForType<FVector>::Value;
         UE_LOG(LogTemp, Display, TEXT("SOLOAS_TERMINAL_VECTOR_WITNESS_REJECT type=%d size=%d align=%d expected_align=%d flags=%u")
             TEXT(" struct_flags=%u ops_flags=%u canonical_flags=%u construct_same=%d copy_same=%d zero=%d copy=%d")
@@ -2219,6 +2347,8 @@ void RegisterVectorValueConstructor(asIScriptFunction* Function, UScriptStruct* 
             Value.Capabilities.HasZeroConstructor, Value.Capabilities.HasCopy, Value.Capabilities.HasDestructor,
             Value.Capabilities.HasPostScriptConstruct, Value.Capabilities.HasAddStructReferencedObjects,
             Value.Capabilities.ClearOnFinishDestroy);
+#endif
+// SOLOAS-COMPAT-END
     }
 }
 

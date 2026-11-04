@@ -1,12 +1,15 @@
 #pragma once
+                                                                                                          
+#include "SoloASEngineCompat.h"
+                                                                                                        
 
 #include "CoreMinimal.h"
 
 #include "AngelscriptManager.h"
 #include "AngelscriptInclude.h"
-                                                                                                
+                                                                                                  
 #include "UObject/ObjectKey.h"
-                                                                                              
+                                                                                                
 
 #include "ASClass.generated.h"
 
@@ -15,7 +18,7 @@ class ANGELSCRIPTCODE_API UASClass : public UClass
 {
 	GENERATED_BODY()
 public:
-                                                                                                     
+                                                                                                       
 	bool HasValidScriptClassCarrier() const;
 	virtual void Link(FArchive& Ar, bool bRelinkExistingProperties) override;
 	virtual void DestroyPersistentUberGraphFrame(UObject* Object, bool bSkipSuperClass = false) const override;
@@ -29,8 +32,12 @@ public:
 	virtual bool IsReadyForFinishDestroy() override;
 	virtual void FinishDestroy() override;
 	virtual UObject* CreateDefaultObject() override;
+                                                                                   
+#if SOLOAS_UE_AT_LEAST(5, 7)
 	virtual EStructPropertyLinkFlags GetPropertyLinkFlags(UStruct* ContainerStruct, FProperty* Property) const override;
-                                                                                                   
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                     
                                                                                                                        
 	static bool HasValidScriptClassCarrierAncestry(
 		const UClass* SuperClass,

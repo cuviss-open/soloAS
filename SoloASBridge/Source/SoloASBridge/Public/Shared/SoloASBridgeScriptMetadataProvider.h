@@ -26,10 +26,11 @@ enum class ESoloASBridgeFunctionTrait : uint16
     RuntimeGenerated = 2,
     WorldContext = 4,
     NotInAngelscript = 8,
+    NoNativeCaller = 16, // A: UE-AS fork UHT rejects the native pointer for this declaration.
 };
 ENUM_CLASS_FLAGS(ESoloASBridgeFunctionTrait)
 
-inline constexpr uint16 SoloASBridgeFunctionTraitMask = 15;
+inline constexpr uint16 SoloASBridgeFunctionTraitMask = 31;
 
 struct FSoloASBridgeScriptFunctionDescriptor
 {
@@ -46,6 +47,7 @@ struct FSoloASBridgeScriptDefaultArgumentDescriptor
     const ANSICHAR* DefaultValueText;
 };
 
+// Empty FunctionName denotes a native member; /Inner, /Key, /Value and /Element address container children.
 struct FSoloASBridgeNativeFunctionPropertyTraitDescriptor
 {
     const ANSICHAR* OwnerName;
@@ -60,6 +62,8 @@ struct FSoloASBridgeNativeFunctionTraitDescriptor
     const ANSICHAR* OwnerName;
     const ANSICHAR* FunctionName;
     ESoloASBridgeFunctionTrait Traits;
+    // A: UE-AS fork's native caller preserves the returned reference's address.
+    void (*NativeReferenceCaller)(UObject* Target, void** Arguments, void* ReturnValue) = nullptr;
 };
 
 // Constructed before a module's StartupModule and destroyed with its DLL.
@@ -78,19 +82,37 @@ public:
         TConstArrayView<FSoloASBridgeScriptFunctionDescriptor> InFunctions,
         TConstArrayView<FSoloASBridgeScriptDefaultArgumentDescriptor> InDefaultArguments,
         TConstArrayView<FSoloASBridgeNativeFunctionPropertyTraitDescriptor> InPropertyTraits,
-        TConstArrayView<FSoloASBridgeNativeFunctionTraitDescriptor> InFunctionTraits)
+        TConstArrayView<FSoloASBridgeNativeFunctionTraitDescriptor> InFunctionTraits,
+        bool bAutoRegister = true)
         : ModuleName(InModuleName), Functions(InFunctions), DefaultArguments(InDefaultArguments),
           PropertyTraits(InPropertyTraits), FunctionTraits(InFunctionTraits)
     {
-        // Producers only link Core; a transitive Bridge dependency need not export its import library.
-        IModularFeatures::Get().RegisterModularFeature(FeatureName(), this);
+        if (bAutoRegister) Register();
     }
     virtual ~FSoloASBridgeScriptMetadataRegistration()
     {
-        IModularFeatures::Get().UnregisterModularFeature(FeatureName(), this);
+        Unregister();
+    }
+    void Register()
+    {
+        if (!bRegistered)
+        {
+            bRegistered = true;
+            IModularFeatures::Get().RegisterModularFeature(FeatureName(), this);
+        }
+    }
+    void Unregister()
+    {
+        if (bRegistered)
+        {
+            bRegistered = false;
+            IModularFeatures::Get().UnregisterModularFeature(FeatureName(), this);
+        }
     }
     FSoloASBridgeScriptMetadataRegistration(const FSoloASBridgeScriptMetadataRegistration&) = delete;
     FSoloASBridgeScriptMetadataRegistration& operator=(const FSoloASBridgeScriptMetadataRegistration&) = delete;
+private:
+    bool bRegistered = false;
 };
 
 #endif

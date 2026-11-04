@@ -1,35 +1,18 @@
 #include "PrecompiledData.h"
-                                                                                                           
-#include <cstdio>
-                                                                                                         
 
-                                                                                                      
-#include "Extensions/AngelscriptModdingInternal.h"
-#include "Misc/CommandLine.h"
-                                                                                                    
-                                                                                                       
-#include "Extensions/AngelscriptModdingInternal.h"
-                                                                                                     
 
 #include "Misc/FileHelper.h"
 #include "HAL/FileManager.h"
+                                                                                                                   
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
+                                                                                                                 
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/MemoryReader.h"
 
 #include "AngelscriptManager.h"
 #include "StaticJIT/StaticJITConfig.h"
 #include "StaticJIT/StaticJITHeader.h"
-                                                                                                  
-#include "Extensions/Cache/AngelscriptExtensionCacheCompatibility.h"
-#include "Extensions/AngelscriptExtensionHooks.h"
-#include "Misc/Paths.h"
-#include "Misc/SecureHash.h"
-#include "Serialization/JsonReader.h"
-#include "Serialization/JsonSerializer.h"
-#include "Serialization/JsonWriter.h"
-                                                                                                
 
 #include "StartAngelscriptHeaders.h"
 #include "as_scriptfunction.h"
@@ -39,137 +22,7 @@
 #include "as_callfunc.h"
 #include "EndAngelscriptHeaders.h"
 
-                                                                                                       
-// Byte-level transform mechanics for the precompiled-data gate. The walk is a
-// single pass over each bytecode array (instruction boundaries via the public
-// asBCInfo/asBCTypeSize tables); the permutation table itself is strategy from
-// the ModKit handler. The reverse walk restores the original opcode FIRST and
-// only then looks up its size (asBCTypeSize lookup after the inverse map),
-// stepping by DWORDs so a permuted instruction is never misread.
-namespace
-{
-	template<typename Allocator>
-	void CuvissApplyOpcodePermutation(TArray<int32, Allocator>& ByteCode, const TArray<uint8>& ForwardMap, bool bInverse)
-	{
-		if (ByteCode.Num() == 0 || ForwardMap.Num() != 256)
-		{
-			return;
-		}
 
-		uint8 Inverse[256];
-		if (bInverse)
-		{
-			for (int32 i = 0; i < 256; ++i)
-			{
-				Inverse[ForwardMap[i]] = (uint8)i;
-			}
-		}
-
-		asDWORD* bc = (asDWORD*)ByteCode.GetData();
-		const asDWORD* bcEnd = bc + ByteCode.Num();
-		while (bc < bcEnd)
-		{
-			// Size lookup always uses the ORIGINAL opcode: forward walks read it
-			// before writing the permuted value; the inverse walk restores it
-			// first and then looks up the restored value.
-			const uint8 OriginalOpcode = (uint8)(*bc & 0xFF);
-			const uint8 NewOpcode = bInverse ? Inverse[OriginalOpcode] : ForwardMap[OriginalOpcode];
-			const int32 InstrSize = asBCTypeSize[asBCInfo[bInverse ? NewOpcode : OriginalOpcode].type];
-			*bc = (*bc & ~0xFFu) | NewOpcode;
-			bc += InstrSize;
-		}
-	}
-
-	template<typename Fn>
-	void CuvissForEachByteCodeArray(FAngelscriptPrecompiledData& Data, Fn&& Func)
-	{
-		for (auto& ModulePair : Data.Modules)
-		{
-			FAngelscriptPrecompiledModule& Module = ModulePair.Value;
-			for (FAngelscriptPrecompiledFunction& Function : Module.Functions)
-			{
-				Func(Module, Function, false);
-			}
-			for (FAngelscriptPrecompiledGlobalVariable& GlobalVariable : Module.GlobalVariables)
-			{
-				Func(Module, GlobalVariable.InitFunc, true);
-			}
-			for (FAngelscriptPrecompiledClass& Class : Module.Classes)
-			{
-				for (FAngelscriptPrecompiledFunction& Method : Class.Methods)
-				{
-					Func(Module, Method, false);
-				}
-				for (FAngelscriptPrecompiledFunction& Constructor : Class.Constructors)
-				{
-					Func(Module, Constructor, true);
-				}
-				for (FAngelscriptPrecompiledFunction& Behavior : Class.BehaviorFunctions)
-				{
-					Func(Module, Behavior, true);
-				}
-			}
-		}
-	}
-
-	FString CuvissMakeJitFunctionIdentity(const FString& ModuleName, const FString& FunctionName, uint32 FunctionId)
-	{
-		if (ModuleName.IsEmpty() || FunctionName.IsEmpty())
-		{
-			return FString();
-		}
-		return FString::Printf(TEXT("%d:%s|%d:%s|%08x"), ModuleName.Len(), *ModuleName,
-			FunctionName.Len(), *FunctionName, FunctionId);
-	}
-
-	void CuvissStripDebugInfo(FAngelscriptPrecompiledData& Data)
-	{
-		CuvissForEachByteCodeArray(Data, [](FAngelscriptPrecompiledModule&, FAngelscriptPrecompiledFunction& Function, bool)
-		{
-			Function.LineNumbers.Reset();
-			Function.DeclaredAt = 0;
-		});
-	}
-}
-                                                                                                     
-
-                                                                                                  
-namespace
-{
-	const TCHAR* ModuleCacheManifestName = TEXT("ModuleCaches.json");
-	const TCHAR* ModuleCacheDirectoryName = TEXT("ModuleCaches");
-	const int32 ModuleCacheManifestVersion = 2;
-
-	FString GetModuleCacheDirectory(const FString& ScriptRelativeFilename)
-	{
-		FString NormalizedFilename = ScriptRelativeFilename;
-		FPaths::NormalizeFilename(NormalizedFilename);
-		TArray<FString> PathParts;
-		NormalizedFilename.ParseIntoArray(PathParts, TEXT("/"), true);
-		if (PathParts.Num() >= 3 && PathParts[0] == TEXT("FeatureMods") && PathParts[2] == TEXT("Script"))
-		{
-			return FPaths::ProjectDir() / TEXT("FeatureMods") / PathParts[1] / TEXT("Script") / ModuleCacheDirectoryName;
-		}
-		if (PathParts.Num() >= 4
-			&& PathParts[0] == TEXT("Plugins")
-			&& PathParts[1] == TEXT("FeatureMods")
-			&& PathParts[3] == TEXT("Script"))
-		{
-			return FPaths::ProjectPluginsDir() / TEXT("FeatureMods") / PathParts[2] / TEXT("Script") / ModuleCacheDirectoryName;
-		}
-		if (PathParts.Num() >= 3 && PathParts[0] == TEXT("Mods") && PathParts[2] == TEXT("Script"))
-		{
-			return FPaths::ProjectDir() / TEXT("Mods") / PathParts[1] / TEXT("Script") / ModuleCacheDirectoryName;
-		}
-		return FAngelscriptManager::GetScriptRootDirectory() / ModuleCacheDirectoryName;
-	}
-
-	FString GetModuleCacheFilename(const FString& ModuleName)
-	{
-	return FMD5::HashAnsiString(*ModuleName) + TEXT(".Cache");
-	}
-}
-                                                                                                
 
 double TIMER_ProcessBytecode = 0.0;
 double TIMER_CreateFunction = 0.0;
@@ -517,6 +370,8 @@ struct FAngelscriptBytecodeReferencer
 
 				break;
 			}
+                                                                                                                         
+                                                                                                                       
 			}
 
 			// Advance bytecode pointer
@@ -1290,11 +1145,11 @@ void FAngelscriptPrecompiledClass::PreProcessFunctions(FAngelscriptPrecompiledDa
 		PotentialProperties += DerivedProperties;
 
 		// Make sure functions are preprocessed on the derived type first
-		                                                                                                  
-		const FAngelscriptPrecompiledClassOwner* DerivedData = Context.ClassesLoadedFromPrecompiledData->Find(Type->derivedFrom);
-		                                                                                                
-		if (DerivedData != nullptr && DerivedData->Class != nullptr && !DerivedData->Class->bFunctionsPreProcessed)
-			DerivedData->Class->PreProcessFunctions(*DerivedData->Context, Type->derivedFrom);
+                                                                                                                       
+				const FAngelscriptPrecompiledClass* const* DerivedData = Context.ClassesLoadedFromPrecompiledData->Find(Type->derivedFrom);
+                                                                                                                     
+		if (DerivedData != nullptr && !(*DerivedData)->bFunctionsPreProcessed)
+			(*DerivedData)->PreProcessFunctions(Context, Type->derivedFrom);
 	}
 
 	Type->properties.AllocateNoConstruct(PotentialProperties, true);
@@ -1480,9 +1335,6 @@ asCEnumType* FAngelscriptPrecompiledEnum::Create(FAngelscriptPrecompiledData& Co
 
 	Module->enumTypes.PushLast(Type);
 	Module->allLocalTypes.Add(Type);
-                                                                                                          
-	Context.Engine->allScriptDeclaredTypes.Add(Type);
-                                                                                                        
 
 	int32 ValueCount = EnumNames.Num();
 	Type->enumValues.SetLength(ValueCount);
@@ -1580,11 +1432,13 @@ void FAngelscriptPrecompiledGlobalVariable::Process(FAngelscriptPrecompiledData&
 void FAngelscriptPrecompiledModule::InitFrom(FAngelscriptPrecompiledData& Context, asCModule* Module)
 {
 	ModuleName = Module->GetName();
+                                                                                                                        
 	for (const auto& DependencyPair : Module->moduleDependencies)
 	{
 		if (DependencyPair.Key != nullptr && DependencyPair.Key != Module)
 			Dependencies.AddUnique(ANSI_TO_TCHAR(DependencyPair.Key->GetName()));
 	}
+                                                                                                                      
 	for (FString& InitFunction : Context.ModuleDesc->PostInitFunctions)
 		PostInitFunctions.Add(InitFunction);
 
@@ -1645,23 +1499,6 @@ void FAngelscriptPrecompiledModule::InitFrom(FAngelscriptPrecompiledData& Contex
 
 	if (Context.ModuleDesc->Code.Num() != 0)
 		ScriptRelativeFilename = Context.ModuleDesc->Code[0].RelativeFilename;
-                                                                                                    
-	ScriptUnitId = Context.ModuleDesc->ScriptUnit.Id;
-	ScriptLayer = uint8(Context.ModuleDesc->ScriptUnit.Layer);
-	for (const FString& Dependency : Context.ModuleDesc->ScriptUnit.Dependencies)
-		ScriptUnitDependencies.Add(Dependency);
-                                                                                                  
-                                                                                                     
-	for (const auto& Dependency : Module->moduleDependencies)
-	{
-		auto& Reference = ModuleReferences.AddDefaulted_GetRef();
-		Reference.ModuleName = Dependency.Key->baseModuleName.AddressOf();
-		Reference.Row = Dependency.Value.FirstLineNumber;
-		Reference.Column = Dependency.Value.FirstColumn;
-		Reference.Flags = (Dependency.Value.bIsStructuralDependency ? 1 : 0)
-			| (Dependency.Value.bIsHardValueDependency ? 2 : 0);
-	}
-                                                                                                   
 }
 
 int32 FAngelscriptPrecompiledData::GetScriptSection()
@@ -1679,17 +1516,6 @@ void FAngelscriptPrecompiledData::ProcessProperties(asITypeInfo* TypeInfo)
 {
 	if (TypeInfo == nullptr)
 		return;
-	                                                                                                  
-	FAngelscriptPrecompiledData* PropertyContext = this;
-	if (ClassesLoadedFromPrecompiledData.IsValid())
-	{
-		if (const FAngelscriptPrecompiledClassOwner* Owner = ClassesLoadedFromPrecompiledData->Find(TypeInfo))
-		{
-			if (Owner->Context != nullptr)
-				PropertyContext = Owner->Context;
-		}
-	}
-	                                                                                                
 
 	int32 Flags = ((asCTypeInfo*)TypeInfo)->flags;
 
@@ -1700,7 +1526,7 @@ void FAngelscriptPrecompiledData::ProcessProperties(asITypeInfo* TypeInfo)
 		if (auto* SubType = ObjectType->templateSubTypes[0].GetTypeInfo())
 		{
 			if ((SubType->flags & asOBJ_REF) == 0)
-				PropertyContext->ProcessProperties(SubType);
+				ProcessProperties(SubType);
 		}
 		ObjectType->CalculateTemplateSize();
 		return;
@@ -1715,100 +1541,16 @@ void FAngelscriptPrecompiledData::ProcessProperties(asITypeInfo* TypeInfo)
 	if (ObjectType->size != -1)
 		return;
 
-	                                                                                                  
-	const FAngelscriptPrecompiledClassOwner& PrecompiledOwner = ClassesLoadedFromPrecompiledData->FindChecked(TypeInfo);
-	                                                                                                
-	PrecompiledOwner.Class->ProcessProperties(*PrecompiledOwner.Context, ObjectType);
+                                                                                                                
+		const FAngelscriptPrecompiledClass& PrecompiledClass = *ClassesLoadedFromPrecompiledData->FindChecked(TypeInfo);
+	PrecompiledClass.ProcessProperties(*this, ObjectType);
+                                                                                                              
 
 	// If it's not in our current module's list of classes to process, that
 	// means our dependency ordering has already processed it for us.
 }
 
-                                                                                                  
-void FAngelscriptPrecompiledData::AddModuleDependencies(asCModule* Module, const TArray<FString>& Dependencies) const
-{
-	if (Module == nullptr)
-		return;
 
-	for (const FString& DependencyName : Dependencies)
-	{
-		asCModule* ExactModule = nullptr;
-		asCModule* CompilingModule = nullptr;
-		for (asUINT Index = 0; Index < Engine->scriptModules.GetLength(); ++Index)
-		{
-			asCModule* Candidate = Engine->scriptModules[Index];
-			if (Candidate == nullptr)
-				continue;
-			const FString CandidateName = ANSI_TO_TCHAR(Candidate->GetName());
-			FString CandidateBaseName = CandidateName;
-			const char* BaseModuleName = Candidate->baseModuleName.AddressOf();
-			if (BaseModuleName != nullptr && BaseModuleName[0] != '\0')
-				CandidateBaseName = ANSI_TO_TCHAR(BaseModuleName);
-			if (CandidateName == DependencyName)
-				ExactModule = Candidate;
-			else if (CandidateBaseName == DependencyName)
-				CompilingModule = Candidate;
-		}
-		asCModule* Dependency = CompilingModule != nullptr ? CompilingModule : ExactModule;
-		if (Dependency == nullptr || Dependency == Module || Module->moduleDependencies.Contains(Dependency))
-			continue;
-		asCModule::FModuleDependencyInfo DependencyInfo;
-		DependencyInfo.FirstLineNumber = 0;
-		DependencyInfo.FirstColumn = 0;
-		Module->moduleDependencies.Add(Dependency, DependencyInfo);
-	}
-}
-                                                                                                
-
-                                                                                                  
-bool FAngelscriptPrecompiledData::AppendStaticNames(FString& OutError) const
-{
-	TArray<FName> RequestedNames;
-	TSet<FName> SeenNames;
-	RequestedNames.Reserve(StaticNames.Num());
-	for (const FStringInArchive& SerializedName : StaticNames)
-	{
-		const FName Name(*SerializedName.UnrealString());
-		if (SeenNames.Contains(Name))
-		{
-			OutError = TEXT("module cache static-name table contains a repeated name");
-			return false;
-		}
-		SeenNames.Add(Name);
-		RequestedNames.Add(Name);
-	}
-
-	if (FAngelscriptManager::StaticNames.Num() > RequestedNames.Num())
-	{
-		OutError = TEXT("module cache static-name table is shorter than the active table");
-		return false;
-	}
-	for (int32 Index = 0; Index < FAngelscriptManager::StaticNames.Num(); ++Index)
-	{
-		if (FAngelscriptManager::StaticNames[Index] != RequestedNames[Index])
-		{
-			OutError = TEXT("module cache static-name table does not share the active prefix");
-			return false;
-		}
-	}
-	for (const TPair<FName, int32>& Pair : FAngelscriptManager::StaticNamesByIndex)
-	{
-		if (Pair.Value < 0 || Pair.Value >= RequestedNames.Num() || RequestedNames[Pair.Value] != Pair.Key)
-		{
-			OutError = TEXT("module cache static-name table conflicts with source indices");
-			return false;
-		}
-	}
-
-	for (int32 Index = 0; Index < RequestedNames.Num(); ++Index)
-	{
-		if (Index >= FAngelscriptManager::StaticNames.Num())
-			FAngelscriptManager::StaticNames.Add(RequestedNames[Index]);
-		FAngelscriptManager::StaticNamesByIndex.Add(RequestedNames[Index], Index);
-	}
-	return true;
-}
-                                                                                                
 
 void FAngelscriptPrecompiledModule::ApplyToModule_Stage1(FAngelscriptPrecompiledData& Context, asIScriptModule* InModule) const
 {
@@ -1824,12 +1566,9 @@ void FAngelscriptPrecompiledModule::ApplyToModule_Stage1(FAngelscriptPrecompiled
 	{
 		asCObjectType* Type = Classes[i].Create(Context, Module);
 		ClassTypes.Add(Type);
-		                                                                                                  
-		FAngelscriptPrecompiledClassOwner Owner;
-		Owner.Context = &Context;
-		Owner.Class = &Classes[i];
-		Context.ClassesLoadedFromPrecompiledData->Add(Type, Owner);
-		                                                                                                
+                                                                                                                 
+				Context.ClassesLoadedFromPrecompiledData->Add(Type, &Classes[i]);
+                                                                                                               
 	}
 
 	// Delegates and events should be tagged before we use them
@@ -1864,13 +1603,8 @@ void FAngelscriptPrecompiledModule::ApplyToModule_Stage2(FAngelscriptPrecompiled
 
 	// Allocate global variables
 	GlobalProperties.SetNum(GlobalVariables.Num());
-                                                                                                            
 	for (int32 i = 0, Count = GlobalVariables.Num(); i < Count; ++i)
-	{
 		GlobalProperties[i] = GlobalVariables[i].Create(Context, Module);
-		Context.Engine->allScriptGlobalVariables.Add(GlobalProperties[i]);
-	}
-                                                                                                          
 
 	// Create global functions
 	GlobalFunctions.SetNum(Functions.Num());
@@ -1884,27 +1618,11 @@ void FAngelscriptPrecompiledModule::ApplyToModule_Stage2(FAngelscriptPrecompiled
 		GlobalFunctions[i] = Function;
 		Module->globalFunctions.Add(Function);
 		Module->globalFunctionList.PushLast(Function);
-                                                                                                              
-		Context.Engine->allScriptGlobalFunctions.Add(Function);
-                                                                                                            
 	}
 
 	// Create function objects for each class
 	for (int32 i = 0, Count = Classes.Num(); i < Count; ++i)
 		Classes[i].CreateFunctions(Context, ClassTypes[i]);
-                                                                                                     
-	for (const auto& Reference : ModuleReferences)
-	{
-		asCModule* Dependency = Context.Engine->GetModule(*Reference.ModuleName, false);
-		check(Dependency != nullptr);
-		asCModule::FModuleDependencyInfo Info;
-		Info.FirstLineNumber = Reference.Row;
-		Info.FirstColumn = Reference.Column;
-		Info.bIsStructuralDependency = (Reference.Flags & 1) != 0;
-		Info.bIsHardValueDependency = (Reference.Flags & 2) != 0;
-		Module->moduleDependencies.Add(Dependency, Info);
-	}
-                                                                                                   
 }
 
 void FAngelscriptPrecompiledModule::ApplyToModule_Stage3(FAngelscriptPrecompiledData& Context, asIScriptModule* InModule) const
@@ -1931,10 +1649,9 @@ void FAngelscriptPrecompiledModule::ApplyToModule_Stage3(FAngelscriptPrecompiled
 
 	// Trigger steps normally performed by a call to Build()
 	Module->JITCompile();
-	                                                                                                  
-	Context.AddModuleDependencies(Module, Dependencies);
-	                                                                                                
-}
+                                                                                                                   
+	}
+                                                                                                                 
 
 asSNameSpace* FAngelscriptPrecompiledData::GetNamespace(const FStringInArchive& Namespace)
 {
@@ -2011,6 +1728,7 @@ FAngelscriptPrecompiledReference FAngelscriptPrecompiledData::ReferenceTypeInfo(
 	return FAngelscriptPrecompiledReference{ (int64)(SIZE_T)TypeInfo };
 }
 
+                                                                                                                     
 static asCModule* FindModuleForPrecompiledReference(asCScriptEngine* Engine, const FStringInArchive& ReferenceModule)
 {
 	const FString ReferencedModuleName = ReferenceModule.UnrealString();
@@ -2039,6 +1757,7 @@ static asCModule* FindModuleForPrecompiledReference(asCScriptEngine* Engine, con
 	return CompilingModule != nullptr ? CompilingModule : ExactModule;
 }
 
+                                                                                                                   
 asCTypeInfo* FAngelscriptPrecompiledData::GetTypeInfo(const FAngelscriptPrecompiledReference& Reference, bool bAddRef)
 {
 	if (Reference.OldReference == 0)
@@ -2093,10 +1812,14 @@ asCTypeInfo* FAngelscriptPrecompiledData::GetTypeInfo(const FAngelscriptPrecompi
 	else if (Ref.Module.Len() != 0 && Ref.SubTypes.Num() == 0)
 	{
 		// If a module is specified this is a script type
+                                                                                                                    
 		asCModule* Module = nullptr;
+                                                                                                                  
 		{
 			FAngelscriptScopeTotalTimer SubTimer(TIMER_FindModuleForType);
+                                                                                                                   
 			Module = FindModuleForPrecompiledReference(Engine, Ref.Module);
+                                                                                                                 
 		}
 		if (Module != nullptr)
 		{
@@ -2314,11 +2037,11 @@ asCScriptFunction* FAngelscriptPrecompiledData::GetFunction(const FAngelscriptPr
 		if (Type->flags & asOBJ_SCRIPT_OBJECT)
 		{
 			// Make sure functions are preprocessed on the derived type first
-			                                                                                                  
-			const FAngelscriptPrecompiledClassOwner* DerivedData = ClassesLoadedFromPrecompiledData->Find(Type->derivedFrom);
-			                                                                                                
-			if (DerivedData != nullptr && DerivedData->Class != nullptr && !DerivedData->Class->bFunctionsPreProcessed)
-				DerivedData->Class->PreProcessFunctions(*DerivedData->Context, Type->derivedFrom);
+                                                                                                                        
+				const FAngelscriptPrecompiledClass* const* DerivedData = ClassesLoadedFromPrecompiledData->Find(Type->derivedFrom);
+                                                                                                                      
+			if (DerivedData != nullptr && !(*DerivedData)->bFunctionsPreProcessed)
+				(*DerivedData)->PreProcessFunctions(*this, Type->derivedFrom);
 		}
 
 		// We might need to instantiate the template method
@@ -2420,10 +2143,12 @@ asCScriptFunction* FAngelscriptPrecompiledData::GetFunction(const FAngelscriptPr
 		if (Ref.Module.Len() != 0)
 		{
 			// Look up global script function from a module
+                                                                                                                       
 			asCModule* Module = FindModuleForPrecompiledReference(Engine, Ref.Module);
 			checkf(Module != nullptr,
 				TEXT("Module '%s' for angelscript reference to function '%s' could not be found"),
 				ANSI_TO_TCHAR(*Ref.Module), ANSI_TO_TCHAR(*Ref.Name));
+                                                                                                                     
 			Module->globalFunctions.FindAllUntil(*Ref.Name, ns, [&](asCScriptFunction* CheckFunc)
 			{
 				if (CheckFunc == nullptr)
@@ -2577,10 +2302,12 @@ void* FAngelscriptPrecompiledData::GetGlobalVariable(const FAngelscriptPrecompil
 		if (Ref.Module.Len() != 0)
 		{
 			// Look up a script global from a module
+                                                                                                                     
 			asCModule* Module = FindModuleForPrecompiledReference(Engine, Ref.Module);
 			checkf(Module != nullptr,
 				TEXT("Module '%s' for angelscript global reference to '%s' could not be found"),
 				ANSI_TO_TCHAR(*Ref.Module), ANSI_TO_TCHAR(*Ref.Name));
+                                                                                                                   
 			Property = Module->scriptGlobals.FindFirst(*Ref.Name, ns);
 		}
 		else
@@ -2685,30 +2412,6 @@ void FAngelscriptPrecompiledData::AddRefTo(const class asCDataType& DataType)
 		TypeInfo->AddRefInternal();
 }
 
-                                                                                                   
-bool FAngelscriptPrecompiledData::IsReferenceReady(int64 Reference) const
-{
-	if (Reference == 0) return true;
-	if (const auto* Type = TypeReferences.Find(Reference))
-	{
-		if (Type->Module.Len() != 0 && FCStringAnsi::Strcmp(*Type->Module, "$__T__") != 0 && Type->SubTypes.IsEmpty()
-			&& Engine->GetModule(*Type->Module, false) == nullptr) return false;
-		for (const auto& SubType : Type->SubTypes)
-			if (!IsReferenceReady(SubType.TypeInfo.OldReference)) return false;
-	}
-	if (const auto* Function = FunctionReferences.Find(Reference))
-	{
-		if (Function->Module.Len() != 0 && Engine->GetModule(*Function->Module, false) == nullptr) return false;
-		if (!IsReferenceReady(Function->ObjectType.OldReference)
-			|| !IsReferenceReady(Function->ReturnType.TypeInfo.OldReference)) return false;
-		for (const auto& Parameter : Function->ParameterTypes)
-			if (!IsReferenceReady(Parameter.TypeInfo.OldReference)) return false;
-	}
-	if (const auto* Global = GlobalReferences.Find(Reference))
-		if (Global->Module.Len() != 0 && Engine->GetModule(*Global->Module, false) == nullptr) return false;
-	return true;
-}
-                                                                                                 
 
 void FAngelscriptPrecompiledData::PrepareToFinalizePrecompiledModules()
 {
@@ -2718,10 +2421,6 @@ void FAngelscriptPrecompiledData::PrepareToFinalizePrecompiledModules()
 	FJITDatabase& Database = FJITDatabase::Get();
 	for (void** FuncPtr : Database.FunctionLookups)
 	{
-                                                                                                   
-		if (FinalizedJitSlots.Contains(FuncPtr) || !IsReferenceReady((int64)*FuncPtr)) continue;
-		FinalizedJitSlots.Add(FuncPtr);
-                                                                                                 
 		*FuncPtr = GetFunction(
 			FAngelscriptPrecompiledReference{ (int64)*FuncPtr },
 			false
@@ -2731,10 +2430,6 @@ void FAngelscriptPrecompiledData::PrepareToFinalizePrecompiledModules()
 	for (void* SysPtr : Database.SystemFunctionPointerLookups)
 	{
 		auto* JitRef = (FJitRef_SystemFunctionPointer*)SysPtr;
-                                                                                                         
-		if (FinalizedJitSlots.Contains(SysPtr) || !IsReferenceReady((int64)((FJitRef_SystemFunctionPointer*)SysPtr)->Pointer)) continue;
-		FinalizedJitSlots.Add(SysPtr);
-                                                                                                       
 		asCScriptFunction* Function = GetFunction(
 			FAngelscriptPrecompiledReference{ (int64)JitRef->Pointer },
 			false
@@ -2757,10 +2452,6 @@ void FAngelscriptPrecompiledData::PrepareToFinalizePrecompiledModules()
 
 	for (void** TypePtr : Database.TypeInfoLookups)
 	{
-                                                                                               
-		if (FinalizedJitSlots.Contains(TypePtr) || !IsReferenceReady((int64)*TypePtr)) continue;
-		FinalizedJitSlots.Add(TypePtr);
-                                                                                             
 		*TypePtr = GetTypeInfo(
 			FAngelscriptPrecompiledReference{ (int64)*TypePtr },
 			false
@@ -2769,10 +2460,6 @@ void FAngelscriptPrecompiledData::PrepareToFinalizePrecompiledModules()
 
 	for (void** GlobalPtr : Database.GlobalVarLookups)
 	{
-                                                                                                 
-		if (FinalizedJitSlots.Contains(GlobalPtr) || !IsReferenceReady((int64)*GlobalPtr)) continue;
-		FinalizedJitSlots.Add(GlobalPtr);
-                                                                                               
 		*GlobalPtr = GetGlobalVariable(
 			FAngelscriptPrecompiledReference{ (int64)*GlobalPtr },
 			nullptr
@@ -2781,29 +2468,18 @@ void FAngelscriptPrecompiledData::PrepareToFinalizePrecompiledModules()
 
 	for (TPair<uint64,uint32*> OffsetPtr : Database.PropertyOffsetLookups)
 	{
-                                                                                                 
-		const auto* Property = PropertyReferences.Find(OffsetPtr.Key);
-		const auto* TypeReference = Property ? TypeIdReferenceToPointer.Find(Property->OldTypeId) : nullptr;
-		if (FinalizedJitSlots.Contains(OffsetPtr.Value)
-			|| (TypeReference && !IsReferenceReady(*TypeReference))) continue;
-		FinalizedJitSlots.Add(OffsetPtr.Value);
-                                                                                               
 		*OffsetPtr.Value = (uint32)(SIZE_T)GetPropertyOffset(
 			FAngelscriptPrecompiledReference{ (int64)OffsetPtr.Key }
 		);
 	}
 
-                                                                                               
-	if (!bStaticNamesFinalized)
-	{
-		check(FAngelscriptManager::StaticNames.Num() == 0);
-		FAngelscriptManager::StaticNames.Reserve(StaticNames.Num());
-		for (const FStringInArchive& StaticName : StaticNames)
-			FAngelscriptManager::StaticNames.Add(FName(*StaticName.UnrealString()));
-		bStaticNamesFinalized = true;
-	}
-                                                                                             
+	check(FAngelscriptManager::StaticNames.Num() == 0);
+	FAngelscriptManager::StaticNames.Reserve(StaticNames.Num());
+                                                                                                                       
+	for (const FStringInArchive& StaticName : StaticNames)
+		FAngelscriptManager::StaticNames.Add(FName(*StaticName.UnrealString()));
 
+                                                                                                                     
 #if AS_JIT_VERIFY_PROPERTY_OFFSETS
 	for (TPair<uint64,SIZE_T> Element : Database.VerifyPropertyOffsets)
 	{
@@ -2811,10 +2487,6 @@ void FAngelscriptPrecompiledData::PrepareToFinalizePrecompiledModules()
 		if (!ensure(Ref != nullptr))
 			continue;
 
-                                                                                                          
-		const auto* TypeReference = TypeIdReferenceToPointer.Find(Ref->OldTypeId);
-		if (TypeReference && !IsReferenceReady(*TypeReference)) continue;
-                                                                                                        
 		int32 TypeId = GetTypeId(FAngelscriptPrecompiledReference{ Ref->OldTypeId });
 		auto* TypeInfo = (asCObjectType*)Engine->GetTypeInfoById(TypeId);
 		check(TypeInfo != nullptr);
@@ -2828,9 +2500,6 @@ void FAngelscriptPrecompiledData::PrepareToFinalizePrecompiledModules()
 
 	for (TPair<uint64,SIZE_T> Element : Database.VerifyTypeSizes)
 	{
-                                                                                                         
-		if (!IsReferenceReady((int64)Element.Key)) continue;
-                                                                                                       
 		asCTypeInfo* TypeInfo = GetTypeInfo(FAngelscriptPrecompiledReference{ (int64)Element.Key }, false);
 		check(TypeInfo != nullptr);
 
@@ -2840,9 +2509,6 @@ void FAngelscriptPrecompiledData::PrepareToFinalizePrecompiledModules()
 
 	for (TPair<uint64,SIZE_T> Element : Database.VerifyTypeAlignments)
 	{
-                                                                                                              
-		if (!IsReferenceReady((int64)Element.Key)) continue;
-                                                                                                            
 		asCTypeInfo* TypeInfo = GetTypeInfo(FAngelscriptPrecompiledReference{ (int64)Element.Key }, false);
 		check(TypeInfo != nullptr);
 
@@ -2997,7 +2663,9 @@ FAngelscriptPrecompiledData::FAngelscriptPrecompiledData(asIScriptEngine* InEngi
 	, Engine((asCScriptEngine*)InEngine)
 {
 	DataGuid = FGuid::NewGuid();
-	ClassesLoadedFromPrecompiledData = MakeShared<TMap<void*, FAngelscriptPrecompiledClassOwner>>();
+                                                                                                                 
+	ClassesLoadedFromPrecompiledData = MakeShared<TMap<void*, const FAngelscriptPrecompiledClass*>>();
+                                                                                                               
 }
 
 FAngelscriptPrecompiledData::~FAngelscriptPrecompiledData()
@@ -3026,9 +2694,9 @@ int32 FAngelscriptPrecompiledData::GetCurrentBuildIdentifier()
 	// Bind the stored member flag to the destructor bytecode that implements it.
 	const int32 MemberProtocolIdentifier = Configuration == -1 ? -1 : (Configuration | (1 << 8));
                                                                                                        
-	                                                                                                     
-	return MemberProtocolIdentifier == -1 ? -1 : (MemberProtocolIdentifier | (1 << 9) | (1 << 10));
-	                                                                                                   
+                                                                                                                  
+	return MemberProtocolIdentifier;
+                                                                                                                
 }
 
 bool FAngelscriptPrecompiledData::IsValidForCurrentBuild()
@@ -3046,384 +2714,31 @@ void FAngelscriptPrecompiledData::InitFromActiveScript()
 	{
 		asCModule* Module = (asCModule*)Engine->GetModuleByIndex(i);
 		ModuleDesc = FAngelscriptManager::Get().GetModule(Module);
-                                                                                                          
-		FString CacheGenerationUnitId;
-		const bool bSelectedCacheGenerationUnitId = FParse::Value(FCommandLine::Get(), TEXT("as-cache-unit="), CacheGenerationUnitId)
-			&& !CacheGenerationUnitId.IsEmpty()
-			&& CacheGenerationUnitId == FPaths::GetCleanFilename(CacheGenerationUnitId)
-			&& !CacheGenerationUnitId.Contains(TEXT(".."));
-		const bool bIsSelectedLeafCache = ModuleDesc.IsValid() && bSelectedCacheGenerationUnitId
-			&& ModuleDesc->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf
-			&& ModuleDesc->ScriptUnit.Id == CacheGenerationUnitId;
-		if (!ModuleDesc.IsValid()
-			|| (ModuleDesc->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf && !bIsSelectedLeafCache)
-			|| FAngelscriptManager::Get().GetModule(ModuleDesc->ModuleName) != ModuleDesc) continue;
-                                                                                                        
 
 		FString ModuleName = Module->GetName();
-                                                                                                      
-		// Cuviss Modding registration point: cache generation module filter.
-		// Registered policy may exclude units from the project cache.
-		if (FAngelscriptModdingCacheGenerationFilterRuntime::IsGameCacheExcludedProjectScriptUnit(ModuleDesc->ScriptUnit.Id)
-			&& !bIsSelectedLeafCache)
-		{
-			continue;
-		}
-		{
-			TArray<FString> CuvissRelativeFilenames;
-			if (ModuleDesc.IsValid())
-			{
-				for (const FAngelscriptModuleDesc::FCodeSection& CuvissSection : ModuleDesc->Code)
-				{
-					CuvissRelativeFilenames.Add(CuvissSection.RelativeFilename);
-				}
-			}
-			if (FAngelscriptModdingCacheGenerationFilterRuntime::AnyExclude(ModuleName, CuvissRelativeFilenames))
-			{
-				continue;
-			}
-		}
-		FAngelscriptPrecompiledModule& CuvissCachedModule = Modules.FindOrAdd(ModuleName);
-		CuvissCachedModule.InitFrom(*this, Module);
-		// Apply the same registered policy to cached unit dependencies.
-		CuvissCachedModule.ScriptUnitDependencies.RemoveAll([](const FStringInArchive& Dependency)
-		{
-			return FAngelscriptModdingCacheGenerationFilterRuntime::IsGameCacheExcludedProjectScriptUnit(Dependency.UnrealString());
-		});
-                                                                                                    
+		Modules.FindOrAdd(ModuleName).InitFrom(*this, Module);
 	}
 
 	for (const FName& StaticName : FAngelscriptManager::StaticNames)
 		StaticNames.Add(StaticName.ToString());
 }
 
-                                                                                                  
-void FAngelscriptPrecompiledData::Save(const FString& Filename)
-{
-	FString ModuleCacheError;
-	if (!SaveModuleCacheSets(ModuleCacheError))
-	{
-		UE_LOG(Angelscript, Fatal, TEXT("Precompiled module cache generation failed: %s"), *ModuleCacheError);
-	}
-	if (!SaveSerialized(Filename))
-	{
-		UE_LOG(Angelscript, Fatal, TEXT("Precompiled cache file was not written: %s"), *Filename);
-	}
-}
-                                                                                                
 
-                                                                                                  
-bool FAngelscriptPrecompiledData::SaveSerialized(const FString& Filename)
-                                                                                                
+void FAngelscriptPrecompiledData::Save(const FString& Filename)
 {
 	TArray<uint8> Data;
 	FMemoryWriter Writer(Data, true);
 	Writer.SetIsPersistent(true);
 	Writer.SetWantBinaryPropertySerialization(true);
 
-                                                                                                       
-	// Pre-serialize structure transform (strip debug info, permute opcodes).
-	// Empty registry keeps upstream behavior bit-for-bit: the whole block is skipped.
-	{
-		FAngelscriptModdingPrecompiledDataTransform::FPolicy TransformPolicy;
-		if (FAngelscriptModdingPrecompiledDataTransformRuntime::GetPolicy(
-				FAngelscriptModdingPrecompiledDataTransform::EDirection::Save, TransformPolicy)
-			&& TransformPolicy.bTransform)
-		{
-			if (TransformPolicy.ShouldStripBytecode)
-			{
-				// Count cache identities before filtering. A repeated identity is
-				// ambiguous and must retain bytecode for every matching record.
-				TMap<FString, int32> CuvissIdentityCounts;
-				CuvissForEachByteCodeArray(
-					*this,
-					[&CuvissIdentityCounts](FAngelscriptPrecompiledModule& Module,
-						FAngelscriptPrecompiledFunction& Function, bool)
-				{
-					const FString Identity = CuvissMakeJitFunctionIdentity(
-						Module.ModuleName.UnrealString(), Function.FunctionName.UnrealString(), Function.Id);
-					if (!Identity.IsEmpty())
-					{
-						++CuvissIdentityCounts.FindOrAdd(Identity);
-					}
-				});
-				int32 CuvissStrippedCount = 0;
-				int32 CuvissVmRequiredRetainedCount = 0;
-				int32 CuvissUnmatchedRetainedCount = 0;
-				int32 CuvissAmbiguousRetainedCount = 0;
-				CuvissForEachByteCodeArray(*this, [&TransformPolicy, &CuvissIdentityCounts, &CuvissStrippedCount,
-					&CuvissVmRequiredRetainedCount, &CuvissUnmatchedRetainedCount, &CuvissAmbiguousRetainedCount](
-						FAngelscriptPrecompiledModule& Module, FAngelscriptPrecompiledFunction& Function, bool bVmEntryRequired)
-				{
-					if (Function.ByteCode.IsEmpty())
-					{
-						return;
-					}
-					if (bVmEntryRequired)
-					{
-						++CuvissVmRequiredRetainedCount;
-						return;
-					}
-					const FString Identity = CuvissMakeJitFunctionIdentity(
-						Module.ModuleName.UnrealString(), Function.FunctionName.UnrealString(), Function.Id);
-					const int32* IdentityCount = CuvissIdentityCounts.Find(Identity);
-					if (Identity.IsEmpty() || IdentityCount == nullptr || *IdentityCount != 1)
-					{
-						++CuvissAmbiguousRetainedCount;
-						return;
-					}
-					if (TransformPolicy.ShouldStripBytecode(Module.ModuleName.UnrealString(), Identity, false))
-					{
-						Function.ByteCode.Reset();
-						++CuvissStrippedCount;
-					}
-					else
-					{
-						++CuvissUnmatchedRetainedCount;
-					}
-				});
-				if (TransformPolicy.OnBytecodeStripComplete)
-				{
-					TransformPolicy.OnBytecodeStripComplete(CuvissStrippedCount, CuvissVmRequiredRetainedCount,
-						CuvissUnmatchedRetainedCount, CuvissAmbiguousRetainedCount);
-				}
-			}
-			if (TransformPolicy.bStripDebugInfo)
-			{
-				CuvissStripDebugInfo(*this);
-			}
-			if (TransformPolicy.OpcodePermutation.Num() == 256)
-			{
-				CuvissForEachByteCodeArray(*this, [&TransformPolicy](FAngelscriptPrecompiledModule&, FAngelscriptPrecompiledFunction& Function, bool)
-				{
-					CuvissApplyOpcodePermutation(Function.ByteCode, TransformPolicy.OpcodePermutation, false);
-				});
-			}
-		}
-	}
-                                                                                                     
 	Writer << *this;
 
-                                                                                                       
-	// Post-serialize byte transform: ModKit encrypts the serialized buffer and
-	// prepends the MKCC header. Empty registry leaves the bytes untouched.
-	{
-		FAngelscriptModdingPrecompiledDataTransform::FPolicy TransformPolicy;
-		if (FAngelscriptModdingPrecompiledDataTransformRuntime::GetPolicy(
-				FAngelscriptModdingPrecompiledDataTransform::EDirection::Save, TransformPolicy)
-			&& TransformPolicy.bTransform)
-		{
-			FAngelscriptModdingPrecompiledDataTransformRuntime::TransformBytes(
-				FAngelscriptModdingPrecompiledDataTransform::EDirection::Save, TransformPolicy, Data);
-		}
-	}
-                                                                                                     
-	return FFileHelper::SaveArrayToFile(Data, *Filename);
+	FFileHelper::SaveArrayToFile(Data, *Filename);
 }
 
-                                                                                                  
-bool FAngelscriptPrecompiledData::SaveModuleCacheSets(FString& OutError)
-{
-	if (ModuleDataGuids.IsEmpty())
-	{
-		return true;
-	}
 
-	TMap<FString, TArray<FAngelscriptPrecompiledCacheFile>> FilesByDirectory;
-	TSet<FGuid> SeenDataGuids;
-	for (const TPair<FString, FAngelscriptPrecompiledModule>& Pair : Modules)
-	{
-		const FGuid* ModuleGuid = ModuleDataGuids.Find(Pair.Key);
-		if (ModuleGuid == nullptr || !ModuleGuid->IsValid() || SeenDataGuids.Contains(*ModuleGuid))
-		{
-			OutError = FString::Printf(TEXT("missing or repeated module DataGuid for %s"), *Pair.Key);
-			return false;
-		}
-		SeenDataGuids.Add(*ModuleGuid);
 
-		FAngelscriptPrecompiledCacheFile Entry;
-		Entry.ModuleName = Pair.Key;
-		Entry.FileName = GetModuleCacheFilename(Pair.Key);
-		Entry.Dependencies = Pair.Value.Dependencies;
-		FilesByDirectory.FindOrAdd(GetModuleCacheDirectory(Pair.Value.ScriptRelativeFilename.UnrealString())).Add(MoveTemp(Entry));
-	}
-
-	TArray<FString> Directories;
-	FilesByDirectory.GetKeys(Directories);
-	Directories.Sort();
-	for (const FString& Directory : Directories)
-	{
-		IFileManager::Get().MakeDirectory(*Directory, true);
-		TArray<FAngelscriptPrecompiledCacheFile>& Entries = FilesByDirectory.FindChecked(Directory);
-		Entries.Sort([](const FAngelscriptPrecompiledCacheFile& A, const FAngelscriptPrecompiledCacheFile& B)
-		{
-			return A.ModuleName < B.ModuleName;
-		});
-
-		TArray<TSharedPtr<FJsonValue>> ManifestEntries;
-		for (const FAngelscriptPrecompiledCacheFile& Entry : Entries)
-		{
-			const FString CachePath = Directory / Entry.FileName;
-			if (IsAngelscriptExtensionProviderRegistered())
-			{
-				FString CacheError;
-				if (!PrepareAngelscriptExtensionCachePublish(
-						EAngelscriptExtensionCacheArtifactFamily::Precompiled,
-						CachePath,
-						CacheError))
-				{
-					OutError = FString::Printf(TEXT("%s: %s"), *CachePath, *CacheError);
-					return false;
-				}
-			}
-
-			FAngelscriptPrecompiledData ModuleData(Engine);
-			ModuleData.DataGuid = ModuleDataGuids.FindChecked(Entry.ModuleName);
-			ModuleData.BuildIdentifier = BuildIdentifier;
-			ModuleData.Modules.Add(Entry.ModuleName, Modules.FindChecked(Entry.ModuleName));
-			ModuleData.TypeReferences = TypeReferences;
-			ModuleData.TypeIdReferenceToPointer = TypeIdReferenceToPointer;
-			ModuleData.FunctionReferences = FunctionReferences;
-			ModuleData.FunctionIdReferenceToPointer = FunctionIdReferenceToPointer;
-			ModuleData.GlobalReferences = GlobalReferences;
-			ModuleData.PropertyReferences = PropertyReferences;
-			ModuleData.StaticNames = StaticNames;
-			if (!ModuleData.SaveSerialized(CachePath))
-			{
-				OutError = FString::Printf(TEXT("cache file was not written: %s"), *CachePath);
-				return false;
-			}
-
-			if (IsAngelscriptExtensionProviderRegistered())
-			{
-				FString CacheError;
-				if (!WriteAngelscriptExtensionCacheCompanion(
-						EAngelscriptExtensionCacheArtifactFamily::Precompiled,
-						CachePath,
-						CacheError))
-				{
-					OutError = FString::Printf(TEXT("%s: %s"), *CachePath, *CacheError);
-					return false;
-				}
-			}
-
-			TSharedPtr<FJsonObject> ManifestEntry = MakeShared<FJsonObject>();
-			ManifestEntry->SetStringField(TEXT("module"), Entry.ModuleName);
-			ManifestEntry->SetStringField(TEXT("file"), Entry.FileName);
-			ManifestEntry->SetStringField(TEXT("dataGuid"), ModuleDataGuids.FindChecked(Entry.ModuleName).ToString(EGuidFormats::Digits));
-			TArray<TSharedPtr<FJsonValue>> DependencyEntries;
-			for (const FString& DependencyName : Entry.Dependencies)
-				DependencyEntries.Add(MakeShared<FJsonValueString>(DependencyName));
-			ManifestEntry->SetArrayField(TEXT("dependencies"), DependencyEntries);
-			ManifestEntries.Add(MakeShared<FJsonValueObject>(ManifestEntry));
-		}
-
-		TSharedPtr<FJsonObject> Manifest = MakeShared<FJsonObject>();
-		Manifest->SetNumberField(TEXT("schemaVersion"), ModuleCacheManifestVersion);
-		Manifest->SetNumberField(TEXT("buildIdentifier"), BuildIdentifier);
-		Manifest->SetArrayField(TEXT("modules"), ManifestEntries);
-		FString ManifestContent;
-		const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&ManifestContent);
-		if (!FJsonSerializer::Serialize(Manifest.ToSharedRef(), Writer)
-			|| !FFileHelper::SaveStringToFile(ManifestContent, *(Directory / ModuleCacheManifestName)))
-		{
-			OutError = FString::Printf(TEXT("module cache manifest was not written: %s"), *(Directory / ModuleCacheManifestName));
-			return false;
-		}
-	}
-
-	return true;
-}
-                                                                                                
-
-                                                                                                  
-bool FAngelscriptPrecompiledData::ReadModuleCacheSet(
-	const FString& CacheDirectory,
-	TArray<FAngelscriptPrecompiledCacheFile>& OutFiles,
-	FString& OutError, const TArray<uint8>* VerifiedManifestBytes)
-{
-	OutFiles.Reset();
-	FString ManifestContent;
-	if (VerifiedManifestBytes) FFileHelper::BufferToString(ManifestContent, VerifiedManifestBytes->GetData(), VerifiedManifestBytes->Num());
-	else if (!FFileHelper::LoadFileToString(ManifestContent, *(CacheDirectory / ModuleCacheManifestName)))
-	{
-		OutError = TEXT("module cache manifest is missing or unreadable");
-		return false;
-	}
-
-	TSharedPtr<FJsonObject> Manifest;
-	if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(ManifestContent), Manifest) || !Manifest.IsValid())
-	{
-		OutError = TEXT("module cache manifest is malformed");
-		return false;
-	}
-	double SchemaVersion = 0.0;
-	const TArray<TSharedPtr<FJsonValue>>* Entries = nullptr;
-	if (!Manifest->TryGetNumberField(TEXT("schemaVersion"), SchemaVersion)
-		|| SchemaVersion != ModuleCacheManifestVersion
-		|| !Manifest->TryGetArrayField(TEXT("modules"), Entries)
-		|| Entries == nullptr
-		|| Entries->IsEmpty())
-	{
-		OutError = TEXT("module cache manifest has an unsupported schema or no modules");
-		return false;
-	}
-
-	TSet<FString> SeenModules;
-	TSet<FString> SeenFiles;
-	for (const TSharedPtr<FJsonValue>& Value : *Entries)
-	{
-		const TSharedPtr<FJsonObject> Entry = Value.IsValid() ? Value->AsObject() : nullptr;
-		FAngelscriptPrecompiledCacheFile CacheFile;
-		FString DataGuidText;
-		const TArray<TSharedPtr<FJsonValue>>* DependencyEntries = nullptr;
-		if (!Entry.IsValid()
-			|| !Entry->TryGetStringField(TEXT("module"), CacheFile.ModuleName)
-			|| CacheFile.ModuleName.IsEmpty()
-			|| !Entry->TryGetStringField(TEXT("file"), CacheFile.FileName)
-			|| !Entry->TryGetStringField(TEXT("dataGuid"), DataGuidText)
-			|| !Entry->TryGetArrayField(TEXT("dependencies"), DependencyEntries)
-			|| DependencyEntries == nullptr
-			|| !FGuid::ParseExact(DataGuidText, EGuidFormats::Digits, CacheFile.DataGuid)
-			|| !CacheFile.DataGuid.IsValid()
-			|| CacheFile.FileName.IsEmpty()
-			|| CacheFile.FileName != FPaths::GetCleanFilename(CacheFile.FileName)
-			|| !CacheFile.FileName.EndsWith(TEXT(".Cache"), ESearchCase::CaseSensitive)
-			|| SeenModules.Contains(CacheFile.ModuleName)
-			|| SeenFiles.Contains(CacheFile.FileName))
-		{
-			OutError = TEXT("module cache manifest contains an invalid or repeated entry");
-			OutFiles.Reset();
-			return false;
-		}
-		TSet<FString> SeenDependencies;
-		for (const TSharedPtr<FJsonValue>& DependencyValue : *DependencyEntries)
-		{
-			FString DependencyName;
-			if (!DependencyValue.IsValid()
-				|| !DependencyValue->TryGetString(DependencyName)
-				|| DependencyName.IsEmpty()
-				|| DependencyName == CacheFile.ModuleName
-				|| SeenDependencies.Contains(DependencyName))
-			{
-				OutError = TEXT("module cache manifest contains invalid dependencies");
-				OutFiles.Reset();
-				return false;
-			}
-			SeenDependencies.Add(DependencyName);
-			CacheFile.Dependencies.Add(MoveTemp(DependencyName));
-		}
-		SeenModules.Add(CacheFile.ModuleName);
-		SeenFiles.Add(CacheFile.FileName);
-		OutFiles.Add(MoveTemp(CacheFile));
-	}
-	return true;
-}
-                                                                                                
-
-                                                                                                                             
-void FAngelscriptPrecompiledData::Load(const FString& Filename, const TArray<uint8>* VerifiedBytes)
-                                                                                                                           
+void FAngelscriptPrecompiledData::Load(const FString& Filename)
 {
 	CachedPointerReferences.Reserve(32000);
 	ProcessedFunctionToId.Reserve(16000);
@@ -3432,33 +2747,11 @@ void FAngelscriptPrecompiledData::Load(const FString& Filename, const TArray<uin
 		FAngelscriptScopeTimer Timer(TEXT("read precompiled data from disk"));
                                                                                                  
 		BuildIdentifier = -1;
-		if (VerifiedBytes) LoadedData = *VerifiedBytes;
-		else if (!FFileHelper::LoadFileToArray(LoadedData, *Filename))
+		if (!FFileHelper::LoadFileToArray(LoadedData, *Filename))
 			return;
                                                                                                
 	}
 
-                                                                                                       
-	// Pre-deserialize verify + decrypt. ModKit parses the MKCC header, verifies
-	// the key binding and integrity, and writes plaintext back into LoadedData
-	// (FStringInArchive pointers reference this exact buffer). A rejection
-	// empties LoadedData: the deserialize below then no-ops on the empty
-	// archive, BuildIdentifier stays -1, IsValidForCurrentBuild() reports
-	// false and the caller falls back to source compilation (fail-closed).
-	// Empty registry = no action, upstream bytes flow through untouched.
-	{
-		FAngelscriptModdingPrecompiledDataTransform::FPolicy TransformPolicy;
-		if (FAngelscriptModdingPrecompiledDataTransformRuntime::GetPolicy(
-				FAngelscriptModdingPrecompiledDataTransform::EDirection::Load, TransformPolicy))
-		{
-			if (!FAngelscriptModdingPrecompiledDataTransformRuntime::TransformBytes(
-					FAngelscriptModdingPrecompiledDataTransform::EDirection::Load, TransformPolicy, LoadedData))
-			{
-				LoadedData.Reset();
-			}
-		}
-	}
-                                                                                                     
 
 	FMemoryReaderWithPtr Reader(LoadedData);
 	Reader.SetIsPersistent(true);
@@ -3473,69 +2766,7 @@ void FAngelscriptPrecompiledData::Load(const FString& Filename, const TArray<uin
 	}
                                                                                                    
 
-                                                                                                    
-	if (IsValidForCurrentBuild() && IsAngelscriptExtensionStageRegistered(EAngelscriptExtensionStage::TypeGeneration))
-	{
-		TArray<FAngelscriptCachedTypeMetadata> CachedTypes;
-		TArray<FString> NativeTypeNames;
-		for (const auto& Module : Modules)
-			for (const auto& Class : Module.Value.Classes)
-			{
-				if (Class.MetaSpec.Num() != Class.MetaValues.Num())
-				{
-					BuildIdentifier = -1;
-					UE_LOG(Angelscript, Error, TEXT("ASR-PRECOMPILED-EXTENSION-SCHEMA: incomplete class metadata"));
-					fprintf(stderr, "ASR-PRECOMPILED-EXTENSION-SCHEMA: incomplete class metadata; regenerate the script cache.\n");
-					fflush(stderr);
-					FPlatformMisc::RequestExitWithStatus(true, 1);
-					return;
-				}
-				auto& Cached = CachedTypes.AddDefaulted_GetRef();
-				Cached.ModuleName = Module.Key;
-				Cached.ClassName = Class.ClassName.UnrealString();
-				for (int32 Index = 0; Index < Class.MetaSpec.Num(); ++Index)
-					Cached.Metadata.Add(FName(*Class.MetaSpec[Index].UnrealString()), Class.MetaValues[Index].UnrealString());
-			}
-		for (const auto& Reference : TypeReferences)
-			if (Reference.Value.Module.Len() == 0) NativeTypeNames.Add(Reference.Value.Name.UnrealString());
-		FAngelscriptTypeGenerationContext Context;
-		Context.Point = EAngelscriptTypeGenerationPoint::RestoreCachedTypes;
-		Context.CachedTypes = &CachedTypes;
-		Context.CachedNativeTypeNames = &NativeTypeNames;
-		FString Error;
-		if (!DispatchAngelscriptTypeGeneration(Context, Error))
-		{
-			BuildIdentifier = -1;
-			UE_LOG(Angelscript, Error, TEXT("ASR-PRECOMPILED-EXTENSION-SCHEMA: %s"), *Error);
-			fprintf(stderr, "ASR-PRECOMPILED-EXTENSION-SCHEMA: %s\n", TCHAR_TO_UTF8(*Error));
-			fflush(stderr);
-			// Stop before any cached native references are resolved. A schema error
-			// is a startup rejection, not an assertion or a crash-reporting path.
-			FPlatformMisc::RequestExitWithStatus(true, 1);
-		}
-	}
-                                                                                                  
 
-                                                                                                       
-	// Post-deserialize inverse permutation: restore the original opcodes so
-	// the interpreter always sees the stock instruction stream. Runs only when
-	// a permuted policy was applied. Invalid or incomplete archive data must
-	// never be walked.
-	if (!Reader.IsError() && Reader.Tell() == Reader.TotalSize())
-	{
-		FAngelscriptModdingPrecompiledDataTransform::FPolicy TransformPolicy;
-		if (FAngelscriptModdingPrecompiledDataTransformRuntime::GetPolicy(
-				FAngelscriptModdingPrecompiledDataTransform::EDirection::Load, TransformPolicy)
-			&& TransformPolicy.bTransform
-			&& TransformPolicy.OpcodePermutation.Num() == 256)
-		{
-			CuvissForEachByteCodeArray(*this, [&TransformPolicy](FAngelscriptPrecompiledModule&, FAngelscriptPrecompiledFunction& Function, bool)
-			{
-				CuvissApplyOpcodePermutation(Function.ByteCode, TransformPolicy.OpcodePermutation, true);
-			});
-		}
-	}
-                                                                                                     
 }
 
 uint32 FAngelscriptPrecompiledData::CreateFunctionId(asIScriptFunction* Function)
@@ -3615,37 +2846,14 @@ TArray<TSharedRef<FAngelscriptModuleDesc>> FAngelscriptPrecompiledData::GetModul
 		FStringInArchive ClassName;
 	};
 
+                                                                                                                       
 	for (auto& Elem : Modules)
+                                                                                                                     
 	{
 		FAngelscriptPrecompiledModule& Module = Elem.Value;
 
 		ModuleDesc = MakeShared<FAngelscriptModuleDesc>();
 		ModuleDesc->ModuleName = Module.ModuleName.UnrealString();
-                                                                                                    
-		ModuleDesc->ScriptUnit.Id = Module.ScriptUnitId.UnrealString();
-		ModuleDesc->ScriptUnit.Layer = EAngelscriptScriptLayer(Module.ScriptLayer);
-		if (Module.ScriptLayer > uint8(EAngelscriptScriptLayer::Leaf) || ModuleDesc->ScriptUnit.Id.IsEmpty())
-			ModuleDesc->ScriptUnit.ConfigurationError = TEXT("Invalid cached script unit metadata");
-		for (const auto& Dependency : Module.ScriptUnitDependencies)
-			ModuleDesc->ScriptUnit.Dependencies.Add(Dependency.UnrealString());
-                                                                                                  
-		                                                                                                  
-		ModuleDesc->PrecompiledData = &Module;
-		ModuleDesc->PrecompiledDataContext = this;
-		const bool bIsModCacheModule = ModuleDesc->ModuleName.StartsWith(TEXT("Mods."))
-			|| ModuleDesc->ModuleName.StartsWith(TEXT("FeatureMods."))
-			|| ModuleDesc->ModuleName.StartsWith(TEXT("Plugins.FeatureMods."))
-			|| ModuleDesc->ModuleName.Contains(TEXT(".FeatureMods."))
-			|| ModuleDesc->ScriptUnit.Layer == EAngelscriptScriptLayer::Leaf;
-		if (bIsModCacheModule && Module.ScriptRelativeFilename.Len() != 0)
-		{
-			FAngelscriptModuleDesc::FCodeSection CachedSourceSection;
-			CachedSourceSection.RelativeFilename = Module.ScriptRelativeFilename.UnrealString();
-			CachedSourceSection.AbsoluteFilename = FPaths::ConvertRelativePathToFull(
-				FPaths::ProjectDir() / CachedSourceSection.RelativeFilename);
-			ModuleDesc->Code.Add(MoveTemp(CachedSourceSection));
-		}
-		                                                                                                
 
 		// * Handle any functions that need to be called post init
 		for (FStringInArchive& FunctionStr : Module.PostInitFunctions)
@@ -3822,10 +3030,6 @@ TSharedPtr<FAngelscriptFunctionDesc> FAngelscriptPrecompiledFunction::MakeDesc()
 
 	FunctionDesc->bBlueprintCallable = bBlueprintCallable;
 	FunctionDesc->bBlueprintOverride = bBlueprintOverride;
-                                                                                                                                                 
-	if (bBlueprintOverride)
-		FunctionDesc->OriginalFunctionName = UnrealFunctionName.UnrealString();
-                                                                                                                                               
 	FunctionDesc->bBlueprintEvent = bBlueprintEvent;
 	FunctionDesc->bBlueprintPure = bBlueprintPure;
 	FunctionDesc->bNetFunction = bNetFunction;

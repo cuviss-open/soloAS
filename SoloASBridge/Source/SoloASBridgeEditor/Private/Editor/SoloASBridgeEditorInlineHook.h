@@ -12,6 +12,7 @@ namespace SoloASBridge::Editor
 struct FEditorInlineHookHandle
 {
 	void* Original = nullptr;
+	void* InstallationTarget = nullptr;
 	UPTRINT TargetModuleStart = 0;
 	UPTRINT TargetModuleEnd = 0;
 	bool IsCallerInTargetModule(const void* Caller) const

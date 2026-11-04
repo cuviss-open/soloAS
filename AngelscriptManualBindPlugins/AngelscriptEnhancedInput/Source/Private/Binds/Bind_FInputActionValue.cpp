@@ -39,7 +39,10 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_FInputActionValue(FAngelscript
 	FInputActionValue_.Method("FInputActionValue opMulAssign(float32 Scalar)", METHODPR_TRIVIAL(FInputActionValue&, FInputActionValue, operator*=, (float)));
                                                                                                                                                     
 #endif
-	FInputActionValue_.Method("FInputActionValue& opMulAssign(float32 Scalar)", METHODPR_TRIVIAL(FInputActionValue&, FInputActionValue, operator*=, (float)));
+	FInputActionValue_.Method("FInputActionValue opMulAssign(float32 Scalar)", [](FInputActionValue* Value, float Scalar) -> FInputActionValue
+	{
+		return *Value *= Scalar;
+	});
                                                                                                                                                   
 
 	FInputActionValue_.Method("bool IsNonZero(float32 Tolerance = KINDA_SMALL_NUMBER) const", METHOD_TRIVIAL(FInputActionValue, IsNonZero));

@@ -1,7 +1,7 @@
 # Upstream snapshot / 上游快照
 
 - soloAS version / soloAS 版本：**0.1.2**。
-- Current adaptation / 当前适配：**UE 5.8.4**。
+Supported engines: **UE 5.8.4 (latest patch only; earlier patches may work without guarantee), UE 5.7 (frozen at its final patch), UE 5.6 (frozen at its final patch), UE 5.5 (frozen at its final patch), UE 5.4 (frozen at its final patch)**.
 - These are the original snapshots used for this adaptation. / 以下为本次适配所基于的原版快照。
 
 ## Epic Unreal Engine / Epic 虚幻引擎
@@ -14,7 +14,7 @@
 
 - The UE source repository is private; access requires an Epic account linked to GitHub. / UE 源码仓库为私有仓库，需要关联 Epic 账号与 GitHub 才能访问。
 
-## Hazelight's UE fork (the Haze fork) / Hazelight 的 UE 分支（Haze fork）
+## UE-AS fork (UnrealEngine-Angelscript, maintained by Hazelight) / UE-AS fork（UnrealEngine-Angelscript，由 Hazelight 维护）
 
 - Documentation / 使用文档：[AngelScript documentation](https://angelscript.hazelight.se/).
 - Repository / 仓库：https://github.com/Hazelight/UnrealEngine-Angelscript.git

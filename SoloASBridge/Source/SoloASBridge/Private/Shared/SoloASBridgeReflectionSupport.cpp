@@ -248,34 +248,4 @@ void ClearAllReflectionTraits()
 
 namespace SoloASBridge
 {
-void RegisterBindingClassTraits(UClass* Class, FName Owner, bool bScriptCallable, UClass* NativeTarget)
-{
-    for (TFieldIterator<UFunction> Function(Class, EFieldIteratorFlags::ExcludeSuper); Function; ++Function)
-    {
-        if (bScriptCallable)
-        {
-            const bool bRegistered = SetFunctionTraits(*Function, Owner, ESoloASBridgeFunctionTrait::ScriptCallable);
-            check(bRegistered);
-            if (NativeTarget)
-                if (UFunction* Native = NativeTarget->FindFunctionByName((*Function)->GetFName()))
-                    { const bool bNativeRegistered = SetFunctionTraits(Native, Owner, ESoloASBridgeFunctionTrait::ScriptCallable); check(bNativeRegistered); }
-        }
-        for (TFieldIterator<FProperty> Parameter(*Function); Parameter; ++Parameter)
-        {
-            if (Parameter->HasAnyPropertyFlags(CPF_Parm)
-                && !Parameter->HasAnyPropertyFlags(CPF_ReturnParm)
-                && Parameter->HasAnyPropertyFlags(CPF_OutParm | CPF_ReferenceParm))
-                { const bool bParameterRegistered = SetPropertyTraits(*Parameter, Owner, ESoloASBridgePropertyTrait::CppRef); check(bParameterRegistered); }
-        }
-    }
-}
-
-void RegisterBindingModuleReferenceTraits(FName Module, FName Owner)
-{
-    const FName Package(*FString::Printf(TEXT("/Script/%s"), *Module.ToString()));
-    for (TObjectIterator<UClass> Class; Class; ++Class)
-        if (Class->GetOutermost()->GetFName() == Package)
-            RegisterBindingClassTraits(*Class, Owner, false);
-}
-
 }

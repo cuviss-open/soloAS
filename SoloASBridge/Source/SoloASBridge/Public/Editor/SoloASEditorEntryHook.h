@@ -1,6 +1,7 @@
 // Copyright Cuviss Studio. All Rights Reserved.
 #pragma once
 #include "CoreMinimal.h"
+#include "SoloASEngineCompat.h"
 #include "Modules/ModuleManager.h"
 #if WITH_EDITOR && !IS_MONOLITHIC && (PLATFORM_WINDOWS || PLATFORM_MAC)
 #include "HAL/PlatformProcess.h"
@@ -8,6 +9,17 @@
 #include "Windows/AllowWindowsPlatformTypes.h"
 #include <Windows.h>
 #include <processsnapshot.h>
+// SOLOAS-COMPAT-BEGIN(<5.7) UE 5.6 NTDDI hides declarations of supported Windows 8.1 PSS exports [test: SoloAS.EditorHookInstallation] [id: CS.Compatibility.Bridge.SoloASEditorEntryHook.WindowsPssDeclarations]
+#if SOLOAS_UE_BEFORE(5, 7)
+extern "C" {
+__declspec(dllimport) DWORD WINAPI PssCaptureSnapshot(HANDLE, PSS_CAPTURE_FLAGS, DWORD, HPSS*);
+__declspec(dllimport) DWORD WINAPI PssFreeSnapshot(HANDLE, HPSS);
+__declspec(dllimport) DWORD WINAPI PssWalkMarkerCreate(const PSS_ALLOCATOR*, HPSSWALK*);
+__declspec(dllimport) DWORD WINAPI PssWalkMarkerFree(HPSSWALK);
+__declspec(dllimport) DWORD WINAPI PssWalkSnapshot(HPSS, PSS_WALK_INFORMATION_CLASS, HPSSWALK, void*, DWORD);
+}
+#endif
+// SOLOAS-COMPAT-END
 #include <detours/detours.h>
 #include <intrin.h>
 #include "Windows/HideWindowsPlatformTypes.h"
@@ -29,6 +41,24 @@
 
 namespace SoloASBridge::Editor
 {
+// Installation records only; no tick, module observer, or hot-path instrumentation.
+struct FEditorHookInstallation
+{
+    FString Target, Module, Mode;
+    void* Address = nullptr;
+    void* Original = nullptr;
+    void* Replacement = nullptr;
+    void** Slot = nullptr;
+    bool bResolved = false;
+    bool bInstalled = false;
+};
+SOLOASBRIDGE_API void RecordEditorHookInstallation(const TCHAR* Target, const TCHAR* Module,
+    const TCHAR* Mode, void* Address, void* Original, void* Replacement, void** Slot = nullptr);
+SOLOASBRIDGE_API void ForgetEditorHookInstallation(const void* Address, const TCHAR* Target = nullptr);
+SOLOASBRIDGE_API void ForgetEditorHookModule(FName ModuleName);
+SOLOASBRIDGE_API TArray<FEditorHookInstallation> GetEditorHookInstallations();
+SOLOASBRIDGE_API bool IsEditorHookJumpTo(const void* Address, const void* Replacement);
+
 FORCEINLINE const void* GetEditorHookCallerAddress()
 {
 #if PLATFORM_WINDOWS
@@ -156,9 +186,21 @@ public:
         EngineFunctionName = WindowsSymbol;
         MacFunctionName = MacSymbol;
         RedirectAddress = Replacement;
-        return InstallHook();
+        const bool bInstalled = InstallHook();
+        SoloASBridge::Editor::RecordEditorHookInstallation(WindowsSymbol, WindowsLibrary,
+            TEXT("entry"), InstalledTarget, GOriginalAddress, Replacement);
+        return bInstalled;
     }
-    void Remove() { RemoveHook(); }
+    void Remove()
+    {
+        void* Target = InstalledTarget;
+        RemoveHook();
+        if (!GOriginalAddress)
+        {
+            SoloASBridge::Editor::ForgetEditorHookInstallation(Target);
+            InstalledTarget = nullptr;
+        }
+    }
     void* Original() const { return GOriginalAddress; }
     bool IsCallerInTargetModule(const void* Caller) const
     {
@@ -167,6 +209,7 @@ public:
     }
 private:
     void* GOriginalAddress = nullptr;
+    void* InstalledTarget = nullptr;
     void* RedirectAddress = nullptr;
     const TCHAR* EngineLibraryName = nullptr;
     const char* MacLibraryName = nullptr;
@@ -179,6 +222,23 @@ private:
 
     bool UpdateThreads(TArray<HANDLE>& Handles)
     {
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 targets an SDK NTDDI below WinBlue, hiding PSS declarations [test: SoloAS.EditorEntryHookThreadSnapshot] [id: CS.Compatibility.Bridge.SoloASEditorEntryHook.WindowsPssDynamicExports]
+#if SOLOAS_UE_BEFORE(5, 5)
+        const HMODULE Kernel = GetModuleHandleW(L"kernel32.dll");
+        const auto PssCaptureSnapshot = reinterpret_cast<DWORD (WINAPI*)(HANDLE, PSS_CAPTURE_FLAGS, DWORD, HPSS*)>(
+            GetProcAddress(Kernel, "PssCaptureSnapshot"));
+        const auto PssFreeSnapshot = reinterpret_cast<DWORD (WINAPI*)(HANDLE, HPSS)>(
+            GetProcAddress(Kernel, "PssFreeSnapshot"));
+        const auto PssWalkMarkerCreate = reinterpret_cast<DWORD (WINAPI*)(const PSS_ALLOCATOR*, HPSSWALK*)>(
+            GetProcAddress(Kernel, "PssWalkMarkerCreate"));
+        const auto PssWalkMarkerFree = reinterpret_cast<DWORD (WINAPI*)(HPSSWALK)>(
+            GetProcAddress(Kernel, "PssWalkMarkerFree"));
+        const auto PssWalkSnapshot = reinterpret_cast<DWORD (WINAPI*)(HPSS, PSS_WALK_INFORMATION_CLASS, HPSSWALK, void*, DWORD)>(
+            GetProcAddress(Kernel, "PssWalkSnapshot"));
+        if (!PssCaptureSnapshot || !PssFreeSnapshot || !PssWalkMarkerCreate || !PssWalkMarkerFree || !PssWalkSnapshot)
+            return false;
+#endif
+// SOLOAS-COMPAT-END
         HPSS Snapshot = nullptr;
         if (PssCaptureSnapshot(GetCurrentProcess(), PSS_CAPTURE_THREADS, 0, &Snapshot) != ERROR_SUCCESS)
             return false;
@@ -236,6 +296,7 @@ private:
 			return false;
 		}
 
+		InstalledTarget = Target;
 		GOriginalAddress = Target;
 		LONG Result = DetourTransactionBegin();
 		if (Result != NO_ERROR)
@@ -571,6 +632,7 @@ private:
 		UPTRINT ModuleStart = 0, ModuleEnd = 0;
 		if (!SoloASBridge::Editor::GetEditorHookModuleRange(Target, ModuleStart, ModuleEnd))
 			return false;
+		InstalledTarget = Target;
 		if (!AllocateTrampoline(static_cast<const uint8*>(Target)))
 			return false;
 

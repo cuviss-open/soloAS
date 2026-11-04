@@ -1,4 +1,7 @@
 #include "AngelscriptBinds.h"
+                                                                                                       
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                     
 #include "AngelscriptManager.h"
 #include "AngelscriptType.h"
 #include "AngelscriptDocs.h"
@@ -9,11 +12,14 @@
                                                                                            
 #include "AngelscriptCallableDispatchAdapter.h"
 #include "Shared/SoloASBridgeReflection.h"
+#include "AngelscriptReflectionAdapter.h"
                                                                                          
 
 #include "UObject/UObjectIterator.h"
 #include "UObject/UnrealType.h"
+                                                                                                                        
 #include "Misc/PackageName.h"
+                                                                                                                      
                                                                                                                                   
 #include "Kismet/KismetMathLibrary.h"
                                                                                                                                 
@@ -60,6 +66,11 @@ void BindBlueprintCallable(
 		return;
                                                                                                   
 
+                                                                                                       
+	if (SoloASBridge::Compat::IsReplacedScriptTimer(Function))
+		return;
+                                                                                                     
+
                                                                                         
     // Bridge owns exclusion data; registration must check it here because a
     // native reflected function can enter through Blueprint flags or ScriptCallable.
@@ -83,6 +94,28 @@ void BindBlueprintCallable(
 #endif
 
 	UClass* OwningClass = CastChecked<UClass>(Function->GetOuter());
+                                                                                                   
+	// UE-AS fork UHT emits ERASE_NO_FUNCTION for native interface declarations.
+	if (OwningClass->HasAnyClassFlags(CLASS_Interface)
+		|| IsAngelscriptNativeCallerExcluded(Function)
+		|| Function->HasAnyFunctionFlags(FUNC_NetRequest))
+		return;
+#if WITH_METADATA
+	// Loaded engine plugins may be outside the consuming target's UHT session.
+	// Their wildcard metadata still identifies thunk-only placeholder signatures.
+	if (Function->HasMetaData(TEXT("CustomStructureParam"))
+		|| Function->HasMetaData(TEXT("ArrayParm"))
+		|| Function->HasMetaData(TEXT("MapParam"))
+		|| Function->HasMetaData(TEXT("SetParam")))
+		return;
+#endif
+	for (TFieldIterator<FProperty> It(Function); It && It->HasAnyPropertyFlags(CPF_Parm); ++It)
+	{
+		// GetOriginalCppDeclaration rejects these shapes before emitting CallerPtr.
+		if (It->ArrayDim > 1 || It->IsA<FInterfaceProperty>())
+			return;
+	}
+                                                                                                 
                                                                                                   
 #if 0
                                                                                                 

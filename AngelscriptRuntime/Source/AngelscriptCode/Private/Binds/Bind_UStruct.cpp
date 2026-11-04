@@ -1,4 +1,7 @@
 #include "Engine/NetSerialization.h"
+                                                                                                           
+#include "Compat/SoloASRuntimeCompat.h"
+                                                                                                         
                                                                                                                    
 #include "ClassGenerator/AngelscriptPropertyInitialization.h"
                                                                                                                  
@@ -30,6 +33,7 @@
 #if WITH_EDITOR
 extern ANGELSCRIPTCODE_API bool IsEditorOnlyStruct(UStruct* Struct);
 #endif
+
 
 static const FName NAME_Struct_Tooltip("ToolTip");
 static const FName NAME_Struct_MetaDebuggable("ScriptDebuggable");
@@ -187,7 +191,9 @@ struct FUStructType : FAngelscriptType
                                                                                                                          
 #if 0
                                                                                                                        
+                                                                                                              
 		auto* StructProp = new FStructProperty(Params.Outer, Params.PropertyName, RF_Public);
+                                                                                                            
                                                                                                                   
 #endif
 		auto* StructProp = CreateAngelscriptStructProperty(Params.Outer, Params.PropertyName);
@@ -690,8 +696,13 @@ struct FUStructType : FAngelscriptType
 		}
 	}
 
+                                                                                                   
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 native structs use the ordinary optional representation [test: ASRegression]
 	bool HasIntrusiveUnsetOptionalState(const FAngelscriptTypeUsage& Usage) const override
 	{
+#if SOLOAS_UE_BEFORE(5, 5)
+        return false;
+#else
 		UScriptStruct* UsedStruct = GetStruct(Usage);
 		if (UsedStruct == nullptr)
 			return false;
@@ -700,6 +711,7 @@ struct FUStructType : FAngelscriptType
 			return CppStructOps->HasIntrusiveUnsetOptionalState();
 		}
 		return false;
+#endif
 	}
 
 	void InitializeIntrusiveUnsetOptionalValue(const FAngelscriptTypeUsage& Usage, void* OptionalPtr) const override
@@ -707,7 +719,11 @@ struct FUStructType : FAngelscriptType
 		UScriptStruct* UsedStruct = GetStruct(Usage);
 		if (UScriptStruct::ICppStructOps* CppStructOps = UsedStruct->GetCppStructOps())
 		{
+			#if SOLOAS_UE_AT_LEAST(5, 5)
 			CppStructOps->InitializeIntrusiveUnsetOptionalValue(OptionalPtr);
+#else
+            checkNoEntry();
+#endif
 		}
 		else
 		{
@@ -720,7 +736,11 @@ struct FUStructType : FAngelscriptType
 		UScriptStruct* UsedStruct = GetStruct(Usage);
 		if (UScriptStruct::ICppStructOps* CppStructOps = UsedStruct->GetCppStructOps())
 		{
+			#if SOLOAS_UE_AT_LEAST(5, 5)
 			return CppStructOps->IsIntrusiveOptionalValueSet(OptionalPtr);
+#else
+            checkNoEntry(); return false;
+#endif
 		}
 		else
 		{
@@ -734,13 +754,19 @@ struct FUStructType : FAngelscriptType
 		UScriptStruct* UsedStruct = GetStruct(Usage);
 		if (UScriptStruct::ICppStructOps* CppStructOps = UsedStruct->GetCppStructOps())
 		{
+			#if SOLOAS_UE_AT_LEAST(5, 5)
 			CppStructOps->ClearIntrusiveOptionalValue(OptionalPtr);
+#else
+            checkNoEntry();
+#endif
 		}
 		else
 		{
 			check(false);
 		}
 	}
+// SOLOAS-COMPAT-END
+                                                                                                 
 };
 
 static void BindStructBehaviors(FAngelscriptBinds& Binds, const FString& TypeName, UScriptStruct* Struct)
@@ -931,6 +957,7 @@ void BindStaticStruct(const FString& TypeName, UScriptStruct* Struct)
 	}
 }
 
+
 static void BindStructTypeLookups()
 {
 	// Script structs should be generically typed
@@ -1043,7 +1070,9 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_StructDetails(FAngelscriptBind
 					}
 					else if (auto* EnumProperty = CastField<FEnumProperty>(Property))
 					{
-						if (EnumProperty->GetElementSize() == 4)
+                                                                                                     
+						if (SoloASBridge::Compat::GetPropertyElementSize(EnumProperty) == 4)
+                                                                                                   
 						{
 							Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_ByteExtendToDWord, FAngelscriptBindHelpers::SetValueFromProperty_NativeByteExtendToDWord), (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 							FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
@@ -1054,17 +1083,23 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_StructDetails(FAngelscriptBind
 							FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
 						}
 					}
-					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && Property->GetElementSize() == 1)
+                                                                                                     
+					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && SoloASBridge::Compat::GetPropertyElementSize(Property) == 1)
+                                                                                                   
 					{
 						Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_Byte, FAngelscriptBindHelpers::SetValueFromProperty_NativeByte), (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 						FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
 					}
-					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && Property->GetElementSize() == 4)
+                                                                                                     
+					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && SoloASBridge::Compat::GetPropertyElementSize(Property) == 4)
+                                                                                                   
 					{
 						Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_DWord, FAngelscriptBindHelpers::SetValueFromProperty_NativeDWord), (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 						FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
 					}
-					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && Property->GetElementSize() == 8)
+                                                                                                     
+					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && SoloASBridge::Compat::GetPropertyElementSize(Property) == 8)
+                                                                                                   
 					{
 						Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_QWord, FAngelscriptBindHelpers::SetValueFromProperty_NativeQWord), (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 						FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
@@ -1462,7 +1497,9 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_StructDetails((int32)FAngelscr
 					}
 					else if (auto* EnumProperty = CastField<FEnumProperty>(Property))
 					{
-						if (EnumProperty->GetElementSize() == 4)
+                                                                                                     
+						if (SoloASBridge::Compat::GetPropertyElementSize(EnumProperty) == 4)
+                                                                                                   
 						{
 							Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_ByteExtendToDWord, FAngelscriptBindHelpers::SetValueFromProperty_NativeByteExtendToDWord), Params, (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 							FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
@@ -1473,17 +1510,23 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_StructDetails((int32)FAngelscr
 							FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
 						}
 					}
-					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && Property->GetElementSize() == 1)
+                                                                                                     
+					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && SoloASBridge::Compat::GetPropertyElementSize(Property) == 1)
+                                                                                                   
 					{
 						Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_Byte, FAngelscriptBindHelpers::SetValueFromProperty_NativeByte), Params, (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 						FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
 					}
-					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && Property->GetElementSize() == 4)
+                                                                                                     
+					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && SoloASBridge::Compat::GetPropertyElementSize(Property) == 4)
+                                                                                                   
 					{
 						Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_DWord, FAngelscriptBindHelpers::SetValueFromProperty_NativeDWord), Params, (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 						FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();
 					}
-					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && Property->GetElementSize() == 8)
+                                                                                                     
+					else if (Property->HasAnyPropertyFlags(CPF_IsPlainOldData) && SoloASBridge::Compat::GetPropertyElementSize(Property) == 8)
+                                                                                                   
 					{
 						Binds.Method(Decl, FUNC_TRIVIAL_CUSTOMNATIVE(FAngelscriptBindHelpers::SetValueFromProperty_QWord, FAngelscriptBindHelpers::SetValueFromProperty_NativeQWord), Params, (void*)(SIZE_T)Property->GetOffset_ForUFunction());
 						FAngelscriptBinds::PreviousBindPassScriptFunctionAsFirstParam();

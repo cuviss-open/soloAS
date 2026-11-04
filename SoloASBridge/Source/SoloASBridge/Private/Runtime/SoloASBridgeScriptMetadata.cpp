@@ -3,6 +3,8 @@
 #include "HAL/CriticalSection.h"
 #include "Misc/ScopeLock.h"
 #include "Modules/ModuleManager.h"
+#include "UObject/Class.h"
+#include "SoloASBridgeScriptMetadata.native-returns.h"
 
 namespace
 {
@@ -204,7 +206,8 @@ TSharedRef<const FSoloASBridgeScriptMetadata, ESPMode::ThreadSafe> SoloASBridge:
         };
         Deduplicate(Data->Functions, FunctionKey, [](const auto&, const auto&) { return true; });
         Deduplicate(Data->FunctionTraits, FunctionKey,
-            [](const auto& Left, const auto& Right) { return Left.Traits == Right.Traits; });
+            [](const auto& Left, const auto& Right) { return Left.Traits == Right.Traits
+                && Left.NativeReferenceCaller == Right.NativeReferenceCaller; });
         Deduplicate(Data->DefaultArguments, [&](const auto& Left, const auto& Right)
         {
             return FunctionKey(Left, Right) && Left.ParameterOrdinal == Right.ParameterOrdinal;

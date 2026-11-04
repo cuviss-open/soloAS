@@ -29,7 +29,14 @@ struct FNameType : TAngelscriptPODPropertyType<FNameProperty>
 		}
 		else
 		{
+                                                                                                     
+#if 0
+                                                                                                   
 			OutValue = FString::Printf(TEXT("FName(\"%s\")"), *OutValue);
+                                                                                        
+#endif
+			OutValue = FString::Printf(TEXT("FName(\"%s\")"), *InValue);
+                                                                                      
 			return true;
 		}
 	}

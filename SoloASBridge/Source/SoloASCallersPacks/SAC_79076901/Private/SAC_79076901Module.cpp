@@ -1,0 +1,14 @@
+#include "Modules/ModuleManager.h"
+
+void SAC_79076901_Register();
+void SAC_79076901_Unregister();
+
+class FSAC_79076901Module : public IModuleInterface
+{
+public:
+    void StartupModule() override { SAC_79076901_Register(); }
+    void ShutdownModule() override { SAC_79076901_Unregister(); }
+    bool SupportsDynamicReloading() override { return false; }
+};
+
+IMPLEMENT_MODULE(FSAC_79076901Module, SAC_79076901)

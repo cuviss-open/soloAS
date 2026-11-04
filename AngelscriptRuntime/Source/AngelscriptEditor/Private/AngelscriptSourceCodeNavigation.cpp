@@ -1,7 +1,4 @@
 #include "SourceCodeNavigation.h"
-                                                                                                  
-#include "Editor/SoloASBridgeSourceNavigation.h"
-                                                                                                
 #include "AngelscriptEditorModule.h"
 #include "AngelscriptManager.h"
 #include "ClassGenerator/ASClass.h"
@@ -127,10 +124,6 @@ public:
 
 	void OpenFile(const FString& Path, int LineNo = -1)
 	{
-                                                                                                        
-		if (SoloASBridge::TryInterceptScriptSourceNavigation(Path, LineNo))
-			return;
-                                                                                                      
 		if (LineNo != -1)
 			FAngelscriptEditorModule::OpenVsCode(FString::Printf(TEXT("--goto \"%s:%d\""), *Path, LineNo));
 		else

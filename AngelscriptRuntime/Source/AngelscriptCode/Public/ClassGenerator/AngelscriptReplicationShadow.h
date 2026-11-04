@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright Cuviss Studio. All Rights Reserved.
 #pragma once
+#include "SoloASEngineCompat.h"
 
 #include "CoreMinimal.h"
 #include "Engine/BlueprintGeneratedClass.h"
@@ -8,14 +9,18 @@
 
 class UASClass;
 
-UCLASS(Transient, NotBlueprintable)
+UCLASS(Transient, NotBlueprintable, meta = (NotInAngelscript))
 class ANGELSCRIPTCODE_API USoloASReplicationLayoutClass final : public UBlueprintGeneratedClass
 {
     GENERATED_BODY()
 public:
     TObjectPtr<UASClass> SourceClass;
     virtual void Bind() override;
+                                                                                                                                                 
+#if SOLOAS_UE_AT_LEAST(5, 7)
     virtual EStructPropertyLinkFlags GetPropertyLinkFlags(UStruct* Container, FProperty* Property) const override;
+#endif
+// SOLOAS-COMPAT-END
     virtual bool IsFunctionImplementedInScript(FName Name) const override;
     virtual UObject* CreateDefaultObject() override;
     virtual void InitPropertiesFromCustomList(uint8* Data, const uint8* Defaults) override;

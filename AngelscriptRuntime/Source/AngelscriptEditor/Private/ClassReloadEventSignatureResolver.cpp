@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "ClassReloadEventSignatureResolver.h"
+#include "SoloASEngineCompat.h"
 
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraphSchema_K2.h"
@@ -27,7 +28,13 @@ UFunction* ResolveClassReloadEventSignature(const UK2Node_Event* EventNode)
 		return nullptr;
 	}
 
+// SOLOAS-COMPAT-BEGIN(<5.5) UE 5.4 exposes the same custom-event pin through FindPin [test: SoloAS.EventSignatureReload] [id: CS.Compatibility.Runtime.ClassReloadEventSignatureResolver.CustomEventDelegatePin]
+#if SOLOAS_UE_BEFORE(5, 5)
+	const UEdGraphPin* DelegateOutput = CustomEvent->FindPin(UK2Node_Event::DelegateOutputName, EGPD_Output);
+#else
 	const UEdGraphPin* DelegateOutput = CustomEvent->GetDelegatePin();
+#endif
+// SOLOAS-COMPAT-END
 	if (DelegateOutput == nullptr)
 	{
 		return nullptr;

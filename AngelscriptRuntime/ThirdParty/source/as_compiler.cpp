@@ -58,9 +58,6 @@
 #include "AngelscriptCodeModule.h"
 #include "AngelscriptManager.h"
 #include "AngelscriptSettings.h"
-                                                                                                   
-#include "Extensions/NativeEventSuper/AngelscriptNativeEventSuperThirdParty.h"
-                                                                                                 
 
 BEGIN_AS_NAMESPACE
 
@@ -2904,10 +2901,6 @@ asUINT asCCompiler::MatchFunctions(asCArray<int> &funcs, asCArray<asCExprContext
 			}
 		}
 
-                                                                                                       
-		Cuviss::NativeEventSuper::PostProcessCompiler(
-			*builder, scope == "Super", matchingFuncs);
-                                                                                                     
 		// Select the overload(s) with the lowest overall cost
 		funcs.SetLength(0);
 		asUINT bestCost = asUINT(-1);
@@ -7872,10 +7865,6 @@ asUINT asCCompiler::ImplicitConvPrimitiveToPrimitive(asCExprContext *ctx, const 
 			asDWORD value;
 			if( builder->GetEnumValueFromType(CastToEnumType(to.GetTypeInfo()), ctx->enumValue.AddressOf(), out, value) )
 			{
-                                                                                                             
-				builder->MarkDependency(to.GetTypeInfo(), ctx->exprNode, script);
-				builder->MarkHardValueDependency(to.GetTypeInfo()->module, ctx->exprNode, script);
-                                                                                                           
 				ctx->type.SetConstantDW(out, value);
 				ctx->type.dataType.MakeReadOnly(to.IsReadOnly());
 
@@ -11881,10 +11870,6 @@ int asCCompiler::CompileVariableAccess(const asCString &name, const asCString &s
 				// Even if the enum type is not shared, and we're compiling a shared object,
 				// the use of the values are still allowed, since they are treated as constants.
 
-                                                                                                           
-				builder->MarkDependency(dt.GetTypeInfo(), errNode, script);
-				builder->MarkHardValueDependency(dt.GetTypeInfo()->module, errNode, script);
-                                                                                                         
 				// an enum value was resolved
 				ctx->type.SetConstantB(dt, (asBYTE)value);
 			}

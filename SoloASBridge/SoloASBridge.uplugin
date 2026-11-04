@@ -1,7 +1,7 @@
 {
   "FileVersion": 3,
-  "Version": 3,
-  "VersionName": "0.1.2+ue5.8.4",
+  "Version": 4,
+  "VersionName": "0.1.3",
   "FriendlyName": "SoloAS Bridge",
   "Description": "Compatibility bridge for AngelScript-compatible consumers and an unmodified Unreal Engine.",
   "Category": "Scripting",
@@ -12,15 +12,1261 @@
   "Installed": false,
   "Plugins": [
     {
+      "Name": "StateTree",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
       "Name": "DataValidation",
       "Enabled": true
     },
     {
-      "Name": "StateTree",
-      "Enabled": true
+      "Name": "AMFCodecs",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ARUtilities",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AVCodecsCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ActorLayerUtilities",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ActorModifier",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ActorModifierCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AdvancedRenamer",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AnalyticsBlueprintLibrary",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AnimDatabase",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AnimGen",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AnimationModifierLibrary",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AnimationWarping",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AppleARKit",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AppleARKitFaceSupport",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AppleImageUtils",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AudioCapture",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AudioGameplay",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AudioMotorSim",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AudioSynesthesia",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AudioWidgets",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Avalanche",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "BackChannel",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "BaseCharacterFXEditor",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "BinkMedia",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "BlendStack",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "BlueprintMaterialTextureNodes",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Buoyancy",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "CameraCalibrationCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "CaptureData",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "CaptureManagerApp",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "CaptureManagerCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "CaptureManagerEditor",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ChaosCaching",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ChaosCloth",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ChaosClothAsset",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ChaosClothAssetDataflowNodes",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ChaosClothAssetEditor",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ChaosClothAssetEditorCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ChaosMover",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ChaosOutfitAsset",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ChaosSolverPlugin",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ChaosUserDataPT",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ChaosVD",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ChaosVehiclesPlugin",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Chooser",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "CineCameraSceneCapture",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ClonerEffector",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ColorGrading",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "CommonUI",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Composite",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "CompositeCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Composure",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ComputeFramework",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ConcertClientSharedSlate",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ConcertMain",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ConcertReplicationScripting",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ConcertSharedSlate",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ConcertSyncClient",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ConcertSyncCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ConsoleVariables",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ContentBrowserAssetDataSource",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ContentBrowserFileDataSource",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ContextualAnimation",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ControlFlows",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ControlRig",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "CustomDetailsView",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "D3D12VideoDecodersElectra",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "DNACalib",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "DataRegistry",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Dataflow",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "DataprepEditor",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "DatasmithContent",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "DeformerGraph",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "DiscoveryBeaconReceiver",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "DrawDebugLibrary",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "DynamicMaterial",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "EOSShared",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "EditorDataStorage",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "EditorDataStorageFeatures",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "EditorScriptingUtilities",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ElectraCDM",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ElectraCodecs",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ElectraPlayer",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ElectraSubtitles",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ElectraUtil",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "EngineAssetDefinitions",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "EnhancedInput",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "EvaluationNotifies",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "FileSandbox",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Fracture",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "FullBodyIK",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GameInput",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GameplayAbilities",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GameplayCameras",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GameplayInsights",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GameplayTagsEditor",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GeneSplicer",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GeometryCache",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GeometryCollectionPlugin",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GeometryDataflow",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GeometryFlow",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GeometryMask",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GeometryProcessing",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GeometryScripting",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "HairStrands",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Harmonix",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "HierarchyTable",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "HierarchyTableAnimation",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "HoldoutComposite",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "IKRig",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ImageWidgets",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ImgMedia",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "InlineMaterialInstance",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Interchange",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "InterchangeAssets",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Landmass",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "LandscapePatch",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "LearningAgents",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "LearningCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "LensComponent",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "LevelSequenceEditor",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "LibVpxCodecs",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "LiveLink",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "LiveLinkControlRig",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "LiveLinkDevice",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "LiveLinkHub",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MJPEGDecoderElectra",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MLDeformerFramework",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MP4Utilities",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MediaCompositing",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MediaFrameworkUtilities",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MediaIOFramework",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MediaPlate",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MediaPlayerEditor",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MediaProfile",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MediaStream",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MeshLODToolset",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MeshModelingToolset",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MeshModelingToolsetExp",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MeshPartition",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MeshResizing",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MessageBusTester",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MetaHuman",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MetaHumanCharacter",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MetaHumanCoreTech",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MetaHumanSDK",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Metasound",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ModelViewViewModel",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ModelingToolsEditorMode",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MotionWarping",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Mover",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MovieRenderPipeline",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MultiUserClient",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MultiUserTakes",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MusicEnvironment",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Mutable",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "NNERuntimeBasicCpu",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "NNERuntimeORT",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "NVCodecs",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "NamingTokens",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "NearestNeighborModel",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "NetworkPrediction",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Niagara",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "NiagaraSimCaching",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "OSC",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ObjectMixer",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "OpenCV",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "OpenCVLensDistortion",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "OpenColorIO",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "OpenXR",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "OperatorStack",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "OpusDecoderElectra",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PCG",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PSDImporter",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PerformanceCaptureCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PhysicsControl",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PixelCapture",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PixelStreaming",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PixelStreaming2",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PlanarCut",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PlatformCrypto",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PluginBrowser",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PluginUtils",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PoseSearch",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ProceduralMeshComponent",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PropertyAccessEditor",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PropertyAnimator",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PropertyAnimatorCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PropertyBindingUtils",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ProxyLODPlugin",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PythonScriptPlugin",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "RemoteControl",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "RemoteControlComponents",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "RemoteControlInterception",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "RemoteSession",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "RenderDocPlugin",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "RigLogic",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "RigVM",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "SQLiteCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "SVGImporter",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Scribble",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ScriptableToolsFramework",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "SequenceNavigator",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "SequencerScripting",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "SerializationUtils",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "SkeletalMerging",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "SkeletalMeshModelingTools",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "SkeletalMeshMorphTargetEditingTools",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "SlateIM",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "SmartObjects",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "StreamingADA",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "StructUtils",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "StylusInput",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Synthesis",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Takes",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "TargetingSystem",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "TemplateSequence",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Text3D",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "TextureGraph",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "TmvMedia",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ToolPresets",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "TweeningUtils",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "UAF",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "UAFAnimGraph",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "UAFAnimNode",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "UAFPoseSearch",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "UMGWidgetPreview",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "USDCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "USDImporter",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "UVEditor",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "UdpMessaging",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "VEUV",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "VPRoles",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "VPSettings",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "VariantManager",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "VariantManagerContent",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "ViewportWidgetOverlay",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "VirtualCameraCore",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "VirtualProductionUtilities",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Water",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "WaveTable",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "WebAPI",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "WebSocketNetworking",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "WmfMedia",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "Workspace",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "WorldConditions",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "XRBase",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "XRCreativeFramework",
+      "Enabled": false,
+      "Optional": true
     }
   ],
   "Modules": [
+    {
+      "Name": "SoloASBridgeCallers",
+      "Type": "Runtime",
+      "LoadingPhase": "PostDefault"
+    },
     {
       "Name": "SoloASBridge",
       "Type": "Runtime",
@@ -30,6 +1276,531 @@
       "Name": "SoloASBridgeEditor",
       "Type": "UncookedOnly",
       "LoadingPhase": "Default"
+    },
+    {
+      "Name": "SAC_e889b740",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_bf094c3c",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_0d092bd1",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_f1fb7939",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_8f9cc8d6",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_193f112b",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_ccabc5b5",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_c0383b9f",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_21572214",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_a2973c6d",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_0549f69d",
+      "Type": "RuntimeAndProgram",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_71de6bed",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_6e4c1453",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_c0c01674",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_8014fbda",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_4f708b72",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_32f6b6b3",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_f84562e9",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_ba7a8088",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_8e358815",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_f68e3a0f",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_0b549976",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_99343b85",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_a1a69238",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_ecbab458",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_79a82bb4",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_b80f5d8b",
+      "Type": "RuntimeAndProgram",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_4d574013",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_8e75ebbd",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_32f01aea",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_2f807e29",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_a5efe256",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_2dd5364e",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_7690dbdf",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_ad6cd2c9",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_f7bbe1e8",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_9d95082a",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_f261f94a",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_0be403cf",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_59250736",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_6353b4b1",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_eb5d0bd2",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_a6e8e1c2",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_ac5ec40a",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_98b27e58",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_f65623e7",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_6d02b31d",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_a2a24153",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_5abcbf4e",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_12d00590",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_7cf16a47",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_00d56167",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_f6f164ad",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_76890581",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_6b4686db",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_004c0086",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_4448388b",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_e3e4b06e",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_6c8c0d47",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_4c951402",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_7d25fadd",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_d4206f9e",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_fa3aad5f",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_7544c2d2",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_6624c0d3",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_8059e8ad",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_79076901",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_34745ed5",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_3809a56c",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_d904b68b",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_5f0fc97b",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_3a7d2c6a",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_37ba07da",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_66e47cd0",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_592f1028",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_551a28c8",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_3c0b1b40",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_c76a72be",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_bb437010",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_2fa14010",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_4e506ccc",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_c403894e",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_51b1db90",
+      "Type": "UncookedOnly",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_1eecdd5c",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_22b8c031",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_5fa6903f",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_7de5a138",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_6874da38",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_ededfda6",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_b9d97282",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_774c043b",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_fbf34722",
+      "Type": "DeveloperTool",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_34e0eb78",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_d3e43610",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_3e1d7556",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_9a23e3de",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_8ce91f0e",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_7d068d7d",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_c104c5bb",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_e250a235",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_88f7fc40",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_9e7e2efd",
+      "Type": "Editor",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_7ca7dea9",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_af2715ff",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
+    },
+    {
+      "Name": "SAC_ae1242a3",
+      "Type": "Runtime",
+      "LoadingPhase": "None"
     }
   ]
 }

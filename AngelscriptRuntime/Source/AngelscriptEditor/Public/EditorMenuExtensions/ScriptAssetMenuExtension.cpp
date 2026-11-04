@@ -48,6 +48,7 @@ void UScriptAssetMenuExtension::CallFunctionOnSelection(UFunction* Function, FEx
 	TArray<UObject*> CallWithObjects;
 
 	bool bFunctionTakesObject = false;
+                                                                                                                   
 	TFieldIterator<FProperty> FirstParam(Function);
 	if (FirstParam && FirstParam->HasAnyPropertyFlags(CPF_Parm))
 	{
@@ -69,6 +70,7 @@ void UScriptAssetMenuExtension::CallFunctionOnSelection(UFunction* Function, FEx
 			}
 		}
 	}
+                                                                                                                 
 
 	for (const FAssetData& Asset : Selection.SelectedAssets)
 	{

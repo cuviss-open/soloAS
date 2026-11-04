@@ -28,13 +28,14 @@ ESoloASBridgeCallableDispatchResult ValidateSlots(
 void CopyInputs(
     const UFunction& Function,
     TConstArrayView<void*> Arguments,
-    void* ParameterData
+    void* ParameterData,
+    bool bBorrowedReferences = false
 );
 void CopyOutputs(
     const UFunction& Function,
     TConstArrayView<void*> Arguments,
     void* ReturnValue,
     const void* ParameterData,
-    bool bBorrowedConstReferences = false
+    bool bBorrowedReferences = false
 );
 }

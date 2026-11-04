@@ -4,12 +4,7 @@
 
 #if WITH_EDITOR
 #include "Blueprint/BlueprintSupport.h"
-#include "BlueprintActionDatabase.h"
-#include "BlueprintActionDatabaseRegistrar.h"
-#include "BlueprintFunctionNodeSpawner.h"
-#include "EdGraphSchema_K2.h"
 #include "Kismet2/KismetEditorUtilities.h"
-#include "UObject/AssetRegistryTagsContext.h"
 #include "UObject/UnrealType.h"
 #include "UObject/UObjectHash.h"
 #endif
@@ -192,19 +187,6 @@ bool CollectFrame(
 }
 
 #if WITH_EDITOR
-void OverrideScriptNativeParentTag(UClass* Parent, FAssetRegistryTagsContext Context)
-{
-    for (UClass* Ancestor = Parent; Ancestor; Ancestor = Ancestor->GetSuperClass())
-    {
-        if (SoloASBridge::IsRegisteredScriptClass(Ancestor))
-        {
-            Context.AddTag(UObject::FAssetRegistryTag(FBlueprintTags::NativeParentClassPath,
-                FObjectPropertyBase::GetExportPath(Ancestor), UObject::FAssetRegistryTag::TT_Alphabetical));
-            return;
-        }
-    }
-}
-
 bool IsSupportedTerminalCarrierLayout(const USoloASScriptBlueprint& Blueprint,
     const UClass& Carrier, const UClass& Parent)
 {
@@ -351,58 +333,6 @@ UClass* SkipRegisteredScriptClasses(UClass* Class)
 }
 
 #if WITH_EDITOR
-void USoloASScriptBlueprint::GetInstanceActions(
-    FBlueprintActionDatabaseRegistrar& ActionRegistrar
-) const
-{
-    Super::GetInstanceActions(ActionRegistrar);
-    if (GeneratedClass == nullptr
-        || !ActionRegistrar.IsOpenForRegistration(GeneratedClass))
-    {
-        return;
-    }
-
-    for (const UClass* ScriptClass = ParentClass;
-         ScriptClass != nullptr && SoloASBridge::IsRegisteredScriptClass(ScriptClass);
-         ScriptClass = ScriptClass->GetSuperClass())
-    {
-        for (TFieldIterator<UFunction> FunctionIt(
-                 ScriptClass, EFieldIteratorFlags::ExcludeSuper);
-             FunctionIt; ++FunctionIt)
-        {
-            UFunction* Function = *FunctionIt;
-            if (Function == nullptr
-                || ScriptClass->FindFunctionByName(Function->GetFName()) != Function
-                || !FBlueprintActionDatabase::IsFunctionAllowed(
-                    Function, FBlueprintActionDatabase::EPermissionsContext::Node)
-                || !UEdGraphSchema_K2::CanUserKismetCallFunction(Function))
-            {
-                continue;
-            }
-
-            if (UBlueprintFunctionNodeSpawner* Spawner =
-                UBlueprintFunctionNodeSpawner::Create(Function))
-            {
-                ActionRegistrar.AddBlueprintAction(GeneratedClass, Spawner);
-            }
-        }
-    }
-}
-#endif
-
-#if WITH_EDITOR
-void USoloASScriptBlueprint::GetAssetRegistryTags(FAssetRegistryTagsContext Context) const
-{
-    Super::GetAssetRegistryTags(Context);
-    OverrideScriptNativeParentTag(ParentClass.Get(), Context);
-}
-
-void USoloASScriptBlueprintGeneratedClass::GetAssetRegistryTags(FAssetRegistryTagsContext Context) const
-{
-    Super::GetAssetRegistryTags(Context);
-    OverrideScriptNativeParentTag(GetSuperClass(), Context);
-}
-
 bool USoloASScriptBlueprint::CanOrderTerminalMetadataFinish(bool bRequireUnreachable) const
 {
     if (bRequireUnreachable && HasAnyFlags(RF_BeginDestroyed)
@@ -580,9 +510,18 @@ void USoloASScriptBlueprintGeneratedClass::FinishDestroy()
     Super::FinishDestroy();
 }
 
+                                                                                                                                                                                          
+#if SOLOAS_UE_AT_LEAST(5, 5)
 EBlueprintCompileOptions USoloASScriptBlueprint::GetDefaultCompileOptions() const
 {
-    EBlueprintCompileOptions Options = Super::GetDefaultCompileOptions();
+    return Super::GetDefaultCompileOptions() | ComputeScriptDefaultCompileOptions();
+}
+#endif
+// SOLOAS-COMPAT-END
+
+EBlueprintCompileOptions USoloASScriptBlueprint::ComputeScriptDefaultCompileOptions() const
+{
+    EBlueprintCompileOptions Options = EBlueprintCompileOptions::None;
     UClass* Generated = GeneratedClass.Get();
     TSet<UClass*> Visited;
     for (UClass* Ancestor = Generated != nullptr

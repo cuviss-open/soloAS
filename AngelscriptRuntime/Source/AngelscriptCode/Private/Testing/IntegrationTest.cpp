@@ -1,4 +1,7 @@
 #include "AngelscriptBinds.h"
+                                                                                              
+#include "SoloASEngineCompat.h"
+                                                                                            
 #include "AngelscriptDocs.h"
 #include "AngelscriptManager.h"
 #include "AngelscriptTestSettings.h"
@@ -338,7 +341,15 @@ void ConfigureEditorForTest(FEditorState& OutOriginalState)
 		// Don't try to save the windows that get launched for integration tests. This is only a
 		// problem in headless mode. This setting needs to be false all the way to shutdown so
 		// we don't restore this one.
+                                                                                                  
+                                                                                                           
+#if SOLOAS_UE_BEFORE(5, 6)
+        FGlobalTabmanager::Get()->SetOnPersistLayout(FTabManager::FOnPersistLayout());
+#else
 		FGlobalTabmanager::Get()->SetCanSavePersistentLayouts(false);
+#endif
+// SOLOAS-COMPAT-END
+                                                                                                
 	}
 
 	// Don't trigger breakpoints on ensures since tests intentionally trigger ensures all the time.
@@ -634,6 +645,8 @@ bool AngelscriptLatentCommandClient::Update()
 		case EClientLatentCommandState::DONE:
 			ClientExecutor->Destroy();
 			return true;
+                                                                                                                 
+                                                                                                               
 	}
 
 	// Handle progress logs
