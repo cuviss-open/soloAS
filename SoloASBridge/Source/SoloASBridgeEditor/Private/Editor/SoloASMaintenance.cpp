@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright Cuviss Studio. All Rights Reserved.
 #include "Editor/SoloASMaintenance.h"
 #include "Editor/SoloASMaintenanceInternal.h"
 #include "Dom/JsonObject.h"
