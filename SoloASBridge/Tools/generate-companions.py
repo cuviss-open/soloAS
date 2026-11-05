@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MPL-2.0
+# Copyright Cuviss Studio. All Rights Reserved.
 """Generate the fixed native SDK companion modules and descriptor entries."""
 import argparse
 import json
@@ -65,6 +67,9 @@ def outputs():
             '#pragma once\n\n#include "CoreMinimal.h"\n#include "' + name + 'UhtAnchor.generated.h"\n\n'
             'UCLASS(meta = (NotInAngelscript))\nclass U' + name + 'UhtAnchor : public UObject\n{\n'
             '    GENERATED_BODY()\n};\n')
+    header = '// SPDX-License-Identifier: MPL-2.0\n// Copyright Cuviss Studio. All Rights Reserved.\n'
+    for path in result:
+        result[path] = header + result[path]
     descriptor = ROOT / 'SoloASBridge.uplugin'
     document = json.loads(descriptor.read_text())
     document['Modules'] = [row for row in document['Modules'] if not row['Name'].startswith((PREFIX, 'SoloASCallers_'))]

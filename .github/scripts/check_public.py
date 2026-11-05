@@ -2,6 +2,7 @@
 """Public PR checks, using only Python's standard library."""
 from pathlib import Path
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -25,6 +26,25 @@ SOURCE_LICENSES = {
     'AngelscriptAutoBind/ThirdParty/libffi/': ('MIT',),
     '': ('MPL-2.0',),
 }
+
+# The vendored files have their original notices, rather than SPDX headers.
+THIRD_PARTY = {
+    'SoloASBridge/Source/ThirdParty/Detours/src/': (
+        'MIT', 'SoloASBridge/Source/ThirdParty/Detours/LICENSE.md',
+        'b301808b732cfaa60df2b4b422d78cd97d2a15058b207e7e33f0535ba5170dd6',
+        'Detours: MIT; SoloASBridge/Source/ThirdParty/Detours/src/'),
+}
+
+
+def third_party_exempt(name):
+    for prefix, (license_id, license_path, license_hash, notice) in THIRD_PARTY.items():
+        if not name.startswith(prefix) or SOURCE_LICENSES.get(prefix) != (license_id,):
+            continue
+        license_file = ROOT / license_path
+        notice_file = ROOT / 'NOTICE'
+        return (license_file.is_file() and hashlib.sha256(license_file.read_bytes()).hexdigest() == license_hash
+                and notice_file.is_file() and notice in notice_file.read_text(errors='replace'))
+    return False
 
 
 def license_errors(name, text, require_spdx=False):
@@ -76,7 +96,7 @@ def licenses():
         old = json.loads(subprocess.check_output(['git', '-C', str(ROOT), 'show', base + ':.github/license-headers.json']))
         # Existing notices cannot be erased by redefining the baseline in a PR.
         for name, header in old.items():
-            if name not in baseline or baseline[name] != header:
+            if (name not in baseline and (ROOT / name).exists()) or (name in baseline and baseline[name] != header):
                 errors.append(name + ': retained license baseline changed')
         baseline = old
     for path in ROOT.rglob('*'):
@@ -87,7 +107,8 @@ def licenses():
         if name in baseline:
             if actual != baseline[name]:
                 errors.append(name + ': retained license notices changed; maintainer review required')
-        errors.extend(license_errors(name, path.read_text(errors='replace'), require_spdx=name not in baseline))
+        errors.extend(license_errors(name, path.read_text(errors='replace'),
+                                     require_spdx=name not in baseline and not third_party_exempt(name)))
     return errors
 
 

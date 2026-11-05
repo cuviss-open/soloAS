@@ -4,6 +4,7 @@ https://soloas.cuviss.com
 Licensing follows each plugin directory, including Cuviss modifications:
 AngelscriptRuntime: MIT; its embedded AngelScript library: zlib.
 AngelscriptGAS: Apache-2.0 OR MIT. AngelscriptEnhancedInput: MIT.
+Detours: MIT; SoloASBridge/Source/ThirdParty/Detours/src/
 All other Cuviss code: MPL-2.0 (see LICENSE).
 These grants also cover historical Cuviss All Rights Reserved headers.
 This does not relicense inherited code. Original copyright and license
@@ -24,11 +25,11 @@ Source identities and retained standalone license hashes:
     },
     {
       "category": "UE-AS fork bindings",
-      "commit": "228a6ae5c067f650445e3fc35981a3ee1c75ee19",
+      "commit": "5c155359919f463892d726235b55693397441fc1",
       "license_scope": "Plugin source and Cuviss contributions: Apache-2.0 OR MIT.",
       "name": "AngelscriptGAS",
       "path": "AngelscriptManualBindPlugins/AngelscriptGAS",
-      "tree": "0d7433d0f3de842edd16b83a72133e291e68ebd7"
+      "tree": "28427c74c18a4e5532593b96cf4351c98b4a4ae7"
     },
     {
       "category": "core",
@@ -40,11 +41,11 @@ Source identities and retained standalone license hashes:
     },
     {
       "category": "core",
-      "commit": "392f4ec5da56fc1e8dd45b7a940bfee426c55920",
+      "commit": "a5821fb1c3cee59b63462542f973a6d23b96c06f",
       "license_scope": "Cuviss original code and modifications are under MPL-2.0.",
       "name": "SoloASBridge",
       "path": "SoloASBridge",
-      "tree": "38cee36e5755db9dcb084a8155b2b2a6d383472f"
+      "tree": "b0aa7156c7640afe702b07f18e6544eec648bee9"
     }
   ],
   "retained_license_files": [
