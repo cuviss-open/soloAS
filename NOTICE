@@ -25,27 +25,27 @@ Source identities and retained standalone license hashes:
     },
     {
       "category": "UE-AS fork bindings",
-      "commit": "72ad76944b6695a7625ae98e57a2801ecd45db1d",
+      "commit": "0d972c4c73b31273bfd3865b68fc487e6250bd0b",
       "license_scope": "Plugin source and Cuviss contributions: Apache-2.0 OR MIT.",
       "name": "AngelscriptGAS",
       "path": "AngelscriptManualBindPlugins/AngelscriptGAS",
-      "tree": "9ccdbf811e87b69f8fe29c5ecdaa7713506b89cf"
+      "tree": "b9bdbb86a04d42cb27310d686979fe809bff0256"
     },
     {
       "category": "core",
-      "commit": "51a942c4f7bd94e254f5681f3299246854938052",
+      "commit": "68dddfb81fb7574e23482c0411cdfff78f7aa6de",
       "license_scope": "Plugin source and Cuviss contributions: MIT. Embedded AngelScript library and its modifications: zlib.",
       "name": "AngelscriptRuntime",
       "path": "AngelscriptRuntime",
-      "tree": "d09341b4099b05df504803b509ea45610b39b89e"
+      "tree": "e5d13bbc751d2a9f5bd9d4712937ded7569a166f"
     },
     {
       "category": "core",
-      "commit": "deea1f37c77de5566486ee71296ecc86966d8dba",
+      "commit": "4d50054676f0d96ed3fe866d1664f99b6fb52be6",
       "license_scope": "Cuviss original code and modifications are under MPL-2.0.",
       "name": "SoloASBridge",
       "path": "SoloASBridge",
-      "tree": "f22784c3f25a96de8360eeaa176d2cc6c9903d87"
+      "tree": "4d7b5f4a2cf83d643208057994e973b7570c6375"
     },
     {
       "category": "extension",
@@ -56,10 +56,10 @@ Source identities and retained standalone license hashes:
     },
     {
       "category": "extension",
-      "commit": "304f33d80776f671684ad65e468ac8460c6a88f3",
+      "commit": "ef0f326767cff81c6cfe52817481db55454b9d15",
       "name": "SoloASDeveloperTools",
       "path": "SoloASDeveloperTools",
-      "tree": "d55902281e73acfa25cfb51479a316e9fca9cf4e"
+      "tree": "a32f2cc4befe258356edcb8ce6c325f119517e7d"
     }
   ],
   "retained_license_files": [
