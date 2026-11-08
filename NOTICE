@@ -56,7 +56,7 @@ Source identities and retained standalone license hashes:
     },
     {
       "category": "extension",
-      "commit": "ef0f326767cff81c6cfe52817481db55454b9d15",
+      "commit": "e2524a1d4778e037269fd2a735380201793ee243",
       "name": "SoloASDeveloperTools",
       "path": "SoloASDeveloperTools",
       "tree": "a32f2cc4befe258356edcb8ce6c325f119517e7d"
