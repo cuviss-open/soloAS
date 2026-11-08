@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright Cuviss Studio. All Rights Reserved.
 using System.Text.Json;
 using System.Text.Json.Nodes;
 

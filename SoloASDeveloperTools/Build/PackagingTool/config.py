@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright Cuviss Studio. All Rights Reserved.
 """Version 1 packaging configuration. Standard library only; targeted project writes."""
 from __future__ import annotations
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright Cuviss Studio. All Rights Reserved.
 using System.IO;
 using UnrealBuildTool;
 
