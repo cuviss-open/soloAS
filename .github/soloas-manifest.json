@@ -2562,7 +2562,7 @@
     },
     "NOTICE": {
       "mode": "0o644",
-      "sha256": "9ee4e1e8c03a7b51ca741a2550cfff317f154d1becbea64ebd48dc0e5627ec58",
+      "sha256": "3ed376c599cd9343f8fb181d771ce70c5f4b0bca445e6cf43ee019053d186a11",
       "size": 4474
     },
     "README.md": {
@@ -5407,5 +5407,5 @@
     }
   },
   "schema": 1,
-  "super_commit": "ef0f326767cff81c6cfe52817481db55454b9d15"
+  "super_commit": "e2524a1d4778e037269fd2a735380201793ee243"
 }
