@@ -1,4 +1,3 @@
-# SPDX-License-Identifier: MPL-2.0
 # Copyright Cuviss Studio. All Rights Reserved.
 # Protocol 1 trusts the official GitHub Release over HTTPS; SHA256 detects corruption.
 [CmdletBinding()]

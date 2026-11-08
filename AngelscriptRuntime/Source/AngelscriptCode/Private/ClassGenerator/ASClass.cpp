@@ -1217,16 +1217,21 @@ bool UASClass::HasValidScriptClassCarrier() const
 		return false;
 	}
 #endif
-	TSet<const UClass*> Visited;
-	for (const UClass* Ancestor = GetSuperClass(); Ancestor != nullptr; Ancestor = Ancestor->GetSuperClass())
-	{
-		if (Visited.Contains(Ancestor)
-			|| Cast<UBlueprintGeneratedClass>(Ancestor) != nullptr)
-		{
-			return false;
-		}
-		Visited.Add(Ancestor);
-	}
+
+    TSet<const UClass*> Visited;
+    int32 BlueprintIndex = 0;
+    for (const UClass* Ancestor = GetSuperClass(); Ancestor; Ancestor = Ancestor->GetSuperClass())
+    {
+        if (Visited.Contains(Ancestor)) return false;
+        Visited.Add(Ancestor);
+        if (!Cast<UBlueprintGeneratedClass>(Ancestor)) continue;
+        if (!VerifiedBlueprintAncestry.IsValidIndex(BlueprintIndex)) return false;
+        const auto& Fact = VerifiedBlueprintAncestry[BlueprintIndex++];
+        if (Fact.Class.Get() != Ancestor || Fact.Parent.Get() != Ancestor->GetSuperClass()
+            || Fact.PropertiesSize != Ancestor->GetPropertiesSize()) return false;
+    }
+    if (BlueprintIndex != VerifiedBlueprintAncestry.Num()) return false;
+
 	return GetSuperClass() != nullptr
 		&& (CodeSuperClass == nullptr
 			|| CppClassStaticFunctions.GetAddReferencedObjects()
@@ -1339,6 +1344,15 @@ UObject* UASClass::CreateDefaultObject()
 		// UE-AS fork CreateDefaultObject excludes script CDOs from InitializeProperties.
 		// Native and script constructors run once; the initializer still owns
 		// config loading, subobject initialization, PostInitProperties and tracking.
+                                                                                                                
+                                                                                                           
+		if (VerifiedBlueprintAncestry.Num() != 0)
+		{
+			(*ClassConstructor)(FObjectInitializer(DefaultObject, ParentDefault, EObjectInitializerOptions::InitializeProperties));
+		}
+		else
+                                                                                                         
+                                                                                                                       
 		(*ClassConstructor)(FObjectInitializer(DefaultObject, ParentDefault, EObjectInitializerOptions::None));
 	}
 	if (GetOutermost()->HasAnyPackageFlags(PKG_CompiledIn)
@@ -1349,7 +1363,7 @@ UObject* UASClass::CreateDefaultObject()
 	DefaultObject->PostCDOContruct();
 	return DefaultObject;
 }
-                                                                                                                
+                                                                                                                     
                                                                                                                      
 bool UASClass::TryGetLifetimeScriptReplicationList(
 	const UASClass* ScriptClass,
@@ -2683,6 +2697,9 @@ void UASClass::StaticObjectConstructor(const FObjectInitializer& Initializer)
 	}
                                                                                                                         
 	asCObjectType* ScriptType = (asCObjectType*)Class->ScriptTypePtr;
+                                                                                                           
+	const bool bBlueprintCarrierDefaults = Class->VerifiedBlueprintAncestry.Num() != 0;
+                                                                                                         
 
 #if AS_CAN_HOTRELOAD
 	const bool bApplyDefaults = !GConstructASObjectWithoutDefaults;
@@ -2731,10 +2748,14 @@ void UASClass::StaticObjectConstructor(const FObjectInitializer& Initializer)
 	else if (bConstructedBeforePropertyInit)
 	{
 		ExecuteConstructFunction(Object, Class);
-		if (bApplyDefaults)
+                                                                                                                  
+                                                                                                           
+		if (bApplyDefaults && !bBlueprintCarrierDefaults)
+                                                                                                         
+                                                                                                                         
 			ExecuteDefaultsFunctions(Object, Class);
 	}
-                                                                                                                  
+                                                                                                                       
                                                                                                             
 	if (bRemovedScriptClass && !bIsScriptAllocation)
 	{
@@ -2758,7 +2779,11 @@ void UASClass::StaticObjectConstructor(const FObjectInitializer& Initializer)
 		// Object construction runs after stock property initialization.
 		SoloASBridge::Compat::AddActorPostInitCallback(
             const_cast<FObjectInitializer&>(Initializer), Object, Class,
-			[Object, bApplyDefaults, bConstructedBeforePropertyInit, BlueprintClass, BlueprintDefault]()
+                                                                                                          
+                                                                                                           
+			[Object, bApplyDefaults, bConstructedBeforePropertyInit, BlueprintClass, BlueprintDefault, bBlueprintCarrierDefaults]()
+                                                                                                         
+                                                                                                                 
 			{
 				FAngelscriptExecutionReadScope PostInitTypeLifetimeScope;
 				UASClass* Anchor = GetFirstASClass(Object);
@@ -2777,6 +2802,12 @@ void UASClass::StaticObjectConstructor(const FObjectInitializer& Initializer)
 				}
 				if (bConstructedBeforePropertyInit)
 				{
+                                                                                                               
+                                                                                                           
+					if (bApplyDefaults && bBlueprintCarrierDefaults)
+						ExecuteDefaultsFunctions(Object, Anchor);
+                                                                                                         
+                                                                                                                 
 					AngelscriptRuntimeGcMirror::TrackRuntimeObjectWithMirror(Object, Type);
 					return;
 				}
@@ -2792,7 +2823,7 @@ void UASClass::StaticObjectConstructor(const FObjectInitializer& Initializer)
 					Object, Type);
 			});
 	}
-                                                                                                          
+                                                                                                               
 }
 
 static FORCEINLINE_DEBUGGABLE void LinkBindComponents(AActor* Actor, UASClass* Class)

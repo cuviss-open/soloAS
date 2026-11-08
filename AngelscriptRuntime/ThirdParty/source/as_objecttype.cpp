@@ -47,6 +47,7 @@ BEGIN_AS_NAMESPACE
 
 asCObjectType::asCObjectType() : asCTypeInfo()
 {
+
 	derivedFrom = 0;
 	alignment = 8;
 
@@ -56,6 +57,7 @@ asCObjectType::asCObjectType() : asCTypeInfo()
 
 asCObjectType::asCObjectType(asCScriptEngine *in_engine) : asCTypeInfo(in_engine)
 {
+
 	derivedFrom  = 0;
 	alignment = 8;
 
@@ -170,6 +172,7 @@ void asCObjectType::CopySystemType(asITypeInfo* SystemType)
 
 asCObjectType::~asCObjectType()
 {
+
 	DestroyInternal();
 }
 
@@ -787,6 +790,3 @@ void asCObjectType::CalculateTemplateSize()
 }
 
 END_AS_NAMESPACE
-
-
-

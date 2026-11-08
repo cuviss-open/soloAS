@@ -1,4 +1,12 @@
 #include "AngelscriptManager.h"
+                                                                                                   
+#include "AngelscriptOptionalProviders.h"
+                                                                                                 
+                                                                                                        
+#include "AngelscriptCoreExtensionPoints.h"
+#include "Misc/SecureHash.h"
+#include "Misc/FileHelper.h"
+                                                                                                      
                                                                                                      
 #include "Compat/SoloASRuntimeCompat.h"
                                                                                                    
@@ -77,6 +85,7 @@
 #include "as_module.h"
 #include "as_builder.h"
 #include "EndAngelscriptHeaders.h"
+
 
 #include "GameplayTagsSettings.h"
 #include "Engine/Level.h"
@@ -282,6 +291,7 @@ void FAngelscriptManager::PreInitialize_GameThread()
 	 * and compile script modules.
 	 */
 	Engine = (asCScriptEngine*)asCreateScriptEngine(ANGELSCRIPT_VERSION);
+
 
 	// Set up thread local data for game thread
 	GameThreadTLD = asCThreadManager::GetLocalData();
@@ -542,6 +552,7 @@ void FAngelscriptManager::Initialize_AnyThread()
 	{
 		FAngelscriptScopeTimer Timer(TEXT("== bindings total =="));
 		BindScriptTypes();
+
 	}
 	
 #if !AS_USE_BIND_DB
@@ -622,6 +633,7 @@ void FAngelscriptManager::Initialize_AnyThread()
 	// Perform the initial compile of all script files
 	InitialCompile();
 
+
 	bool bForcedExit = false;
 
 #if AS_CAN_GENERATE_JIT
@@ -662,6 +674,8 @@ void FAngelscriptManager::Initialize_AnyThread()
 		FJITDatabase::Clear();
 	}
 
+
+
 	// We may have requested an exit due to compilation
 	if (bForcedExit)
 	{
@@ -699,6 +713,20 @@ void FAngelscriptManager::Initialize_AnyThread()
 #if !UE_BUILD_SHIPPING
 	FCoreDelegates::OnGetOnScreenMessages.AddRaw(this, &FAngelscriptManager::GetOnScreenMessages);
 #endif
+                                                                                              
+#if WITH_EDITOR && WITH_AS_DEBUGSERVER
+    FString OfflineDatabase;
+    if (FParse::Value(FCommandLine::Get(), TEXT("ASExportDebugDatabase="), OfflineDatabase))
+    {
+        FCoreDelegates::OnPostEngineInit.AddLambda([OfflineDatabase]
+        {
+            const bool bWritten = FAngelscriptDebugServer::WriteDebugDatabase(OfflineDatabase);
+            UE_LOG(Angelscript, Display, TEXT("Offline debug database export: %s"), bWritten ? TEXT("complete") : TEXT("failed"));
+            FPlatformMisc::RequestExitWithStatus(true, bWritten ? 0 : 1);
+        });
+    }
+#endif
+                                                                                            
 	UpdateLineCallbackState();
 }
 
@@ -1446,6 +1474,113 @@ bool FAngelscriptManager::ReportNativeReloadFailure()
 	return false;
 }
                                                                                                           
+                                                                                                        
+namespace
+{
+FString ReloadContentIdentity(const FString& Text)
+{
+    FTCHARToUTF8 Bytes(*Text, Text.Len());
+    FSHAHash Hash;
+    FSHA1::HashBuffer(Bytes.Get(), Bytes.Length(), Hash.Hash);
+    return Hash.ToString();
+}
+bool IsExplicitReloadUnsafe()
+{
+    auto& Context = FUObjectThreadContext::Get();
+    return IsGarbageCollecting() || IsAsyncLoading() || IsLoading()
+        || Context.SyncLoadUsingAsyncLoaderCount != 0 || Context.AsyncPackage != nullptr
+        || Context.IsInConstructor != 0 || Context.IsRoutingPostLoad
+        || Context.GetSerializeContext()->SerializedObject != nullptr
+        || !IsAngelscriptRuntimeGcCompilationAvailable()
+        || IsAngelscriptExecutionShutdownStarted();
+}
+}
+AngelscriptCoreExtensionPoints::EReloadAdmission FAngelscriptManager::TryExplicitReloadRequest(
+    const AngelscriptCoreExtensionPoints::FExplicitReloadRequest& Request,
+    TFunctionRef<void(const AngelscriptCoreExtensionPoints::FReloadResultView&)> Complete, FString& Error)
+{
+    using namespace AngelscriptCoreExtensionPoints;
+    if (!IsInGameThread() || !Request.bFullReload || Request.Files.IsEmpty() || bUsedPrecompiledDataForPreprocessor)
+    { Error = TEXT("Explicit full reload requires source input on the game thread."); return EReloadAdmission::Invalid; }
+    TSet<FString> RelativePaths;
+    TSet<FString> AbsolutePaths;
+    for (const auto& File : Request.Files)
+    {
+        FString Relative = File.RelativePath;
+        FString Absolute = File.AbsolutePath;
+        FPaths::NormalizeFilename(Relative);
+        FPaths::NormalizeFilename(Absolute);
+        if (Relative != File.RelativePath || Absolute != File.AbsolutePath
+            || !FPaths::IsRelative(Relative) || FPaths::IsRelative(Absolute)
+            || Relative.IsEmpty() || Relative.Contains(TEXT("..")) || Absolute.Contains(TEXT(".."))
+            || !Relative.EndsWith(TEXT(".as")) || !Absolute.EndsWith(TEXT("/") + Relative)
+            || RelativePaths.Contains(Relative) || AbsolutePaths.Contains(Absolute))
+        { Error = TEXT("Invalid or duplicate explicit reload path pair."); return EReloadAdmission::Invalid; }
+        RelativePaths.Add(Relative);
+        AbsolutePaths.Add(Absolute);
+    }
+    if (!bIsInitialCompileFinished || bIsCompilingModules || bIsHotReloading || ActiveExplicitReload
+        || bWaitingForHotReloadResults || !DeferredSourceCompilations.IsEmpty()
+        || IsAngelscriptExecutionWriterHeldByCurrentThread() || IsExplicitReloadUnsafe()) return EReloadAdmission::Busy;
+    FReloadResultView Result;
+    Result.RequestId = Request.RequestId;
+    {
+        FAngelscriptExecutionWriteScope Writer(FAngelscriptExecutionWriteScope::EAcquire::Try);
+        if (!Writer.IsAcquired() || IsExplicitReloadUnsafe()) return EReloadAdmission::Busy;
+        Result.BatchId = ++NextExplicitBatchId;
+        TGuardValue<FReloadResultView*> ResultScope(ActiveExplicitReload, &Result);
+        TGuardValue<const FExplicitReloadRequest*> RequestScope(ActiveExplicitRequest, &Request);
+        TArray<FFilenamePair> Files;
+        for (const auto& File : Request.Files) Files.Add({File.AbsolutePath, File.RelativePath});
+        auto AddWatcherInput = [&](const FFilenamePair& File)
+        {
+            if (const auto* Consumed = ConsumedExplicitSourceIdentities.Find(File.RelativePath))
+            {
+                FString Current;
+                const bool bExists = IFileManager::Get().FileExists(*File.AbsolutePath);
+                if ((!bExists && *Consumed == TEXT("deleted"))
+                    || (bExists && FFileHelper::LoadFileToString(Current, *File.AbsolutePath)
+                        && *Consumed == ReloadContentIdentity(Current))) return;
+            }
+            Files.AddUnique(File);
+        };
+        for (const auto& File : FileChangesDetectedForReload) AddWatcherInput(File);
+        for (const auto& File : FileDeletionsDetectedForReload) AddWatcherInput(File);
+        for (const auto& File : QueuedFullReloadFiles) Files.AddUnique(File);
+        FileChangesDetectedForReload.Empty();
+        FileDeletionsDetectedForReload.Empty();
+        QueuedFullReloadFiles.Empty();
+        // Record the timestamp before loading. A later edit must remain observable.
+        TMap<FString, FDateTime> ObservedTimes;
+        for (const auto& File : Files)
+            ObservedTimes.Add(File.RelativePath, IFileManager::Get().GetTimeStamp(*File.AbsolutePath));
+        for (const auto& File : PreviouslyFailedReloadFiles)
+            ObservedTimes.Add(File.RelativePath, IFileManager::Get().GetTimeStamp(*File.AbsolutePath));
+        const bool bSuccess = PerformHotReload(ECompileType::FullReload, Files);
+        if (bSuccess && Result.CompileResult.IsSet()
+            && Result.CompileResult.GetValue() == ECompileResult::FullyHandled)
+        {
+            Result.Terminal = EReloadTerminal::Committed;
+            Result.FailureStage = EReloadFailureStage::None;
+        }
+        // The checker is idle while GT owns these maps. Do not acknowledge new edits
+        // observed during a preprocessor callback or compilation.
+        for (const auto& Input : Result.Inputs)
+        {
+            ConsumedExplicitSourceIdentities.Add(Input.RelativePath,
+                Input.bDeleted ? TEXT("deleted") : Input.ContentIdentity);
+            const auto* Time = ObservedTimes.Find(Input.RelativePath);
+            if (Time && *Time == IFileManager::Get().GetTimeStamp(*Input.AbsolutePath))
+                FileHotReloadState.FindOrAdd(Input.RelativePath).LastChange = *Time;
+        }
+    }
+    // The writer and all transaction pointers are gone before delivery. Completion
+    // is still non-reentrant and cannot begin another compilation.
+    TGuardValue<bool> CompletionGuard(bIsCompilingModules, true);
+    Complete(Result);
+    return EReloadAdmission::Accepted;
+}
+                                                                                                      
 bool FAngelscriptManager::PerformHotReload(ECompileType CompileType, const TArray<FFilenamePair>& InReloadFiles)
 {
 	TGuardValue<bool> ScopeHotReloading(FAngelscriptManager::bIsHotReloading, true);
@@ -1467,11 +1602,16 @@ bool FAngelscriptManager::PerformHotReload(ECompileType CompileType, const TArra
 			}
 			return false;
 		}
+                                                                                                                   
+                                                                                                        
+    if (!ActiveExplicitReload)
+                                                                                                      
+                                                                                                                                  
 		if (IsAsyncLoading())
 			FlushAsyncLoading();
 	}
 #endif
-                                                                                                                   
+                                                                                                                                
 	FAngelscriptScopeTimer Timer(TEXT("==script reload total =="));
 
 	// Create progress indicator
@@ -1482,7 +1622,23 @@ bool FAngelscriptManager::PerformHotReload(ECompileType CompileType, const TArra
 
 	FAngelscriptPreprocessor Preprocessor;
 
+                                                                                                        
+    if (ActiveExplicitReload && IsExplicitReloadUnsafe())
+    {
+        ActiveExplicitReload->FailureStage = AngelscriptCoreExtensionPoints::EReloadFailureStage::Admission;
+        ActiveExplicitReload->Terminal = IsAngelscriptExecutionShutdownStarted()
+            ? AngelscriptCoreExtensionPoints::EReloadTerminal::Cancelled
+            : AngelscriptCoreExtensionPoints::EReloadTerminal::Failed;
+        PreviouslyFailedReloadFiles.Append(InReloadFiles);
+        return false;
+    }
+                                                                                                      
 	TSet<FFilenamePair> AlreadyDeletedFiles;
+                                                                                                        
+    if (ActiveExplicitRequest)
+        for (const auto& File : ActiveExplicitRequest->Files)
+            if (File.bDeleted) AlreadyDeletedFiles.Add({File.AbsolutePath, File.RelativePath});
+                                                                                                      
 	TArray<FFilenamePair> FileList;
 	FileList.Append(InReloadFiles);
 
@@ -1515,6 +1671,32 @@ bool FAngelscriptManager::PerformHotReload(ECompileType CompileType, const TArra
 		Preprocessor.AddFile(PathPair.RelativePath, PathPair.AbsolutePath, false, bTreatAsDeleted);
 	}
 
+                                                                                                        
+    if (ActiveExplicitReload)
+    {
+        for (const auto& File : Preprocessor.Files)
+        {
+            AngelscriptCoreExtensionPoints::FReloadInput Input;
+            Input.RelativePath = File.RelativeFilename;
+            Input.AbsolutePath = File.AbsoluteFilename;
+            Input.bDeleted = File.bTreatAsDeleted;
+            Input.ContentIdentity = ReloadContentIdentity(File.RawCode);
+            ActiveExplicitReload->Inputs.Add(MoveTemp(Input));
+        }
+        for (const auto& Expected : ActiveExplicitRequest->Files)
+        {
+            if (Expected.ExpectedContentIdentity.IsEmpty()) continue;
+            const auto* Loaded = ActiveExplicitReload->Inputs.FindByPredicate([&](const auto& Input)
+            { return Input.RelativePath == Expected.RelativePath && Input.AbsolutePath == Expected.AbsolutePath; });
+            if (!Loaded || Loaded->bDeleted || Loaded->ContentIdentity != Expected.ExpectedContentIdentity)
+            {
+                ActiveExplicitReload->FailureStage = AngelscriptCoreExtensionPoints::EReloadFailureStage::Preprocess;
+                UE_LOG(Angelscript, Error, TEXT("Explicit reload decoded content identity mismatch: %s"), *Expected.RelativePath);
+                return false;
+            }
+        }
+    }
+                                                                                                      
 	bool bPreprocessSuccess = Preprocessor.Preprocess();
 	if (!bPreprocessSuccess)
 	{
@@ -1528,7 +1710,30 @@ bool FAngelscriptManager::PerformHotReload(ECompileType CompileType, const TArra
 	SlowTask.EnterProgressFrame(2.5f);
 
 	TArray<TSharedRef<FAngelscriptModuleDesc>> CompiledModules;
+                                                                                                        
+    if (ActiveExplicitReload && IsExplicitReloadUnsafe())
+    {
+        ActiveExplicitReload->FailureStage = AngelscriptCoreExtensionPoints::EReloadFailureStage::Admission;
+        ActiveExplicitReload->Terminal = IsAngelscriptExecutionShutdownStarted()
+            ? AngelscriptCoreExtensionPoints::EReloadTerminal::Cancelled
+            : AngelscriptCoreExtensionPoints::EReloadTerminal::Failed;
+        PreviouslyFailedReloadFiles.Append(FileList);
+        return false;
+    }
+                                                                                                      
 	ECompileResult Result = CompileModules(CompileType, Preprocessor.GetModulesToCompile(), CompiledModules);
+                                                                                                        
+    if (ActiveExplicitReload)
+    {
+        ActiveExplicitReload->CompileResult = Result;
+        if (ActiveExplicitReload->FailureStage != AngelscriptCoreExtensionPoints::EReloadFailureStage::Admission)
+            ActiveExplicitReload->FailureStage = Result == ECompileResult::NativeReloadFailed
+                ? AngelscriptCoreExtensionPoints::EReloadFailureStage::NativeReload
+                : AngelscriptCoreExtensionPoints::EReloadFailureStage::Compile;
+        if (Result != ECompileResult::FullyHandled && Result != ECompileResult::NativeReloadFailed)
+            PreviouslyFailedReloadFiles.Append(FileList);
+    }
+                                                                                                      
                                                                                                                   
 	if (Result == ECompileResult::NativeReloadFailed || Result == ECompileResult::Deferred)
 		return false;
@@ -1833,6 +2038,25 @@ void FAngelscriptManager::CheckForHotReload(ECompileType CompileType)
 		FileDeletionsDetectedForReload.Empty();
 	}
 
+                                                                                                                                    
+                                                                                                        
+    if (!ConsumedExplicitSourceIdentities.IsEmpty())
+    {
+        FileList.RemoveAll([&](const FFilenamePair& File)
+        {
+            const auto* Consumed = ConsumedExplicitSourceIdentities.Find(File.RelativePath);
+            if (!Consumed) return false;
+            FString Current;
+            const bool bExists = IFileManager::Get().FileExists(*File.AbsolutePath);
+            const bool bRead = !bExists || FFileHelper::LoadFileToString(Current, *File.AbsolutePath);
+            const FString Identity = bExists ? ReloadContentIdentity(Current) : TEXT("deleted");
+            if (bRead && *Consumed == Identity) return true;
+            ConsumedExplicitSourceIdentities.Remove(File.RelativePath);
+            return false;
+        });
+    }
+                                                                                                      
+                                                                                                                                                   
 	if (CompileType != ECompileType::SoftReloadOnly)
 	{
 		for (const auto& QueuedFile : QueuedFullReloadFiles)
@@ -1840,7 +2064,7 @@ void FAngelscriptManager::CheckForHotReload(ECompileType CompileType)
 		QueuedFullReloadFiles.Empty();
 	}
 
-                                                                                                                                    
+                                                                                                                                                 
                                                                                                                                      
 	const bool bGcCompilationAvailable = IsAngelscriptRuntimeGcCompilationAvailable();
 	if (bGcCompilationAvailable && ConsumeAngelscriptRuntimeGcCompilationRetry())
@@ -1995,12 +2219,21 @@ void FAngelscriptManager::CheckForFileChanges()
 #endif
 }
 
+
 void FAngelscriptManager::SwapInModules(const TArray<TSharedRef<struct FAngelscriptModuleDesc>>& Modules, TArray<TSharedRef<FAngelscriptModuleDesc>>& DiscardedModules)
 {
 	FAngelscriptScopeTimer PostTimer(TEXT("new module swap-in"));
 
 	for (auto Module : Modules)
 	{
+                                                                                                        
+        Module->CoreGenerationId = AngelscriptCoreExtensionPoints::Private::GetModuleGeneration(Module->ScriptModule);
+        if (ActiveExplicitReload)
+        {
+            ActiveExplicitReload->bVmCommitted = true;
+            ActiveExplicitReload->CommittedModules.Add({Module->ModuleName, Module->CoreGenerationId});
+        }
+                                                                                                      
 		// Mark old modules as outdated
 		auto* OldModule = ActiveModules.Find(Module->ModuleName);
 		if (OldModule != nullptr)
@@ -2175,8 +2408,10 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 	TArray<TSharedRef<FAngelscriptModuleDesc>>& OutCompiledModules)
 {
                                                                                                                    
-                                                                                                        
+                                                                                                                    
 	check(IsInGameThread());
+                                                                                                                  
+                                                                                                        
 	TUniquePtr<FAngelscriptExecutionWriteScope> Admission;
 	if (CompileType != ECompileType::Initial)
 	{
@@ -2191,13 +2426,18 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 			for (const auto& Module : InModules)
 				if (Module->PrecompiledData || Module->ScriptModule)
 					return ECompileResult::Error;
+                                                                                                      
+                                                                                                        
+            if (ActiveExplicitReload) return ECompileResult::Error;
+                                                                                                      
+                                                                                                                     
 			DeferredSourceCompilations.Add({CompileType, InModules});
 			OutCompiledModules.Reset();
 			return ECompileResult::Deferred;
 		}
 	}
 
-                                                                                                      
+                                                                                                                   
 
                                                                                                             
     if (CompileType != ECompileType::Initial && IsInGameThread()
@@ -2251,6 +2491,10 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 
 	TMap<FString, TSharedRef<struct FAngelscriptModuleDesc>> CompilingModulesByName;
 	TMap<FString, TSharedRef<struct FAngelscriptClassDesc>> CompilingClassesByName;
+                                                                                                   
+    AngelscriptCoreExtensionPoints::Private::FBlueprintCarrierCompilationScope BlueprintCarrierCompilation(
+        CompilingClassesByName, CompilingModulesByName);
+                                                                                                 
 
 	TArray<TSharedRef<FAngelscriptModuleDesc>> CompiledModules;
 	TSet<TSharedRef<FAngelscriptModuleDesc>> ModulesToUpdateReferences;
@@ -2287,6 +2531,7 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 			while (CompilationQueue.Num() != 0)
 			{
 				TArray<TSharedRef<FAngelscriptModuleDesc>> CurrentCompileList = MoveTemp(CompilationQueue);
+
 				CompilationQueue.Reset();
 
 				// Initial setup for compilation
@@ -2395,6 +2640,7 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 				// This is so we don't spam errors in dependencies.
 				if (bHadCompileErrors && CompileType != ECompileType::Initial)
 					bIgnoreCompileErrorDiagnostics = true;
+
 
 				// Stage 2
 				for (int i = 0, Count = CurrentCompileList.Num(); i < Count; ++i)
@@ -2844,6 +3090,9 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 				if (Module->bLoadedPrecompiledCode)
 					continue;
 
+				                                                                                                   
+				if (Module->bCompileError) continue;
+				                                                                                                 
 				auto Result = ScriptModule->builder->BuildLayoutClasses();
 				if (Result != asSUCCESS)
 					Module->bCompileError = true;
@@ -2865,6 +3114,9 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 					if (Module->bLoadedPrecompiledCode)
 						continue;
 
+					                                                                                                   
+					if (Module->bCompileError) continue;
+					                                                                                                 
 					ScriptModule->builder->BuildAllocateGlobalVariables();
 				}
 
@@ -2969,6 +3221,16 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 
 			if (builder.numErrors > 0)
 				bHadCompileErrors = true;
+
+
+                                                                                                        
+            const bool bErrorsBeforeExtensionAdmission = bHadCompileErrors;
+                                                                                                      
+                                                                                                        
+            if (ActiveExplicitReload && !bErrorsBeforeExtensionAdmission && bHadCompileErrors)
+                ActiveExplicitReload->FailureStage = AngelscriptCoreExtensionPoints::EReloadFailureStage::Admission;
+                                                                                                      
+
 
 
 			if (!bHadCompileErrors)
@@ -3485,7 +3747,12 @@ void FAngelscriptManager::CompileModule_Types_Stage1(ECompileType CompileType, T
 	auto* ScriptModule = (asCModule*)Engine->GetModule(TCHAR_TO_ANSI(*TempName), asGM_ALWAYS_CREATE);
 	ScriptModule->baseModuleName = TCHAR_TO_ANSI(*Module->ModuleName);
 
+                                                                                                   
+    Module->CoreGenerationId = AngelscriptCoreExtensionPoints::Private::GetModuleGeneration(ScriptModule);
+                                                                                                 
+
 	// Check if we have precompiled data for this module and use it if we can
+
 
 	if (PrecompiledData != nullptr && bUsePrecompiledData)
 	{
@@ -3514,6 +3781,18 @@ void FAngelscriptManager::CompileModule_Types_Stage1(ECompileType CompileType, T
 	{
 		if (ClassDesc->CodeSuperClass == nullptr)
 			continue;
+
+                                                                                                   
+        FString CarrierError;
+        if (!AngelscriptCoreExtensionPoints::Private::ValidateBlueprintCarrierForCompilation(
+            Module->ModuleName, ClassDesc->ClassName, ClassDesc->CodeSuperClass, CarrierError))
+        {
+            Module->bCompileError = true;
+            ScriptCompileError(Module, ClassDesc->LineNumber,
+                TEXT("ASR-CLASS-CARRIER-INVALID: ") + CarrierError, true);
+            return;
+        }
+                                                                                                 
 
 		asPreClassData Data;
 		Data.PropertyOffset = ClassDesc->CodeSuperClass->GetPropertiesSize();
@@ -3598,6 +3877,9 @@ void FAngelscriptManager::CompileModule_Code_Stage3(ECompileType CompileType, TS
 		return;
 	}
 
+                                                                                                   
+	if (Module->bCompileError && ScriptModule->builder == nullptr) return;
+                                                                                                 
 	auto Result = ScriptModule->builder->BuildCompileCode();
 	if (Result != asSUCCESS)
 		Module->bCompileError = true;
@@ -4069,6 +4351,7 @@ void FAngelscriptManager::ScriptCompileError(const FString& AbsoluteFilename, co
 	auto& FileDiagnostics = Diagnostics.FindOrAdd(AbsoluteFilename);
 	FileDiagnostics.Filename = AbsoluteFilename;
 	FileDiagnostics.Diagnostics.Add(Diagnostic);
+
 
 	if (Diagnostic.bIsError)
 	{

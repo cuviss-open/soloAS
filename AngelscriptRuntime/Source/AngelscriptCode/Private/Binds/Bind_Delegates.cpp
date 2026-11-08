@@ -50,6 +50,7 @@ struct FDelegateOps
 	UDelegateFunction* SignatureFunction;
 };
 
+
 // From Bind_BlueprintEvent.cpp
 extern void BindDelegateEvent(FAngelscriptBinds& Delegate_, UFunction* Function, bool bIsMulticast, bool bIsSparse);
 

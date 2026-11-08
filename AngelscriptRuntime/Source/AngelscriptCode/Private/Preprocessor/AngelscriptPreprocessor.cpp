@@ -252,6 +252,7 @@ bool FAngelscriptPreprocessor::Preprocess()
 		PerformAsynchronousLoads();
 
 
+
 	// First step, parse into chunks
 	for (FFile& File : Files)
 		ParseIntoChunks(File);

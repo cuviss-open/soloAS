@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MPL-2.0
-// Copyright Cuviss Studio. All Rights Reserved.
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -48,8 +46,7 @@ public abstract class SoloASNativeCallerRules : ModuleRules
                                                                                                      
         // PhysicsControl's public blueprint library uses this node-reference API on 5.4 and 5.8.
         if (NativeModule == "PhysicsControl") PrivateDependencyModuleNames.Add("AnimGraphRuntime");
-                                                                                                                
-                                                                                                                                              
+        // SOLOAS-COMPAT-BEGIN(==5.4) Guard the exact UE 5.4 quality-level SDK source used by native callers [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeCallers.QualityLevel54.SourceGuard]
         if (Target.Version.MajorVersion == 5 && Target.Version.MinorVersion == 4 && NativeModule == "Engine")
         {
             RequireQualityLevelSource("Source/Runtime/Engine/Classes/Engine/SkeletalMesh.h", "87594e1684c2470b89cef6b7998228b467b51a560b67804ae0f689b58ddab0b3");
@@ -57,7 +54,6 @@ public abstract class SoloASNativeCallerRules : ModuleRules
             RequireQualityLevelSource("Source/Runtime/Engine/Private/PerQualityLevelProperties.cpp", "6fe69f0ff1e8acc8e3da0202669c46ff6dced68bf54c0c9da853c5f859493364");
         }
         // SOLOAS-COMPAT-END
-                                                                                                              
                                                                                                       
         ConfigureNativeCaller(Target, NativeModule, NativePlugin, Source, SourceBuildRequired);
         // UBT carries PublicDefinitions into each module's UHT manifest on UE 5.4-5.8.
@@ -74,7 +70,7 @@ public abstract class SoloASNativeCallerRules : ModuleRules
             && Target.Type == TargetType.Editor && NativeModule == "CommonUI"
             && PrivateDependencyModuleNames.Contains(NativeModule))
             PrivateDependencyModuleNames.Add("UMG");
-                                                                                                                                                      
+// SOLOAS-COMPAT-BEGIN(>=5.6 && <=5.7) Retain exact private native caller headers and Text3D font dependencies on the legacy SDKs [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeCallers.LegacyPrivateHeaderInputs]
         if (Target.Version.MajorVersion == 5 && Target.Version.MinorVersion >= 6
             && Target.Version.MinorVersion <= 7 && PrivateDependencyModuleNames.Contains(NativeModule))
         {
@@ -91,13 +87,13 @@ public abstract class SoloASNativeCallerRules : ModuleRules
             {
                 if (Target.bCompileFreeType) PrivateDependencyModuleNames.Add("FreeType2");
                 PrivateDependencyModuleNames.Add("HarfBuzz");
-        // SOLOAS-COMPAT-END
             }
         }
+// SOLOAS-COMPAT-END
+                                                                                                    
     }
 
-                                                                                                
-                                                                                                                   
+    // SOLOAS-COMPAT-BEGIN(==5.4) Guard the exact UE 5.4 quality-level SDK source used by native callers [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeCallers.QualityLevel54.SourceGuard.Method]
     private void RequireQualityLevelSource(string RelativePath, string ExpectedSha256)
     {
         string SourcePath = Path.Combine(EngineDirectory, RelativePath);
@@ -109,7 +105,7 @@ public abstract class SoloASNativeCallerRules : ModuleRules
         string Actual = BitConverter.ToString(Hash).Replace("-", "").ToLowerInvariant();
         if (Actual != ExpectedSha256) throw new BuildException("SOLOAS_QUALITY_LEVEL_SOURCE_CHANGED: requalify UE5.4 native caller: " + RelativePath);
     }
-                                                                                                                 
+    // SOLOAS-COMPAT-END
     private void ConfigureNativeCaller(ReadOnlyTargetRules Target, string NativeModule,
         string NativePlugin, string Source, bool SourceBuildRequired)
     {

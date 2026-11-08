@@ -360,6 +360,7 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 
 	static void FillObjectDebuggerValue(UObject* Object, FDebuggerValue& Value)
 	{
+
 		if (Object == nullptr || Object->GetClass() == nullptr)
 		{
 			Value.Value = TEXT("nullptr");
@@ -447,6 +448,7 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 
 	static void FillObjectDebuggerScope(UObject* Object, FDebuggerScope& Scope)
 	{
+
 		FDebuggerValue NameValue;
 		NameValue.Name = TEXT("Name");
 		NameValue.Type = TEXT("FName");
@@ -468,6 +470,7 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 		auto* ScriptType = ObjScriptType;
 		while (ScriptType != nullptr)
 		{
+
 			int32 PropCount = ScriptType->GetPropertyCount();
 			for (int32 i = 0; i < PropCount; ++i)
 			{
@@ -535,6 +538,7 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 		for (TFieldIterator<FProperty> It(ObjClass); It; ++It)
 		{
 			FProperty* Property = *It;
+
 			if (!Property->HasAnyPropertyFlags(CPF_BlueprintVisible) && (!Property->HasAnyPropertyFlags(CPF_Edit)
 			 || Property->HasAllPropertyFlags(CPF_DisableEditOnInstance | CPF_DisableEditOnTemplate)))
 			{
@@ -573,6 +577,7 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 
 	static bool FillObjectDebuggerMember(UObject* Object, const FString& Member, FDebuggerValue& Value)
 	{
+
 		if (Member == TEXT("Name"))
 		{
 			Value.Name = TEXT("Name");
@@ -625,6 +630,7 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 		auto* ScriptType = ObjScriptType;
 		while (ScriptType != nullptr)
 		{
+
 			int32 PropCount = ScriptType->GetPropertyCount();
 			for (int32 i = 0; i < PropCount; ++i)
 			{
@@ -665,6 +671,7 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 		for (TFieldIterator<FProperty> It(ObjClass); It; ++It)
 		{
 			FProperty* Property = *It;
+
 			if (!Property->HasAnyPropertyFlags(CPF_BlueprintVisible | CPF_Edit))
 				continue;
 

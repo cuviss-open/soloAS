@@ -41,14 +41,12 @@
     <PropertyGroup Condition="!$([System.IO.File]::ReadAllText('$(EngineDir)\Source\Programs\Shared\EpicGames.UHT\Utils\UhtExport.cs').Contains('GetModuleShortestIncludePath'))">
       <DefineConstants>$(DefineConstants);SOLOAS_UHT_LEGACY_INCLUDE_PATH</DefineConstants>
     </PropertyGroup>
-    <!-- UE-365552: UE 5.7 places UE_EXPERIMENTAL before the class keyword. -->
-    <!-- SOLOAS-COMPAT-BEGIN(5.7) Select the installed engine API and build dependencies [test: EngineVersionCompatibility] [id: CS.Compatibility.SoloASBridge.SoloASBridgeUht_ubtplugin_csproj.ExperimentalKeyword] -->
+    <!-- SOLOAS-COMPAT-BEGIN(==5.7) Select the reviewed legacy native caller branch [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeExporter.ExperimentalAnnotation57] -->
     <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($([System.IO.File]::ReadAllText('$(EngineDir)\Build\Build.version')), '&quot;MinorVersion&quot;\s*:\s*7\s*,'))">
       <DefineConstants>$(DefineConstants);SOLOAS_UHT_UE57</DefineConstants>
     </PropertyGroup>
     <!-- SOLOAS-COMPAT-END -->
-    <!-- UE 5.5 inline mesh accessors call a template that the installed Engine does not export. -->
-    <!-- SOLOAS-COMPAT-BEGIN(5.5) Select the installed engine API and build dependencies [test: EngineVersionCompatibility] [id: CS.Compatibility.SoloASBridge.SoloASBridgeUht_ubtplugin_csproj.MeshAccessorExports] -->
+    <!-- SOLOAS-COMPAT-BEGIN(==5.5) Select the reviewed legacy native caller branch [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeExporter.QualityLevel55Thunk] -->
     <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($([System.IO.File]::ReadAllText('$(EngineDir)\Build\Build.version')), '&quot;MinorVersion&quot;\s*:\s*5\s*,'))">
       <DefineConstants>$(DefineConstants);SOLOAS_UHT_UE55</DefineConstants>
     </PropertyGroup>

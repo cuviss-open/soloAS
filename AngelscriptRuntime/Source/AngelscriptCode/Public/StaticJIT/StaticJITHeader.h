@@ -109,6 +109,7 @@ struct ANGELSCRIPTCODE_API FStaticJITFunction
 	FORCENOINLINE static void SetUnknownException(FScriptExecution& Execution);
 };
 
+
 struct FJitRef_Function
 {
 	uint64 Pointer;

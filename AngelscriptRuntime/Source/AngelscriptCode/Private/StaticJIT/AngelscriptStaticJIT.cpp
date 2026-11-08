@@ -3535,6 +3535,7 @@ void FAngelscriptStaticJIT::GenerateCppCode(asIScriptFunction* ScriptFunction, F
 		Context.AdvanceBC();
 	}
 
+
 	// Run the pre-pass to add labels where needed
 	for (int32 i = 0, Count = Context.Instructions.Num(); i < Count; ++i)
 	{
@@ -3625,6 +3626,7 @@ void FAngelscriptStaticJIT::GenerateCppCode(asIScriptFunction* ScriptFunction, F
 
 		FAngelscriptBytecode& Bytecode = FAngelscriptBytecode::GetBytecode(Instr);
 		Context.NewInstruction();
+
 
 		Bytecode.WriteDebugComment(Context);
 		bool bImplemented = Bytecode.Implement(Context);

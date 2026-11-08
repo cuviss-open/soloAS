@@ -52,6 +52,7 @@ void FStaticJITFunction::Register(uint32 FunctionId, asJITFunction InVMEntry, as
 	JITDatabase.Functions.Add(FunctionId, Funcs);
 }
 
+
 void FJitRef_Function::Register(FJitRef_Function* FunctionRef)
 {
 	auto& JITDatabase = FJITDatabase::Get();

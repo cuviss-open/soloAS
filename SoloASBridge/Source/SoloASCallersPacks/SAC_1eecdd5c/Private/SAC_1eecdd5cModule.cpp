@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MPL-2.0
-// Copyright Cuviss Studio. All Rights Reserved.
 #include "Modules/ModuleManager.h"
 
 void SAC_1eecdd5c_Register();

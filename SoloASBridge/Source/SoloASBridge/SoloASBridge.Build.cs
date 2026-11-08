@@ -151,7 +151,7 @@ public sealed class SoloASBridge : ModuleRules
 {
     public SoloASBridge(ReadOnlyTargetRules Target) : base(Target)
     {
-                                                                                                                                             
+// SOLOAS-COMPAT-BEGIN(>=5.6) Require the reviewed source and export ABI before defining the missing copy constructor [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridge.ImportanceCopyQualification]
         if (Target.LinkType == TargetLinkType.Modular && Target.Platform == UnrealTargetPlatform.Win64
             && Target.Version.MajorVersion == 5 && Target.Version.MinorVersion >= 6)
         {
@@ -164,7 +164,7 @@ public sealed class SoloASBridge : ModuleRules
             && Target.Type == TargetType.Editor && Target.Version.MajorVersion == 5
             && Target.Version.MinorVersion >= 6)
             RequireImportanceCopySource(Target.Version.MinorVersion);
-        // SOLOAS-COMPAT-END
+// SOLOAS-COMPAT-END
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
                                                                                                                                        
         string SelectedCompat = $"UE{Target.Version.MajorVersion}{Target.Version.MinorVersion}";
@@ -218,6 +218,7 @@ public sealed class SoloASBridge : ModuleRules
             }
         );
     }
+// SOLOAS-COMPAT-BEGIN(>=5.6) Validate installed SDK source and reject an exported constructor before enabling compatibility [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridge.ImportanceCopySourceGuard]
     private void RequireImportanceCopySource(int Minor)
     {
         string Source = Path.Combine(EngineDirectory, "Source/Runtime/Engine/Private/Kismet/ImportanceSamplingLibrary.cpp");
@@ -276,4 +277,5 @@ public sealed class SoloASBridge : ModuleRules
         }
     }
 
+// SOLOAS-COMPAT-END
 }

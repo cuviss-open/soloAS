@@ -1,7 +1,7 @@
 {
   "FileVersion": 3,
-  "Version": 4,
-  "VersionName": "0.1.3",
+  "Version": 5,
+  "VersionName": "0.2.0",
   "FriendlyName": "SoloAS Bridge",
   "Description": "Compatibility bridge for AngelScript-compatible consumers and an unmodified Unreal Engine.",
   "Category": "Scripting",
@@ -1257,6 +1257,61 @@
     },
     {
       "Name": "XRCreativeFramework",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "AlembicImporter",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "CameraCalibration",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "GeoReferencing",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "HttpBlueprint",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "InteractionInterface",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "JsonBlueprintUtilities",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "LidarPointCloud",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "MaterialValidation",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "NaniteAssemblyEditorUtils",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "PCGExternalDataInterop",
+      "Enabled": false,
+      "Optional": true
+    },
+    {
+      "Name": "RelativeIKOp",
       "Enabled": false,
       "Optional": true
     }

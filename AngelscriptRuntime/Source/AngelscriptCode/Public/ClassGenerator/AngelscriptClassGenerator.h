@@ -3,6 +3,9 @@
 #include "CoreMinimal.h"
 #include "ClassGenerator/AngelscriptAdditionalCompileChecks.h"
 #include "AngelscriptManager.h"
+                                                                                                   
+#include "ClassGenerator/ASClass.h"
+                                                                                                 
 
 typedef const TArray<TPair<FName, int64>>& EnumNameList;
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAngelscriptPostReload, bool);
@@ -76,8 +79,15 @@ private:
 		UStruct* ReplacedStruct = nullptr;
 		TArray<int32> ReloadReqLines;
 		bool bHasEvalTick = false;
+                                                                                                   
+        TArray<FAngelscriptBlueprintCarrierIdentity> VerifiedBlueprintAncestry;
+                                                                                                 
 		bool bFinalized = false;
 		UObject* CDONoDefaults = nullptr;
+                                                                                                  
+		TArray<UClass*> DeclaredInterfaces;
+                                                                                                
+
 	};
 
 	struct FEnumData

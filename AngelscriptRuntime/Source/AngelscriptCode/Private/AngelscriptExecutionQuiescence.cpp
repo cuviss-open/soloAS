@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "AngelscriptExecutionQuiescence.h"
+                                                                                                       
+#include "ClassGenerator/AngelscriptRetiredModules.h"
+                                                                                                     
 
 #include "Experimental/Async/ConditionVariable.h"
 #include "HAL/CriticalSection.h"
@@ -241,6 +244,9 @@ FAngelscriptExecutionWriteScope::~FAngelscriptExecutionWriteScope() noexcept
 
 void BeginAngelscriptExecutionShutdown()
 {
+                                                                                                       
+    if (IsInGameThread()) AngelscriptCoreExtensionPoints::Private::CloseModuleCacheClients();
+                                                                                                     
 	FAngelscriptExecutionGate& Gate = GetAngelscriptExecutionGate();
 	Gate.Mutex.Lock();
 	Gate.bShutdownPermanent = true;

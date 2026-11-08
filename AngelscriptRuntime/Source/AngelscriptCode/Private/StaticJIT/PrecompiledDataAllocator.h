@@ -4,6 +4,7 @@
 
 extern FMemStackBase GScriptPreallocatedMemStack;
 
+
 /** A container allocator that allocates from a mem-stack. */
 template<uint32 Alignment = DEFAULT_ALIGNMENT>
 class TPrecompiledAllocator

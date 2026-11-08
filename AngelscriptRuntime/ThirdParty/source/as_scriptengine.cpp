@@ -53,6 +53,8 @@
 #include "as_bytecode.h"
 #include "as_debug.h"
 
+
+
 BEGIN_AS_NAMESPACE
 
 
@@ -905,6 +907,7 @@ int asCScriptEngine::SetContextCallbacks(asREQUESTCONTEXTFUNC_t requestCtx, asRE
 // interface
 asIScriptContext *asCScriptEngine::RequestContext()
 {
+
 	if( requestCtxFunc )
 	{
 		// The return callback must also exist
@@ -981,6 +984,7 @@ asCModule *asCScriptEngine::FindNewOwnerForSharedFunc(asCScriptFunction *in_func
 // interface
 void asCScriptEngine::ReturnContext(asIScriptContext *ctx)
 {
+
 	if( returnCtxFunc )
 	{
 		returnCtxFunc(this, ctx, ctxCallbackParam);
@@ -1214,6 +1218,7 @@ int asCScriptEngine::ClearMessageCallback()
 // interface
 int asCScriptEngine::WriteMessage(const char *section, int row, int col, asEMsgType type, const char *message)
 {
+
 	// Validate input parameters
 	if( section == 0 ||
 		message == 0 )
@@ -1455,6 +1460,7 @@ int asCScriptEngine::CreateContext(asIScriptContext **context, bool isInternal)
 // interface
 int asCScriptEngine::RegisterObjectProperty(const char *obj, const char *declaration, int byteOffset, int compositeOffset, bool isCompositeIndirect, const asUINT accessorType, bool isProtected)
 {
+
 	int r;
 	asCDataType dt;
 	asCBuilder bld(this, 0);
@@ -1512,6 +1518,7 @@ int asCScriptEngine::RegisterObjectProperty(const char *obj, const char *declara
 // interface
 int asCScriptEngine::RegisterInterface(const char *name)
 {
+
 	if( name == 0 ) return ConfigError(asINVALID_NAME, "RegisterInterface", 0, 0);
 
 	// Verify if the name has been registered as a type already
@@ -1573,6 +1580,7 @@ int asCScriptEngine::RegisterInterface(const char *name)
 // interface
 int asCScriptEngine::RegisterInterfaceMethod(const char *intf, const char *declaration)
 {
+
 	asCDataType dt;
 	asCBuilder bld(this, 0);
 	int r = bld.ParseDataType(intf, &dt, defaultNamespace, false, true);
@@ -1620,6 +1628,7 @@ int asCScriptEngine::RegisterInterfaceMethod(const char *intf, const char *decla
 
 int asCScriptEngine::RegisterObjectType(const char *name, int byteSize, asDWORD flags)
 {
+
 	int r;
 
 	isPrepared = false;
@@ -1873,6 +1882,7 @@ int asCScriptEngine::RegisterObjectType(const char *name, int byteSize, asDWORD 
 // interface
 int asCScriptEngine::RegisterObjectBehaviour(const char *datatype, asEBehaviours behaviour, const char *decl, const asSFuncPtr &funcPointer, asDWORD callConv, asFunctionCaller caller, void *auxiliary, int compositeOffset, bool isCompositeIndirect)
 {
+
 	if( datatype == 0 ) return ConfigError(asINVALID_ARG, "RegisterObjectBehaviour", datatype, decl);
 
 	// Determine the object type
@@ -2404,6 +2414,7 @@ int asCScriptEngine::AddBehaviourFunction(asCScriptFunction &func, asSSystemFunc
 // interface
 int asCScriptEngine::RegisterGlobalProperty(const char *declaration, void *pointer)
 {
+
 	// Don't accept a null pointer
 	if( pointer == 0 )
 		return ConfigError(asINVALID_ARG, "RegisterGlobalProperty", declaration, 0);
@@ -2516,6 +2527,7 @@ int asCScriptEngine::GetGlobalPropertyByIndex(asUINT index, const char **name, c
 // interface
 int asCScriptEngine::RegisterObjectMethod(const char *obj, const char *declaration, const asSFuncPtr &funcPointer, asDWORD callConv, asFunctionCaller caller, void *auxiliary, int compositeOffset, bool isCompositeIndirect, const asUINT accessorType)
 {
+
 	if( obj == 0 )
 		return ConfigError(asINVALID_ARG, "RegisterObjectMethod", obj, declaration);
 
@@ -2679,6 +2691,7 @@ int asCScriptEngine::RegisterMethodToObjectType(asCObjectType *objectType, const
 // interface
 int asCScriptEngine::RegisterGlobalFunction(const char *declaration, const asSFuncPtr &funcPointer, asDWORD callConv, asFunctionCaller caller, void *auxiliary)
 {
+
 #ifdef AS_MAX_PORTABILITY
 	if( callConv != asCALL_GENERIC )
 		return ConfigError(asNOT_SUPPORTED, "RegisterGlobalFunction", declaration, 0);
@@ -2714,6 +2727,7 @@ int asCScriptEngine::RegisterGlobalFunction(const char *declaration, const asSFu
 		asDELETE(func,asCScriptFunction);
 		return ConfigError(asINVALID_DECLARATION, "RegisterGlobalFunction", declaration, 0);
 	}
+
 
 	// TODO: namespace: What if the declaration defined an explicit namespace?
 	func->nameSpace = defaultNamespace;
@@ -5395,6 +5409,7 @@ int asCScriptEngine::GetNextScriptFunctionId()
 
 void asCScriptEngine::AddScriptFunction(asCScriptFunction *func)
 {
+
 	// Update the internal arrays with the function id that is now used
 	if( freeScriptFunctionIds.GetLength() && freeScriptFunctionIds[freeScriptFunctionIds.GetLength()-1] == func->id )
 		freeScriptFunctionIds.PopLast();
@@ -5450,6 +5465,7 @@ void asCScriptEngine::RemoveScriptFunction(asCScriptFunction *func)
 			}
 		}
 	}
+
 }
 
 // internal
@@ -5461,6 +5477,7 @@ void asCScriptEngine::RemoveFuncdef(asCFuncdefType *funcdef)
 // interface
 int asCScriptEngine::RegisterFuncdef(const char *decl)
 {
+
 	if( decl == 0 ) return ConfigError(asINVALID_ARG, "RegisterFuncdef", decl, 0);
 
 	// Parse the function declaration
@@ -5608,6 +5625,7 @@ asCFuncdefType *asCScriptEngine::FindMatchingFuncdef(asCScriptFunction *func, as
 // TODO: typedef: Accept complex types for the typedefs
 int asCScriptEngine::RegisterTypedef(const char *type, const char *decl)
 {
+
 	if( type == 0 ) return ConfigError(asINVALID_NAME, "RegisterTypedef", type, decl);
 
 	// Verify if the name has been registered as a type already
@@ -5697,6 +5715,7 @@ asITypeInfo *asCScriptEngine::GetTypedefByIndex(asUINT index) const
 // interface
 int asCScriptEngine::RegisterEnum(const char *name)
 {
+
 	//	Check the name
 	if( NULL == name )
 		return ConfigError(asINVALID_NAME, "RegisterEnum", name, 0);
@@ -5754,6 +5773,7 @@ int asCScriptEngine::RegisterEnum(const char *name)
 // interface
 int asCScriptEngine::RegisterEnumValue(const char *typeName, const char *valueName, int value)
 {
+
 	asCDataType dt;
 	int r;
 	asCBuilder bld(this, 0);
@@ -6277,4 +6297,3 @@ asSNameSpace *asCScriptEngine::GetParentNameSpace(asSNameSpace *ns) const
 }
 
 END_AS_NAMESPACE
-

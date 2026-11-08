@@ -55,6 +55,7 @@
 
 #include <cstdlib> // qsort
 
+
 BEGIN_AS_NAMESPACE
 
 //#ifdef AS_MAX_PORTABILITY
@@ -414,6 +415,7 @@ void asCScriptFunction::DeallocateScriptFunctionData()
 // internal
 asCScriptFunction::~asCScriptFunction()
 {
+
 	// Remove the script function from the engine's scriptFunctions array here
 	// Don't remove it before, because there may still be functions referring to it
 	// by index until now. If it was removed in DestroyInternal, those would not
@@ -1540,6 +1542,7 @@ asDWORD *asCScriptFunction::GetByteCode(asUINT *length)
 // interface
 void *asCScriptFunction::SetUserData(void *data, asPWORD type)
 {
+
 	userData = data;
 	return 0;
 }
@@ -1686,4 +1689,3 @@ asCScriptFunction * asCScriptFunction::funcForDelegate = nullptr;
 asSListPatternNode * asCScriptFunction::listPattern = nullptr;
 
 END_AS_NAMESPACE
-

@@ -1,0 +1,20 @@
+{
+  "FileVersion": 3,
+  "Version": 2,
+  "VersionName": "0.2.0",
+  "FriendlyName": "SoloAS Developer Tools",
+  "Description": "Editor tools and packaging provider contracts for SoloAS.",
+  "Category": "Scripting",
+  "CreatedBy": "Cuviss Studio",
+  "EnabledByDefault": true,
+  "CanContainContent": false,
+  "Plugins": [
+    { "Name": "Angelscript", "Enabled": true },
+    { "Name": "SoloASBridge", "Enabled": true }
+  ],
+  "Modules": [
+    { "Name": "SoloASDeveloperToolsProviders", "Type": "Editor", "LoadingPhase": "PreDefault" },
+    { "Name": "SoloASDeveloperToolsEditor", "Type": "Editor", "LoadingPhase": "Default" },
+    { "Name": "SoloASDeveloperToolsToolchainEditor", "Type": "Editor", "LoadingPhase": "Default", "PlatformAllowList": ["Win64"] }
+  ]
+}

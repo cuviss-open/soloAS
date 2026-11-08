@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MPL-2.0
-// Copyright Cuviss Studio. All Rights Reserved.
 #include "Modules/ModuleManager.h"
 #include "Interfaces/IPluginManager.h"
 #include "Runtime/SoloASBridgeScriptMetadata.h"

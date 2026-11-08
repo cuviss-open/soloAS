@@ -38,6 +38,7 @@
 #include "as_typeinfo.h"
 #include "as_scriptengine.h"
 
+
 BEGIN_AS_NAMESPACE
 
 asCTypeInfo::asCTypeInfo()
@@ -136,6 +137,7 @@ asIScriptModule *asCTypeInfo::GetModule() const
 
 void *asCTypeInfo::SetUserData(void *data, asPWORD type)
 {
+
 	plainUserData = (asPWORD)data;
 	return 0;
 }
@@ -415,5 +417,3 @@ asITypeInfo *asCFuncdefType::GetParentType() const
 }
 
 END_AS_NAMESPACE
-
-

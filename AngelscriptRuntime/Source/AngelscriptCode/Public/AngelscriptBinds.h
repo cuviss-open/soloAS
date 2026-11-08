@@ -28,6 +28,7 @@
 #include "AngelscriptType.h"
 #include "StaticJIT/StaticJITBinds.h"
 
+
                                                                                          
 #include "AngelscriptStockAutoCaller.h"
 #define ASAutoCaller CuvissStockASAutoCaller
@@ -408,6 +409,7 @@ struct ANGELSCRIPTCODE_API FAngelscriptBinds
 		return BindProperty(Signature, Offset, BindParams);
 	}
 
+
 	inline void Factory(FBindString Signature, FASBindFunctionPointers FunctionPointers, void* UserData = nullptr)
 	{
 		return BindStaticBehaviour(asBEHAVE_FACTORY, Signature, FunctionPointers, UserData);
@@ -671,7 +673,6 @@ private:
 	int BindMethod(FBindString Signature, FASBindFunctionPointers Caller, const FAngelscriptType::FBindParams& BindParams, void* UserData = nullptr);
 	void BindProperty(FBindString Signature, size_t Offset);
 	void BindProperty(FBindString Signature, size_t Offset, const FAngelscriptType::FBindParams& BindParams);
-
 	static void OnBind(int FunctionId, void* UserData, const FAngelscriptType::FBindParams* BindParams);
 	static int PreviouslyBoundFunction;
 	static int PreviouslyBoundGlobalProperty;

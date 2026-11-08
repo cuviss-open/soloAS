@@ -4,6 +4,7 @@
 
 #include "AngelscriptManager.h"
 
+
 #include "ASStruct.generated.h"
 
 UCLASS()
@@ -94,6 +95,7 @@ public:
 
 	virtual bool IsEditorOnly() const override { return bIsEditorOnlyStruct; }
 };
+
 
 // Wildcard struct used to enable DeterminesOutputType support for structs
 USTRUCT(BlueprintType)

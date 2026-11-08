@@ -50,6 +50,7 @@
 #include "AngelscriptManager.h"
 #include "AngelscriptSettings.h"
 
+
 BEGIN_AS_NAMESPACE
 
 #ifndef AS_NO_COMPILER
@@ -968,6 +969,7 @@ void asCBuilder::CreateDefaultDestructors()
 			{
 				objType->flags |= asOBJ_POD;
 			}
+
 		}
 	};
 

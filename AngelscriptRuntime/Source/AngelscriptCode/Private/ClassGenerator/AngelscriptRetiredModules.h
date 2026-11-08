@@ -13,6 +13,11 @@ struct FAngelscriptModuleDesc;
 namespace AngelscriptRetiredModules
 {
 asIScriptModule* RetainType(asITypeInfo* Type);
+                                                                                                       
+// GT counters only: callers may already be executing inside a read scope.
+asIScriptModule* RetainCaptureModule(asIScriptModule* Module);
+void ReleaseCaptureModule(asIScriptModule* Module);
+                                                                                                     
 void ReleaseModule(asIScriptModule* Module);
 bool DeferDiscard(const TSharedRef<FAngelscriptModuleDesc>& Module);
 // Defined with the script struct value registry (ASStruct.cpp): adds the modules whose struct
@@ -21,3 +26,11 @@ void AppendStructInstanceModules(TArray<asCModule*>& Modules);
 void Startup();
 void Shutdown();
 }
+
+                                                                                                       
+namespace AngelscriptCoreExtensionPoints::Private
+{
+void CloseModuleCacheClients();
+bool HasModuleGenerationLeases();
+}
+                                                                                                     

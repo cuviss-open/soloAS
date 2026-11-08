@@ -13,6 +13,16 @@
 
 #include "ASClass.generated.h"
 
+                                                                                                   
+struct FAngelscriptBlueprintCarrierIdentity
+{
+    TWeakObjectPtr<const UClass> Class;
+    TWeakObjectPtr<const UClass> Parent;
+    int32 PropertiesSize;
+    FString NativeTypeName;
+};
+                                                                                                 
+
 UCLASS()
 class ANGELSCRIPTCODE_API UASClass : public UClass
 {
@@ -43,6 +53,7 @@ public:
 		const UClass* SuperClass,
 		const UClass** OutInvalidBlueprintAncestor = nullptr);
                                                                                                                      
+
 	UClass* CodeSuperClass = nullptr;
 	UASClass* NewerVersion = nullptr;
 	bool bHasASClassParent = false;
@@ -73,6 +84,12 @@ public:
 	// The matching engine offset is asserted in ASClass.cpp for every target.
 	FStructProperty* const StockUberGraphFramePointerProperty = nullptr;
                                                                                                             
+                                                                                                   
+private:
+    friend struct FAngelscriptClassGenerator;
+    TArray<FAngelscriptBlueprintCarrierIdentity> VerifiedBlueprintAncestry;
+public:
+                                                                                                 
                                                                                                
 	TSet<const FProperty*> UeDelayedDestroyFields;
                                                                                              

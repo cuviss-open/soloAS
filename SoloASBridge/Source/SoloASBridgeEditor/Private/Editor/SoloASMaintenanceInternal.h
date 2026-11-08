@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MPL-2.0
-// Copyright Cuviss Studio. All Rights Reserved.
 #pragma once
 #include "CoreMinimal.h"
 #include "Dom/JsonObject.h"
@@ -20,7 +18,6 @@ struct FUpdate
 bool ReadDescriptorVersion(const FString& Json, FString& Version);
 bool SupportsEngine(const TSharedPtr<FJsonObject>& Profile, const FString& Engine);
 FUpdate ParseRelease(bool Connected, int32 Status, const FString& Json, const FString& Installed, const FString& Engine, bool SourcePackage = false);
-void OnModuleChanged(FName Name, EModuleChangeReason Reason);
 void RegisterMenus();
 void Initialize();
 void Shutdown();

@@ -1,4 +1,8 @@
 #include "ClassGenerator/AngelscriptClassGenerator.h"
+                                                                                                  
+#include "AngelscriptOptionalProviders.h"
+                                                                                                
+
                                                                                                                
 #include "Compat/SoloASRuntimeCompat.h"
                                                                                                              
@@ -1598,6 +1602,27 @@ void FAngelscriptClassGenerator::Analyze(FModuleData& ModuleData, FClassData& Cl
 	}
 #endif
 
+                                                                                                  
+	if (!ClassData.NewClass->bIsStruct && AngelscriptCoreExtensionPoints::Private::HasClassInterfaceProviders())
+	{
+		FString Error;
+		if (!AngelscriptCoreExtensionPoints::Private::QueryClassInterfaces(ModuleData.NewModule->ModuleName,
+			*ClassData.NewClass, ClassData.DeclaredInterfaces, Error))
+		{
+			FAngelscriptManager::Get().ScriptCompileError(ModuleData.NewModule, ClassData.NewClass->LineNumber, Error);
+			ClassData.ReloadReq = EReloadRequirement::Error;
+		}
+		else if (ClassData.OldClass.IsValid() && ClassData.OldClass->Class)
+		{
+			const auto& Previous = ClassData.OldClass->Class->Interfaces;
+			bool bChanged = Previous.Num() != ClassData.DeclaredInterfaces.Num();
+			for (UClass* Interface : ClassData.DeclaredInterfaces)
+				bChanged |= !Previous.ContainsByPredicate([&](const FImplementedInterface& Edge) { return Edge.Class == Interface; });
+			if (bChanged && ClassData.ReloadReq < EReloadRequirement::FullReloadRequired)
+				ClassData.ReloadReq = EReloadRequirement::FullReloadRequired;
+		}
+	}
+                                                                                                
 	ClassData.bAnalyzed = true;
 }
 
@@ -2045,6 +2070,17 @@ void FAngelscriptClassGenerator::Analyze(FModuleData& ModuleData)
 	for (auto& ClassData : ModuleData.Classes)
 	{
 		Analyze(ModuleData, ClassData);
+                                                                                                   
+        const auto* PreviousCarrier = ClassData.OldClass ? Cast<UASClass>(ClassData.OldClass->Class) : nullptr;
+        if (PreviousCarrier && PreviousCarrier->VerifiedBlueprintAncestry.Num() != 0
+            && Cast<UBlueprintGeneratedClass>(ClassData.NewClass->CodeSuperClass)
+            && PreviousCarrier->VerifiedBlueprintAncestry[0].Class.Get() != ClassData.NewClass->CodeSuperClass
+            && ClassData.ReloadReq < EReloadRequirement::FullReloadRequired)
+        {
+            ClassData.ReloadReq = EReloadRequirement::FullReloadRequired;
+            ClassData.ReloadReqLines.AddUnique(ClassData.NewClass->LineNumber);
+        }
+                                                                                                 
 
 		// The class that requires the highest reload type should determine it
 		if (ClassData.ReloadReq > ModuleData.ReloadReq)
@@ -2109,7 +2145,7 @@ FAngelscriptClassGenerator::EReloadRequirement FAngelscriptClassGenerator::Setup
 	                                                                                                             
 	for (auto& ModuleData : Modules)
 	{
-		for (const auto& ClassData : ModuleData.Classes)
+		for (auto& ClassData : ModuleData.Classes)
 		{
 			const auto& ClassDesc = ClassData.NewClass;
 			if (ClassDesc->bIsStruct)
@@ -2122,11 +2158,33 @@ FAngelscriptClassGenerator::EReloadRequirement FAngelscriptClassGenerator::Setup
 				continue;
 			}
 
-			const FString Reason = InvalidBlueprintAncestor != nullptr
-				? FString::Printf(
-					TEXT("Blueprint ancestor '%s' is not supported by the script UClass carrier."),
-					*InvalidBlueprintAncestor->GetPathName())
-				: TEXT("The script class ancestry contains a cycle.");
+
+            FString Diagnostic;
+            bool bCycle = false;
+            TSet<const UClass*> Visited;
+            ClassData.VerifiedBlueprintAncestry.Reset();
+            for (const UClass* Ancestor = ClassDesc->CodeSuperClass; Ancestor; Ancestor = Ancestor->GetSuperClass())
+            {
+                if (Visited.Contains(Ancestor)) { bCycle = true; break; }
+                Visited.Add(Ancestor);
+                if (Cast<UBlueprintGeneratedClass>(Ancestor))
+                    ClassData.VerifiedBlueprintAncestry.Add({Ancestor, Ancestor->GetSuperClass(), Ancestor->GetPropertiesSize()});
+            }
+            if (!bCycle && InvalidBlueprintAncestor
+                && AngelscriptCoreExtensionPoints::Private::QueryBlueprintCarrier(ModuleData.NewModule->ModuleName,
+                    ClassDesc->ClassName, ClassDesc->CodeSuperClass, Diagnostic)
+                    == AngelscriptCoreExtensionPoints::EBlueprintCarrierResult::Allow)
+            {
+                for (auto& Fact : ClassData.VerifiedBlueprintAncestry)
+                    AngelscriptCoreExtensionPoints::Private::TryGetBlueprintCarrierName(Fact.Class.Get(), Fact.NativeTypeName);
+                continue;
+            }
+            ClassData.VerifiedBlueprintAncestry.Reset();
+            const FString Reason = bCycle ? TEXT("The script class ancestry contains a cycle.")
+                : !Diagnostic.IsEmpty() ? Diagnostic : FString::Printf(
+                    TEXT("Blueprint ancestor '%s' is not supported by the script UClass carrier."),
+                    *InvalidBlueprintAncestor->GetPathName());
+
 			FAngelscriptManager::Get().ScriptCompileError(
 				ModuleData.NewModule,
 				ClassDesc->LineNumber,
@@ -3554,6 +3612,15 @@ void FAngelscriptClassGenerator::DoFullReloadClass(FModuleData& ModuleData, FCla
 
 	NewClass->PropertyLink = SuperClass->PropertyLink;
 	NewClass->SetSuperStruct(SuperClass);
+                                                                                                   
+    NewClass->VerifiedBlueprintAncestry = ClassData.VerifiedBlueprintAncestry;
+                                                                                                 
+
+                                                                                                  
+	for (UClass* Interface : ClassData.DeclaredInterfaces)
+		NewClass->Interfaces.Add(FImplementedInterface(Interface, 0, true));
+                                                                                                
+
 
 
 #if WITH_EDITOR

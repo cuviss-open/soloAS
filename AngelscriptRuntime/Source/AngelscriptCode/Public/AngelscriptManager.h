@@ -56,6 +56,9 @@ class FHotReloadTestRunner;
 
 struct FAngelscriptCodeCoverage;
 
+                                                                                                        
+#include "AngelscriptCoreExtensionPoints.h"
+                                                                                                      
 enum class ECompileType : uint8
 {
 	Initial,
@@ -137,6 +140,22 @@ struct ANGELSCRIPTCODE_API FAngelscriptManager : FTickableGameObject
 	void CompileModule_Globals_Stage4(ECompileType CompileType, TSharedRef<struct FAngelscriptModuleDesc> Module);
 
 	/* Perform a hot reload of the specified type if necessary. */
+                                                                                                        
+private:
+    friend AngelscriptCoreExtensionPoints::EReloadAdmission AngelscriptCoreExtensionPoints::TryExplicitReload(
+        FDelegateHandle, const AngelscriptCoreExtensionPoints::FExplicitReloadRequest&,
+        TFunctionRef<void(const AngelscriptCoreExtensionPoints::FReloadResultView&)>, FString&);
+    friend AngelscriptCoreExtensionPoints::ERemoveResult AngelscriptCoreExtensionPoints::UnregisterExplicitReloadClient(FDelegateHandle);
+    AngelscriptCoreExtensionPoints::EReloadAdmission TryExplicitReloadRequest(
+        const AngelscriptCoreExtensionPoints::FExplicitReloadRequest& Request,
+        TFunctionRef<void(const AngelscriptCoreExtensionPoints::FReloadResultView&)> Complete,
+        FString& Error);
+    AngelscriptCoreExtensionPoints::FReloadResultView* ActiveExplicitReload = nullptr;
+    const AngelscriptCoreExtensionPoints::FExplicitReloadRequest* ActiveExplicitRequest = nullptr;
+    uint64 NextExplicitBatchId = 0;
+    TMap<FString, FString> ConsumedExplicitSourceIdentities;
+public:
+                                                                                                      
 	void CheckForHotReload(ECompileType CompileType);
                                                                                                          
 	// Reports to the innermost active game-thread native reload; never implies rollback.
@@ -278,11 +297,13 @@ struct ANGELSCRIPTCODE_API FAngelscriptManager : FTickableGameObject
 	// Captured diagnostic messages during compilation
 	struct FDiagnostic
 	{
+
 		FString Message;
 		int32 Row;
 		int32 Column;
 		bool bIsError;
 		bool bIsInfo;
+
 	};
 
 	void ScriptCompileError(const FString& AbsoluteFilename, const FDiagnostic& Diagnostic);
@@ -1228,6 +1249,9 @@ struct FAngelscriptModuleDesc
                                                                                                             
 		bool bCompileError = false;
                                                                                                           
+                                                                                                        
+    uint64 CoreGenerationId = 0;
+                                                                                                      
 	bool bLoadedPrecompiledCode = false;
 	bool bModuleSwapInError = false;
 

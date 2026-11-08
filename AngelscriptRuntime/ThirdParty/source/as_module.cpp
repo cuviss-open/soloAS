@@ -43,11 +43,24 @@
 #include "as_texts.h"
 #include "as_debug.h"
 
+
+                                                                                                   
+#include <atomic>
+                                                                                                 
 BEGIN_AS_NAMESPACE
+                                                                                                   
+namespace
+{
+std::atomic<asQWORD> NextCoreModuleGeneration { 0 };
+}
+                                                                                                 
 
 
 // internal
 asCModule::asCModule(const char *name, asCScriptEngine *engine)
+                                                                                                   
+    : coreGenerationId(NextCoreModuleGeneration.fetch_add(1, std::memory_order_relaxed) + 1)
+                                                                                                 
 {
 	this->name     = name;
 	this->engine   = engine;

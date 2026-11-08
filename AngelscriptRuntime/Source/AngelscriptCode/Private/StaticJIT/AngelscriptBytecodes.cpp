@@ -4018,6 +4018,7 @@ IMPL_BYTECODE_BEGIN(asBC_SUSPEND)
 };
 IMPL_BYTECODE_END(asBC_SUSPEND)
 
+
 IMPL_BYTECODE_BEGIN(asBC_FinConstruct)
 {
 	bool Implement(FStaticJITContext& Context) const override

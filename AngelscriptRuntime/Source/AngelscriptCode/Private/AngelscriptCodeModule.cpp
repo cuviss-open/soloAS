@@ -1,4 +1,8 @@
 #include "AngelscriptCodeModule.h"
+                                                                                                  
+#include "AngelscriptOptionalProviders.h"
+                                                                                                
+
 #include "AngelscriptManager.h"
                                                                                                  
 #include "AngelscriptCallableDispatchAdapter.h"
@@ -55,6 +59,9 @@ void FAngelscriptCodeModule::ShutdownModule()
 	}
 	FAngelscriptExecutionWriteScope ExecutionWriteScope;
                                                                                                         
+                                                                                                  
+	AngelscriptCoreExtensionPoints::Private::ShutdownClassInterfaceProviders();
+                                                                                                
                                                                                              
     AngelscriptReplicationShadow::Shutdown();
     SoloASBridge::SetScriptReplicationListProvider({});

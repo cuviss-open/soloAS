@@ -797,6 +797,7 @@ public static class SoloASBridgeExporter
     // === BEGIN CUVISS STUDIO EXTENSION: CS.Bridge.UHT.NativeReferenceReturn | by Cuviss Studio ===
     private static bool CanGenerateNativeReferenceCaller(UhtFunction function, ushort functionBits, bool compiledInOwnerModule, bool compiledInConsumerModule)
     {
+// SOLOAS-COMPAT-BEGIN(==5.5) Use native out-parameter thunks when the installed SDK does not export the mesh accessor template [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeExporter.QualityLevel55Thunk]
 // CS.Bridge.UHT.LegacyQualityLevel55: exact void ref/out native-thunk route.
 #if SOLOAS_UHT_UE55
         // Engine/Classes/Engine/{SkeletalMesh,StaticMesh}.h uses non-exported
@@ -806,6 +807,7 @@ public static class SoloASBridgeExporter
             && function.SourceName is "SetMinLODForQualityLevels" or "GetMinLODForQualityLevels")
             return false;
 #endif
+// SOLOAS-COMPAT-END
         bool referenceReturn = function.ReturnProperty is UhtProperty result
             && (GetNativeDeclarationTraitBits(result) & CppRefTrait) != 0;
         bool typedValueContract = NativeCallProperties(function).Any(RequiresTypedValueContract);
@@ -865,7 +867,7 @@ public static class SoloASBridgeExporter
             yield return parameter;
         if (function.ReturnProperty is UhtProperty result) yield return result;
     }
-                                                                                                
+    // SOLOAS-COMPAT-BEGIN(==5.4) Preserve the reviewed UE 5.4 quality-level accessor implementation [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeExporter.SkeletalQualityLevel54]
     private static bool IsSkeletalQualityLevelAccessor(UhtFunction function) =>
 #if SOLOAS_UHT_UE54
         function.Outer?.SourceName == "USkeletalMesh"
@@ -873,8 +875,8 @@ public static class SoloASBridgeExporter
 #else
         false;
 #endif
-                                                                                              
-                                                                                              
+    // SOLOAS-COMPAT-END
+    // SOLOAS-COMPAT-BEGIN(==5.4) Preserve the reviewed UE 5.4 quality-level accessor implementation [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeExporter.StaticQualityLevel54]
     private static bool IsStaticQualityLevelAccessor(UhtFunction function) =>
 #if SOLOAS_UHT_UE54
         function.Outer?.SourceName == "UStaticMesh"
@@ -882,7 +884,7 @@ public static class SoloASBridgeExporter
 #else
         false;
 #endif
-                                                                                            
+    // SOLOAS-COMPAT-END
     private static bool IsPhysicsControlPureConversion(UhtFunction function) =>
         function.Outer?.SourceName == "UPhysicsControlBPLibrary"
         && function.SourceName == "ConvertToRigidBodyWithControlPure";
@@ -1014,6 +1016,7 @@ public static class SoloASBridgeExporter
 #endif
             .Distinct().OrderBy(path => path, StringComparer.Ordinal))
         {
+// SOLOAS-COMPAT-BEGIN(==5.7) Suppress the misplaced experimental annotation only around the affected installed header [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeExporter.ExperimentalAnnotation57]
 #if SOLOAS_UHT_UE57
             // CS.Bridge.UHT.InstancedSkinnedExperimental57: UE-365552 is a misplaced
             // compile annotation, not a native ABI change. Scope suppression to this
@@ -1022,11 +1025,14 @@ public static class SoloASBridgeExporter
             if (suppressExperimental)
                 output.Append("#pragma push_macro(\"UE_EXPERIMENTAL\")\n#undef UE_EXPERIMENTAL\n#define UE_EXPERIMENTAL(...)\n");
 #endif
+// SOLOAS-COMPAT-END
             output.Append("#include \"").Append(header).Append("\"\n");
+// SOLOAS-COMPAT-BEGIN(==5.7) Restore the original experimental macro after the affected legacy header [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeExporter.ExperimentalAnnotation57Restore]
 #if SOLOAS_UHT_UE57
             if (suppressExperimental)
                 output.Append("#pragma pop_macro(\"UE_EXPERIMENTAL\")\n");
 #endif
+// SOLOAS-COMPAT-END
         }
         // These reflected return declarations forward-declare their element types.
         if (functions.Any(function => NativeCallProperties(function)
@@ -1043,7 +1049,7 @@ public static class SoloASBridgeExporter
             output.Append("#include \"UObject/UnrealType.h\"\n#include \"UObject/ObjectPtr.h\"\n");
         if (functions.Any(IsMvvmCounterAccessor))
             output.Append("#include \"UObject/StructOnScope.h\"\n#include \"UObject/UnrealType.h\"\n");
-                                                                                                            
+        // SOLOAS-COMPAT-BEGIN(==5.4) Preserve the reviewed UE 5.4 quality-level accessor implementation [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeExporter.SkeletalQualityLevel54.Helpers]
 #if SOLOAS_UHT_UE54
         if (functions.Any(function => IsSkeletalQualityLevelAccessor(function) || IsStaticQualityLevelAccessor(function)))
             output.Append(@"namespace SoloAS54QualityLevelProperty
@@ -1082,7 +1088,7 @@ struct FSoloAS54StaticWaitAccess { using FNative = void (UStaticMesh::*)(EStatic
 template struct TSoloAS54WaitGrant<FSoloAS54StaticWaitAccess, &UStaticMesh::WaitUntilAsyncPropertyReleased>;
 ");
 #endif
-                                                                                                          
+        // SOLOAS-COMPAT-END
         output.Append("PRAGMA_DISABLE_DEPRECATION_WARNINGS\n");
         foreach (UhtFunction function in functions)
         {
@@ -1189,7 +1195,7 @@ template struct TSoloAS54WaitGrant<FSoloAS54StaticWaitAccess, &UStaticMesh::Wait
                 continue;
             }
                                                                                                            
-                                                                                                               
+            // SOLOAS-COMPAT-BEGIN(==5.4) Preserve the reviewed UE 5.4 quality-level accessor implementation [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeExporter.SkeletalQualityLevel54.Caller]
 #if SOLOAS_UHT_UE54
             if (IsSkeletalQualityLevelAccessor(function))
             {
@@ -1220,8 +1226,8 @@ template struct TSoloAS54WaitGrant<FSoloAS54StaticWaitAccess, &UStaticMesh::Wait
                 continue;
             }
 #endif
-                                                                                                             
-                                                                                                             
+            // SOLOAS-COMPAT-END
+            // SOLOAS-COMPAT-BEGIN(==5.4) Preserve the reviewed UE 5.4 quality-level accessor implementation [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeExporter.StaticQualityLevel54.Caller]
 #if SOLOAS_UHT_UE54
             if (IsStaticQualityLevelAccessor(function))
             {
@@ -1252,7 +1258,7 @@ template struct TSoloAS54WaitGrant<FSoloAS54StaticWaitAccess, &UStaticMesh::Wait
                 continue;
             }
 #endif
-                                                                                                           
+            // SOLOAS-COMPAT-END
             if (IsPhysicsControlPureConversion(function))
             {
                 // The inline wrapper only delegates to this public conversion template;

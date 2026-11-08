@@ -120,6 +120,7 @@ UFunction* FAngelscriptDocs::LookupAngelscriptFunction(int FunctionId)
 
                                                                                           
 
+
 const FPassedDoc& FAngelscriptDocs::GetFullUnrealDocumentation(int FunctionId)
 {
 	FPassedDoc* Found = UnrealDocumentation.Find(FunctionId);

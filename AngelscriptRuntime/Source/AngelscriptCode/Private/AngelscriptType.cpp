@@ -27,8 +27,20 @@ class asITypeInfo* FAngelscriptType::ArrayTemplateTypeInfo = nullptr;
 class asITypeInfo* FAngelscriptType::DelegateTypeInfo = nullptr;
 class asITypeInfo* FAngelscriptType::MulticastTypeInfo = nullptr;
 
+                                                                                                   
+#include "AngelscriptOptionalProviders.h"
+#include "AngelscriptExecutionQuiescence.h"
+#include "UObject/GarbageCollection.h"
+                                                                                                 
 FString FAngelscriptType::GetBoundClassName(UClass* Class)
 {
+                                                                                                   
+    if (Class->HasAnyClassFlags(CLASS_CompiledFromBlueprint) && !Class->HasAnyClassFlags(CLASS_Native))
+    {
+        FString Name;
+        if (AngelscriptCoreExtensionPoints::Private::TryGetBlueprintCarrierName(Class, Name)) return Name;
+    }
+                                                                                                 
 	FString Name = Class->GetPrefixCPP();
 	Name += Class->GetName();
 	return Name;
@@ -117,6 +129,40 @@ void FAngelscriptType::RegisterAlias(const FString& Alias, TSharedRef<FAngelscri
 	auto& Database = FAngelscriptTypeDatabase::Get();
 	Database.TypesByAngelscriptName.Add(Alias, Type);
 }
+
+                                                                                                   
+bool FAngelscriptType::ReindexBlueprintCarrierView(TSharedRef<FAngelscriptType> Type,
+    UClass* PreviousClass, UClass* ReplacementClass, FString& Diagnostic, bool& bBusy)
+{
+    bBusy = false;
+    if (!IsInGameThread() || !IsAngelscriptExecutionWriterHeldByCurrentThread())
+    { Diagnostic = TEXT("Blueprint view replacement requires the execution writer."); bBusy = true; return false; }
+    auto& Index = FAngelscriptTypeDatabase::Get().TypesByClass;
+    const auto* Previous = Index.Find(PreviousClass);
+    const auto* Replacement = Index.Find(ReplacementClass);
+    auto* Info = Type->GetAngelscriptTypeInfo(FAngelscriptTypeUsage::DefaultUsage);
+    if (!IsInGameThread() || IsGarbageCollecting() || !PreviousClass || !ReplacementClass
+        || !Previous || &Previous->Get() != &Type.Get() || (Replacement && &Replacement->Get() != &Type.Get())
+        || Type->GetClass(FAngelscriptTypeUsage::DefaultUsage) != PreviousClass
+        || !Info || (Info->GetUserData() != PreviousClass && Info->GetUserData() != ReplacementClass) || Info->GetEngine() != FAngelscriptManager::Get().GetScriptEngine()
+        || !PreviousClass->HasAnyClassFlags(CLASS_CompiledFromBlueprint)
+        || PreviousClass->HasAnyClassFlags(CLASS_Native)
+        || !ReplacementClass->HasAnyClassFlags(CLASS_CompiledFromBlueprint)
+        || ReplacementClass->HasAnyClassFlags(CLASS_Native | CLASS_NewerVersionExists)
+        || PreviousClass->GetClass() != ReplacementClass->GetClass()
+        || Info->GetSize() != static_cast<asUINT>(ReplacementClass->GetStructureSize()))
+    { Diagnostic = TEXT("Blueprint view replacement identity or layout differs; restart the script VM."); return false; }
+    // This VM returns null for both successful and refused SetUserData calls.
+    // Confirm the postcondition before publishing either index or view identity.
+    void* Result = Info->SetUserData(ReplacementClass);
+    checkf(Result == nullptr, TEXT("Unexpected type userdata result from the current VM."));
+    if (Info->GetUserData() != ReplacementClass)
+    { Diagnostic = TEXT("Blueprint view userdata update is busy."); bBusy = true; return false; }
+    if (PreviousClass != ReplacementClass) Index.Remove(PreviousClass);
+    Index.Add(ReplacementClass, Type);
+    return true;
+}
+                                                                                                 
 
 void FAngelscriptType::RegisterTypeFinder(FTypeFinder Finder)
 {
@@ -765,6 +811,7 @@ bool FAngelscriptType::GetDebuggerValueFromFunction(asIScriptFunction* InScriptF
 	}
 
 	FAngelscriptTypeUsage ReturnValue = FAngelscriptTypeUsage::FromReturn(ScriptFunction);
+
 	if (ReturnValue.IsValid() && ReturnValue.CanCopy() && ReturnValue.CanBeReturned())
 	{
 		FDebuggerValue TempValue;
