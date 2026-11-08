@@ -11,6 +11,9 @@ class UScriptStruct;
 // A failed preparation leaves all original reflected property values unchanged.
 // Scalar payloads include reflected container slots and stable native/Blueprint defaults.
 // Success commits these values; later failures in the enclosing UE reload are not rolled back here.
+#if WITH_DEV_AUTOMATION_TESTS
+ANGELSCRIPTEDITOR_API
+#endif
 bool MigrateInstancedStructsForReload(const TMap<UScriptStruct*, UScriptStruct*>& Replacements, FString& Error);
 
 struct FAngelscriptPayloadReloadType;

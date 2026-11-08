@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MPL-2.0
-// Copyright Cuviss Studio. All Rights Reserved.
 #include "Editor/SoloASMaintenance.h"
 #include "Editor/SoloASMaintenanceInternal.h"
 #include "Dom/JsonObject.h"
@@ -23,6 +21,8 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "ToolMenus.h"
+#include "Internationalization/PolyglotTextData.h"
+#include "Internationalization/TextLocalizationManager.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Widgets/SWindow.h"
 #include "Widgets/SBoxPanel.h"
@@ -37,7 +37,6 @@ namespace
 {
 const FName MenuOwner(TEXT("SoloASBridge.Maintenance"));
 TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> Request;
-FDelegateHandle ModuleHandle;
 FDelegateHandle MenuHandle;
 FDelegateHandle LoadedHandle;
 FTSTicker::FDelegateHandle UpdateTicker;
@@ -374,60 +373,6 @@ FUpdate ParseRelease(bool Connected, int32 Status, const FString& Json, const FS
 }
                                                                                              
 
-                                                                                            
-namespace
-{
-struct FMenuItem { FName Owner; FText Label; void (*Action)(); uint64 Generation; };
-uint64 NextGeneration = 0;
-TMap<FName, FMenuItem> MenuExtensionItems;
-void AddExtensions(UToolMenu* Menu)
-{
-    if (MenuExtensionItems.IsEmpty()) return;
-    auto& Section = Menu->FindOrAddSection(TEXT("SoloASMaintenanceExtensions"));
-    TArray<FName> Ids;
-    MenuExtensionItems.GetKeys(Ids);
-    Ids.Sort(FNameLexicalLess());
-    for (FName Id : Ids)
-    {
-        const auto& Item = MenuExtensionItems.FindChecked(Id);
-        Section.AddMenuEntry(Id, Item.Label, FText(), FSlateIcon(), FUIAction(FExecuteAction::CreateLambda([Id, Generation = Item.Generation]
-        {
-            if (const auto* Current = MenuExtensionItems.Find(Id); Current && Current->Generation == Generation)
-            {
-                if (FModuleManager::Get().IsModuleLoaded(Current->Owner)) Current->Action();
-            }
-        })));
-    }
-}
-}
-bool RegisterMenuItem(FName Id, FName OwnerModule, const FText& Label, void (*Action)())
-{
-    check(IsInGameThread());
-    if (Id.IsNone() || OwnerModule.IsNone() || MenuExtensionItems.Contains(Id) || !Action ||
-        !FModuleManager::Get().IsModuleLoaded(OwnerModule)) return false;
-    MenuExtensionItems.Add(Id, {OwnerModule, Label, Action, ++NextGeneration});
-    UToolMenus::Get()->RefreshAllWidgets();
-    return true;
-}
-void UnregisterMenuItem(FName Id, FName OwnerModule)
-{
-    check(IsInGameThread());
-    const auto* Item = MenuExtensionItems.Find(Id);
-    if (Item && Item->Owner == OwnerModule)
-    {
-        MenuExtensionItems.Remove(Id);
-        UToolMenus::Get()->RefreshAllWidgets();
-    }
-}
-void OnModuleChanged(FName Name, EModuleChangeReason Reason)
-{
-    if (Reason != EModuleChangeReason::ModuleUnloaded) return;
-    bool Removed = false;
-    for (auto It = MenuExtensionItems.CreateIterator(); It; ++It)
-        if (It.Value().Owner == Name) { It.RemoveCurrent(); Removed = true; }
-    if (Removed) UToolMenus::Get()->RefreshAllWidgets();
-}
-                                                                                          
 
                                                                                                    
 void Initialize()
@@ -435,21 +380,38 @@ void Initialize()
     LoadedHandle = FCoreDelegates::OnFEngineLoopInitComplete.AddStatic(&ConfirmLoaded);
     UpdateTicker = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateStatic(&PollUpdate), 0.5f);
     if (!GIsEditor || IsRunningCommandlet()) return;
-    ModuleHandle = FModuleManager::Get().OnModulesChanged().AddStatic(&OnModuleChanged);
     MenuHandle = UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateStatic(&RegisterMenus));
 }
 void RegisterMenus()
 {
+    static bool bMenuTextsRegistered = false;
+    if (!bMenuTextsRegistered)
+    {
+        const struct { const TCHAR* Key; const TCHAR* English; const TCHAR* Chinese; } Texts[] = {
+            {TEXT("Maintenance"), TEXT("soloAS maintenance"), TEXT("soloAS 维护")},
+            {TEXT("About"), TEXT("About soloAS"), TEXT("关于 soloAS")},
+            {TEXT("CheckUpdates"), TEXT("Check for updates"), TEXT("检查更新")},
+        };
+        TArray<FPolyglotTextData> Translations;
+        for (const auto& Text : Texts)
+        {
+            FPolyglotTextData Data(ELocalizedTextSourceCategory::Editor, TEXT("SoloAS"), Text.Key, Text.English, TEXT("en"));
+            Data.AddLocalizedString(TEXT("en"), Text.English);
+            Data.AddLocalizedString(TEXT("zh"), Text.Chinese);
+            Translations.Add(MoveTemp(Data));
+        }
+        FTextLocalizationManager::Get().RegisterPolyglotTextData(Translations);
+        bMenuTextsRegistered = true;
+    }
     FToolMenuOwnerScoped Owner(MenuOwner);
     auto* Main = UToolMenus::Get()->ExtendMenu(TEXT("LevelEditor.MainMenu"));
     auto& MainSection = Main->FindOrAddSection(TEXT("SoloAS"), FText(), FToolMenuInsert(TEXT("Tools"), EToolMenuInsertType::After));
     if (!MainSection.FindEntry(TEXT("SoloAS")))
         MainSection.AddSubMenu(TEXT("SoloAS"), NSLOCTEXT("SoloAS", "Menu", "SoloAS"), FText(), FNewToolMenuDelegate());
     auto* Menu = UToolMenus::Get()->ExtendMenu(TEXT("LevelEditor.MainMenu.SoloAS"));
-    auto& Section = Menu->FindOrAddSection(TEXT("SoloASMaintenance"), NSLOCTEXT("SoloAS", "Maintenance", "soloAS maintenance"));
+    auto& Section = Menu->FindOrAddSection(TEXT("SoloASMaintenance"), NSLOCTEXT("SoloAS", "Maintenance", "soloAS maintenance"), FToolMenuInsert(NAME_None, EToolMenuInsertType::Last));
     Section.AddMenuEntry(TEXT("AboutSoloAS"), NSLOCTEXT("SoloAS", "About", "About soloAS"), FText(), FSlateIcon(), FUIAction(FExecuteAction::CreateStatic(&About)));
     Section.AddMenuEntry(TEXT("CheckSoloASUpdates"), NSLOCTEXT("SoloAS", "CheckUpdates", "Check for updates"), FText(), FSlateIcon(), FUIAction(FExecuteAction::CreateStatic(&CheckUpdates)));
-    Menu->AddDynamicSection(TEXT("SoloASMaintenanceProviders"), FNewToolMenuDelegate::CreateStatic(&AddExtensions));
 }
 
 void Shutdown()
@@ -457,10 +419,8 @@ void Shutdown()
     FCoreDelegates::OnFEngineLoopInitComplete.Remove(LoadedHandle);
     FTSTicker::GetCoreTicker().RemoveTicker(UpdateTicker);
     if (UpdateProcess.IsValid()) { FPlatformProcess::CloseProc(UpdateProcess); UpdateProcess = FProcHandle(); }
-    FModuleManager::Get().OnModulesChanged().Remove(ModuleHandle);
     UToolMenus::UnRegisterStartupCallback(MenuHandle);
     UToolMenus::UnregisterOwner(MenuOwner);
-    MenuExtensionItems.Empty();
     if (Request.IsValid())
     {
         Request->OnProcessRequestComplete().Unbind();

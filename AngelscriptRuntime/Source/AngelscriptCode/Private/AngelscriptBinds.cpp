@@ -36,6 +36,7 @@ void FAngelscriptBinds::RegisterBinds(int32 BindOrder, TFunction<void()> Functio
 	GetBindArray().Add({BindOrder, Function});
 }
 
+
 void FAngelscriptBinds::CallBinds()
 {
 	GetBindArray().Sort();
@@ -48,6 +49,7 @@ void FAngelscriptBinds::CallBinds()
 	}
                                                                                                                 
 }
+
 
 FAngelscriptBinds FAngelscriptBinds::ReferenceClass(FBindString Name, UClass* UnrealClass)
 {
@@ -262,6 +264,7 @@ void FAngelscriptBinds::OnBind(int FunctionId, void* UserData, const FAngelscrip
 			ScriptFunction->SetUserData(UserData, 0);
 		}
 
+
 		if (BindParams != nullptr && BindParams->bProtected)
 		{
 			ScriptFunction->SetProtected(true);
@@ -429,6 +432,7 @@ void FAngelscriptBinds::BindProperty(FBindString Signature, size_t Offset, const
 	Manager.Engine->RegisterObjectProperty(ClassName.ToCString(), Signature.ToCString(), Offset, 0, false, Access, BindParams.bProtected);
 	PreviouslyBoundPropertyOffset = (int)Offset;
 }
+
 
 int FAngelscriptBinds::BindGlobalFunctionCallable(FBindString Signature, FASBindFunctionPointers FunctionPointers, void* UserData)
 {

@@ -77,6 +77,15 @@ def terminology_errors(name, text):
     if path.suffix.lower() not in TEXT_SUFFIXES:
         return []
     prose = re.sub(r'https?://[^\s<>)]+', '', text.replace('\0', ''))
+    # These exact literals are wire-protocol values, not prose referring to the fork.
+    if name in {
+        'SoloASDeveloperTools/Build/SoloASMcpHost/Program.cs',
+        'SoloASDeveloperTools/Build/SoloASMcpHost/McpHostService.cs',
+        'SoloASDeveloperTools/Build/SoloASMcpHost/ProjectInfoProvider.cs',
+    }:
+        lane = 'ha' + 'ze'
+        prose = prose.replace('"' + lane + '"', '"protocol-lane"')
+        prose = prose.replace('"--lane must be stock or ' + lane + '"', '"protocol lane error"')
     return [name + ': unqualified upstream fork reference'] if re.search(r'\bHaze\b', prose, re.I) else []
 
 

@@ -10,6 +10,7 @@
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/MemoryReader.h"
 
+
 #define DEBUG_SERVER_VERSION 2
 
 // Intended to be called from the debugger Immediate window, to exit a softlock due to a spamming data breakpoint
@@ -619,6 +620,12 @@ public:
 	/** Sends the debug database to all clients in ClientsThatWantDebugDatabase */
 	void BroadcastDebugDatabase();
 	void SendDebugDatabase(FSocket* Client);
+                                                                                              
+#if WITH_EDITOR && WITH_AS_DEBUGSERVER
+    static bool WriteDebugDatabase(const FString& Filename);
+#endif
+    static void GenerateDebugDatabase(TFunctionRef<void(EDebugMessageType, TArray<uint8>&)> Send);
+                                                                                            
 	void SendAssetDatabase(FSocket* Client);
 	void SendCallStack(FSocket* Client);
 

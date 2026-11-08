@@ -55,7 +55,8 @@ void CollectReleasedModules()
     TArray<TSharedRef<FAngelscriptModuleDesc>> Released;
     for (int32 Index = 0; Index < DeferredModules.Num();)
     {
-        if (Required.Contains(static_cast<asCModule*>(DeferredModules[Index]->ScriptModule))) { ++Index; continue; }
+        auto* Script = static_cast<asCModule*>(DeferredModules[Index]->ScriptModule);
+        if (Required.Contains(Script)) { ++Index; continue; }
         Released.Add(DeferredModules[Index]);
         DeferredModules.RemoveAt(Index);
     }
@@ -68,6 +69,7 @@ void CollectReleasedModules()
     }
     if (!Released.IsEmpty()) FAngelscriptManager::Get().Engine->DeleteDiscardedModules();
 }
+
 }
 
 asIScriptModule* RetainType(asITypeInfo* Type)
@@ -87,6 +89,25 @@ void ReleaseModule(asIScriptModule* ScriptModule)
     if (!Count || *Count <= 0) UE_LOG(LogTemp, Fatal, TEXT("ASR-RETIRED-MODULE-LEASE-MISMATCH"));
     if (--*Count == 0) LiveTypesByModule.Remove(Module);
 }
+                                                                                                       
+asIScriptModule* RetainCaptureModule(asIScriptModule* ScriptModule)
+{
+    check(IsInGameThread());
+    if (!ScriptModule || IsAngelscriptExecutionShutdownStarted()) return nullptr;
+    ++LiveTypesByModule.FindOrAdd(static_cast<asCModule*>(ScriptModule));
+    return ScriptModule;
+}
+void ReleaseCaptureModule(asIScriptModule* ScriptModule)
+{
+    check(IsInGameThread());
+    auto* Module = static_cast<asCModule*>(ScriptModule);
+    int32* Count = LiveTypesByModule.Find(Module);
+    check(Count && *Count > 0);
+    if (--*Count == 0) LiveTypesByModule.Remove(Module);
+    // A reader or destructor may be releasing its last hold. Collection belongs
+    // to the next writer/GC safe point, never to this call.
+}
+                                                                                                     
 
 bool DeferDiscard(const TSharedRef<FAngelscriptModuleDesc>& Module)
 {
@@ -96,6 +117,9 @@ bool DeferDiscard(const TSharedRef<FAngelscriptModuleDesc>& Module)
     return true;
 }
 
+
+
+
 void Startup()
 {
     check(IsInGameThread() && !PostGcHandle.IsValid() && LiveTypesByModule.IsEmpty() && DeferredModules.IsEmpty());
@@ -104,9 +128,14 @@ void Startup()
 
 void Shutdown()
 {
-    check(IsInGameThread() && LiveTypesByModule.IsEmpty());
+    check(IsInGameThread());
+    const bool bKeepCaptureHolds = AngelscriptCoreExtensionPoints::Private::HasModuleGenerationLeases();
+    check(LiveTypesByModule.IsEmpty() || bKeepCaptureHolds);
     FCoreUObjectDelegates::GetPostGarbageCollect().Remove(PostGcHandle);
     PostGcHandle.Reset();
+    // A closing extension may report Busy for external C++ captures. Preserve
+    // their module graph at process exit; never reset live destructor metadata.
+    if (bKeepCaptureHolds) return;
     // The engine still owns loaded modules. Do not execute their script
     // global destructors after execution has entered shutdown quiescence.
     DeferredModules.Empty();

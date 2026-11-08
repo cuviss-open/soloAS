@@ -23,10 +23,10 @@
 #include "UObject/StrongObjectPtr.h"
 #include "UObject/UObjectThreadContext.h"
 
+// SOLOAS-COMPAT-BEGIN(>=5.6) Supply the exact unexported defaulted constructor only on reviewed installed modular SDKs [test: SoloAS.NativeReferenceReturns] [id: CS.Compatibility.Bridge.SoloASBridgeCallableDispatch.ImportanceCopyConstructor]
 // Installed modular 5.6-5.8 Engines omit this defaulted constructor from their exports.
 // Keep the exact C++ copy construction used by the fork's typed return caller.
 // The module rules reject an SDK that exports it, so this definition never replaces an engine export.
-                                                                                                                                           
 #if !IS_MONOLITHIC && ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 6
 #include "Kismet/ImportanceSamplingLibrary.h"
 #if PLATFORM_WINDOWS

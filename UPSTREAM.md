@@ -1,7 +1,7 @@
 # Upstream snapshot / 上游快照
 
 - soloAS version / soloAS 版本：**0.1.2**。
-Supported engines: **UE 5.8.4 (latest patch only; earlier patches may work without guarantee), UE 5.7 (frozen at its final patch), UE 5.6 (frozen at its final patch), UE 5.5 (frozen at its final patch), UE 5.4 (frozen at its final patch)**.
+Supported engines: **UE 5.8.4 (latest patch only; earlier patches may work without guarantee), UE 5.7 (frozen at its final patch)**.
 - These are the original snapshots used for this adaptation. / 以下为本次适配所基于的原版快照。
 
 ## Epic Unreal Engine / Epic 虚幻引擎

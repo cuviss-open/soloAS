@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MPL-2.0
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "CoreMinimal.h"
 #include "SoloASEngineCompat.h"

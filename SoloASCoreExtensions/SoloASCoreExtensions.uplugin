@@ -1,0 +1,35 @@
+{
+  "FileVersion": 3,
+  "Version": 2,
+  "VersionName": "0.2.0",
+  "FriendlyName": "SoloAS Extensions",
+  "Description": "Optional higher-level extensions for the SoloAS AngelScript runtime.",
+  "Category": "Scripting",
+  "CreatedBy": "Cuviss Studio",
+  "EnabledByDefault": true,
+  "CanContainContent": false,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "Plugins": [
+    {
+      "Name": "Angelscript",
+      "Enabled": true
+    },
+    {
+      "Name": "SoloASBridge",
+      "Enabled": true
+    }
+  ],
+  "Modules": [
+    {
+      "Name": "SoloASCoreExtensions",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "SoloASCoreExtensionsToolsProvider",
+      "Type": "Editor",
+      "LoadingPhase": "PostDefault"
+    }
+  ]
+}

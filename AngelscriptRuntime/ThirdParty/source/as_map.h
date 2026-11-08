@@ -187,6 +187,7 @@ public:
 		InnerMap.AddUnique(Key, value);
 	}
 
+
 	inline void Reserve(int Size)
 	{
 		InnerMap.Reserve(Size);
@@ -439,6 +440,7 @@ public:
 		TKey Key = GetKey(value);
 		InnerMap.AddUnique(Key, value);
 	}
+
 
 	inline void Reserve(int Size)
 	{
@@ -1263,4 +1265,3 @@ bool asCMap<KEY, VAL>::MovePrev(asSMapNode<KEY, VAL> **out, asSMapNode<KEY, VAL>
 
 
 #endif
-

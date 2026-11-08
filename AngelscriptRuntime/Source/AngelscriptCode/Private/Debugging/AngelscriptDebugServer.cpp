@@ -4,6 +4,9 @@
                                                                                                  
 #include "AngelscriptManager.h"
 #include "AngelscriptDocs.h"
+                                                                                              
+#include "HAL/FileManager.h"
+                                                                                            
 
 #include "AngelscriptCodeModule.h"
 
@@ -315,8 +318,10 @@ FAngelscriptDebugServer::FAngelscriptDebugServer(int Port)
 #endif
 }
 
+
 FAngelscriptDebugServer::~FAngelscriptDebugServer()
 {
+
 #if PLATFORM_WINDOWS && WITH_AS_DEBUGSERVER
 	::RemoveVectoredExceptionHandler(DataBreakpoint_Windows::DegbugRegisterExceptionHandlerHandle);
 	DataBreakpoint_Windows::DegbugRegisterExceptionHandlerHandle = nullptr;
@@ -366,6 +371,7 @@ void FAngelscriptDebugServer::ProcessScriptLine(class asCContext* Context)
 	if (!bIsDebugging)
 		return;
 
+
 	// Don't run the line callback if we're already in a breakpoint
 	if (bIsPaused)
 		return;
@@ -373,6 +379,7 @@ void FAngelscriptDebugServer::ProcessScriptLine(class asCContext* Context)
 	// Don't break if we're stopping the engine
 	if (IsEngineExitRequested())
 		return;
+
 
 	if (DataBreakpoints.Num() > 0 && bBreakNextScriptLine)
 	{
@@ -616,6 +623,7 @@ void FAngelscriptDebugServer::ProcessMessages()
 		{
 			UE_LOG(Angelscript, Log, TEXT("Added angelscript debug client from %s"), *Client->GetDescription());
 			Clients.Add(Client);
+
 		}
 	}
 
@@ -817,6 +825,7 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 		ClearAllBreakpoints();
 
 		ClientsThatAreDebugging.Remove(Client);
+
 		FAngelscriptManager::Get().UpdateLineCallbackState();
 	}
 	else if (MessageType == EDebugMessageType::RequestCallStack)
@@ -832,6 +841,7 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 		
 		auto& Manager = FAngelscriptManager::Get();
 		auto ModuleDesc = Manager.GetModuleByFilenameOrModuleName(BP.Filename, BP.ModuleName);
+
 
 		const FString& Key = ModuleDesc.IsValid() ? ModuleDesc->ModuleName : BP.Filename;
 		TSharedPtr<FFileBreakpoints>& Active = Breakpoints.FindOrAdd(Key);
@@ -860,6 +870,7 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 		
 		auto& Manager = FAngelscriptManager::Get();
 		auto ModuleDesc = Manager.GetModuleByFilenameOrModuleName(BP.Filename, BP.ModuleName);
+
 
 		// If the module wasn't found, use the filename as a fallback so the rest of the
 		// breakpoint bookkeeping logic has an FFileBreakpoints struct to use.
@@ -927,6 +938,7 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 		// Add the breakpoint
 		if (CodeLine != -1)
 		{
+
 			if (!Active->Lines.Contains(CodeLine))
 			{
 				Active->Lines.Add(CodeLine);
@@ -971,6 +983,7 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 	}
 	else if (MessageType == EDebugMessageType::EngineBreak)
 	{
+
 		if (bIsPaused)
 		{
 			UE_DEBUG_BREAK();
@@ -1045,6 +1058,7 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 	}
 	else if (MessageType == EDebugMessageType::RequestBreakFilters)
 	{
+
 		TMap<FName, FString> FilterList;
 		FAngelscriptCodeModule::GetDebugBreakFilters().ExecuteIfBound(FilterList);
 
@@ -1232,6 +1246,7 @@ void FAngelscriptDebugServer::GoToDefinition(const FAngelscriptGoToDefinition Go
 		UClass* AssociatedClass = Type->GetClass(FAngelscriptTypeUsage::DefaultUsage);
 		if (AssociatedClass != nullptr)
 		{
+
 			FProperty* Property = AssociatedClass->FindPropertyByName(*GoTo.SymbolName);
 			if (Property != nullptr)
 			{
@@ -1296,6 +1311,7 @@ void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 					continue;
 
 				UFunction* Function = StackView[BPStackIndex]->Node;
+
                                                                                                                              
 #if 0
                                                                                                                            
@@ -1327,12 +1343,14 @@ void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 				if (AngelscriptDebugServer::DebugAdapterVersion >= 1)
 					Frame.ModuleName = TEXT("");
 				Stack.Frames.Insert(Frame, 0);
+
 			}
 #endif
 
 			// Append the script stack frame
 			if (ScriptFunction != nullptr)
 			{
+
 
 				if (ScriptFunction->traits.GetTrait(asTRAIT_GENERATED_FUNCTION))
 				{
@@ -1353,6 +1371,8 @@ void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 							Frame.ModuleName = TEXT("");
 
 						Stack.Frames.Insert(Frame, 0);
+
+
 					}
 				}
 				else
@@ -1385,6 +1405,49 @@ void FAngelscriptDebugServer::BroadcastDebugDatabase()
 
 void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 {
+                                                                                              
+    GenerateDebugDatabase([&](EDebugMessageType Type, TArray<uint8>& Body)
+    {
+        FQueuedMessage& Msg = QueuedSends.FindOrAdd(Client).Emplace_GetRef();
+        FMemoryWriter Writer(Msg.Buffer);
+        int32 Length = Body.Num();
+        uint8 TypeByte = uint8(Type);
+        Writer << Length;
+        Writer << TypeByte;
+        Msg.Buffer.Append(Body);
+        TrySendingMessages(Client);
+    });
+    SendAssetDatabase(Client);
+}
+
+#if WITH_EDITOR && WITH_AS_DEBUGSERVER
+bool FAngelscriptDebugServer::WriteDebugDatabase(const FString& Filename)
+{
+    TUniquePtr<FArchive> Output(IFileManager::Get().CreateFileWriter(*Filename));
+    if (!Output) return false;
+    GenerateDebugDatabase([&](EDebugMessageType Type, TArray<uint8>& Body)
+    {
+        int32 Length = Body.Num();
+        uint8 TypeByte = uint8(Type);
+        *Output << Length;
+        *Output << TypeByte;
+        Output->Serialize(Body.GetData(), Body.Num());
+    });
+    return Output->Close() && !Output->IsError();
+}
+#endif
+
+void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMessageType, TArray<uint8>&)> Send)
+{
+    using namespace AngelscriptCoreExtensionPoints;
+    auto SendMessage = [&](EDebugMessageType Type, auto& Message)
+    {
+        TArray<uint8> Body;
+        FMemoryWriter Writer(Body);
+        Writer << Message;
+        Send(Type, Body);
+    };
+                                                                                            
 	double StartTime = FPlatformTime::Seconds();
 
 	auto* ScriptEngine = FAngelscriptManager::Get().Engine;
@@ -1398,7 +1461,9 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 	DebugSettings.bExposeGlobalFunctions = GetDefault<UAngelscriptSettings>()->bExposeGlobalFunctionsToOtherScriptFiles;
 	DebugSettings.bDeprecateActorGenerics = GetDefault<UAngelscriptSettings>()->DeprecateOldActorGenericMethods == EAngelscriptDeprecationMode::Deprecated;
 	DebugSettings.bDisallowActorGenerics = GetDefault<UAngelscriptSettings>()->DeprecateOldActorGenericMethods == EAngelscriptDeprecationMode::Disallowed;
-	SendMessageToClient(Client, EDebugMessageType::DebugDatabaseSettings, DebugSettings);
+                                                                                              
+    SendMessage(EDebugMessageType::DebugDatabaseSettings, DebugSettings);
+                                                                                            
 
 	auto Root = MakeShared<FJsonObject>();
 	auto SendTypes = [&]()
@@ -1408,7 +1473,9 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 		auto JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&DB.Database);
 		FJsonSerializer::Serialize(Root, JsonWriter);
 
-		SendMessageToClient(Client, EDebugMessageType::DebugDatabase, DB);
+	                                                                                              
+    SendMessage(EDebugMessageType::DebugDatabase, DB);
+                                                                                            
 
 		Root = MakeShared<FJsonObject>();
 	};
@@ -1616,6 +1683,7 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 	for (int32 TypeIndex = 0; TypeIndex < TypeCount; ++TypeIndex)
 	{
 		auto* ScriptType = ScriptEngine->GetObjectTypeByIndex(TypeIndex);
+
 		FString TypeName = ANSI_TO_TCHAR(ScriptType->GetName());
 		int32 ClassTypeId = ScriptType->GetTypeId();
 		UnsentCount += 1;
@@ -1635,6 +1703,7 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 			int Offset;
 			ScriptType->GetProperty(PropertyIndex, &Name, &TypeId, nullptr, nullptr, &Offset);
 			asCObjectProperty* ObjProp = ((asCObjectType*)ScriptType)->properties[PropertyIndex];
+
 
 #if WITH_EDITOR
 			if (ObjProp->isDeprecated)
@@ -1673,6 +1742,7 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 		for (int32 MethodIndex = 0; MethodIndex < MethodCount; ++MethodIndex)
 		{
 			auto* ScriptFunction = (asCScriptFunction*)ScriptType->GetMethodByIndex(MethodIndex);
+
 			if (ScriptFunction == nullptr)
 				continue;
 			if (ScriptFunction->traits.GetTrait(asTRAIT_DEPRECATED))
@@ -1762,6 +1832,7 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 			for (int32 i = 0, Count = ScriptType->GetSubTypeCount(); i < Count; ++i)
 			{
 				asITypeInfo* SubType = ScriptType->GetSubType(i);
+
 				SubTypes.Add(MakeShared<FJsonValueString>(ANSI_TO_TCHAR(SubType->GetName())));
 			}
 
@@ -1842,6 +1913,7 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 	for (int32 GlobalFuncIndex = 0; GlobalFuncIndex < GlobalFuncCount; ++GlobalFuncIndex)
 	{
 		asCScriptFunction* Func = (asCScriptFunction*)ScriptEngine->GetGlobalFunctionByIndex(GlobalFuncIndex);
+
 		if (Func->traits.GetTrait(asTRAIT_DEPRECATED))
 			continue;
 		NSFunctions.FindOrAdd(ANSI_TO_TCHAR(Func->GetNamespace())).Functions.Add(Func);
@@ -1851,6 +1923,7 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 	for (int32 GlobalVarIndex = 0; GlobalVarIndex < GlobalVarCount; ++GlobalVarIndex)
 	{
 		asCGlobalProperty* Prop = ScriptEngine->registeredGlobalProps[GlobalVarIndex];
+
 		NSFunctions.FindOrAdd(ANSI_TO_TCHAR(Prop->nameSpace->GetName())).Variables.Add(Prop);
 	}
 
@@ -1858,6 +1931,7 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 	for (int32 EnumIndex = 0; EnumIndex < EnumCount; ++EnumIndex)
 	{
 		auto* EnumType = (asCTypeInfo*)ScriptEngine->GetEnumByIndex(EnumIndex);
+
 		auto& NS = NSFunctions.FindOrAdd(ANSI_TO_TCHAR(EnumType->GetName()));
 		UEnum* UnrealEnum = (UEnum*)EnumType->GetUserData();
 
@@ -1965,6 +2039,7 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 	for (auto& TemplateSpecializationElem : ScriptEngine->registeredTemplateSpecializationFunctions)
 	{
 		asCObjectType* ScriptType = TemplateSpecializationElem.Key;
+
 		auto TypeDesc = MakeShared<FJsonObject>();
 		auto Properties = MakeShared<FJsonObject>();
 		TArray<TSharedPtr<FJsonValue>> Methods;
@@ -1997,9 +2072,13 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 	SendTypes();
 
 	FEmptyMessage Message;
-	SendMessageToClient(Client, EDebugMessageType::DebugDatabaseFinished, Message);
+                                                                                              
+    SendMessage(EDebugMessageType::DebugDatabaseFinished, Message);
+                                                                                            
 
-	SendAssetDatabase(Client);
+                                                                                              
+    // Asset database is a separate protocol and is sent only by the live server.
+                                                                                            
 
 	double EndTime = FPlatformTime::Seconds();
 	UE_LOG(Angelscript, Log, TEXT("Sending debug database took %.3g seconds"), (EndTime - StartTime));
@@ -2045,6 +2124,7 @@ void FAngelscriptDebugServer::BindAssetRegistry()
 		// Sign up to sending newly changed assets to the clients
 		AssetRegistry.OnAssetAdded().AddLambda([this](const FAssetData& AssetData)
 		{
+
 			if (ClientsThatWantDebugDatabase.Num() == 0)
 				return;
 			// Skip external actor packages 
@@ -2058,6 +2138,7 @@ void FAngelscriptDebugServer::BindAssetRegistry()
 		});
 		AssetRegistry.OnAssetRemoved().AddLambda([this](const FAssetData& AssetData)
 		{
+
 			if (ClientsThatWantDebugDatabase.Num() == 0)
 				return;
 			// Skip external actor packages 
@@ -2072,6 +2153,7 @@ void FAngelscriptDebugServer::BindAssetRegistry()
 		});
 		AssetRegistry.OnAssetRenamed().AddLambda([this](const FAssetData& AssetData, const FString& OldObjectPath)
 		{
+
 			if (ClientsThatWantDebugDatabase.Num() == 0)
 				return;
 			// Skip external actor packages 
@@ -2337,6 +2419,7 @@ bool FAngelscriptDebugServer::GetDebuggerValue(const FString& Path, FDebuggerVal
 
 	Frame = ResolveDebuggerFrame(Frame);
 
+
 	TArray<FExprElem> Expr;
 	ParseExpression(Expr, NamePath);
 
@@ -2506,6 +2589,7 @@ bool FAngelscriptDebugServer::GetDebuggerValue(const FString& Path, FDebuggerVal
 	// * Global Scope
 	if (!bValidValue && Context != nullptr)
 	{
+
 		auto* Engine = Context->m_engine;
 		asSNameSpace* ns = Engine->defaultNamespace;
 
@@ -2539,6 +2623,7 @@ bool FAngelscriptDebugServer::GetDebuggerValue(const FString& Path, FDebuggerVal
 
 			if (GlobalProperty != nullptr)
 			{
+
 				auto Usage = FAngelscriptTypeUsage::FromDataType(GlobalProperty->type);
 
 				auto* GlobalAddress = GlobalProperty->GetAddressOfValue();
@@ -2585,6 +2670,7 @@ bool FAngelscriptDebugServer::GetDebuggerValue(const FString& Path, FDebuggerVal
 				auto* EnumType = CastToEnumType((asCTypeInfo*)Engine->GetTypeInfoByName(TCHAR_TO_ANSI(*NamespaceName)));
 				if (EnumType != nullptr)
 				{
+
 					for (int i = 0, Count = EnumType->enumValues.GetLength(); i < Count; ++i)
 					{
 						if (EnumType->enumValues[i]->name == TCHAR_TO_ANSI(*VariableName))
@@ -2624,6 +2710,7 @@ bool FAngelscriptDebugServer::GetDebuggerValue(const FString& Path, FDebuggerVal
 			// Subscripts should resolve as values to become members if possible
 			FDebuggerValue InnerValue;
 			int32 InnerFrame = Frame;
+
 			if (GetDebuggerValue(MemberName, InnerValue, &InnerFrame))
 				MemberName = InnerValue.Value;
 
@@ -2817,6 +2904,7 @@ void FAngelscriptDebugServer::TrySendingMessages(FSocket* Client)
 	while (Queue.Num() != 0)
 	{
 		FQueuedMessage& Msg = Queue[0];
+
 		if (Msg.FirstTry < 0)
 			Msg.FirstTry = FPlatformTime::Seconds();
 

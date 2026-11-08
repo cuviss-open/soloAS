@@ -355,6 +355,7 @@ bool IsAngelscriptCallableDispatchCaller(const asFunctionCaller& Caller)
 }
                                                                                                
 
+
 bool RegisterAngelscriptCallableDispatch(
 	const UFunction* Function,
 	FASBindFunctionPointers& OutFunctionPointers

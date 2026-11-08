@@ -395,6 +395,7 @@ struct FBlueprintEventSignature
 	UFunction* UnrealFunction = nullptr;
 };
 
+
 void CallStaticWithSignature(asIScriptGeneric* InGeneric)
 {
 	asCGeneric* Generic = static_cast<asCGeneric*>(InGeneric);

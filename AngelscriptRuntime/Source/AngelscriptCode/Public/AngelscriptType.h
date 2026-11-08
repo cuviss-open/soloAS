@@ -74,6 +74,10 @@ struct ANGELSCRIPTCODE_API FAngelscriptType : TSharedFromThis<FAngelscriptType>
 
 	// Register an alias for a specific type
 	static void RegisterAlias(const FString& Alias, TSharedRef<FAngelscriptType> Type);
+                                                                                                   
+    static bool ReindexBlueprintCarrierView(TSharedRef<FAngelscriptType> Type,
+        UClass* PreviousClass, UClass* ReplacementClass, FString& Diagnostic, bool& bBusy);
+                                                                                                 
 
 	// Register a 'type finder' function that can find FAngelscriptTypes for UProperties.
 	typedef TFunction<bool(FProperty*,FAngelscriptTypeUsage&)> FTypeFinder;

@@ -25,6 +25,8 @@ See [Environment setup](https://soloas.cuviss.com/docs/en/requirements.html) and
 | `SoloASBridge/` | `SoloASBridge` | Stock engine adaptation; enabled by dependency |
 | `AngelscriptManualBindPlugins/AngelscriptGAS/` | `AngelscriptGAS` | Optional Gameplay Ability System bindings; off by default |
 | `AngelscriptManualBindPlugins/AngelscriptEnhancedInput/` | `AngelscriptEnhancedInput` | Optional Enhanced Input bindings; off by default |
+| `SoloASCoreExtensions/` | `SoloASCoreExtensions` | Optional high-level scripting extensions; enabled by default |
+| `SoloASDeveloperTools/` | `SoloASDeveloperTools` | Editor and project development tools; enabled by default |
 <!-- soloas-plugins:end -->
 
 ## License

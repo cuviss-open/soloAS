@@ -45,7 +45,7 @@
     },
     "5.6": {
       "status": "validated",
-      "supported": true,
+      "supported": false,
       "policy": "last-patch-only",
       "validationPolicy": "latest-patch-only",
       "minimumPatch": 1,
@@ -63,7 +63,7 @@
     },
     "5.5": {
       "status": "validated",
-      "supported": true,
+      "supported": false,
       "policy": "last-patch-only",
       "validationPolicy": "latest-patch-only",
       "minimumPatch": 4,
@@ -81,7 +81,7 @@
     },
     "5.4": {
       "status": "validated",
-      "supported": true,
+      "supported": false,
       "policy": "last-patch-only",
       "validationPolicy": "latest-patch-only",
       "minimumPatch": 4,

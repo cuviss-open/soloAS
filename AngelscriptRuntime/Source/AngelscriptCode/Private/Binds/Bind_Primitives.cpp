@@ -936,4 +936,3 @@ AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_PrimitiveTypes(FAngelscriptBin
 		Str += *(bool*)Ptr ? TEXT("true") : TEXT("false");
 	});
 });
-

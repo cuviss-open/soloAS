@@ -952,6 +952,7 @@ int asCContext::Suspend()
 // interface
 int asCContext::Execute()
 {
+
                                                                                                            
 	FAngelscriptExecutionReadScope ExecutionReadScope;
                                                                                                          
@@ -1866,6 +1867,7 @@ void asCContext::ExecuteNext()
 	// Return to the caller, and remove the arguments from the stack
 	case asBC_RET:
 		{
+
                                                                                                             
 #if SOLOAS_LEGACY_TERMINAL_LIFECYCLE
 			Cuviss::TerminalAdmission::ValidateTerminalParentFrame(this, Cuviss::TerminalAdmission::EParentFrameFence::ParentRetBefore, l_bc, l_sp, l_fp);
@@ -6091,4 +6093,3 @@ void asCContext::InvalidateReferencesToMemoryBlock(void* Address, SIZE_T Size)
 #endif
 
 END_AS_NAMESPACE
-

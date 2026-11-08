@@ -1,0 +1,12 @@
+using UnrealBuildTool;
+
+public class @TARGET@Target : TargetRules
+{
+    public @TARGET@Target(TargetInfo Target) : base(Target)
+    {
+        Type = TargetType.@KIND@;
+        DefaultBuildSettings = BuildSettingsVersion.Latest;
+        IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
+        @MODULES@
+    }
+}

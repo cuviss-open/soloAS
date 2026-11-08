@@ -182,6 +182,9 @@ public:
 //-----------------------------------------------
 // Internal
 //-----------------------------------------------
+                                                                                                   
+    const asQWORD coreGenerationId;
+                                                                                                 
 	asCModule(const char *name, asCScriptEngine *engine);
 	~asCModule();
 

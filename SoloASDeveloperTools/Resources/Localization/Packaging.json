@@ -1,0 +1,79 @@
+{
+  "texts": {
+    "SettingsTitle": {
+      "en": "soloAS Packaging",
+      "zh": "soloAS 打包"
+    },
+    "SettingsDescription": {
+      "en": "Delivery and output settings are for soloAS CLI packaging; other options: Project > Packaging.",
+      "zh": "交付方式和输出目录用于 soloAS 命令行打包；其余选项：项目 → 打包。"
+    },
+    "InvalidOutput": {
+      "en": "Choose an output folder inside this project, without parent traversal.",
+      "zh": "请选择此工程内的输出目录，不允许跳转到上级目录。"
+    },
+    "Category": {
+      "en": "Script packaging",
+      "zh": "脚本打包"
+    },
+    "MenuSettings": {
+      "en": "soloAS Packaging Settings",
+      "zh": "soloAS 打包设置"
+    },
+    "MenuSettingsTip": {
+      "en": "Open project defaults for soloAS script delivery and CLI packaging.",
+      "zh": "打开 soloAS 脚本交付与 CLI 打包的工程默认设置。"
+    },
+    "MenuUE": {
+      "en": "UE Packaging Settings",
+      "zh": "UE 打包设置"
+    },
+    "MenuUETip": {
+      "en": "Set maps, cooking, Pak/IoStore, target and build configuration in Unreal Engine's Packaging page.",
+      "zh": "在 UE 自带打包页设置地图、烘焙、Pak/IoStore、目标和构建配置。"
+    },
+    "MenuPackage": {
+      "en": "Package Project…",
+      "zh": "打包项目…"
+    },
+    "MenuPackageTip": {
+      "en": "Open Unreal Engine's Project Launcher to build, cook and package your project.",
+      "zh": "打开 UE 原生项目启动器，构建、烘焙并打包工程。"
+    },
+    "MenuDocs": {
+      "en": "Packaging Documentation",
+      "zh": "打包文档"
+    },
+    "MenuDocsTip": {
+      "en": "Read about native packaging and soloAS CLI/CI delivery workflows.",
+      "zh": "阅读原生打包以及 soloAS CLI/CI 脚本交付流程。"
+    },
+    "MenuSection": {
+      "en": "Packaging",
+      "zh": "打包"
+    },
+    "MenuAISection": {
+      "en": "AI Assistance",
+      "zh": "AI 辅助"
+    }
+  },
+  "properties": {
+    "DeliveryMode": {
+      "name": "脚本交付方式",
+      "tooltip": "源码包含脚本；字节码不交付源码；半 AOT 还会将生成的 C++ 编译进 Game。UE 原生打包保留脚本源码，不应用此选项。字节码或半 AOT 包请通过 soloAS CLI 生成并检查。"
+    },
+    "OutputDirectory": {
+      "name": "输出目录",
+      "tooltip": "相对于此工程的输出目录，供 soloAS 打包 CLI 使用，默认为 Saved/Packages。UE 原生打包对话框单独选择自己的输出目录。"
+    },
+    "RequiredProviders": {
+      "name": "必需集成",
+      "tooltip": "soloAS 打包 CLI 必需的交付集成 ID，不需要时留空。多方案仍保存在 Config/SoloASPackagingProfiles.json，可以覆盖工程默认值。"
+    }
+  },
+  "deliveryModes": {
+    "Source": "源码",
+    "Bytecode": "字节码",
+    "SemiAot": "半 AOT（静态 JIT）"
+  }
+}

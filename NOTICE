@@ -17,35 +17,49 @@ Source identities and retained standalone license hashes:
   "products": [
     {
       "category": "UE-AS fork bindings",
-      "commit": "fd8711b6c5142bafe40e0204b5bddce4ade9a412",
+      "commit": "1932c9d202b9fe037dd8f2d5c2fd9c4f1ebd6596",
       "license_scope": "Plugin source and Cuviss contributions: MIT.",
       "name": "AngelscriptEnhancedInput",
       "path": "AngelscriptManualBindPlugins/AngelscriptEnhancedInput",
-      "tree": "361b53aa85c256517950e8bad7c564b324c5ba35"
+      "tree": "acd062ce7273b13102d94edf59f8f2017717ff57"
     },
     {
       "category": "UE-AS fork bindings",
-      "commit": "5c155359919f463892d726235b55693397441fc1",
+      "commit": "72ad76944b6695a7625ae98e57a2801ecd45db1d",
       "license_scope": "Plugin source and Cuviss contributions: Apache-2.0 OR MIT.",
       "name": "AngelscriptGAS",
       "path": "AngelscriptManualBindPlugins/AngelscriptGAS",
-      "tree": "28427c74c18a4e5532593b96cf4351c98b4a4ae7"
+      "tree": "9ccdbf811e87b69f8fe29c5ecdaa7713506b89cf"
     },
     {
       "category": "core",
-      "commit": "3c22031382c0a7656576a1162832a5c9d46a301b",
+      "commit": "51a942c4f7bd94e254f5681f3299246854938052",
       "license_scope": "Plugin source and Cuviss contributions: MIT. Embedded AngelScript library and its modifications: zlib.",
       "name": "AngelscriptRuntime",
       "path": "AngelscriptRuntime",
-      "tree": "debea87a9f1488c0e3760fd1b2183701f543af31"
+      "tree": "d09341b4099b05df504803b509ea45610b39b89e"
     },
     {
       "category": "core",
-      "commit": "a5821fb1c3cee59b63462542f973a6d23b96c06f",
+      "commit": "deea1f37c77de5566486ee71296ecc86966d8dba",
       "license_scope": "Cuviss original code and modifications are under MPL-2.0.",
       "name": "SoloASBridge",
       "path": "SoloASBridge",
-      "tree": "b0aa7156c7640afe702b07f18e6544eec648bee9"
+      "tree": "f22784c3f25a96de8360eeaa176d2cc6c9903d87"
+    },
+    {
+      "category": "extension",
+      "commit": "9f27e47127453ebabe94d172a3decdf59ea8287a",
+      "name": "SoloASCoreExtensions",
+      "path": "SoloASCoreExtensions",
+      "tree": "a178b269936b9328bc02564a7edc834aa517eeec"
+    },
+    {
+      "category": "extension",
+      "commit": "304f33d80776f671684ad65e468ac8460c6a88f3",
+      "name": "SoloASDeveloperTools",
+      "path": "SoloASDeveloperTools",
+      "tree": "d55902281e73acfa25cfb51479a316e9fca9cf4e"
     }
   ],
   "retained_license_files": [
@@ -88,6 +102,14 @@ Source identities and retained standalone license hashes:
     {
       "path": "SoloASBridge/Source/ThirdParty/Detours/LICENSE.md",
       "sha256": "b301808b732cfaa60df2b4b422d78cd97d2a15058b207e7e33f0535ba5170dd6"
+    },
+    {
+      "path": "SoloASCoreExtensions/LICENSE",
+      "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+    },
+    {
+      "path": "SoloASCoreExtensions/NOTICE",
+      "sha256": "876845d2dedac1e769ea2c0802dc8c728a560ff01d17836bd42b2f0dc30c3e95"
     }
   ]
 }
