@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MPL-2.0
+# Copyright Cuviss Studio. All Rights Reserved.
 """Publish a self-contained MCP Host into this plugin's platform directory."""
 from __future__ import annotations
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright Cuviss Studio. All Rights Reserved.
 #include "PackagingWindowModel.h"
 #include "HAL/PlatformProcess.h"
 #include "HAL/FileManager.h"

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: (Apache-2.0 OR MIT)
+// Copyright Cuviss Studio.
 #pragma once
 
 #include "CoreMinimal.h"

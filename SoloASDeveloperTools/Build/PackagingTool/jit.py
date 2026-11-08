@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright Cuviss Studio. All Rights Reserved.
 """Unmodified static-JIT collection and reversible release-copy integration."""
 from __future__ import annotations
 

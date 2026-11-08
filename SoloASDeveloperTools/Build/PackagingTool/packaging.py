@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright Cuviss Studio. All Rights Reserved.
 """Release-copy packaging executor shared by CLI, window and MCP consumers."""
 from __future__ import annotations
 
