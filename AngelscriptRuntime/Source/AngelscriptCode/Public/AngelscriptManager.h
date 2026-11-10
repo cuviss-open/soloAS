@@ -379,6 +379,9 @@ private:
 
 	void DiscoverTests();
 	bool PerformHotReload(ECompileType CompileType, const TArray<FFilenamePair>& FileList);
+                                                                                                       
+	bool PerformAutomaticHotReload(ECompileType CompileType, const TArray<FFilenamePair>& FileList);
+                                                                                                     
 	void CheckForFileChanges();
 
 	void UpdateScriptReferencesInUnrealData(struct asModuleReferenceUpdateMap& UpdateMap, TSharedRef<FAngelscriptModuleDesc> Module);
@@ -1210,6 +1213,10 @@ struct FAngelscriptModuleDesc
 		FString RelativeFilename;
 		FString AbsoluteFilename;
 		FString Code;
+                                                                                                     
+		TArray<int32> SourceLines;
+		TArray<FString> UserGeneratedFunctions;
+                                                                                                   
 	};
 
 	TArray<FCodeSection> Code;

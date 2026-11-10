@@ -312,6 +312,10 @@ bool FAngelscriptPreprocessor::Preprocess()
 		Section.RelativeFilename = File.RelativeFilename;
 		Section.AbsoluteFilename = File.AbsoluteFilename;
 		Section.Code = File.ProcessedCode;
+                                                                                                     
+		Section.SourceLines = MoveTemp(File.SourceLines);
+		Section.UserGeneratedFunctions = MoveTemp(File.UserGeneratedFunctions);
+                                                                                                   
 
 		File.Module->Code.Emplace(MoveTemp(Section));
 	}
@@ -4272,11 +4276,20 @@ void FAngelscriptPreprocessor::FileWideWarning(FFile& File, const FString& Messa
 	FAngelscriptManager::Get().ScriptCompileError(File.AbsoluteFilename, Diagnostic);
 }
 
+                                                                                                     
+static int32 MapPreprocessorSourceLine(const FAngelscriptPreprocessor::FFile& File, int32 Line)
+{
+	return File.SourceLines.IsValidIndex(Line - 1) ? File.SourceLines[Line - 1] : Line;
+}
+                                                                                                   
+
 void FAngelscriptPreprocessor::LineError(FFile& File, int32 Line, const FString& Message)
 {
 	FAngelscriptManager::FDiagnostic Diagnostic;
 	Diagnostic.Message = Message;
-	Diagnostic.Row = Line;
+                                                                                                     
+	Diagnostic.Row = MapPreprocessorSourceLine(File, Line);
+                                                                                                   
 	Diagnostic.Column = 1;
 	Diagnostic.bIsError = true;
 	Diagnostic.bIsInfo = false;
@@ -4288,7 +4301,9 @@ void FAngelscriptPreprocessor::LineWarning(FFile& File, int32 Line, const FStrin
 {
 	FAngelscriptManager::FDiagnostic Diagnostic;
 	Diagnostic.Message = Message;
-	Diagnostic.Row = Line;
+                                                                                                     
+	Diagnostic.Row = MapPreprocessorSourceLine(File, Line);
+                                                                                                   
 	Diagnostic.Column = 1;
 	Diagnostic.bIsError = false;
 	Diagnostic.bIsInfo = false;
@@ -4300,7 +4315,9 @@ void FAngelscriptPreprocessor::ChunkError(FFile& File, FChunk& Chunk, const FStr
 {
 	FAngelscriptManager::FDiagnostic Diagnostic;
 	Diagnostic.Message = Message;
-	Diagnostic.Row = Chunk.FileLineNumber;
+                                                                                                     
+	Diagnostic.Row = MapPreprocessorSourceLine(File, Chunk.FileLineNumber);
+                                                                                                   
 	Diagnostic.Column = 1;
 	Diagnostic.bIsError = true;
 	Diagnostic.bIsInfo = false;
@@ -4312,7 +4329,9 @@ void FAngelscriptPreprocessor::MacroError(FFile& File, FMacro& Macro, const FStr
 {
 	FAngelscriptManager::FDiagnostic Diagnostic;
 	Diagnostic.Message = Message;
-	Diagnostic.Row = Macro.FileLineNumber;
+                                                                                                     
+	Diagnostic.Row = MapPreprocessorSourceLine(File, Macro.FileLineNumber);
+                                                                                                   
 	Diagnostic.Column = 1;
 	Diagnostic.bIsError = true;
 	Diagnostic.bIsInfo = false;

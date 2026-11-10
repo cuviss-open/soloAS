@@ -1,9 +1,15 @@
 #include "AngelscriptDebugServer.h"
+                                                                                                       
+#include "SocketSubsystem.h"
+                                                                                                     
                                                                                                    
 #include "SoloASEngineCompat.h"
                                                                                                  
 #include "AngelscriptManager.h"
 #include "AngelscriptDocs.h"
+                                                                                                   
+#include "AngelscriptCoreExtensionPoints.h"
+                                                                                                 
                                                                                               
 #include "HAL/FileManager.h"
                                                                                             
@@ -296,6 +302,20 @@ void ClearAllAngelscriptDataBreakpointsFromHandler()
 #endif
 }
 
+                                                                                                       
+bool FAngelscriptDebugServer::HasClientEndpoint(const FString& Endpoint) const
+{
+	auto* Sockets = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
+	if (!Sockets) return false;
+	for (FSocket* Client : Clients)
+	{
+		TSharedRef<FInternetAddr> Peer = Sockets->CreateInternetAddr();
+		if (Client && Client->GetConnectionState() == SCS_Connected && Client->GetPeerAddress(*Peer)
+			&& Peer->ToString(true) == Endpoint) return true;
+	}
+	return false;
+}
+                                                                                                     
 bool FAngelscriptDebugServer::HandleConnectionAccepted(class FSocket* ClientSocket, const FIPv4Endpoint& ClientEndpoint)
 {
 	UE_LOG(Angelscript, Log, TEXT("Received angelscript debug connection from %s"), *ClientEndpoint.ToText().ToString());
@@ -467,7 +487,9 @@ void FAngelscriptDebugServer::ProcessScriptLine(class asCContext* Context)
 		// Never step into automatically generated code, since we have nowhere to place the cursor
 		if (auto* Function = (asCScriptFunction*)Context->GetFunction(0))
 		{
-			if (Function->traits.GetTrait(asTRAIT_GENERATED_FUNCTION))
+                                                                                                     
+			if (Function->traits.GetTrait(asTRAIT_GENERATED_FUNCTION) && !Function->userMappedGeneratedFunction)
+                                                                                                   
 			{
 				bShouldBreak = false;
 			}
@@ -495,7 +517,10 @@ void FAngelscriptDebugServer::ProcessScriptLine(class asCContext* Context)
 
 		if (Section != nullptr)
 		{
-			if (Line == IgnoreBreakLine && Section == IgnoreBreakSection)
+                                                                                                     
+			if (Line == IgnoreBreakLine && Section == IgnoreBreakSection
+				&& (!Context->m_currentFunction->userMappedGeneratedFunction || Context->m_currentFunction == IgnoreBreakFunction))
+                                                                                                   
 				bWasIgnored = true;
 
 			TSharedPtr<FFileBreakpoints>& ActiveBreakpoints = SectionBreakpoints.FindOrAdd(Section);
@@ -517,6 +542,10 @@ void FAngelscriptDebugServer::ProcessScriptLine(class asCContext* Context)
 					bIsPaused = true;
 					IgnoreBreakLine = Line;
 					IgnoreBreakSection = Section;
+                                                                                                     
+					IgnoreBreakFunction = Context->m_currentFunction;
+					bIgnoreBreakMappedModule = Context->m_currentFunction->module->hasUserMappedGeneratedFunctions;
+                                                                                                   
 				}
 			}
 		}
@@ -524,8 +553,26 @@ void FAngelscriptDebugServer::ProcessScriptLine(class asCContext* Context)
 
 	if (!bWasIgnored && !bIsPaused)
 	{
+                                                                                                     
+		const auto* CurrentFunction = Context->m_currentFunction;
+		bool bNestedWhileIgnored = false;
+		if (IgnoreBreakFunction && bIgnoreBreakMappedModule && CurrentFunction != IgnoreBreakFunction)
+		{
+			for (asUINT Frame = 1; Frame < Context->GetCallstackSize(); ++Frame)
+			{
+				if (Context->GetFunction(Frame) == IgnoreBreakFunction) { bNestedWhileIgnored = true; break; }
+			}
+		}
+		if (!bNestedWhileIgnored)
+		{
+                                                                                                   
 		IgnoreBreakLine = -1;
 		IgnoreBreakSection = nullptr;
+                                                                                                     
+		IgnoreBreakFunction = nullptr;
+		bIgnoreBreakMappedModule = false;
+		}
+                                                                                                   
 	}
 
 	if (bIsPaused)
@@ -1352,7 +1399,9 @@ void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 			{
 
 
-				if (ScriptFunction->traits.GetTrait(asTRAIT_GENERATED_FUNCTION))
+                                                                                                     
+				if (ScriptFunction->traits.GetTrait(asTRAIT_GENERATED_FUNCTION) && !ScriptFunction->userMappedGeneratedFunction)
+                                                                                                   
 				{
 					continue;
 				}
@@ -1480,6 +1529,68 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 		Root = MakeShared<FJsonObject>();
 	};
 
+                                                                                                   
+	TArray<FDebugTypeAlias> AliasSnapshot;
+	CollectDebugTypeAliases(AliasSnapshot);
+	TMap<FString, TSet<FString>> AliasTargets;
+	TMap<FString, TArray<FDebugTypeAlias>> AliasesByInternal;
+	TSet<FString> ExistingNames;
+	if (!AliasSnapshot.IsEmpty())
+	{
+		for (asUINT Index = 0; Index < ScriptEngine->GetObjectTypeCount(); ++Index)
+		{
+			const FString Name = ANSI_TO_TCHAR(ScriptEngine->GetObjectTypeByIndex(Index)->GetName());
+			if (!Name.IsEmpty() && Name[0] != '_') ExistingNames.Add(Name);
+		}
+		for (asUINT Index = 0; Index < ScriptEngine->GetEnumCount(); ++Index)
+			ExistingNames.Add(ANSI_TO_TCHAR(ScriptEngine->GetEnumByIndex(Index)->GetName()));
+		for (asUINT ModuleIndex = 0; ModuleIndex < ScriptEngine->GetModuleCount(); ++ModuleIndex)
+		{
+			auto* Module = ScriptEngine->GetModuleByIndex(ModuleIndex);
+			for (asUINT Index = 0; Index < Module->GetObjectTypeCount(); ++Index)
+				ExistingNames.Add(ANSI_TO_TCHAR(Module->GetObjectTypeByIndex(Index)->GetName()));
+			for (asUINT Index = 0; Index < Module->GetEnumCount(); ++Index)
+				ExistingNames.Add(ANSI_TO_TCHAR(Module->GetEnumByIndex(Index)->GetName()));
+		}
+		for (const FDebugTypeAlias& Alias : AliasSnapshot)
+			if (Alias.InternalName.StartsWith(TEXT("__")) && !Alias.PublicName.IsEmpty() && Alias.PublicName[0] != '_')
+				AliasTargets.FindOrAdd(Alias.PublicName).Add(Alias.InternalName);
+		for (const FDebugTypeAlias& Alias : AliasSnapshot)
+		{
+			const TSet<FString>* Targets = AliasTargets.Find(Alias.PublicName);
+			if (!Targets) continue;
+			if (ExistingNames.Contains(Alias.PublicName) || Targets->Num() != 1)
+			{
+				UE_LOG(Angelscript, Warning, TEXT("Debug type alias '%s' conflicts with another type; export skipped."), *Alias.PublicName);
+				continue;
+			}
+			auto& Aliases = AliasesByInternal.FindOrAdd(Alias.InternalName);
+			if (!Aliases.ContainsByPredicate([&](const FDebugTypeAlias& Other) { return Other.PublicName == Alias.PublicName; }))
+				Aliases.Add(Alias);
+		}
+	}
+	auto TranslateAliasNames = [&](const FString& Declaration)
+	{
+		if (AliasesByInternal.IsEmpty()) return Declaration;
+		FString Result;
+		for (int32 Begin = 0; Begin < Declaration.Len();)
+		{
+			if (!FChar::IsAlnum(Declaration[Begin]) && Declaration[Begin] != '_')
+			{
+				Result.AppendChar(Declaration[Begin++]);
+				continue;
+			}
+			int32 End = Begin + 1;
+			while (End < Declaration.Len() && (FChar::IsAlnum(Declaration[End]) || Declaration[End] == '_')) ++End;
+			const FString Token = Declaration.Mid(Begin, End - Begin);
+			const auto* Aliases = AliasesByInternal.Find(Token);
+			Result += Aliases && Aliases->Num() == 1 ? (*Aliases)[0].PublicName : Token;
+			Begin = End;
+		}
+		return Result;
+	};
+                                                                                                 
+
 	auto GetDecl = [&](int TypeId, asDWORD* Flags = nullptr, bool bShowInRef = true) -> FString
 	{
 		if (TypeId == -1)
@@ -1499,11 +1610,14 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 					Decl += TEXT("&in");
 			}
 		}
-		return Decl;
+		                                                                                                   
+		return TranslateAliasNames(Decl);
+		                                                                                                 
 	};
 
 	TArray<TSharedPtr<FJsonValueObject>> Constructors;
 	int32 UnsentCount = 0;
+
 
 	auto MakeFuncDesc = [&](asCScriptFunction* ScriptFunction) -> TSharedPtr<FJsonObject>
 	{
@@ -1688,8 +1802,11 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 		int32 ClassTypeId = ScriptType->GetTypeId();
 		UnsentCount += 1;
 
-		if (TypeName.IsEmpty() || TypeName[0] == '_')
+		                                                                                                   
+		const TArray<FDebugTypeAlias>* ExportAliases = AliasesByInternal.Find(TypeName);
+		if (TypeName.IsEmpty() || (TypeName[0] == '_' && !ExportAliases))
 			continue;
+		                                                                                                 
 
 		auto TypeDesc = MakeShared<FJsonObject>();
 		auto Properties = MakeShared<FJsonObject>();
@@ -1817,7 +1934,9 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 			}
 
 			auto FuncDesc = MakeFuncDesc(ScriptFunction);
-			if (FuncDesc.IsValid())
+			                                                                                                   
+			if (FuncDesc.IsValid() && !ExportAliases)
+			                                                                                                 
 			{
 				FuncDesc->SetStringField(TEXT("name"), TypeName);
 				FuncDesc->SetStringField(TEXT("return"), TypeName);
@@ -1851,7 +1970,9 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 					auto SuperType = FAngelscriptType::GetByClass(SuperPtr);
 					if (SuperType.IsValid())
 					{
-						TypeDesc->SetStringField(TEXT("inherits"), SuperType->GetAngelscriptTypeName());
+						                                                                                                   
+						TypeDesc->SetStringField(TEXT("inherits"), TranslateAliasNames(SuperType->GetAngelscriptTypeName()));
+						                                                                                                 
 						break;
 					}
 
@@ -1888,7 +2009,20 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 		if (ScriptType->GetFlags() & asOBJ_TEMPLATE_INHERIT_SPECIALIZATIONS)
 			TypeDesc->SetBoolField(TEXT("template_inherit_specializations"), true);
 
-		Root->SetObjectField(TypeName, TypeDesc);
+		                                                                                                   
+		if (ExportAliases)
+		{
+			for (const FDebugTypeAlias& Alias : *ExportAliases)
+			{
+				auto PublicDesc = MakeShared<FJsonObject>();
+				PublicDesc->Values = TypeDesc->Values;
+				if (!Alias.ParentName.IsEmpty()) PublicDesc->SetStringField(TEXT("inherits"), Alias.ParentName);
+				Root->SetObjectField(Alias.PublicName, PublicDesc);
+			}
+		}
+		else
+			Root->SetObjectField(TypeName, TypeDesc);
+		                                                                                                 
 
 		const bool bShouldSend = UnsentCount > 10;
 		if (bShouldSend)
@@ -2381,7 +2515,9 @@ int FAngelscriptDebugServer::ResolveDebuggerFrame(int DebuggerFrame)
 					if (FunctionName.StartsWith(TEXT("__")))
 						continue;
 				}
-				if (ScriptFunction->traits.GetTrait(asTRAIT_GENERATED_FUNCTION))
+                                                                                                     
+				if (ScriptFunction->traits.GetTrait(asTRAIT_GENERATED_FUNCTION) && !ScriptFunction->userMappedGeneratedFunction)
+                                                                                                   
 				{
 					continue;
 				}

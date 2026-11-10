@@ -384,6 +384,9 @@ public:
 		asCArray<int>                   sectionIdxs;
 	};
 	ScriptFunctionData          *scriptData;
+                                                                                                     
+	bool userMappedGeneratedFunction = false;
+                                                                                                   
 
 	// Used by asFUNC_SYSTEM
 	asSSystemFunctionInterface  *sysFuncIntf;

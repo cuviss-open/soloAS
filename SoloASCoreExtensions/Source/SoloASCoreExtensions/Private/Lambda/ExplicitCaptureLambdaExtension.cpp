@@ -277,7 +277,10 @@ void RewriteLambdaReleaseStatements(FString& Code, const TSet<FString>& Receiver
         FString Statement = Code.Mid(Start, Semi - Start + 1);
         // Single-cast uses Clear in the script binding API.
         if (Method == TEXT("Unbind") && SkipTriviaForward(Code, Kinds, Open + 1) == Close)
+        {
             Statement = Receiver + TEXT(".Clear();");
+            for (int32 At = Start; At <= Semi; ++At) if (Code[At] == '\n') Statement += '\n';
+        }
         Replacement.Replacement = TEXT("{ ") + Statement + TEXT(" __CuvissSweepLambdaClosures(); }");
         Start = Semi;
     }
@@ -287,6 +290,99 @@ void RewriteLambdaReleaseStatements(FString& Code, const TSet<FString>& Receiver
         Code.RemoveAt(Replacement.StartPosition, Replacement.EndPosition - Replacement.StartPosition + 1);
         Code.InsertAt(Replacement.StartPosition, Replacement.Replacement);
     }
+}
+
+namespace
+{
+using FSourceFile = FAngelscriptPreprocessor::FFile;
+
+int32 SourceLineAt(const FSourceFile& File, int32 Position)
+{
+    int32 Physical = 0;
+    for (int32 Index = 0; Index < Position; ++Index) if (File.ProcessedCode[Index] == '\n') ++Physical;
+    return File.SourceLines.IsValidIndex(Physical) ? File.SourceLines[Physical] : Physical + 1;
+}
+
+// All replacements preserve the original newlines. Inserted methods are separated
+// from the surrounding user code, and their body lines are remapped below.
+void ApplyMappedReplacements(FSourceFile& File, const TArray<FSourceReplacement>& Replacements, const FString& Generated)
+{
+    const FString OriginalSource = MoveTemp(File.ProcessedCode);
+    TArray<int32> InputLines = MoveTemp(File.SourceLines);
+    if (InputLines.IsEmpty())
+    {
+        InputLines.Add(1);
+        for (TCHAR Character : OriginalSource) if (Character == '\n') InputLines.Add(InputLines.Num() + 1);
+    }
+    int32 Physical = 0;
+    int32 Cursor = 0;
+    bool bLineStart = true;
+    auto Append = [&](TCHAR Character, int32 OriginalLine)
+    {
+        if (bLineStart) { File.SourceLines.Add(OriginalLine); bLineStart = false; }
+        File.ProcessedCode.AppendChar(Character);
+        if (Character == '\n') bLineStart = true;
+    };
+    auto OriginalLine = [&](int32 Index) { return InputLines.IsValidIndex(Index) ? InputLines[Index] : Index + 1; };
+    auto CopyUntil = [&](int32 End)
+    {
+        while (Cursor < End)
+        {
+            const TCHAR Character = OriginalSource[Cursor++];
+            Append(Character, OriginalLine(Physical));
+            if (Character == '\n') ++Physical;
+        }
+    };
+    for (const auto& Replacement : Replacements)
+    {
+        CopyUntil(Replacement.StartPosition);
+        int32 ReplacementLine = Physical;
+        const bool bInsertion = Replacement.EndPosition < Replacement.StartPosition;
+        for (TCHAR Character : Replacement.Replacement)
+        {
+            Append(Character, OriginalLine(ReplacementLine));
+            if (Character == '\n' && !bInsertion && ReplacementLine + 1 < InputLines.Num()) ++ReplacementLine;
+        }
+        while (Cursor <= Replacement.EndPosition)
+            if (OriginalSource[Cursor++] == '\n') ++Physical;
+    }
+    CopyUntil(OriginalSource.Len());
+    for (TCHAR Character : Generated) Append(Character, OriginalLine(Physical));
+    if (bLineStart) File.SourceLines.Add(OriginalLine(Physical));
+}
+
+bool RegisterBodySource(FSourceFile& File, const FString& Name, int32 OriginalLine)
+{
+    const FString& Code = File.ProcessedCode;
+    TArray<ELexicalKind> Kinds;
+    BuildLexicalKinds(Code, Kinds);
+    int32 Search = 0;
+    while ((Search = Code.Find(Name, ESearchCase::CaseSensitive, ESearchDir::FromStart, Search)) != INDEX_NONE)
+    {
+        const int32 Start = Search;
+        Search += Name.Len();
+        if (!MatchesIdentifierAt(Code, Kinds, Start, *Name)) continue;
+        int32 Open = SkipTriviaForward(Code, Kinds, Search), Close = INDEX_NONE;
+        if (Open >= Code.Len() || Code[Open] != '(' || !FindMatchingDelimiter(Code, Kinds, Open, Close)) continue;
+        int32 Trait = SkipTriviaForward(Code, Kinds, Close + 1);
+        if (!MatchesIdentifierAt(Code, Kinds, Trait, TEXT("__generated"))) continue;
+        Open = SkipTriviaForward(Code, Kinds, Trait + 11);
+        if (Open >= Code.Len() || Code[Open] != '{' || !FindMatchingDelimiter(Code, Kinds, Open, Close)) continue;
+        int32 DeclarationLine = 0, BodyLine = 0, EndLine = 0;
+        for (int32 Index = 0; Index <= Close; ++Index)
+            if (Code[Index] == '\n')
+            {
+                if (Index < Start) ++DeclarationLine;
+                if (Index < Open) ++BodyLine;
+                ++EndLine;
+            }
+        for (int32 Line = DeclarationLine; Line <= EndLine && File.SourceLines.IsValidIndex(Line); ++Line)
+            File.SourceLines[Line] = OriginalLine + FMath::Max(0, Line - BodyLine);
+        File.UserGeneratedFunctions.AddUnique(Name);
+        return true;
+    }
+    return false;
+}
 }
 }
 
@@ -526,6 +622,7 @@ void Rewrite(FAngelscriptPreprocessor& Preprocessor)
         BuildLexicalKinds(Source, Kinds);
         TArray<FAlgorithmGroup> Groups;
         TArray<FSourceReplacement> Replacements;
+        TArray<TPair<FString, int32>> BodySources;
         FLambdaCandidate Candidate;
         int32 Search = 0;
         while (FindNextCandidate(Source, Kinds, Search, Candidate))
@@ -543,8 +640,11 @@ void Rewrite(FAngelscriptPreprocessor& Preprocessor)
                 return;
             }
             Search = Replacement.EndPosition + 1;
+            const int32 BodyLine = SourceLineAt(File, Replacement.BodyPosition);
+            for (const FString& Name : Replacement.DebugBodyFunctions) BodySources.Emplace(Name, BodyLine);
             Replacements.Add(MoveTemp(Replacement));
         }
+        if (Replacements.IsEmpty()) continue;
         FinishAlgorithmGroups(Groups, Replacements);
         FString Generated;
         TArray<FSourceReplacement> Methods;
@@ -556,18 +656,15 @@ void Rewrite(FAngelscriptPreprocessor& Preprocessor)
                 auto& Method = Methods.AddDefaulted_GetRef();
                 Method.StartPosition = Replacement.OwnerClassClose;
                 Method.EndPosition = Replacement.OwnerClassClose - 1;
-                Method.Replacement = Replacement.OwnerMethod;
+                Method.Replacement = TEXT("\n") + Replacement.OwnerMethod + TEXT("\n");
             }
         }
         Replacements.Append(Methods);
         Replacements.StableSort([](const auto& Left, const auto& Right) { return Left.StartPosition < Right.StartPosition; });
-        for (int32 Index = Replacements.Num() - 1; Index >= 0; --Index)
-        {
-            const auto& Replacement = Replacements[Index];
-            File.ProcessedCode.RemoveAt(Replacement.StartPosition, Replacement.EndPosition - Replacement.StartPosition + 1);
-            File.ProcessedCode.InsertAt(Replacement.StartPosition, Replacement.Replacement);
-        }
-        File.ProcessedCode += Generated;
+        ApplyMappedReplacements(File, Replacements, Generated);
+        for (const auto& Body : BodySources)
+            if (!RegisterBodySource(File, Body.Key, Body.Value))
+            { Preprocessor.FileWideError(File, TEXT("Lambda generated body source mapping failed.")); Preprocessor.bHasError = true; return; }
     }
 }
 }
@@ -625,6 +722,7 @@ void Rewrite(FAngelscriptPreprocessor& P)
     {
         FFileRewritePlan Plan;
         TUniquePtr<FAngelscriptPreprocessor::FFile> Capture;
+        TArray<TPair<FString, int32>> BodySources;
     };
     TArray<FPending> Pending;
     for (int32 Index = 0; Index < P.Files.Num(); ++Index)
@@ -650,6 +748,8 @@ void Rewrite(FAngelscriptPreprocessor& P)
             if (!ParseCandidate(Source, Kinds, Candidate, MakeFilenameHash(File.RelativeFilename), ++Ordinal, Replacement, Error))
             { P.FileWideError(File, Error); P.bHasError = true; return; }
             Search = Replacement.EndPosition + 1;
+            const int32 BodyLine = SourceLineAt(File, Replacement.BodyPosition);
+            for (const FString& Name : Replacement.DebugBodyFunctions) Item.BodySources.Emplace(Name, BodyLine);
             Generated += Replacement.GeneratedCode;
             Item.Plan.Replacements.Add(MoveTemp(Replacement));
         }
@@ -703,7 +803,7 @@ void Rewrite(FAngelscriptPreprocessor& P)
             FSourceReplacement Member;
             Member.StartPosition = Replacement.OwnerClassClose;
             Member.EndPosition = Replacement.OwnerClassClose - 1;
-            Member.Replacement = ProcessedMembers;
+            Member.Replacement = TEXT("\n") + ProcessedMembers + TEXT("\n");
             Members.Add(MoveTemp(Member));
             for (const auto& Code : Fragment.GeneratedCode) Item.Capture->ProcessedCode += TEXT("\n") + Code;
             Receivers.Add(Replacement.Receiver);
@@ -711,14 +811,12 @@ void Rewrite(FAngelscriptPreprocessor& P)
         }
         Item.Plan.Replacements.Append(Members);
         Item.Plan.Replacements.StableSort([](const auto& A, const auto& B) { return A.StartPosition < B.StartPosition; });
-        for (int32 Index = Item.Plan.Replacements.Num() - 1; Index >= 0; --Index)
-        {
-            const auto& Replacement = Item.Plan.Replacements[Index];
-            File.ProcessedCode.RemoveAt(Replacement.StartPosition, Replacement.EndPosition - Replacement.StartPosition + 1);
-            File.ProcessedCode.InsertAt(Replacement.StartPosition, Replacement.Replacement);
-        }
+        ApplyMappedReplacements(File, Item.Plan.Replacements, FString());
         RewriteLambdaReleaseStatements(File.ProcessedCode, Receivers);
-        File.ProcessedCode += Item.Capture->ProcessedCode;
+        ApplyMappedReplacements(File, {}, Item.Capture->ProcessedCode);
+        for (const auto& Body : Item.BodySources)
+            if (!RegisterBodySource(File, Body.Key, Body.Value))
+            { P.FileWideError(File, TEXT("Lambda generated body source mapping failed.")); P.bHasError = true; return; }
     }
 }
 void Start()

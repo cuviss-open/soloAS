@@ -65,6 +65,8 @@ struct FSourceReplacement
 	int32 EndPosition = INDEX_NONE;
 	FString Replacement;
 	FString GeneratedCode;
+	int32 BodyPosition = INDEX_NONE;
+	TArray<FString> DebugBodyFunctions;
 };
 
 struct FFileRewritePlan

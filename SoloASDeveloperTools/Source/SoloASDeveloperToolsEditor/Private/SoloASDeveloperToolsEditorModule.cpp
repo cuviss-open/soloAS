@@ -2,6 +2,7 @@
 // Copyright Cuviss Studio. All Rights Reserved.
 #include "SoloASDeveloperTools.h"
 #include "McpMenu.h"
+#include "McpEditServer.h"
 #include "Internationalization/Internationalization.h"
 #include "Internationalization/Culture.h"
 #include "AngelscriptSettings.h"
@@ -77,6 +78,10 @@ void PopulateMcpMenu(UToolMenu* Sub)
         MenuText(TEXT("复制 MCP 配置"), TEXT("Copy MCP configuration")),
         MenuText(TEXT("将项目 MCP 配置复制到剪贴板。"), TEXT("Copy the project MCP configuration to the clipboard.")),
         FSlateIcon(), FUIAction(FExecuteAction::CreateStatic(&CopyMcpConfiguration)));
+    Sub->FindOrAddSection("AIAssistance").AddMenuEntry("SoloAS.ResumeAutomaticCompilation",
+        MenuText(TEXT("立即恢复脚本自动编译"), TEXT("Resume automatic script compilation")),
+        MenuText(TEXT("结束全部暂停并编译待处理的脚本修改。"), TEXT("End all pauses and compile pending script changes.")),
+        FSlateIcon(), FUIAction(FExecuteAction::CreateStatic(&ResumeMcpAutomaticCompilation)));
 }
 
 bool OpenPackagingSettings()
@@ -138,6 +143,9 @@ public:
         SoloASDeveloperTools::RegisterPackagingSettingsLocalization();
         if (!IsRunningCommandlet())
         {
+            if (!FParse::Param(FCommandLine::Get(), TEXT("NoMessaging"))
+                && !FParse::Param(FCommandLine::Get(), TEXT("NoASDebugServer")))
+                SoloASDeveloperTools::StartMcpEditServer();
             auto* Packaging = GetMutableDefault<USoloASPackagingSettings>();
             FModuleManager::LoadModuleChecked<ISettingsModule>(TEXT("Settings")).RegisterSettings(
                 TEXT("Project"), TEXT("Plugins"), TEXT("SoloASPackaging"), Packaging->GetSectionText(), Packaging->GetSectionDescription(), Packaging);
@@ -148,6 +156,7 @@ public:
 
     void ShutdownModule() override
     {
+        SoloASDeveloperTools::StopMcpEditServer();
         UToolMenus::UnRegisterStartupCallback(this);
         UToolMenus::UnregisterOwner(this);
         if (auto* Settings = FModuleManager::GetModulePtr<ISettingsModule>(TEXT("Settings")))

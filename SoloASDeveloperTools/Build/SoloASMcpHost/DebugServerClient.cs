@@ -2,6 +2,7 @@
 // Copyright Cuviss Studio. All Rights Reserved.
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
@@ -11,6 +12,7 @@ namespace SoloASMcpHost;
 
 internal sealed class DebugServerClient : IAsyncDisposable
 {
+    public event Action? ConnectionLost;
     private const int MaximumPacketBytes = 67_108_864;
     private const int MaximumCollectionEntries = 100_000;
     private readonly string _host;
@@ -49,6 +51,14 @@ internal sealed class DebugServerClient : IAsyncDisposable
     }
 
     public bool IsConnected { get { lock (_stateLock) return _stream is not null; } }
+    public string? LocalEndpoint { get { lock (_stateLock) return NormalizeEndpoint(_client?.Client.LocalEndPoint); } }
+    internal static string? NormalizeEndpoint(EndPoint? endpoint)
+    {
+        if (endpoint is not IPEndPoint ip) return null;
+        IPAddress address = ip.Address.IsIPv4MappedToIPv6 ? ip.Address.MapToIPv4() : ip.Address;
+        if (address.AddressFamily != AddressFamily.InterNetwork) return null;
+        return new IPEndPoint(address, ip.Port).ToString();
+    }
     public bool IsDatabaseReady { get { lock (_stateLock) return _databaseReady && _database is not null; } }
     public int ServerVersion { get { lock (_stateLock) return _serverVersion; } }
     public string? StopReason { get { lock (_stateLock) return _lastStopReason; } }
@@ -236,16 +246,19 @@ internal sealed class DebugServerClient : IAsyncDisposable
             }
             finally
             {
+                bool wasConnected = false;
                 lock (_stateLock)
                 {
                     if (ReferenceEquals(_client, client))
                     {
+                        wasConnected = true;
                         _stream = null;
                         _client = null;
                         _startedDebugging = false;
                     }
                 }
                 client.Dispose();
+                if (wasConnected) ConnectionLost?.Invoke();
             }
             if (!cancellationToken.IsCancellationRequested)
             {

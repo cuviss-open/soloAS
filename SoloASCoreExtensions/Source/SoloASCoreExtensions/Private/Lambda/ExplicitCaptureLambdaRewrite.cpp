@@ -471,9 +471,7 @@ bool ParseCandidate(
         }
         SegmentStart = At + 1;
     }
-    FString FlatBody;
-    for (int32 At = BodyOpen; At <= BodyClose; ++At)
-        FlatBody += Kinds[At] == ELexicalKind::LineComment || Code[At] == '\n' || Code[At] == '\r' ? TCHAR(' ') : Code[At];
+    OutReplacement.BodyPosition = BodyOpen;
     OutReplacement.OwnerClassClose = OwnerClose;
     OutReplacement.Receiver = Receiver;
     OutReplacement.StartPosition = ReceiverStart;
@@ -497,8 +495,9 @@ bool ParseCandidate(
     {
         const FString BodyName = ClassName + TEXT("_Body");
         const FString NativeEntry = ClassName + TEXT("_NativeEntry");
-        OutReplacement.OwnerMethod = FString::Printf(TEXT(" %s %s%s __generated %s "), *ReturnType, *BodyName, *Parameters, *FlatBody);
-        OutReplacement.OwnerMethod += FString::Printf(TEXT(" UFUNCTION() %s %s%s __generated %s "), *ReturnType, *NativeEntry, *Parameters, *FlatBody);
+        OutReplacement.DebugBodyFunctions = {BodyName, NativeEntry};
+        OutReplacement.OwnerMethod = FString::Printf(TEXT("\n %s %s%s __generated %s\n"), *ReturnType, *BodyName, *Parameters, *Body);
+        OutReplacement.OwnerMethod += FString::Printf(TEXT("\n UFUNCTION() %s %s%s __generated %s\n"), *ReturnType, *NativeEntry, *Parameters, *Body);
         const int32 SlotCount = GetSlotsPerSite();
         for (int32 SlotIndex = 0; SlotIndex < SlotCount; ++SlotIndex)
         {
@@ -529,13 +528,14 @@ bool ParseCandidate(
         FString Generated = TEXT("\nstruct ") + CaptureType + TEXT("\n{\n");
         for (const auto& Capture : Captures) Generated += TEXT("UPROPERTY()\n") + Capture.Declaration + TEXT(";\n");
         Generated += TEXT("}\n");
-        FString OwnerBody = FlatBody;
+        FString OwnerBody = Body;
+        OutReplacement.DebugBodyFunctions.Add(bCaptureThis ? BodyName : GlobalBody);
         if (!bCaptureThis)
         {
             Generated += ReturnType + TEXT(" ") + GlobalBody + TEXT("(") + Declarations + TEXT(") __generated ") + Body + TEXT("\n");
             OwnerBody = TEXT("{ ") + Prefix + GlobalBody + TEXT("(") + Arguments + TEXT("); }");
         }
-        OutReplacement.OwnerMethod = FString::Printf(TEXT(" %s %s(%s) __generated %s "),
+        OutReplacement.OwnerMethod = FString::Printf(TEXT("\n %s %s(%s) __generated %s\n"),
             *ReturnType, *BodyName, *Declarations, *OwnerBody);
         const int32 SlotCount = GetSlotsPerSite();
         for (int32 SlotIndex = 0; SlotIndex < SlotCount; ++SlotIndex)

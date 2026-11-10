@@ -84,6 +84,9 @@
 #include "as_objecttype.h"
 #include "as_module.h"
 #include "as_builder.h"
+                                                                                                     
+#include "as_scriptcode.h"
+                                                                                                   
 #include "EndAngelscriptHeaders.h"
 
 
@@ -1556,7 +1559,7 @@ AngelscriptCoreExtensionPoints::EReloadAdmission FAngelscriptManager::TryExplici
             ObservedTimes.Add(File.RelativePath, IFileManager::Get().GetTimeStamp(*File.AbsolutePath));
         for (const auto& File : PreviouslyFailedReloadFiles)
             ObservedTimes.Add(File.RelativePath, IFileManager::Get().GetTimeStamp(*File.AbsolutePath));
-        const bool bSuccess = PerformHotReload(ECompileType::FullReload, Files);
+        const bool bSuccess = PerformAutomaticHotReload(ECompileType::FullReload, Files);
         if (bSuccess && Result.CompileResult.IsSet()
             && Result.CompileResult.GetValue() == ECompileResult::FullyHandled)
         {
@@ -1998,6 +2001,19 @@ bool FAngelscriptManager::VerifyBlueprintGetFunc(FString* FuncName,
 	return true;
 }
 
+                                                                                                       
+bool FAngelscriptManager::PerformAutomaticHotReload(ECompileType CompileType, const TArray<FFilenamePair>& FileList)
+{
+	if (!AngelscriptCoreExtensionPoints::GHasReloadObservers)
+		return PerformHotReload(CompileType, FileList);
+	AngelscriptCoreExtensionPoints::NotifyAutomaticReloadBegin();
+	const bool bSuccess = PerformHotReload(CompileType, FileList);
+	const bool bCompleted = bSuccess && (!ActiveExplicitReload ||
+		(ActiveExplicitReload->CompileResult.IsSet() && ActiveExplicitReload->CompileResult.GetValue() == ECompileResult::FullyHandled));
+	AngelscriptCoreExtensionPoints::NotifyAutomaticReloadComplete(bCompleted);
+	return bSuccess;
+}
+                                                                                                     
 void FAngelscriptManager::CheckForHotReload(ECompileType CompileType)
 {
 	// If we used precompiled data we can't hot reload at all
@@ -2017,6 +2033,11 @@ void FAngelscriptManager::CheckForHotReload(ECompileType CompileType)
 		if (FPlatformTime::Seconds() - LastFileChangeDetectedTime < 0.025)
 			return;
 	}
+
+                                                                                                       
+	if (AngelscriptCoreExtensionPoints::GHasReloadObservers && IsInGameThread() && AngelscriptCoreExtensionPoints::ShouldDeferAutomaticReload())
+		return;
+                                                                                                     
 
                                                                                                                                       
 	// Leave watcher events queued during compile/reload callouts, including explicit transactions.
@@ -2084,7 +2105,7 @@ void FAngelscriptManager::CheckForHotReload(ECompileType CompileType)
 		for (const auto& FailedFile : PreviouslyFailedReloadFiles)
 			FileList.AddUnique(FailedFile);
 		// Background task gave us stuff to reload, so do it now
-		const bool bReloadCompleted = PerformHotReload(CompileType, FileList);
+		const bool bReloadCompleted = PerformAutomaticHotReload(CompileType, FileList);
 		// Preprocessing/progress can create a plan after the availability query.
 		if (!bReloadCompleted && HasAngelscriptRuntimeGcCompilationRetry())
 			PreviouslyFailedReloadFiles.Append(FileList);
@@ -3827,6 +3848,14 @@ void FAngelscriptManager::CompileModule_Types_Stage1(ECompileType CompileType, T
 	for (auto& Section : Module->Code)
 	{
 		ScriptModule->AddScriptSection(TCHAR_TO_ANSI(*Section.AbsoluteFilename), TCHAR_TO_UTF8(*Section.Code), 0, 0);
+                                                                                                     
+		if (!Section.SourceLines.IsEmpty())
+		{
+			auto* Code = ScriptModule->builder->scripts[ScriptModule->builder->scripts.GetLength() - 1];
+			for (int32 Line : Section.SourceLines)
+				Code->sourceLines.PushLast(Line);
+		}
+                                                                                                   
 	}
 
 #if WITH_EDITOR
@@ -3855,6 +3884,26 @@ void FAngelscriptManager::CompileModule_Functions_Stage2(ECompileType CompileTyp
 	}
 
 	auto Result = ScriptModule->builder->BuildGenerateFunctions();
+                                                                                                     
+	if (Result == asSUCCESS)
+	{
+		for (const auto& Section : Module->Code)
+		{
+			if (Section.UserGeneratedFunctions.IsEmpty()) continue;
+			for (asUINT Index = 0; Index < ScriptModule->scriptFunctions.GetLength(); ++Index)
+			{
+				auto* Function = ScriptModule->scriptFunctions[Index];
+				const char* Filename = Function->GetScriptSectionName();
+				if (Filename && Section.AbsoluteFilename == ANSI_TO_TCHAR(Filename)
+					&& Section.UserGeneratedFunctions.Contains(ANSI_TO_TCHAR(Function->name.AddressOf())))
+				{
+					Function->userMappedGeneratedFunction = true;
+					ScriptModule->hasUserMappedGeneratedFunctions = true;
+				}
+			}
+		}
+	}
+                                                                                                   
 	if (Result != asSUCCESS)
 		Module->bCompileError = true;
                                                                                                   
@@ -4346,6 +4395,11 @@ void FAngelscriptManager::Throw(const ANSICHAR* Exception)
 
 void FAngelscriptManager::ScriptCompileError(const FString& AbsoluteFilename, const FDiagnostic& Diagnostic)
 {
+                                                                                                       
+	if (AngelscriptCoreExtensionPoints::GCollectingReloadDiagnostics)
+		AngelscriptCoreExtensionPoints::CaptureReloadDiagnostic(AbsoluteFilename, Diagnostic.Message,
+			Diagnostic.Row, Diagnostic.Column, Diagnostic.bIsError, Diagnostic.bIsInfo);
+                                                                                                     
 	bDiagnosticsDirty = true;
 
 	auto& FileDiagnostics = Diagnostics.FindOrAdd(AbsoluteFilename);
@@ -4492,6 +4546,11 @@ void LogAngelscriptError(asSMessageInfo* Message, void* DataPtr)
 	auto* FileDiagnostics = Manager.Diagnostics.Find(Section);
 	if (FileDiagnostics != nullptr)
 	{
+                                                                                                       
+		if (AngelscriptCoreExtensionPoints::GCollectingReloadDiagnostics)
+			AngelscriptCoreExtensionPoints::CaptureReloadDiagnostic(Section, ANSI_TO_TCHAR(Message->message),
+				Message->row, Message->col, Message->type == asMSGTYPE_ERROR, Message->type == asMSGTYPE_INFORMATION);
+                                                                                                     
 		FileDiagnostics->Diagnostics.Add({ ANSI_TO_TCHAR(Message->message), Message->row, Message->col,
 			Message->type == asMSGTYPE_ERROR, Message->type == asMSGTYPE_INFORMATION });
 		Manager.bDiagnosticsDirty = true;

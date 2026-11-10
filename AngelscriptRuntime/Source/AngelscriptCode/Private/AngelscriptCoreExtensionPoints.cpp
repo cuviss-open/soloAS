@@ -13,6 +13,126 @@
 #include "EndAngelscriptHeaders.h"
 
                                                                                                      
+                                                                                                       
+#if WITH_AS_DEBUGSERVER
+#include "Debugging/AngelscriptDebugServer.h"
+#endif
+                                                                                                     
+                                                                                                   
+namespace AngelscriptCoreExtensionPoints
+{
+namespace
+{
+struct FDebugAliasProvider { FName FeatureId; TFunction<void(TArray<FDebugTypeAlias>&)> Collect; };
+TMap<FDelegateHandle, FDebugAliasProvider> DebugAliasProviders;
+bool bCollectingDebugAliases = false;
+}
+FDelegateHandle RegisterDebugTypeAliasProvider(FName FeatureId, TFunction<void(TArray<FDebugTypeAlias>&)> Collect)
+{
+    if (!IsInGameThread() || FeatureId.IsNone() || !Collect || bCollectingDebugAliases
+        || IsAngelscriptExecutionShutdownStarted()) return {};
+    for (const auto& Entry : DebugAliasProviders)
+        if (Entry.Value.FeatureId == FeatureId) return {};
+    FDelegateHandle Handle(FDelegateHandle::GenerateNewHandle);
+    DebugAliasProviders.Add(Handle, {FeatureId, MoveTemp(Collect)});
+    return Handle;
+}
+ERemoveResult UnregisterDebugTypeAliasProvider(FDelegateHandle Handle)
+{
+    if (!IsInGameThread() || bCollectingDebugAliases) return ERemoveResult::Busy;
+    return DebugAliasProviders.Remove(Handle) ? ERemoveResult::Removed : ERemoveResult::Unknown;
+}
+void CollectDebugTypeAliases(TArray<FDebugTypeAlias>& Out)
+{
+    if (DebugAliasProviders.IsEmpty()) return;
+    check(IsInGameThread());
+    TGuardValue<bool> Guard(bCollectingDebugAliases, true);
+    for (const auto& Entry : DebugAliasProviders) Entry.Value.Collect(Out);
+}
+}
+                                                                                                 
+                                                                                                       
+namespace AngelscriptCoreExtensionPoints
+{
+bool GHasReloadObservers = false;
+bool GCollectingReloadDiagnostics = false;
+namespace
+{
+struct FReloadDeferral
+{
+    FName FeatureId;
+    TFunction<bool()> Predicate;
+    TFunction<void(uint64)> OnBegin;
+    TFunction<void(uint64, bool, const TArray<FReloadDiagnostic>&)> OnComplete;
+};
+TMap<FDelegateHandle, FReloadDeferral> ReloadDeferrals;
+bool bEvaluatingReloadDeferrals = false;
+uint64 ReloadGeneration = 0;
+TArray<FReloadDiagnostic> ReloadDiagnostics;
+}
+FDelegateHandle RegisterAutomaticReloadObserver(FName FeatureId, TFunction<bool()> ShouldDefer,
+    TFunction<void(uint64)> OnBegin, TFunction<void(uint64, bool, const TArray<FReloadDiagnostic>&)> OnComplete)
+{
+    if (!IsInGameThread() || FeatureId.IsNone() || !ShouldDefer || !OnBegin || !OnComplete || bEvaluatingReloadDeferrals
+        || IsAngelscriptExecutionShutdownStarted()) return {};
+    for (const auto& Entry : ReloadDeferrals)
+        if (Entry.Value.FeatureId == FeatureId) return {};
+    FDelegateHandle Handle(FDelegateHandle::GenerateNewHandle);
+    ReloadDeferrals.Add(Handle, {FeatureId, MoveTemp(ShouldDefer), MoveTemp(OnBegin), MoveTemp(OnComplete)});
+    GHasReloadObservers = true;
+    return Handle;
+}
+ERemoveResult UnregisterAutomaticReloadObserver(FDelegateHandle Handle)
+{
+    if (!IsInGameThread() || bEvaluatingReloadDeferrals) return ERemoveResult::Busy;
+    if (!ReloadDeferrals.Remove(Handle)) return ERemoveResult::Unknown;
+    GHasReloadObservers = !ReloadDeferrals.IsEmpty();
+    return ERemoveResult::Removed;
+}
+bool ShouldDeferAutomaticReload()
+{
+    if (ReloadDeferrals.IsEmpty()) return false;
+    check(IsInGameThread());
+    TGuardValue<bool> Guard(bEvaluatingReloadDeferrals, true);
+    for (const auto& Entry : ReloadDeferrals)
+        if (Entry.Value.Predicate()) return true;
+    return false;
+}
+void NotifyAutomaticReloadBegin()
+{
+    if (ReloadDeferrals.IsEmpty()) return;
+    ReloadDiagnostics.Reset();
+    GCollectingReloadDiagnostics = true;
+    ++ReloadGeneration;
+    TGuardValue<bool> Guard(bEvaluatingReloadDeferrals, true);
+    for (const auto& Entry : ReloadDeferrals) Entry.Value.OnBegin(ReloadGeneration);
+}
+void NotifyAutomaticReloadComplete(bool bSuccess)
+{
+    if (!GCollectingReloadDiagnostics) return;
+    GCollectingReloadDiagnostics = false;
+    TGuardValue<bool> Guard(bEvaluatingReloadDeferrals, true);
+    for (const auto& Entry : ReloadDeferrals) Entry.Value.OnComplete(ReloadGeneration, bSuccess, ReloadDiagnostics);
+    ReloadDiagnostics.Reset();
+}
+void CaptureReloadDiagnostic(const FString& Filename, const FString& Message,
+    int32 Line, int32 Column, bool bIsError, bool bIsInfo)
+{
+    if (GCollectingReloadDiagnostics)
+        ReloadDiagnostics.Add({Filename, Message, Line, Column, bIsError, bIsInfo});
+}
+bool HasDebugClientEndpoint(const FString& Endpoint)
+{
+    if (!IsInGameThread() || Endpoint.IsEmpty() || !FAngelscriptManager::IsInitialized()) return false;
+#if WITH_AS_DEBUGSERVER
+    const auto* Server = FAngelscriptManager::Get().DebugServer;
+    return Server != nullptr && Server->HasClientEndpoint(Endpoint);
+#else
+    return false;
+#endif
+}
+}
+                                                                                                     
                                                                                                         
 namespace AngelscriptCoreExtensionPoints
 {

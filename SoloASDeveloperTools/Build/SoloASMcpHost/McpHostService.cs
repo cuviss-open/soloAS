@@ -11,6 +11,7 @@ internal sealed class McpHostService : IAsyncDisposable
 {
     private readonly HostOptions _options;
     private readonly DebugServerClient _debug;
+    private readonly EditClient _edit;
     private readonly RuntimeApiCatalog _catalog;
     private readonly ExternalTools _external;
     private readonly ProjectInfoProvider _projectInfo;
@@ -27,6 +28,7 @@ internal sealed class McpHostService : IAsyncDisposable
         _catalog = new RuntimeApiCatalog(Path.Combine(metadataRoot, "runtime-api-metadata-v1.json.gz"));
         _debug = new DebugServerClient(options.DebugHost, options.DebugPort, snapshotPath,
             Path.Combine(metadataRoot, "debug-database-v1.json"));
+        _edit = new EditClient(projectRoot, options.DebugHost, options.DebugPort, _debug);
         string engineRoot = ResolveEngineRoot(options.EnginePath);
         string lane = options.Lane.Length > 0 ? options.Lane : engineRoot.Contains("haze", StringComparison.OrdinalIgnoreCase) ? "haze" : "stock";
         _projectInfo = new ProjectInfoProvider(options.ProjectPath, engineRoot, lane);
@@ -122,6 +124,22 @@ internal sealed class McpHostService : IAsyncDisposable
             }, token).ConfigureAwait(false);
             return ToolResult(envelope, !envelope.GetProperty("ok").GetBoolean());
         }
+        else if (name == "as_edit_begin")
+        {
+            RequireAllowed(arguments, "timeoutSeconds");
+            int seconds = arguments.TryGetProperty("timeoutSeconds", out _) ? RequiredInt(arguments, "timeoutSeconds", 1, 600) : 120;
+            result = await _edit.CallAsync("begin", new { timeoutSeconds = seconds }, token).ConfigureAwait(false);
+        }
+        else if (name == "as_edit_end")
+        {
+            RequireAllowed(arguments, "leaseId");
+            result = await _edit.CallAsync("end", new { leaseId = RequiredString(arguments, "leaseId") }, token).ConfigureAwait(false);
+        }
+        else if (name == "as_compile")
+        {
+            RequireNoArguments(arguments);
+            result = await _edit.CallAsync("compile", null, token).ConfigureAwait(false);
+        }
         else if (name == "as_diagnostics")
         {
             RequireNoArguments(arguments);
@@ -130,7 +148,13 @@ internal sealed class McpHostService : IAsyncDisposable
             _ = await _debug.WaitForDatabaseAsync(Math.Min(5000, _options.TimeoutMilliseconds)).WaitAsync(token).ConfigureAwait(false);
             await Task.Delay(250, token).ConfigureAwait(false);
             DiagnosticRecord[] diagnostics = _debug.Diagnostics.ToArray();
-            result = new { connected = _debug.IsConnected, source = "debug_server", diagnostics = diagnostics.Select(item => new
+            JsonElement? snapshot = _edit.Snapshot;
+            result = new { connected = _debug.IsConnected, source = "debug_server",
+                generation = snapshot?.GetProperty("generation").GetInt64(),
+                state = snapshot?.GetProperty("state").GetString(),
+                editError = _edit.LastError,
+                lastCompileTime = snapshot?.GetProperty("lastCompileTime").GetString(),
+                compilationDiagnostics = snapshot?.GetProperty("diagnostics"), diagnostics = diagnostics.Select(item => new
             {
                 file = item.File,
                 line = item.Line,
@@ -224,6 +248,9 @@ internal sealed class McpHostService : IAsyncDisposable
     {
         object[] serviceTools =
         [
+            Tool("as_edit_begin", "Pause automatic script compilation while editing; the lease expires automatically.", Schema(new { timeoutSeconds = new { type = "integer", minimum = 1, maximum = 600 } }, [])),
+            Tool("as_edit_end", "End this client's edit lease and wait for the resulting compilation.", Schema(new { leaseId = StringSchema() }, ["leaseId"])),
+            Tool("as_compile", "Compile scripts and return this compilation's result and diagnostics.", new { type = "object", properties = new { }, additionalProperties = false }),
             Tool("as_diagnostics", "Read current AngelScript compiler errors and warnings pushed by the connected Editor DebugServer.", new { type = "object", properties = new { }, additionalProperties = false }),
             Tool("as_project_info", "Read project, engine, enabled plugins/modules, AngelScript roots/config, targets, maps, and live compile diagnostics.", new { type = "object", properties = new { }, additionalProperties = false }),
             Tool("as_debug_set_breakpoint", "Set an AngelScript source breakpoint in the running Editor.", Schema(new { file = StringSchema(), line = IntegerSchema(1), module = StringSchema() }, ["file", "line"])),
@@ -343,7 +370,11 @@ internal sealed class McpHostService : IAsyncDisposable
         return full;
     }
 
-    public async ValueTask DisposeAsync() => await _debug.DisposeAsync().ConfigureAwait(false);
+    public async ValueTask DisposeAsync()
+    {
+        await _edit.DisposeAsync().ConfigureAwait(false);
+        await _debug.DisposeAsync().ConfigureAwait(false);
+    }
 }
 
 internal sealed record HostOptions(string EnginePath, string ProjectPath, int TimeoutMilliseconds,

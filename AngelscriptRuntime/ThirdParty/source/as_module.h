@@ -249,6 +249,9 @@ public:
 	asCArray<asCGlobalProperty*> scriptGlobalsList; // increases ref count
 	bool                              isGlobalVarInitialized;
 	bool hasBreakPoints = false;
+                                                                                                     
+	bool hasUserMappedGeneratedFunctions = false;
+                                                                                                   
 	bool discarded = false;
 
 	asCMapByName<asCTypeInfo*>    allLocalTypes;
