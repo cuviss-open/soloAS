@@ -370,6 +370,7 @@ bool FScriptInterfaceDefaultPolicyTest::RunTest(const FString&)
 #include "AngelscriptType.h"
 #include "AngelscriptBinds/Helper_PODType.h"
 #include "AngelscriptOptionalProviders.h"
+#include "AngelscriptCoreExtensionPoints.h"
 #include "AngelscriptExecutionQuiescence.h"
 #include "Preprocessor/AngelscriptPreprocessor.h"
 #include "Internationalization/Regex.h"
@@ -814,6 +815,26 @@ bool Create(const FString& Name, const FString& Parent, const FString& Source, c
             Existing->Source = Source;
             for (const FMethod& Method : Methods)
                 *Existing->Methods.FindByPredicate([&](const FMethod& Other) { return Other.Name == Method.Name; }) = Method;
+            TArray<FString> ChangedParents{ Name };
+            for (int32 Index = 0; Index < ChangedParents.Num(); ++Index)
+            {
+                const FInterface* ChangedParent = FindInterface(ChangedParents[Index]);
+                for (auto& Pair : Interfaces)
+                {
+                    FInterface& Child = Pair.Value.Get();
+                    if (Child.Parent != ChangedParents[Index]) continue;
+                    if (!PreviousInterfaces.Contains(Pair.Key))
+                        PreviousInterfaces.Add(Pair.Key, MakeShared<FInterface>(Child));
+                    for (const FMethod& Inherited : ChangedParent->Methods)
+                    {
+                        UFunction* Function = Child.Class->FindFunctionByName(FName(*Inherited.Name));
+                        if (Function && Function->GetOuterUClass() == Child.Class.Get()) continue;
+                        if (FMethod* Copy = Child.Methods.FindByPredicate([&](const FMethod& Method) { return Method.Name == Inherited.Name; }))
+                            *Copy = Inherited;
+                    }
+                    ChangedParents.Add(Pair.Key);
+                }
+            }
             return true;
         }
     }
@@ -1006,7 +1027,7 @@ bool ImportInterface(const FString& Name, FString& Error)
 
 bool RewriteSource(FAngelscriptPreprocessor& P, FString& Error)
 {
-    struct FEdit { int32 Begin, End; FString Text; };
+    struct FEdit { int32 Begin, End; FString Text; int32 InsertedOffset = INDEX_NONE, InsertedLength = 0; };
     auto Apply = [](FString& Source, TArray<FEdit>& Edits)
     {
         Edits.Sort([](const FEdit& A, const FEdit& B) { return A.Begin > B.Begin; });
@@ -1110,10 +1131,38 @@ bool RewriteSource(FAngelscriptPreprocessor& P, FString& Error)
                     else { Error = FString::Printf(TEXT("Class '%s' must implement interface method '%s'."), *ClassName, *Method.Name); return false; }
                 }
             }
-            Edits.Add({Class.GetMatchBeginning(), Close + 1,
-                TEXT("class ") + ClassName + TEXT(" : ") + Parents[0].TrimStartAndEnd() + TEXT(" {") + Body + Defaults + TEXT("}")});
+            FString Header = TEXT("class ") + ClassName + TEXT(" : ") + Parents[0].TrimStartAndEnd() + TEXT(" {");
+            for (int32 Position = Class.GetMatchBeginning(); Position < Open; ++Position)
+                if (File.RawCode[Position] == '\n') Header += '\n';
+            Edits.Add({Class.GetMatchBeginning(), Close + 1, Header + Body + Defaults + TEXT("}"),
+                Defaults.Contains(TEXT("\n")) ? Header.Len() + Body.Len() : INDEX_NONE, Defaults.Len()});
+        }
+        Edits.Sort([](const FEdit& A, const FEdit& B) { return A.Begin < B.Begin; });
+        TArray<TPair<int32, int32>> InsertedDefaults;
+        int32 Offset = 0;
+        for (const FEdit& Edit : Edits)
+        {
+            if (Edit.InsertedOffset != INDEX_NONE)
+            {
+                const int32 Begin = Edit.Begin + Offset + Edit.InsertedOffset;
+                InsertedDefaults.Emplace(Begin, Begin + Edit.InsertedLength);
+            }
+            Offset += Edit.Text.Len() - (Edit.End - Edit.Begin);
         }
         Apply(File.RawCode, Edits); Edits.Reset();
+        if (!InsertedDefaults.IsEmpty())
+        {
+            File.SourceLines.Reset();
+            File.SourceLines.Add(1);
+            int32 OriginalLine = 1, Range = 0;
+            for (int32 Position = 0; Position < File.RawCode.Len(); ++Position)
+            {
+                if (File.RawCode[Position] != '\n') continue;
+                while (Range < InsertedDefaults.Num() && Position >= InsertedDefaults[Range].Value) ++Range;
+                if (Range == InsertedDefaults.Num() || Position < InsertedDefaults[Range].Key) ++OriginalLine;
+                File.SourceLines.Add(OriginalLine);
+            }
+        }
         Code = Mask(File.RawCode);
         FRegexMatcher Cast(FRegexPattern(TEXT("\\bCast\\s*<\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*>\\s*\\(")), Code);
         while (Cast.FindNext())
@@ -1251,6 +1300,7 @@ void Rewrite(FAngelscriptPreprocessor& P)
 }
 TSharedRef<FJsonObject> ExportInterfaceSchema() { return ExportSchema(); }
 bool IsProviderRegistered() { return ProviderHandle.IsValid(); }
+static FDelegateHandle DebugAliasHandle;
 void Start()
 {
     if (!IsEnabled() || ProviderHandle.IsValid()) return;
@@ -1262,6 +1312,15 @@ void Start()
             return true;
         });
     check(ProviderHandle.IsValid());
+    DebugAliasHandle = AngelscriptCoreExtensionPoints::RegisterDebugTypeAliasProvider(TEXT("soloas.class-interfaces"),
+        [](TArray<AngelscriptCoreExtensionPoints::FDebugTypeAlias>& Out)
+        {
+            for (const auto& Entry : Interfaces)
+            {
+                const FInterface& Interface = Entry.Value.Get();
+                Out.Add({Interface.ScriptName, Entry.Key, Interface.ModuleName, Interface.Parent});
+            }
+        });
     SourceHandle = FAngelscriptPreprocessor::OnProcessChunks.AddStatic(&Rewrite);
     FailedHandle = FAngelscriptCodeModule::GetReloadHadErrors().AddStatic(&Restore);
     CompiledHandle = FAngelscriptCodeModule::GetPostCompile().AddLambda([] { PreviousEdges.Reset(); PreviousInterfaces.Reset(); bPending = false; });
@@ -1269,6 +1328,12 @@ void Start()
 void Stop()
 {
     if (!ProviderHandle.IsValid()) return;
+    if (DebugAliasHandle.IsValid())
+    {
+        const auto DebugResult = AngelscriptCoreExtensionPoints::UnregisterDebugTypeAliasProvider(DebugAliasHandle);
+        check(DebugResult == AngelscriptCoreExtensionPoints::ERemoveResult::Removed);
+        DebugAliasHandle.Reset();
+    }
     FAngelscriptExecutionWriteScope Scope;
     const auto Result = AngelscriptCoreExtensionPoints::UnregisterClassInterfaceProvider(ProviderHandle);
     check(Result == AngelscriptCoreExtensionPoints::ERemoveResult::Removed);

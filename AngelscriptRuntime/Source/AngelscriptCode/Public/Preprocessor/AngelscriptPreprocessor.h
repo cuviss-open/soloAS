@@ -140,6 +140,12 @@ struct ANGELSCRIPTCODE_API FAngelscriptPreprocessor
 		// Fully processed code to be compiled
 		FString ProcessedCode;
 
+                                                                                                     
+		// One original line per physical line in ProcessedCode; empty leaves compilation unchanged.
+		TArray<int32> SourceLines;
+		TArray<FString> UserGeneratedFunctions;
+                                                                                                   
+
 		// Generated code to be added to the module
 		TArray<FString> GeneratedCode;
 

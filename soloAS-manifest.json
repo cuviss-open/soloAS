@@ -10,7 +10,7 @@
     },
     {
       "path": ".github/soloas-manifest.json",
-      "sha256": "9d9d89d9363d94996776ef38ebbecdd23746fa380828b2dd8fcdbb7e0c9837e4"
+      "sha256": "0673efea024376d647f82cf7438896eadb700193f701e8aad51e1aa47de12cf8"
     },
     {
       "path": ".github/upstream.json",
@@ -22,7 +22,7 @@
     },
     {
       "path": "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/AngelscriptEnhancedInput.uplugin",
-      "sha256": "835030939993571cae73632770104ec2f9fc1ffa5f30dc07fd486cd6bfba339f"
+      "sha256": "fec0ce778334d17af09a7403dd3a2589cc4a1b91a777c17378d1d120d70bc1dc"
     },
     {
       "path": "AngelscriptManualBindPlugins/AngelscriptEnhancedInput/LICENSE-MIT",
@@ -66,7 +66,7 @@
     },
     {
       "path": "AngelscriptManualBindPlugins/AngelscriptGAS/AngelscriptGAS.uplugin",
-      "sha256": "4c6d2fc127b402d06665db36032d988ae0b188c46871c9a5033bfcbd5b7fa233"
+      "sha256": "47d98ff980eb775b70c135901cdbd13d02d7cf4a816c0d62a2a4c1d135afebcf"
     },
     {
       "path": "AngelscriptManualBindPlugins/AngelscriptGAS/Config/FilterPlugin.ini",
@@ -294,7 +294,7 @@
     },
     {
       "path": "AngelscriptRuntime/Angelscript.uplugin",
-      "sha256": "518e0097f32a462604f94a8af9e29ef9b4fba4f73879d3969fb8a99ced49a395"
+      "sha256": "bed6ca4c805d2ae2a07b9f0af652c47c54dbf3275a55518d831fa94810b47271"
     },
     {
       "path": "AngelscriptRuntime/Config/BaseEditor.ini",
@@ -358,7 +358,7 @@
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptCoreExtensionPoints.cpp",
-      "sha256": "65bb453e71e628de4fa77ddc489fb53ab40717da28a4426e1e8a8de46e49ed33"
+      "sha256": "279bbc2e1df201278c36265d409c43fabaaf1634cc04b73a255508dd79edc55e"
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptDocs.cpp",
@@ -370,7 +370,7 @@
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptManager.cpp",
-      "sha256": "4d7489e0341db0a3dbe7d5b23b9a959c8367eeb829a2902150a6cf5fb94e38ed"
+      "sha256": "57de7ab7fdf98ab89956ecb10afe297d0e6722317d67d7443ec83d4e3c2e789e"
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Private/AngelscriptModuleGeneration.cpp",
@@ -1034,11 +1034,11 @@
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Private/Debugging/AngelscriptDebugServer.cpp",
-      "sha256": "ce524e88eadd08f2948f4d1d584b7a63fff86f52badef9241e62b5db04b336de"
+      "sha256": "1ab6d5e92ad533afbe6193d38b7fd9f0a24eb397dd7a2f974db73cafc70bf222"
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Private/Debugging/AngelscriptDebugServer.h",
-      "sha256": "aeb060b4de448f42a98e4f85f534fa8f6683dad04b78995030e4d2270a04607e"
+      "sha256": "f72d4bb2c9629a6058c7a1f20c629c18652d46c345010698f5e65c270ca8fc4f"
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Private/FunctionLibraries/AngelscriptScriptLibrary.cpp",
@@ -1046,7 +1046,7 @@
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Private/Preprocessor/AngelscriptPreprocessor.cpp",
-      "sha256": "deb71865489f6e90df61d99301240e92f244c8630519674be5aef8cef035a12b"
+      "sha256": "f4116ecff6df5928e72bb3871675fcadf0c3d88de77c74f44fc623bb8212b216"
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Private/Preprocessor/Helper_CommentFormat.h",
@@ -1246,7 +1246,7 @@
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptCoreExtensionPoints.h",
-      "sha256": "50f23e40796fea814f3952aa4ecbc5ef846027f5f96b68bd2c12b0e95ed2cb4a"
+      "sha256": "78a684129f182da9fceac1ff51632b67da0b574bb5b43eb1bdbd0892b4c432bc"
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptDebugProtocolTest.h",
@@ -1270,7 +1270,7 @@
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptManager.h",
-      "sha256": "103f9e6c4a721810cafe79375b79f5f358028dad3ebbbf1de7164491a41fc11b"
+      "sha256": "3466726a5db32db0198d8e0b504d983dcda4e0f6ffb86408af67415c5cb74df7"
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Public/AngelscriptModuleGeneration.h",
@@ -1454,7 +1454,7 @@
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Public/Preprocessor/AngelscriptPreprocessor.h",
-      "sha256": "cd55713a7e8004f1b063152913c6adf3a8c14b32aaaabbac1f926540ba0fd870"
+      "sha256": "ebc55c26492ccd518f4c7a825f74eba15c2a451d89c0874f2fae56b36461c3a5"
     },
     {
       "path": "AngelscriptRuntime/Source/AngelscriptCode/Public/StartAngelscriptHeaders.h",
@@ -1910,7 +1910,7 @@
     },
     {
       "path": "AngelscriptRuntime/ThirdParty/source/as_module.h",
-      "sha256": "5b898697457f01a4a997ec8ea97b830f13ba4ca1ab53d63446545f608a86deb1"
+      "sha256": "0ff5372c241c4548ab782570abcad1b1c03b3f6ee902c6b778241e37ab894f06"
     },
     {
       "path": "AngelscriptRuntime/ThirdParty/source/as_namespace.h",
@@ -1946,11 +1946,11 @@
     },
     {
       "path": "AngelscriptRuntime/ThirdParty/source/as_scriptcode.cpp",
-      "sha256": "86820e21955944129ac1b9f4234733f97f60a7d67c4b371529601b7c76155710"
+      "sha256": "2fe4acf04a79c94b646f80eba58ff95d1c972e40c7d5a9b082a7d5e62e434af3"
     },
     {
       "path": "AngelscriptRuntime/ThirdParty/source/as_scriptcode.h",
-      "sha256": "157e3d9b419454f7f489765aee217dc983b9acd8e53dc9a07d26efd857c43936"
+      "sha256": "7ba8ca6c3864862e5d955b62f22a82c1a8f4105ad1be1b42d990ed422c35c62e"
     },
     {
       "path": "AngelscriptRuntime/ThirdParty/source/as_scriptengine.cpp",
@@ -1966,7 +1966,7 @@
     },
     {
       "path": "AngelscriptRuntime/ThirdParty/source/as_scriptfunction.h",
-      "sha256": "c0761f42e261593f3901373f078fe94ef13a9367cfa5535121c1e9390a863143"
+      "sha256": "ae1fee54c00c24e246da57c81ad7eaaac31c931c57d722b53036621a29184b16"
     },
     {
       "path": "AngelscriptRuntime/ThirdParty/source/as_scriptnode.cpp",
@@ -2054,7 +2054,7 @@
     },
     {
       "path": "NOTICE",
-      "sha256": "3ed376c599cd9343f8fb181d771ce70c5f4b0bca445e6cf43ee019053d186a11"
+      "sha256": "950b33f32b447b9ed7656a42558d2b1ca5ea5ad38e3bd201bf70d3da5b086ca5"
     },
     {
       "path": "README.md",
@@ -2122,7 +2122,7 @@
     },
     {
       "path": "SoloASBridge/SoloASBridge.uplugin",
-      "sha256": "669f3d7333b2ef358432e2b78daab285ad7f3fcdc797f496a90006a04beea7db"
+      "sha256": "fe5a687881c73860c255b4cbd1c640b82b7bbaef3836c71fe84780b7bf21b4ed"
     },
     {
       "path": "SoloASBridge/Source/SoloASBridge/Private/Compat/SoloASRuntimeCompat.cpp",
@@ -3938,7 +3938,7 @@
     },
     {
       "path": "SoloASCoreExtensions/SoloASCoreExtensions.uplugin",
-      "sha256": "606c874bb15aa4bd5894a9a948aa61e7ce93eea7fa28e253b47b4c251fe761ac"
+      "sha256": "885a245d4b3760fbca4bea88c4520893c3a6be6eb8f7f3da224387f1eafb5b8e"
     },
     {
       "path": "SoloASCoreExtensions/Source/SoloASCoreExtensions/Private/BlueprintInheritance/Bind_BlueprintQuickCalls.cpp",
@@ -3946,7 +3946,7 @@
     },
     {
       "path": "SoloASCoreExtensions/Source/SoloASCoreExtensions/Private/BlueprintInheritance/BlueprintImportsExtension.cpp",
-      "sha256": "1577ab41756297dad3bc8594f2506537eae08fa86aef9c2fab74d1938d1c7c51"
+      "sha256": "15a485d1611c55a64714b51a5b0f33b37f50b40cbf151f94c13a3860f95395f0"
     },
     {
       "path": "SoloASCoreExtensions/Source/SoloASCoreExtensions/Private/BlueprintInheritance/BlueprintQuickCallEditor.cpp",
@@ -4042,7 +4042,7 @@
     },
     {
       "path": "SoloASCoreExtensions/Source/SoloASCoreExtensions/Private/Interfaces/ScriptInterfacesExtension.cpp",
-      "sha256": "bf0d6e65ea20cf629b45cce499b960a9d263d3d23b849b2127fef580f57fa1db"
+      "sha256": "40a4ae2f2943299afba93e03efb57f1126a3da35cd7072743e579485ec1aa2c9"
     },
     {
       "path": "SoloASCoreExtensions/Source/SoloASCoreExtensions/Private/Interfaces/ScriptInterfacesExtension.h",
@@ -4050,15 +4050,15 @@
     },
     {
       "path": "SoloASCoreExtensions/Source/SoloASCoreExtensions/Private/Lambda/ExplicitCaptureLambdaAlgorithms.cpp",
-      "sha256": "e7447b092b70bea54fb845c9d25bfd12f7c210847a43a50960066d20b308a5ae"
+      "sha256": "467173b9e3013451046d931f8d04ab0020a1cbdd25cce7e5c9bc7102b859c119"
     },
     {
       "path": "SoloASCoreExtensions/Source/SoloASCoreExtensions/Private/Lambda/ExplicitCaptureLambdaExtension.cpp",
-      "sha256": "82f0d88c68eb1af85280c302709fdb43b1e2341b2a45d6fcc3b41f7c24da7379"
+      "sha256": "e769dde2c03b80e97aa7ebcbc35da49c20eff919853b083ff1de232b951d6d71"
     },
     {
       "path": "SoloASCoreExtensions/Source/SoloASCoreExtensions/Private/Lambda/ExplicitCaptureLambdaExtension.h",
-      "sha256": "3873d7131ecaaa6720e102a3f306e9f8c191b4065aa58aa2b2a979ce79021f18"
+      "sha256": "3d35098e40093da4d49a159409009b47105cd24ae48a3f1dac0eed0e4fd6e7ed"
     },
     {
       "path": "SoloASCoreExtensions/Source/SoloASCoreExtensions/Private/Lambda/ExplicitCaptureLambdaParser.cpp",
@@ -4070,7 +4070,7 @@
     },
     {
       "path": "SoloASCoreExtensions/Source/SoloASCoreExtensions/Private/Lambda/ExplicitCaptureLambdaRewrite.cpp",
-      "sha256": "1df81cb453220818f013b28d7c07975503ce8fa80c6d576bfd6f82e6172fdbf9"
+      "sha256": "9f3c98705ba5fc49830683787e3c34f634827c471f856c7cd1a3f031007973ab"
     },
     {
       "path": "SoloASCoreExtensions/Source/SoloASCoreExtensions/Private/Lambda/SoloASBridgeLambdaClosure.cpp",
@@ -4166,7 +4166,11 @@
     },
     {
       "path": "SoloASDeveloperTools/Build/SoloASMcpHost/DebugServerClient.cs",
-      "sha256": "6ab2f99716e4eca8b8f1695a2511f5ad3bf48728e81b4e78405b16509a9d9b52"
+      "sha256": "745d87f3f69c6d1dd7ea0075567215842fbb26c35bce3d62abc1852787cfb14c"
+    },
+    {
+      "path": "SoloASDeveloperTools/Build/SoloASMcpHost/EditClient.cs",
+      "sha256": "a275f6d0f5419edcba47bfbb3f00508d84b09faa8e88c10ebe8da07b87b201e4"
     },
     {
       "path": "SoloASDeveloperTools/Build/SoloASMcpHost/ExternalTools.cs",
@@ -4174,7 +4178,7 @@
     },
     {
       "path": "SoloASDeveloperTools/Build/SoloASMcpHost/McpHostService.cs",
-      "sha256": "a6a76bae49fc6a0c48f2f2943dd6358285b5c959573794cf28a30c472f37679b"
+      "sha256": "d69842db5416f34225aeeedadbf2ef577b84d80e649b36404ab918b8395c1904"
     },
     {
       "path": "SoloASDeveloperTools/Build/SoloASMcpHost/NuGet.Config",
@@ -4222,7 +4226,7 @@
     },
     {
       "path": "SoloASDeveloperTools/SoloASDeveloperTools.uplugin",
-      "sha256": "4c8ac773619a3f30ba0a04bfaaf33bc04548bdf38cd9b26d4eb019de7681ab55"
+      "sha256": "ecc0cb4f3f967cf62603bdef6351383507cc59dab51ea8bb09a48a58a4e1412e"
     },
     {
       "path": "SoloASDeveloperTools/Source/SoloASDeveloperToolsEditor/Private/Commandlets/SoloASProvidersCommandlet.cpp",
@@ -4231,6 +4235,18 @@
     {
       "path": "SoloASDeveloperTools/Source/SoloASDeveloperToolsEditor/Private/Commandlets/SoloASProvidersCommandlet.h",
       "sha256": "1f49d60ee92a09da6d85a87527f403fd6b3f54094e13d129c2e543e94fd44ddc"
+    },
+    {
+      "path": "SoloASDeveloperTools/Source/SoloASDeveloperToolsEditor/Private/McpEditLeases.h",
+      "sha256": "342dccbe53cdbee283566c51a3606312f39955f1697bed6bf4c05607f356803c"
+    },
+    {
+      "path": "SoloASDeveloperTools/Source/SoloASDeveloperToolsEditor/Private/McpEditServer.cpp",
+      "sha256": "b047a8e4f1b9ee137eaaed79db46eed286649915e64dda17484882b53c1a4a31"
+    },
+    {
+      "path": "SoloASDeveloperTools/Source/SoloASDeveloperToolsEditor/Private/McpEditServer.h",
+      "sha256": "f0f157d7389444162130412934f3491794167c91dab573f08243505184d92195"
     },
     {
       "path": "SoloASDeveloperTools/Source/SoloASDeveloperToolsEditor/Private/McpMenu.h",
@@ -4254,7 +4270,7 @@
     },
     {
       "path": "SoloASDeveloperTools/Source/SoloASDeveloperToolsEditor/Private/SoloASDeveloperToolsEditorModule.cpp",
-      "sha256": "ba49440bf050dfe6a7b580a587d90f43298f5241ba985ddda9efbedc99636eda"
+      "sha256": "3175c0fd52318655ae44903c0cd120a0675c9872a868623f440921d8221b056e"
     },
     {
       "path": "SoloASDeveloperTools/Source/SoloASDeveloperToolsEditor/Public/SoloASDeveloperTools.h",
@@ -4266,7 +4282,7 @@
     },
     {
       "path": "SoloASDeveloperTools/Source/SoloASDeveloperToolsEditor/SoloASDeveloperToolsEditor.Build.cs",
-      "sha256": "3e0ec570a423b687272b2f4ea3a79be381149b226c214aa2df88016b686f67ad"
+      "sha256": "2f91e59e66980571e42bbfc234e62b612081488555e14514ecfb151d940f44b4"
     },
     {
       "path": "SoloASDeveloperTools/Source/SoloASDeveloperToolsProviders/Private/SoloASDeveloperToolsProviders.cpp",
@@ -4367,5 +4383,5 @@
     "5.8.4"
   ],
   "updaterProtocol": 1,
-  "version": "0.2.0"
+  "version": "0.2.1"
 }

@@ -533,6 +533,9 @@ public:
 	{
 		return Clients.Num() != 0;
 	}
+                                                                                                       
+	bool HasClientEndpoint(const FString& Endpoint) const;
+                                                                                                     
 
 	void ProcessScriptLine(class asCContext* Context);
 	void ProcessScriptStackPop(class asCContext* Context, void* OldStackFrameStart, void* OldStackFrameEnd);
@@ -661,6 +664,10 @@ public:
 
 	const char* IgnoreBreakSection = nullptr;
 	int32 IgnoreBreakLine = -1;
+                                                                                                     
+	class asIScriptFunction* IgnoreBreakFunction = nullptr;
+	bool bIgnoreBreakMappedModule = false;
+                                                                                                   
 
 	class asIScriptFunction* ConditionBreakFunction = nullptr;
 	int32 ConditionBreakFrame = -1;

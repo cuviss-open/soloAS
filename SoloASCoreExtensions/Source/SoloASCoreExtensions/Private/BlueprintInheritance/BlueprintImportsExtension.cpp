@@ -6,6 +6,7 @@
 #include "AngelscriptBinds.h"
 #include "AngelscriptBinds/Helper_PODType.h"
 #include "AngelscriptManager.h"
+#include "AngelscriptCodeModule.h"
 #include "AngelscriptOptionalProviders.h"
 #include "AngelscriptCoreExtensionPoints.h"
 #include "ClassGenerator/ASClass.h"
@@ -43,6 +44,7 @@
 
 namespace SoloASCoreExtensions::BlueprintInheritance
 {
+static void PrepareConfiguredBlueprintImports();
 namespace
 {
 using namespace AngelscriptBlueprintQuickCall;
@@ -103,11 +105,23 @@ struct FBlueprintView final : TAngelscriptPODType<UObject*>
     void EmitReferenceInfo(const FAngelscriptTypeUsage&, FGCReferenceParams& Params) const override
     { Params.Schema->Add(UE::GC::DeclareMember(Params.Names.Top(), Params.AtOffset, UE::GC::EMemberType::Reference)); }
 };
+TSharedPtr<FBlueprintView> Bind(UClass* Class, FString& Error);
+struct FDeferredBlueprintView final : TAngelscriptPODType<UObject*>
+{
+    FString Name, Path;
+    FDeferredBlueprintView(FString InName, FString InPath) : Name(MoveTemp(InName)), Path(MoveTemp(InPath)) {}
+    FString GetAngelscriptTypeName() const override { return Name; }
+    UClass* GetClass(const FAngelscriptTypeUsage&) const override;
+};
 // VM type shapes and their callbacks live until the VM ends. Recompiles replace
 // only the current class reference; no per-recompile types or function roots accumulate.
 TMap<FString, TSharedRef<FBlueprintView>> Views;
 TSet<FBlueprintView*> PendingViews;
 FDelegateHandle SourceHandle, ReplacedHandle, ShutdownHandle, CarrierHandle, RetryHandle, ReloadClient;
+FDelegateHandle DebugAliasHandle;
+FDelegateHandle DebugAliasFailedHandle, DebugAliasCompiledHandle;
+TMap<FString, TMap<FString, FString>> DebugAliasesBySource;
+TMap<FString, TOptional<TMap<FString, FString>>> PreviousDebugAliases;
 TSet<FString> PendingReloadModules;
 uint64 NextReloadRequest = 1;
 TMap<FString, TMap<FString, TWeakObjectPtr<UClass>>> ImportedParents;
@@ -134,6 +148,22 @@ FString Mask(const FString& Source)
         if (C != '\n' && C != '\r') Result[I] = ' ';
     }
     return Result;
+}
+
+TMap<FString, FString> ProjectBlueprintBindings()
+{
+    FString Config;
+    GConfig->GetString(TEXT("/Script/AngelscriptCode.AngelscriptSettings"), TEXT("BlueprintBindings"), Config, GEngineIni);
+    TMap<FString, FString> Bindings;
+    FRegexMatcher Entry(FRegexPattern(TEXT("\\(\\s*\\\"?([A-Za-z_][A-Za-z0-9_]*)\\\"?\\s*,\\s*\\\"([^\\\"]+)\\\"\\s*\\)")), Config);
+    while (Entry.FindNext()) Bindings.Add(Entry.GetCaptureGroup(1), Entry.GetCaptureGroup(2));
+    return Bindings;
+}
+TArray<FString> ProjectBlueprintDependencies()
+{
+    TArray<FString> Dependencies;
+    GConfig->GetArray(TEXT("/Script/AngelscriptCode.AngelscriptSettings"), TEXT("BlueprintDependencies"), Dependencies, GEngineIni);
+    return Dependencies;
 }
 
 UClass* Resolve(const FString& Filename, const FString& Name, FString& Error)
@@ -172,6 +202,11 @@ UClass* Resolve(const FString& Filename, const FString& Name, FString& Error)
             { Error = TEXT("BlueprintAliases requires one nonempty mapping for '") + Name + TEXT("'."); return nullptr; }
             Path = Value;
         }
+    }
+    if (Path.IsEmpty() && ProjectBlueprintDependencies().Contains(Name))
+    {
+        const auto Bindings = ProjectBlueprintBindings();
+        if (const FString* Binding = Bindings.Find(Name)) Path = *Binding;
     }
     if (!Path.IsEmpty())
     {
@@ -245,7 +280,7 @@ struct FCompilingBlueprintChild
 TArray<FCompilingBlueprintChild> CompilingBlueprintChildren;
 TSet<FString> CompilingBlueprintModules;
 TUniquePtr<FAngelscriptExecutionWriteScope> BlueprintCompileWriter;
-FDelegateHandle BlueprintPreCompileHandle, BlueprintCompiledHandle, BlueprintEngineInitHandle;
+FDelegateHandle BlueprintPreCompileHandle, BlueprintReinstancedHandle, BlueprintCompiledHandle, BlueprintEngineInitHandle;
 
 void PrepareBlueprintChildren(UBlueprint* Blueprint)
 {
@@ -298,10 +333,14 @@ void PrepareBlueprintChildren(UBlueprint* Blueprint)
     }
     for (const FString& Module : Modules) CompilingBlueprintModules.Add(Module);
 }
-void CompleteBlueprintChildren()
+void RestoreBlueprintChildren()
 {
     for (const auto& Child : CompilingBlueprintChildren) Child.Class->SetDefaultObject(Child.Default.Get());
     CompilingBlueprintChildren.Reset();
+}
+void CompleteBlueprintChildren()
+{
+    RestoreBlueprintChildren();
     BlueprintCompileWriter.Reset();
     for (const FString& Module : CompilingBlueprintModules) PendingReloadModules.Add(Module);
     CompilingBlueprintModules.Reset();
@@ -311,6 +350,10 @@ void InstallBlueprintCompileCallbacks()
     if (!bStarted || !ReloadClient.IsValid() || !GEditor) return;
     if (!BlueprintPreCompileHandle.IsValid())
         BlueprintPreCompileHandle = GEditor->OnBlueprintPreCompile().AddStatic(&PrepareBlueprintChildren);
+    // Synchronous compilation collects garbage after reinstancing and before
+    // OnBlueprintCompiled. Live instances need their class CDO during that GC.
+    if (!BlueprintReinstancedHandle.IsValid())
+        BlueprintReinstancedHandle = GEditor->OnBlueprintReinstanced().AddStatic(&RestoreBlueprintChildren);
     if (!BlueprintCompiledHandle.IsValid())
         BlueprintCompiledHandle = GEditor->OnBlueprintCompiled().AddStatic(&CompleteBlueprintChildren);
 }
@@ -499,6 +542,7 @@ TSharedPtr<FBlueprintView> Bind(UClass* Class, FString& Error)
     View->Class.Reset(Class);
     auto Binds = FAngelscriptBinds::ExistingClass(Name);
     Binds.SetTypeUserData(Class);
+    TSet<FString> CallableSignatures;
     for (TFieldIterator<UFunction> It(Class); It; ++It)
     {
         UFunction* Function = *It;
@@ -507,6 +551,7 @@ TSharedPtr<FBlueprintView> Bind(UClass* Class, FString& Error)
         FString Signature = Function->GetReturnProperty() ? Declaration(Function->GetReturnProperty()) : TEXT("void");
         if (Signature.IsEmpty()) continue;
         Signature += TEXT(" ") + Function->GetName() + TEXT("(");
+        FString CallableSignature = Function->GetName() + TEXT("(");
         bool Supported = true;
         int32 Count = 0;
         for (TFieldIterator<FProperty> P(Function); P && P->HasAnyPropertyFlags(CPF_Parm); ++P)
@@ -516,31 +561,63 @@ TSharedPtr<FBlueprintView> Bind(UClass* Class, FString& Error)
             if (Type.IsEmpty() || P->HasAnyPropertyFlags(CPF_OutParm | CPF_ReferenceParm)) { Supported = false; break; }
             if (Count++) Signature += TEXT(", ");
             Signature += Type + TEXT(" ") + P->GetName();
+            CallableSignature += Type + TEXT(";");
         }
         Signature += TEXT(")");
+        CallableSignature += TEXT(")");
         if (Supported && !View->Members.Contains(Signature))
         { Binds.GenericMethod(Signature, &Invoke, nullptr); View->Members.Add(Signature); }
+        if (Supported) CallableSignatures.Add(CallableSignature);
     }
     for (TFieldIterator<FProperty> It(Class); It; ++It)
     {
         if (!It->HasAnyPropertyFlags(CPF_BlueprintVisible)) continue;
         const FString Type = Declaration(*It);
         if (Type.IsEmpty()) continue;
-        const FString Get = Type + TEXT(" Get") + It->GetName() + TEXT("() const property");
-        const FString Set = TEXT("void Set") + It->GetName() + TEXT("(") + Type + TEXT(" Value) property");
-        if (!View->Members.Contains(Get)) { Binds.GenericMethod(Get, &Property, nullptr); View->Members.Add(Get); }
-        if (!It->HasAnyPropertyFlags(CPF_BlueprintReadOnly) && !View->Members.Contains(Set))
+        const FString GetDeclaration = Type + TEXT(" Get") + It->GetName() + TEXT("() const");
+        const FString SetDeclaration = TEXT("void Set") + It->GetName() + TEXT("(") + Type + TEXT(" Value)");
+        const FString Get = GetDeclaration + TEXT(" property");
+        const FString Set = SetDeclaration + TEXT(" property");
+        if (!View->Members.Contains(Get) && !View->Info->GetMethodByDecl(TCHAR_TO_ANSI(*GetDeclaration)))
+        { Binds.GenericMethod(Get, &Property, nullptr); View->Members.Add(Get); }
+        if (!It->HasAnyPropertyFlags(CPF_BlueprintReadOnly) && !View->Members.Contains(Set)
+            && !CallableSignatures.Contains(TEXT("Set") + It->GetName() + TEXT("(") + Type + TEXT(";)"))
+            && !View->Info->GetMethodByDecl(TCHAR_TO_ANSI(*SetDeclaration)))
         { Binds.GenericMethod(Set, &Property, nullptr); View->Members.Add(Set); }
     }
     return View;
+}
+
+UClass* FDeferredBlueprintView::GetClass(const FAngelscriptTypeUsage&) const
+{
+    UClass* Class = FindObject<UClass>(nullptr, *Path);
+    if (!Class) Class = LoadObject<UClass>(nullptr, *Path);
+    if (!Class || !Class->HasAnyClassFlags(CLASS_CompiledFromBlueprint) || Class->HasAnyClassFlags(CLASS_Interface)) return nullptr;
+    FString Error;
+    const auto View = Bind(Class, Error);
+    if (!View)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("CE Blueprint parent could not be bound: %s"), *Error);
+        return nullptr;
+    }
+    FAngelscriptType::RegisterAlias(Name, View.ToSharedRef());
+    return Class;
 }
 
 void Rewrite(FAngelscriptPreprocessor& P)
 {
     TSet<FString> Changed;
     for (const auto& File : P.Files) ImportedParents.Remove(File.Module->ModuleName);
+    const auto Dependencies = ProjectBlueprintDependencies();
     for (auto& File : P.Files)
     {
+        if (!PreviousDebugAliases.Contains(File.AbsoluteFilename))
+        {
+            if (const auto* Previous = DebugAliasesBySource.Find(File.AbsoluteFilename))
+                PreviousDebugAliases.Add(File.AbsoluteFilename, *Previous);
+            else PreviousDebugAliases.Add(File.AbsoluteFilename, {});
+        }
+        DebugAliasesBySource.Remove(File.AbsoluteFilename);
         const FString Original = File.RawCode;
         FString Code = Mask(Original);
         struct FEdit { int32 Begin, End; FString Text; };
@@ -567,7 +644,29 @@ void Rewrite(FAngelscriptPreprocessor& P)
             Row->SetStringField(TEXT("name"), Name); Row->SetStringField(TEXT("path"), View->Path); Row->SetStringField(TEXT("view"), View->Name);
             Imports.Add(MakeShared<FJsonValueObject>(Row));
         }
+        if (!Dependencies.IsEmpty())
+        {
+            FRegexMatcher ConfiguredParent(FRegexPattern(TEXT("\\bclass\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*:\\s*([A-Za-z_][A-Za-z0-9_]*)")), Code);
+            while (ConfiguredParent.FindNext())
+            {
+                const FString Name = ConfiguredParent.GetCaptureGroup(2);
+                if (!Dependencies.Contains(Name) || Names.Contains(Name)) continue;
+                FString Error;
+                UClass* Class = Resolve(File.AbsoluteFilename, Name, Error);
+                if (Class && !CanRegisterAlias(Name, Class, Error))
+                { P.FileWideError(File, Error); P.bHasError = true; continue; }
+                auto View = Class ? Bind(Class, Error) : nullptr;
+                if (!View) { P.FileWideError(File, Error); P.bHasError = true; continue; }
+                Names.Add(Name, View->Name);
+                if (FAngelscriptType::GetByAngelscriptTypeName(Name).Get() != View.Get())
+                    FAngelscriptType::RegisterAlias(Name, View.ToSharedRef());
+                auto Row = MakeShared<FJsonObject>();
+                Row->SetStringField(TEXT("name"), Name); Row->SetStringField(TEXT("path"), View->Path); Row->SetStringField(TEXT("view"), View->Name);
+                Imports.Add(MakeShared<FJsonValueObject>(Row));
+            }
+        }
         if (Names.IsEmpty()) continue;
+        DebugAliasesBySource.Add(File.AbsoluteFilename, Names);
         FRegexMatcher Parent(FRegexPattern(TEXT("\\bclass\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*:\\s*([A-Za-z_][A-Za-z0-9_]*)")), Code);
         while (Parent.FindNext()) if (const FString* ViewName = Names.Find(Parent.GetCaptureGroup(2)))
         {
@@ -631,6 +730,7 @@ static void PrepareConfiguredBlueprintImports()
     bool Enabled = true;
     GConfig->GetBool(TEXT("SoloASCoreExtensions"), TEXT("bEnableBlueprintInheritance"), Enabled, GEngineIni);
     if (!Enabled) return;
+    const auto Dependencies = ProjectBlueprintDependencies();
     TMap<FString, FString> Known;
     TArray<FString> Aliases;
     GConfig->GetArray(TEXT("SoloASCoreExtensions"), TEXT("BlueprintAliases"), Aliases, GEngineIni);
@@ -639,6 +739,7 @@ static void PrepareConfiguredBlueprintImports()
         FString Name, Path;
         if (FParse::Value(*Alias, TEXT("Name="), Name) && FParse::Value(*Alias, TEXT("Path="), Path)) Known.Add(Name, Path);
     }
+    const auto Bindings = ProjectBlueprintBindings();
     for (const FString& Root : {FPaths::ProjectDir() / TEXT("FeatureMods"), FPaths::ProjectPluginsDir() / TEXT("FeatureMods")})
     {
         TArray<FString> Units;
@@ -649,9 +750,9 @@ static void PrepareConfiguredBlueprintImports()
             FString Text; TSharedPtr<FJsonObject> Json;
             if (!FFileHelper::LoadFileToString(Text, *(Root / Unit / TEXT("FeatureMod.json")))
                 || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text), Json) || !Json) continue;
-            const TSharedPtr<FJsonObject>* Bindings = nullptr;
-            if (Json->TryGetObjectField(TEXT("BlueprintBindings"), Bindings))
-                for (const auto& Pair : (*Bindings)->Values)
+            const TSharedPtr<FJsonObject>* FeatureBindings = nullptr;
+            if (Json->TryGetObjectField(TEXT("BlueprintBindings"), FeatureBindings))
+                for (const auto& Pair : (*FeatureBindings)->Values)
                     if (Pair.Value->Type == EJson::String) Known.Add(Unit + TEXT(":") + Pair.Key, Pair.Value->AsString());
         }
     }
@@ -672,6 +773,17 @@ static void PrepareConfiguredBlueprintImports()
             UE_LOG(LogTemp, Warning, TEXT("CE startup Blueprint view rejected: %s"), *Error);
         }
         else if (!Name.Contains(TEXT(":"))) FAngelscriptType::RegisterAlias(Name, View.ToSharedRef());
+    }
+    for (const FString& Dependency : Dependencies)
+    {
+        if (FAngelscriptType::GetByAngelscriptTypeName(Dependency).IsValid()) continue;
+        const FString* Mapping = Known.Find(Dependency);
+        if (!Mapping) Mapping = Bindings.Find(Dependency);
+        if (!Mapping) continue;
+        FString Path = *Mapping;
+        if (!Path.Contains(TEXT("."))) Path += TEXT(".") + FPaths::GetCleanFilename(Path);
+        if (!Path.EndsWith(TEXT("_C"))) Path += TEXT("_C");
+        FAngelscriptType::RegisterAlias(Dependency, MakeShared<FDeferredBlueprintView>(Dependency, Path));
     }
 }
 AS_FORCE_LINK const FAngelscriptBinds::FBind PrepareKnownBlueprintImports(int32(FAngelscriptBinds::EOrder::Late) + 310, []
@@ -745,6 +857,21 @@ void StartBlueprintImports()
             return EBlueprintCarrierResult::Reject;
         });
     if (!CarrierHandle.IsValid()) return;
+    DebugAliasHandle = AngelscriptCoreExtensionPoints::RegisterDebugTypeAliasProvider(TEXT("soloas.blueprint-inheritance"),
+        [](TArray<AngelscriptCoreExtensionPoints::FDebugTypeAlias>& Out)
+        {
+            for (const auto& AliasSource : DebugAliasesBySource)
+                for (const auto& Alias : AliasSource.Value)
+                    Out.Add({Alias.Value, Alias.Key, AliasSource.Key, {}});
+        });
+    DebugAliasFailedHandle = FAngelscriptCodeModule::GetReloadHadErrors().AddLambda([]
+    {
+        for (const auto& Entry : PreviousDebugAliases)
+            if (Entry.Value.IsSet()) DebugAliasesBySource.Add(Entry.Key, Entry.Value.GetValue());
+            else DebugAliasesBySource.Remove(Entry.Key);
+        PreviousDebugAliases.Reset();
+    });
+    DebugAliasCompiledHandle = FAngelscriptCodeModule::GetPostCompile().AddLambda([] { PreviousDebugAliases.Reset(); });
     // Normal project aliases must exist before the preprocessor's first class
     // analysis. The late bind also prepares them when startup precedes UObject.
     if (FAngelscriptType::GetByAngelscriptTypeName(TEXT("UObject")).IsValid()) PrepareConfiguredBlueprintImports();
@@ -814,6 +941,16 @@ void StopBlueprintImports()
 #if WITH_EDITOR && !IS_MONOLITHIC
     if (ImportEditorAdapter && !ImportEditorAdapter(false)) return;
 #endif
+    if (DebugAliasHandle.IsValid())
+    {
+        if (AngelscriptCoreExtensionPoints::UnregisterDebugTypeAliasProvider(DebugAliasHandle)
+            == AngelscriptCoreExtensionPoints::ERemoveResult::Busy) return;
+        DebugAliasHandle.Reset();
+        DebugAliasesBySource.Reset();
+        PreviousDebugAliases.Reset();
+        FAngelscriptCodeModule::GetReloadHadErrors().Remove(DebugAliasFailedHandle); DebugAliasFailedHandle.Reset();
+        FAngelscriptCodeModule::GetPostCompile().Remove(DebugAliasCompiledHandle); DebugAliasCompiledHandle.Reset();
+    }
     if (CarrierHandle.IsValid())
     {
         const auto Result = AngelscriptCoreExtensionPoints::UnregisterBlueprintCarrierProvider(CarrierHandle);
@@ -833,9 +970,10 @@ void StopBlueprintImports()
     if (GEditor)
     {
         GEditor->OnBlueprintPreCompile().Remove(BlueprintPreCompileHandle);
+        GEditor->OnBlueprintReinstanced().Remove(BlueprintReinstancedHandle);
         GEditor->OnBlueprintCompiled().Remove(BlueprintCompiledHandle);
     }
-    BlueprintPreCompileHandle.Reset(); BlueprintCompiledHandle.Reset();
+    BlueprintPreCompileHandle.Reset(); BlueprintReinstancedHandle.Reset(); BlueprintCompiledHandle.Reset();
 #endif
 #endif
     bStarted = false;

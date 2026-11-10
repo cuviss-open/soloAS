@@ -138,7 +138,12 @@ void asCScriptCode::ConvertPosToRowCol(size_t pos, int *row, int *col)
 		}
 	}
 
-	if( row ) *row = i + 1 + lineOffset;
+                                                                                                     
+	if( row )
+	{
+		*row = i < int(sourceLines.GetLength()) ? sourceLines[i] : i + 1 + lineOffset;
+	}
+                                                                                                   
 	if( col ) *col = (int)(pos - linePositions[i]) + 1;
 }
 

@@ -1,7 +1,7 @@
 {
   "FileVersion": 3,
-  "Version": 5,
-  "VersionName": "0.2.0",
+  "Version": 6,
+  "VersionName": "0.2.1",
   "FriendlyName": "SoloAS Bridge",
   "Description": "Compatibility bridge for AngelScript-compatible consumers and an unmodified Unreal Engine.",
   "Category": "Scripting",

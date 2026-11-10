@@ -54,6 +54,54 @@ ANGELSCRIPTCODE_API EReloadAdmission TryExplicitReload(FDelegateHandle Client,
                                                                                                        
 namespace AngelscriptCoreExtensionPoints
 {
+struct FReloadDiagnostic
+{
+    FString Filename;
+    FString Message;
+    int32 Line = 0;
+    int32 Column = 0;
+    bool bIsError = false;
+    bool bIsInfo = false;
+};
+// Game-thread callbacks and diagnostics are borrowed for the call only.
+// Registrations must be removed before the consumer unloads.
+ANGELSCRIPTCODE_API FDelegateHandle RegisterAutomaticReloadObserver(FName FeatureId,
+    TFunction<bool()> ShouldDefer, TFunction<void(uint64)> OnBegin,
+    TFunction<void(uint64, bool, const TArray<FReloadDiagnostic>&)> OnComplete);
+ANGELSCRIPTCODE_API ERemoveResult UnregisterAutomaticReloadObserver(FDelegateHandle Handle);
+extern ANGELSCRIPTCODE_API bool GHasReloadObservers;
+extern ANGELSCRIPTCODE_API bool GCollectingReloadDiagnostics;
+ANGELSCRIPTCODE_API bool ShouldDeferAutomaticReload();
+ANGELSCRIPTCODE_API void NotifyAutomaticReloadBegin();
+ANGELSCRIPTCODE_API void NotifyAutomaticReloadComplete(bool bSuccess);
+ANGELSCRIPTCODE_API void CaptureReloadDiagnostic(const FString& Filename, const FString& Message,
+    int32 Line, int32 Column, bool bIsError, bool bIsInfo);
+// A read-only game-thread check against this process's live DebugServer clients.
+ANGELSCRIPTCODE_API bool HasDebugClientEndpoint(const FString& Endpoint);
+}
+                                                                                                     
+
+                                                                                                   
+namespace AngelscriptCoreExtensionPoints
+{
+struct FDebugTypeAlias
+{
+    FString InternalName;
+    FString PublicName;
+    FString SourceScope;
+    FString ParentName;
+};
+// Game-thread snapshots only. The consumer owns its data and removes its provider before unloading.
+ANGELSCRIPTCODE_API FDelegateHandle RegisterDebugTypeAliasProvider(FName FeatureId,
+    TFunction<void(TArray<FDebugTypeAlias>&)> Collect);
+ANGELSCRIPTCODE_API ERemoveResult UnregisterDebugTypeAliasProvider(FDelegateHandle Handle);
+ANGELSCRIPTCODE_API void CollectDebugTypeAliases(TArray<FDebugTypeAlias>& Out);
+}
+                                                                                                 
+
+                                                                                                       
+namespace AngelscriptCoreExtensionPoints
+{
 enum class ECacheAdmission : uint8 { Completed, Busy, Invalid };
 // A copy of a handle is not another hold. Clone explicitly before copying values.
 struct FModuleGenerationLease { uint64 Id = 0; FModuleGenerationId Module; };

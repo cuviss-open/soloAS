@@ -173,16 +173,6 @@ FString CaptureParameter(const FString& Type, bool bObjectValue)
     return TEXT("const ") + Value + TEXT("&");
 }
 
-FString Flatten(const FString& Code)
-{
-    TArray<ELexicalKind> Kinds;
-    BuildLexicalKinds(Code, Kinds);
-    FString Flat;
-    for (int32 At = 0; At < Code.Len(); ++At)
-        Flat += Kinds[At] == ELexicalKind::LineComment || Code[At] == '\n' || Code[At] == '\r' ? TCHAR(' ') : Code[At];
-    return Flat;
-}
-
 FString PredicateCall(const FAlgorithmGroup& Group, const FString& A, const FString& B = FString())
 {
     FString Args = TEXT("__CuvissSite") + Group.CaptureArguments + TEXT(", ") + A;
@@ -456,7 +446,9 @@ bool ParseAlgorithmCandidate(const FString& Code, const TArray<ELexicalKind>& Ki
     const int32 Site = Group->Sites++;
     const FString BodyName = Group->Name + FString::Printf(TEXT("_Body%d"), Site);
     const FString Body = Code.Mid(BodyOpen, BodyClose - BodyOpen + 1);
-    const FString Declaration = TEXT(" bool ") + BodyName + TEXT("(") + BodyDeclarations + TEXT(") __generated ");
+    Out.BodyPosition = BodyOpen;
+    Out.DebugBodyFunctions.Add(OwnerClose != INDEX_NONE && !bCaptureThis ? BodyName + TEXT("_Global") : BodyName);
+    const FString Declaration = TEXT("\n bool ") + BodyName + TEXT("(") + BodyDeclarations + TEXT(") __generated ");
     if (OwnerClose != INDEX_NONE && !bCaptureThis)
     {
         Out.GeneratedCode = Declaration.Replace(*BodyName, *(BodyName + TEXT("_Global"))) + Body + TEXT("\n");
@@ -465,7 +457,7 @@ bool ParseAlgorithmCandidate(const FString& Code, const TArray<ELexicalKind>& Ki
         for (const auto& Parameter : Parameters) ForwardArgs += (ForwardArgs.IsEmpty() ? TEXT("") : TEXT(", ")) + Parameter.Name;
         Out.OwnerMethod = Declaration + TEXT("{ return ") + BodyName + TEXT("_Global(") + ForwardArgs + TEXT("); } ");
     }
-    else if (OwnerClose != INDEX_NONE) Out.OwnerMethod = Declaration + Flatten(Body) + TEXT(" ");
+    else if (OwnerClose != INDEX_NONE) Out.OwnerMethod = Declaration + Body + TEXT("\n");
     else Out.GeneratedCode = Declaration + Body + TEXT("\n");
     Group->DispatchCases += FString::Printf(TEXT("case %d: return "), Site) + BodyName + TEXT("(") + BodyArguments + TEXT(");");
     Out.OwnerClassClose = OwnerClose;

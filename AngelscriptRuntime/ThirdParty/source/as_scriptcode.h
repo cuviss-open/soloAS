@@ -65,6 +65,9 @@ public:
 	int              idx;
 	int              lineOffset;
 	asCArray<size_t> linePositions;
+                                                                                                     
+	asCArray<int> sourceLines;
+                                                                                                   
 	asCScriptCode*   compiledWithinScript;
 	class asCScriptNode*   compiledWithinNode;
 };

@@ -10,7 +10,7 @@ public class SoloASDeveloperToolsEditor : ModuleRules
         PublicDependencyModuleNames.Add("Core");
         PrivateDependencyModuleNames.AddRange(new[] {
             "CoreUObject", "Engine", "UnrealEd", "ApplicationCore", "ToolMenus", "Slate", "SlateCore", "InputCore",
-            "Json", "Projects", "DeveloperSettings", "Settings", "AngelscriptCode", "SoloASDeveloperToolsProviders"
+            "Json", "Projects", "DeveloperSettings", "Settings", "AngelscriptCode", "SoloASDeveloperToolsProviders", "Sockets", "Networking"
         });
     }
 }
