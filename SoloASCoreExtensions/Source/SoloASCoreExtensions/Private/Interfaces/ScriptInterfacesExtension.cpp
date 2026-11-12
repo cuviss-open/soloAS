@@ -957,6 +957,7 @@ bool DescribeBlueprintMethod(UFunction* Function, FMethod& Method, FString& Erro
 
 
 FDelegateHandle SourceHandle, ProviderHandle, FailedHandle, CompiledHandle;
+FDelegateHandle DependencyProviderHandle;
 TMap<FString, TArray<UClass*>> ClassEdges, PreviousEdges;
 bool bPending = false;
 FString EdgeKey(FStringView Module, FStringView Class) { return FString(Module) + TEXT(":") + FString(Class); }
@@ -1023,6 +1024,51 @@ bool ImportInterface(const FString& Name, FString& Error)
     Definition->Methods = MoveTemp(Methods);
     Interfaces.Add(Name, Definition);
     return true;
+}
+
+void CollectReloadDependencies(TConstArrayView<AngelscriptCoreExtensionPoints::FPreprocessSource> Sources,
+    TArray<AngelscriptCoreExtensionPoints::FPreprocessDependency>& Out)
+{
+    TSet<FString> Changed;
+    const FRegexPattern Header(TEXT("\\binterface\\s+([A-Za-z_][A-Za-z0-9_]*)(?:\\s*:\\s*([A-Za-z_][A-Za-z0-9_]*))?\\s*\\{"));
+    for (const auto& File : Sources)
+    {
+        const FString Code = Mask(File.Source);
+        FRegexMatcher Interface(Header, Code);
+        while (Interface.FindNext())
+        {
+            const FString Name = Interface.GetCaptureGroup(1);
+            const FInterface* Existing = FindInterface(Name);
+            const int32 Close = CloseBrace(Code, Interface.GetMatchEnding() - 1);
+            if (Existing && Close != INDEX_NONE
+                && Existing->Source != File.Source.Mid(Interface.GetMatchBeginning(), Close - Interface.GetMatchBeginning() + 1))
+                Changed.Add(Name);
+        }
+    }
+    bool bAdded = true;
+    while (bAdded)
+    {
+        bAdded = false;
+        for (const auto& Pair : Interfaces)
+            if (Changed.Contains(Pair.Value->Parent) && !Changed.Contains(Pair.Key))
+            { Changed.Add(Pair.Key); bAdded = true; }
+    }
+    if (Changed.IsEmpty()) return;
+    TSet<UClass*> ChangedClasses;
+    for (const FString& Name : Changed) ChangedClasses.Add(Interfaces.FindChecked(Name)->Class.Get());
+    for (const auto& Module : FAngelscriptManager::Get().GetActiveModules())
+    {
+        bool bImplements = false;
+        const FString Prefix = Module->ModuleName + TEXT(":");
+        for (const auto& Pair : ClassEdges)
+            if (Pair.Key.StartsWith(Prefix) && Pair.Value.ContainsByPredicate([&](UClass* Class) { return ChangedClasses.Contains(Class); }))
+            { bImplements = true; break; }
+        if (!bImplements) continue;
+        for (const auto& Section : Module->Code)
+            if (!Sources.ContainsByPredicate([&](const auto& Source) { return Source.AbsolutePath == Section.AbsoluteFilename; })
+                && !Out.ContainsByPredicate([&](const auto& File) { return File.AbsolutePath == Section.AbsoluteFilename; }))
+                Out.Add({Section.RelativeFilename, Section.AbsoluteFilename});
+    }
 }
 
 bool RewriteSource(FAngelscriptPreprocessor& P, FString& Error)
@@ -1093,22 +1139,64 @@ bool RewriteSource(FAngelscriptPreprocessor& P, FString& Error)
         while (Class.FindNext())
         {
             TArray<FString> Parents; Class.GetCaptureGroup(2).ParseIntoArray(Parents, TEXT(","));
+            const FString ClassName = Class.GetCaptureGroup(1);
+            const FString Key = EdgeKey(Module, ClassName);
+            if (const TArray<UClass*>* Previous = PreviousEdges.Find(Key))
+            {
+                TArray<UClass*> Current;
+                for (int32 Index = 1; Index < Parents.Num(); ++Index)
+                {
+                    const FString Name = Parents[Index].TrimStartAndEnd();
+                    if (!ImportInterface(Name, Error)) return false;
+                    Current.AddUnique(Interfaces.FindChecked(Name)->Class.Get());
+                }
+                if (Previous->Num() != Current.Num() || Previous->ContainsByPredicate([&](UClass* Interface) { return !Current.Contains(Interface); }))
+                {
+                    Error = FString::Printf(TEXT("Class '%s' changed its implemented interfaces; restart the editor to apply this change. Keeping the previous class."), *ClassName);
+                    return false;
+                }
+            }
             if (Parents.Num() < 2) continue;
             const int32 Open = Class.GetMatchEnding() - 1, Close = CloseBrace(Code, Open);
             if (Close == INDEX_NONE) { Error = TEXT("Unclosed interface implementation."); return false; }
-            const FString ClassName = Class.GetCaptureGroup(1);
-            TArray<UClass*>& Edges = ClassEdges.Add(EdgeKey(Module, ClassName));
+            TArray<UClass*>& Edges = ClassEdges.Add(Key);
             FString Body = File.RawCode.Mid(Open + 1, Close - Open - 1);
+            const FString OriginalBody = Mask(Body);
             FString Defaults;
             TSet<FString> Seen;
+            TMap<FString, const FMethod*> DefaultOwners;
+            TMap<FName, UFunction*> Signatures;
             for (int32 Index = 1; Index < Parents.Num(); ++Index)
             {
                 const FString Name = Parents[Index].TrimStartAndEnd();
                 if (!ImportInterface(Name, Error)) return false;
                 const auto& Definition = Interfaces.FindChecked(Name).Get();
                 Edges.AddUnique(Definition.Class.Get());
+                for (TFieldIterator<UFunction> It(Definition.Class.Get()); It; ++It)
+                {
+                    if (!It->GetOuterUClass()->HasAnyClassFlags(CLASS_Interface)
+                        || It->HasAnyFunctionFlags(FUNC_UbergraphFunction | FUNC_Static)
+                        || !It->HasAnyFunctionFlags(FUNC_BlueprintEvent | FUNC_BlueprintCallable | FUNC_BlueprintPure)) continue;
+                    if (UFunction** Previous = Signatures.Find(It->GetFName()))
+                    {
+                        if (!(*Previous)->IsSignatureCompatibleWith(*It))
+                        { Error = TEXT("Interface methods with the same name have incompatible signatures."); return false; }
+                    }
+                    else Signatures.Add(It->GetFName(), *It);
+                }
                 for (const FMethod& Method : Definition.Methods)
                 {
+                    if (const FMethod* const* Previous = DefaultOwners.Find(Method.Name))
+                    {
+                        FRegexMatcher Explicit(FRegexPattern(TEXT("UFUNCTION\\s*\\([^)]*BlueprintOverride[^)]*\\)\\s*[^{};]+\\b") + Method.Name + TEXT("\\s*\\(")), OriginalBody);
+                        if (!(*Previous)->DefaultFunction.IsEmpty() && !Method.DefaultFunction.IsEmpty()
+                            && (*Previous)->DefaultFunction != Method.DefaultFunction && !Explicit.FindNext())
+                        {
+                            Error = FString::Printf(TEXT("Interface method '%s' has conflicting defaults; implement it explicitly with UFUNCTION(BlueprintOverride)."), *Method.Name);
+                            return false;
+                        }
+                    }
+                    else DefaultOwners.Add(Method.Name, &Method);
                     if (Seen.Contains(Method.Name)) continue;
                     Seen.Add(Method.Name);
                     FRegexMatcher Implementation(FRegexPattern(TEXT("\\b") + Method.ReturnType.Replace(TEXT("*"), TEXT("\\*")) + TEXT("\\s+") + Method.Name + TEXT("\\s*\\(")), Mask(Body));
@@ -1312,6 +1400,9 @@ void Start()
             return true;
         });
     check(ProviderHandle.IsValid());
+    DependencyProviderHandle = AngelscriptCoreExtensionPoints::RegisterPreprocessDependencyProvider(
+        TEXT("soloas.interfaces.reload-dependents/v1"), &CollectReloadDependencies);
+    check(DependencyProviderHandle.IsValid());
     DebugAliasHandle = AngelscriptCoreExtensionPoints::RegisterDebugTypeAliasProvider(TEXT("soloas.class-interfaces"),
         [](TArray<AngelscriptCoreExtensionPoints::FDebugTypeAlias>& Out)
         {
@@ -1328,6 +1419,12 @@ void Start()
 void Stop()
 {
     if (!ProviderHandle.IsValid()) return;
+    if (DependencyProviderHandle.IsValid())
+    {
+        const auto DependencyResult = AngelscriptCoreExtensionPoints::UnregisterPreprocessDependencyProvider(DependencyProviderHandle);
+        check(DependencyResult == AngelscriptCoreExtensionPoints::ERemoveResult::Removed);
+        DependencyProviderHandle.Reset();
+    }
     if (DebugAliasHandle.IsValid())
     {
         const auto DebugResult = AngelscriptCoreExtensionPoints::UnregisterDebugTypeAliasProvider(DebugAliasHandle);

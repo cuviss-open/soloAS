@@ -267,7 +267,13 @@ bool PrepareBlueprintStructBindings(const TMap<FName, FString>& Values, const TA
         { Error = TEXT("Invalid, duplicate or unmapped BlueprintStructBindings name: ") + Name; return false; }
         auto Binding = MakeShared<FBinding>();
         Binding->Name = Name; Binding->Path = *Path;
-        auto* Struct = Cast<UUserDefinedStruct>(FSoftObjectPath(*Path).TryLoad());
+        UObject* Loaded = StaticLoadObject(UObject::StaticClass(), nullptr, **Path, nullptr, LOAD_NoWarn);
+        if (!Loaded)
+        {
+            UE_LOG(LogTemp, Error, TEXT("BlueprintStructBindings asset not found for '%s': %s"), *Name, **Path);
+            continue;
+        }
+        auto* Struct = Cast<UUserDefinedStruct>(Loaded);
         if (!Struct || Struct->Status != UDSS_UpToDate || Assets.Contains(Struct))
         { Error = TEXT("BlueprintStructBindings requires distinct compiled UDS assets: ") + Name; return false; }
         if (!ValidateFields(Struct, Error, false)) return false;

@@ -408,7 +408,38 @@ protected:
 	void RemoveVariableScope();
 	void FinalizeFunction();
 
-	asCByteCode byteCode;
+                                                                                                  
+	struct FBudgetByteCode : asCByteCode
+	{
+		using asCByteCode::asCByteCode;
+		asCByteInstruction* Last() const { return last; }
+		void CopyAfter(const asCByteInstruction* Boundary, FBudgetByteCode& Out) const
+		{
+			for (auto* Instr = Boundary ? Boundary->next : first; Instr; Instr = Instr->next)
+			{
+				Out.AddInstruction();
+				auto* Prev = Out.last->prev;
+				*Out.last = *Instr;
+				Out.last->prev = Prev;
+				Out.last->next = nullptr;
+			}
+		}
+		int LabelOffset(short Label) const
+		{
+			int Offset = 0;
+			for (auto* Instr = first; Instr; Instr = Instr->next)
+			{
+				if (Instr->op == asBC_LABEL && Instr->wArg[0] == Label) return Offset;
+				Offset += Instr->GetSize();
+			}
+			return -1;
+		}
+	};
+	FBudgetByteCode byteCode;
+	short BudgetCleanupLabel = -1;
+	asCByteInstruction* BudgetCleanupBoundary = nullptr;
+	void MarkBudgetDestructorTail();
+                                                                                                
 
 	bool hasCompileErrors;
 

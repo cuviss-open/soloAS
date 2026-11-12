@@ -1,12 +1,30 @@
+                                                                                                  
 #include "AngelscriptManager.h"
+                                                                                                
                                                                                                    
 #include "AngelscriptOptionalProviders.h"
                                                                                                  
+                                                                                              
+#include "AngelscriptCoreAdmissionInternal.h"
+                                                                                            
+                                                                                                  
+#include "AngelscriptCoreAdmissionInternal.h"
+                                                                                                
                                                                                                         
 #include "AngelscriptCoreExtensionPoints.h"
 #include "Misc/SecureHash.h"
 #include "Misc/FileHelper.h"
                                                                                                       
+                                                                                                   
+#include "AngelscriptDebugStartPolicyInternal.h"
+#include "Misc/CoreDelegates.h"
+                                                                                                 
+                                                                                                  
+#include "AngelscriptManager.h"
+                                                                                                
+                                                                                                  
+#include "AngelscriptExecutionBudget.h"
+                                                                                                
                                                                                                      
 #include "Compat/SoloASRuntimeCompat.h"
                                                                                                    
@@ -88,6 +106,43 @@
 #include "as_scriptcode.h"
                                                                                                    
 #include "EndAngelscriptHeaders.h"
+                                                                                              
+namespace
+{
+thread_local const TArray<TSharedRef<FAngelscriptModuleDesc>>* DebugDiagnosticCandidates = nullptr;
+thread_local const FAngelscriptModuleDesc* DebugDiagnosticCandidate = nullptr;
+using FDebugDiagnosticGeneration = TSharedPtr<const AngelscriptCoreExtensionPoints::FModuleGenerationId, ESPMode::ThreadSafe>;
+FDebugDiagnosticGeneration DiagnosticGeneration(const FAngelscriptModuleDesc& Module)
+{
+    if (!Module.ScriptModule || Module.Code.IsEmpty()) return {};
+    const uint64 Generation = AngelscriptCoreExtensionPoints::Private::GetModuleGeneration(static_cast<asCModule*>(Module.ScriptModule));
+    if (!Generation) return {};
+    return MakeShared<const AngelscriptCoreExtensionPoints::FModuleGenerationId, ESPMode::ThreadSafe>(
+        AngelscriptCoreExtensionPoints::FModuleGenerationId{ Module.ModuleName, Generation });
+}
+FDebugDiagnosticGeneration DiagnosticGenerationForSource(const FString& Source)
+{
+    auto Matches = [&](const FAngelscriptModuleDesc& Module)
+    {
+        for (const auto& Code : Module.Code)
+            if (Code.AbsoluteFilename == Source || Code.RelativeFilename == Source) return true;
+        return false;
+    };
+    if (DebugDiagnosticCandidate)
+        return Matches(*DebugDiagnosticCandidate) ? DiagnosticGeneration(*DebugDiagnosticCandidate) : FDebugDiagnosticGeneration();
+    if (!DebugDiagnosticCandidates) return {};
+    FDebugDiagnosticGeneration Result;
+    for (const auto& Module : *DebugDiagnosticCandidates)
+    {
+        if (!Matches(*Module)) continue;
+        if (Result) return {};
+        Result = DiagnosticGeneration(*Module);
+    }
+    return Result;
+}
+}
+
+                                                                                            
 
 
 #include "GameplayTagsSettings.h"
@@ -294,6 +349,9 @@ void FAngelscriptManager::PreInitialize_GameThread()
 	 * and compile script modules.
 	 */
 	Engine = (asCScriptEngine*)asCreateScriptEngine(ANGELSCRIPT_VERSION);
+                                                                                                          
+    AngelscriptCoreExtensionPoints::Private::BeginTransientCompileCapture(Engine);
+                                                                                                        
 
 
 	// Set up thread local data for game thread
@@ -522,7 +580,30 @@ void FAngelscriptManager::Initialize_AnyThread()
 	/*
 	Start the debug server that external tools can connect to.
 	*/
+                                                                                              
+    if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+        FCoreDelegates::OnEnginePreExit.AddLambda([this] { StopExtensionDebugAccess(); });
+                                                                                            
+                                                                                                   
+    auto& DebugPolicy = AngelscriptCoreExtensionPoints::Private::DebugStartPolicy();
+    bool bOriginalWouldStartDebug = false;
 #if WITH_AS_DEBUGSERVER
+    bOriginalWouldStartDebug = !FParse::Param(FCommandLine::Get(), TEXT("NoMessaging"))
+        && !FParse::Param(FCommandLine::Get(), TEXT("NoASDebugServer"))
+        && (!bUsePrecompiledData || bScriptDevelopmentMode) && FApp::HasProjectName();
+#endif
+    const bool bStartDebug = DebugPolicy.Lock(bOriginalWouldStartDebug);
+    if (DebugPolicy.Handle.IsValid())
+    {
+        FCoreDelegates::OnEnginePreExit.AddLambda([this]
+        {
+            StopExtensionDebugPolicy();
+        });
+    }
+    (void)bStartDebug;
+#if WITH_AS_DEBUGSERVER
+    if (bStartDebug)
+                                                                                                 
                                                                                              
 	if (!FParse::Param(FCommandLine::Get(), TEXT("NoMessaging"))
 		&& !FParse::Param(FCommandLine::Get(), TEXT("NoASDebugServer")))
@@ -555,6 +636,9 @@ void FAngelscriptManager::Initialize_AnyThread()
 	{
 		FAngelscriptScopeTimer Timer(TEXT("== bindings total =="));
 		BindScriptTypes();
+                                                                                                          
+    AngelscriptCoreExtensionPoints::Private::SealTransientCompileBindings();
+                                                                                                        
 
 	}
 	
@@ -610,7 +694,9 @@ void FAngelscriptManager::Initialize_AnyThread()
 				if (StaticJIT != nullptr)
 					StaticJIT->PrecompiledData = PrecompiledData;
 				if (!bScriptDevelopmentMode)
-					PrecompiledData->bMinimizeMemoryUsage = true;
+                                                                                                          
+    PrecompiledData->bMinimizeMemoryUsage = !Engine->bRetainTransientCompileSurface;
+                                                                                                        
 
 				// If we have compiled in JIT code, we can only use it if it matches the precompiled data
 				const FStaticJITCompiledInfo* CompiledInfo = FStaticJITCompiledInfo::Get();
@@ -635,6 +721,9 @@ void FAngelscriptManager::Initialize_AnyThread()
 
 	// Perform the initial compile of all script files
 	InitialCompile();
+                                                                                                          
+    AngelscriptCoreExtensionPoints::Private::SealTransientCompileRuntime(this);
+                                                                                                        
 
 
 	bool bForcedExit = false;
@@ -678,6 +767,9 @@ void FAngelscriptManager::Initialize_AnyThread()
 	}
 
 
+                                                                                                          
+    AngelscriptCoreExtensionPoints::Private::FinishTransientCompileCapture();
+                                                                                                        
 
 	// We may have requested an exit due to compilation
 	if (bForcedExit)
@@ -1139,6 +1231,33 @@ bool FAngelscriptManager::HasAnyDebugServerClients()
 
 void FAngelscriptManager::ReplaceScriptAssetContent(FString AssetName, TArray<FString> AssetContent)
 {
+                                                                                              
+    using namespace AngelscriptCoreExtensionPoints;
+    if (Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+    {
+#if WITH_AS_DEBUGSERVER
+        if (!IsInGameThread() || !DebugServer) return;
+        auto Module = GetModuleContainingLiteralAsset(AssetName);
+        if (!Module.IsValid() || Module->Code.IsEmpty()) return;
+        for (FSocket* Target : DebugServer->GetDebugClients())
+        {
+            auto View = DebugServer->DebugView(Target, EDebugMessageType::ReplaceAssetDefinition, EDebugAccessPhase::Read);
+            View.Scope = EDebugAccessScope::Script;
+            View.ModuleGenerationId = { Module->ModuleName, Private::GetModuleGeneration(static_cast<asCModule*>(Module->ScriptModule)) };
+            View.SourceIdentity = Module->Code[0].AbsoluteFilename;
+            if (!DebugServer->IsDebugIdentityLive(View) || !Private::DebugAccess().Allow(View)) continue;
+            Private::FDebugReadScope Read(View);
+            Read.Reads.Add(View);
+            if (!Private::AllowDebugModule(Module->ScriptModule)) continue;
+            FAngelscriptReplaceAssetDefinition Message;
+            Message.AssetName = AssetName;
+            Message.Lines = AssetContent;
+            DebugServer->SendMessageToClient(Target, EDebugMessageType::ReplaceAssetDefinition, Message);
+        }
+#endif
+        return;
+    }
+                                                                                            
 #if WITH_AS_DEBUGSERVER
 	FAngelscriptReplaceAssetDefinition Message;
 	Message.AssetName = AssetName;
@@ -1464,6 +1583,33 @@ void FAngelscriptManager::DiscoverTests()
 #endif
 }
 
+                                                                                              
+void FAngelscriptManager::StopExtensionDebugAccess()
+{
+    auto& Access = AngelscriptCoreExtensionPoints::Private::DebugAccess();
+    if (!Access.Enabled.load(std::memory_order_acquire)) return;
+#if WITH_AS_DEBUGSERVER
+    if (DebugServer) DebugServer->DrainDebugAccess();
+    delete DebugServer;
+    DebugServer = nullptr;
+#endif
+    FScopeLock Lock(&Access.Mutex);
+    Access.bClosing = true;
+}
+
+                                                                                            
+                                                                                                   
+void FAngelscriptManager::StopExtensionDebugPolicy()
+{
+    auto& Policy = AngelscriptCoreExtensionPoints::Private::DebugStartPolicy();
+    if (!Policy.Handle.IsValid()) return;
+#if WITH_AS_DEBUGSERVER
+    delete DebugServer;
+    DebugServer = nullptr;
+#endif
+    Policy.Detach();
+}
+                                                                                                 
                                                                                                             
 bool FAngelscriptManager::ReportNativeReloadFailure()
 {
@@ -2240,6 +2386,126 @@ void FAngelscriptManager::CheckForFileChanges()
 #endif
 }
 
+                                                                                                       
+void FAngelscriptManager::ReleaseModuleCacheIdleContexts(const TArray<TSharedRef<FAngelscriptModuleDesc>>& Modules)
+{
+    check(IsInGameThread() && IsAngelscriptExecutionWriterHeldByCurrentThread());
+    auto UnprepareOwned = [&](const TArray<asCContext*>& Contexts)
+    {
+        for (auto* Context : Contexts)
+        {
+            // Pool ownership, not context state alone, proves the context idle.
+            auto* Function = Context->m_initialFunction;
+            if (!Function) continue;
+            for (const auto& Module : Modules)
+                if (Function->module == Module->ScriptModule) { Context->Unprepare(); break; }
+        }
+    };
+    // Detach before running destructors: callbacks may request another context.
+    auto& Local = GAngelscriptContextPool.FreeContexts;
+    auto LocalIdle = MoveTemp(Local);
+    Local.Reset();
+    UnprepareOwned(LocalIdle);
+    for (auto* Context : LocalIdle)
+        if (Local.Num() < AS_MAX_POOLED_CONTEXTS) Local.Add(Context); else Context->Release();
+    TArray<asCContext*> GlobalIdle;
+    {
+        FScopeLock Lock(&GlobalContextPoolLock);
+        GlobalIdle = MoveTemp(GlobalContextPool);
+        GlobalContextPool.Reset();
+    }
+    UnprepareOwned(GlobalIdle);
+    TArray<asCContext*> Overflow;
+    {
+        FScopeLock Lock(&GlobalContextPoolLock);
+        for (auto* Context : GlobalIdle)
+            if (GlobalContextPool.Num() < AS_MAX_POOLED_CONTEXTS) GlobalContextPool.Add(Context); else Overflow.Add(Context);
+    }
+    for (auto* Context : Overflow) Context->Release();
+}
+
+bool FAngelscriptManager::RemoveModuleCacheModules(const TArray<TSharedRef<FAngelscriptModuleDesc>>& Modules, FString& Error)
+{
+    bool bBusy = false;
+    return RemoveModuleCacheModules(Modules, Error, bBusy);
+}
+bool FAngelscriptManager::RemoveModuleCacheModules(const TArray<TSharedRef<FAngelscriptModuleDesc>>& Modules, FString& Error, bool& bBusy)
+{
+    bBusy = false;
+    check(IsInGameThread() && IsAngelscriptExecutionWriterHeldByCurrentThread());
+    if (bIsCompilingModules || IsGarbageCollecting() || IsAngelscriptExecutionShutdownStarted())
+    { bBusy = true; Error = TEXT("Cache retirement is not at an idle writer boundary"); return false; }
+    FAngelscriptRuntimeGcCompilationScope Compilation(false);
+    if (!Compilation.IsAdmitted()) { bBusy = true; Error = TEXT("Cache retirement is waiting for GC lifecycle work"); return false; }
+    for (const auto& Module : Modules)
+        if (GetModuleByModuleName(Module->ModuleName) != Module)
+        { Error = TEXT("Cache module generation is no longer active"); return false; }
+    TGuardValue<bool> Compiling(bIsCompilingModules, true);
+    bool bReflected = false;
+    for (const auto& Module : Modules)
+        bReflected |= !Module->Classes.IsEmpty() || !Module->Enums.IsEmpty() || !Module->Delegates.IsEmpty();
+    if (!bReflected)
+    {
+        // VM-only collections have no UE replacement transaction to notify.
+        // Keep all peers intact until every global exit has completed.
+        for (const auto& Module : Modules) Module->ScriptModule->CallExit();
+        for (const auto& Module : Modules)
+        {
+            ActiveModules.Remove(Module->ModuleName);
+            AngelscriptCoreExtensionPoints::Private::ForgetSourceGeneration(Module->CoreGenerationId);
+            ModulesByScriptModule.Remove(Module->ScriptModule);
+            Engine->DiscardModule(Module->ScriptModule->GetName());
+            Module->ScriptModule = nullptr;
+        }
+        Engine->DeleteDiscardedModules();
+        return true;
+    }
+    TArray<TSharedRef<FAngelscriptModuleDesc>> EmptyModules;
+    bool bPublishedRemoval = false;
+    ON_SCOPE_EXIT
+    {
+        for (const auto& Empty : EmptyModules)
+        {
+            if (bPublishedRemoval) ActiveModules.Remove(Empty->ModuleName);
+            if (Empty->ScriptModule)
+            {
+                Engine->DiscardModule(Empty->ScriptModule->GetName());
+                Empty->ScriptModule = nullptr;
+            }
+        }
+        Engine->DeleteDiscardedModules();
+    };
+    FAngelscriptClassGenerator Generator;
+    for (const auto& Module : Modules)
+    {
+        auto Empty = MakeShared<FAngelscriptModuleDesc>();
+        Empty->ModuleName = Module->ModuleName;
+        const FString Name = FString::Printf(TEXT("%s_CACHE_REMOVE_%d"), *Module->ModuleName, TempNameIndex++);
+        Empty->ScriptModule = static_cast<asCModule*>(Engine->GetModule(TCHAR_TO_UTF8(*Name), asGM_ALWAYS_CREATE));
+        EmptyModules.Add(Empty);
+        Generator.AddModule(Empty);
+    }
+    if (Generator.Setup() == FAngelscriptClassGenerator::Error)
+    { Error = TEXT("Cache retirement class preflight rejected"); return false; }
+    AngelscriptReloadSafety::FPreparedPayloadReloadScope Prepared;
+    if (!Generator.ValidatePayloadReloads(Error)) return false;
+    if (Prepared.Lease && !Prepared.Lease->ValidateBeforeSwap(Error)) return false;
+    TArray<TSharedRef<FAngelscriptModuleDesc>> Discarded;
+    {
+        AngelscriptReloadSafety::FCommittedReloadScope Committed;
+        SwapInModules(EmptyModules, Discarded);
+        bPublishedRemoval = true;
+        Generator.PerformFullReload();
+    }
+    for (const auto& Old : Discarded)
+        if (Old->ScriptModule && !AngelscriptRetiredModules::DeferDiscard(Old))
+        {
+            Engine->DiscardModule(Old->ScriptModule->GetName());
+            Old->ScriptModule = nullptr;
+        }
+    return true;
+}
+                                                                                                     
 
 void FAngelscriptManager::SwapInModules(const TArray<TSharedRef<struct FAngelscriptModuleDesc>>& Modules, TArray<TSharedRef<FAngelscriptModuleDesc>>& DiscardedModules)
 {
@@ -2257,6 +2523,9 @@ void FAngelscriptManager::SwapInModules(const TArray<TSharedRef<struct FAngelscr
                                                                                                       
 		// Mark old modules as outdated
 		auto* OldModule = ActiveModules.Find(Module->ModuleName);
+                                                                                                          
+        const uint64 ReplacedSourceGeneration = OldModule ? (*OldModule)->CoreGenerationId : 0;
+                                                                                                        
 		if (OldModule != nullptr)
 		{
 			DiscardedModules.Add(*OldModule);
@@ -2280,6 +2549,9 @@ void FAngelscriptManager::SwapInModules(const TArray<TSharedRef<struct FAngelscr
 		}
 
 		ActiveModules.Add(Module->ModuleName, Module);
+                                                                                                          
+        AngelscriptCoreExtensionPoints::Private::ForgetSourceGeneration(ReplacedSourceGeneration);
+                                                                                                        
 	}
 
 	// Update dependencies for discarded modules
@@ -2305,7 +2577,9 @@ void FAngelscriptManager::SwapInModules(const TArray<TSharedRef<struct FAngelscr
 			if (Class->ScriptType == nullptr && Class->Class == nullptr && Class->Struct == nullptr)
 				continue;
                                                                                                                    
-			ActiveClassesByName.Add(Class->ClassName,
+                                                                                            
+			ActiveClassesByName.Add(Class->GetTypeIdentity(),
+                                                                                          
 				TPair<TSharedPtr<FAngelscriptModuleDesc>,TSharedPtr<FAngelscriptClassDesc>>{
 					Module, Class
 			});
@@ -2313,7 +2587,9 @@ void FAngelscriptManager::SwapInModules(const TArray<TSharedRef<struct FAngelscr
 
 		for (auto Delegate : Module->Delegates)
 		{
-			ActiveDelegatesByName.Add(Delegate->DelegateName,
+                                                                                            
+			ActiveDelegatesByName.Add(Delegate->GetTypeIdentity(),
+                                                                                          
 				TPair<TSharedPtr<FAngelscriptModuleDesc>,TSharedPtr<FAngelscriptDelegateDesc>>{
 					Module, Delegate
 			});
@@ -2321,7 +2597,9 @@ void FAngelscriptManager::SwapInModules(const TArray<TSharedRef<struct FAngelscr
 
 		for (auto Enum : Module->Enums)
 		{
-			ActiveEnumsByName.Add(Enum->EnumName,
+                                                                                            
+			ActiveEnumsByName.Add(Enum->GetTypeIdentity(),
+                                                                                          
 				TPair<TSharedPtr<FAngelscriptModuleDesc>,TSharedPtr<FAngelscriptEnumDesc>>{
 					Module, Enum
 			});
@@ -2432,6 +2710,24 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
                                                                                                                     
 	check(IsInGameThread());
                                                                                                                   
+                                                                                                       
+    for (const auto& Candidate : InModules)
+    {
+        auto Existing = GetModuleByModuleName(Candidate->ModuleName);
+        if (Existing.IsValid() && AngelscriptCoreExtensionPoints::Private::IsModuleCacheOwned(Existing->ScriptModule))
+        {
+            ScriptCompileError(Candidate, 1, TEXT("Cache-owned module must be removed through its collection owner before replacement"));
+            return ECompileResult::Error;
+        }
+    }
+                                                                                                     
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::IsNativeCompileActionActive()
+        && ((CompileType != ECompileType::FullReload && CompileType != ECompileType::SoftReloadOnly)
+            || !AngelscriptCoreExtensionPoints::Private::ValidateTransientManagerModules(
+                InModules, CompileType == ECompileType::SoftReloadOnly)))
+        return ECompileResult::Error;
+                                                                                                        
                                                                                                         
 	TUniquePtr<FAngelscriptExecutionWriteScope> Admission;
 	if (CompileType != ECompileType::Initial)
@@ -2448,6 +2744,10 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 				if (Module->PrecompiledData || Module->ScriptModule)
 					return ECompileResult::Error;
                                                                                                       
+                                                                                                       
+            for (const auto& Module : InModules)
+                if (Module->ModuleCacheContext) return ECompileResult::Error;
+                                                                                                     
                                                                                                         
             if (ActiveExplicitReload) return ECompileResult::Error;
                                                                                                       
@@ -2525,6 +2825,10 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 
 	auto* ScriptEngine = (asCScriptEngine*)Engine;
 
+                                                                                                          
+    // Authority covers only core VM compilation, never class-generation notifications.
+    auto TransientManagerCall = AngelscriptCoreExtensionPoints::Private::EnterTransientManagerCompileCall(ScriptEngine);
+                                                                                                        
 	ScriptEngine->deferValidationOfTemplateTypes = true;
 	ScriptEngine->deferCalculatingTemplateSize = true;
 	ScriptEngine->RequestBuild();
@@ -2552,6 +2856,11 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 			while (CompilationQueue.Num() != 0)
 			{
 				TArray<TSharedRef<FAngelscriptModuleDesc>> CurrentCompileList = MoveTemp(CompilationQueue);
+                                                                                              
+    TOptional<TGuardValue<decltype(DebugDiagnosticCandidates)>> DebugDiagnosticBorrow;
+    if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+        DebugDiagnosticBorrow.Emplace(DebugDiagnosticCandidates, &CurrentCompileList);
+                                                                                            
 
 				CompilationQueue.Reset();
 
@@ -2586,9 +2895,14 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 						}
 					}
 
+                                                                                            
+                    AngelscriptCoreExtensionPoints::Private::PrepareTypeScope(*Module);
+                                                                                          
 					// Mark which classes we're compiling
 					for (auto Class : Module->Classes)
-						CompilingClassesByName.Add(Class->ClassName, Class);
+                                                                                            
+						CompilingClassesByName.Add(Class->GetTypeIdentity(), Class);
+                                                                                          
 				}
 
 
@@ -2627,6 +2941,11 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 							continue;
 
 						// Add types from the module into the engine
+                                                                                              
+                        TOptional<TGuardValue<decltype(DebugDiagnosticCandidate)>> DebugParallelDiagnosticBorrow;
+                        if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+                            DebugParallelDiagnosticBorrow.Emplace(DebugDiagnosticCandidate, &Module.Get());
+                                                                                            
 						auto Result = ScriptModule->builder->BuildParallelParseScripts();
 						if (Result != asSUCCESS)
 						{
@@ -2662,6 +2981,21 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 				if (bHadCompileErrors && CompileType != ECompileType::Initial)
 					bIgnoreCompileErrorDiagnostics = true;
 
+                                                                                                       
+                if (FPreparedModuleCacheSet::IsApplying())
+                {
+                    FString CacheError;
+                    if (!FPreparedModuleCacheSet::LinkTypes(CacheError))
+                    {
+                        bHadCompileErrors = true;
+                        for (const auto& Module : CurrentCompileList)
+                        {
+                            Module->bCompileError = true;
+                            ScriptCompileError(Module, 1, CacheError);
+                        }
+                    }
+                }
+                                                                                                     
 
 				// Stage 2
 				for (int i = 0, Count = CurrentCompileList.Num(); i < Count; ++i)
@@ -2685,7 +3019,14 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 						bHadCompileErrors = true;
 				}
 
+                                                                                                          
+                {
+                    AngelscriptCoreExtensionPoints::Private::FNativeCompileCallbackScope NoNativePermit(ScriptEngine);
+                                                                                                        
 				FAngelscriptCodeModule::GetCompilePostLayoutTypes().Broadcast(CurrentCompileList);
+                                                                                                          
+                }
+                                                                                                        
 
 				if (bUseRecompileAvoidance)
 				{
@@ -3202,6 +3543,21 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 			}
 		}
 
+                                                                                                       
+        if (FPreparedModuleCacheSet::IsApplying() && !bHadCompileErrors)
+        {
+            FString CacheError;
+            if (!FPreparedModuleCacheSet::LinkFunctions(CacheError))
+            {
+                bHadCompileErrors = true;
+                for (const auto& Module : CompiledModules)
+                {
+                    Module->bCompileError = true;
+                    ScriptCompileError(Module, 1, CacheError);
+                }
+            }
+        }
+                                                                                                     
 		{
 			FAngelscriptScopeTimer StageTimer(TEXT("script compilation stage3"));
 
@@ -3243,16 +3599,68 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 			if (builder.numErrors > 0)
 				bHadCompileErrors = true;
 
+                                                                                                       
+            if (!bHadCompileErrors && FPreparedModuleCacheSet::IsApplying())
+            {
+                FString CacheError;
+                if (!FPreparedModuleCacheSet::ValidateNativeLayouts(true, CacheError))
+                {
+                    bHadCompileErrors = true;
+                    for (const auto& Module : CompiledModules)
+                    {
+                        Module->bCompileError = true;
+                        ScriptCompileError(Module, 1, CacheError);
+                    }
+                }
+            }
+                                                                                                     
 
                                                                                                         
             const bool bErrorsBeforeExtensionAdmission = bHadCompileErrors;
                                                                                                       
+                                                                                                  
+if (!bHadCompileErrors)
+            {
+                FString Error;
+                if (!AngelscriptCoreExtensionPoints::Private::ValidateModuleAdmission(CompiledModules, Error))
+                {
+                    bHadCompileErrors = true;
+                    if (Error.IsEmpty()) Error = TEXT("Module admission rejected.");
+                    for (auto Module : CompiledModules)
+                    {
+                        Module->bCompileError = true;
+                        ScriptCompileError(Module, 1, Error);
+                    }
+                }
+            }
+                                                                                                
                                                                                                         
             if (ActiveExplicitReload && !bErrorsBeforeExtensionAdmission && bHadCompileErrors)
                 ActiveExplicitReload->FailureStage = AngelscriptCoreExtensionPoints::EReloadFailureStage::Admission;
                                                                                                       
 
 
+                                                                                                  
+			if (!bHadCompileErrors && AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_acquire))
+			{
+				for (const auto& Module : CompiledModules)
+					if (!Module->bLoadedPrecompiledCode && Module->ScriptModule)
+						Module->ScriptModule->JITCompile();
+			}
+			if (!bHadCompileErrors)
+			{
+				FString Error;
+				if (!AngelscriptCoreExtensionPoints::Private::ValidateExecutionBudgetModules(CompiledModules, Error))
+				{
+					bHadCompileErrors = true;
+					for (auto Module : CompiledModules)
+					{
+						Module->bCompileError = true;
+						ScriptCompileError(Module, 1, Error);
+					}
+				}
+			}
+                                                                                                
 
 			if (!bHadCompileErrors)
 			{
@@ -3280,6 +3688,10 @@ ECompileResult FAngelscriptManager::CompileModules(ECompileType CompileType,
 
 	ScriptEngine->BuildCompleted();
 	bIgnoreCompileErrorDiagnostics = false;
+                                                                                                          
+    TransientManagerCall.Reset();
+    if (!AngelscriptCoreExtensionPoints::Private::FinishTransientManagerCompile()) bHadCompileErrors = true;
+                                                                                                        
 
 	// Decide whether to swap in the new modules or not
 	bool bShouldSwapInModules = true;
@@ -3767,13 +4179,52 @@ void FAngelscriptManager::CompileModule_Types_Stage1(ECompileType CompileType, T
 	// Generate the angelscript module
 	auto* ScriptModule = (asCModule*)Engine->GetModule(TCHAR_TO_ANSI(*TempName), asGM_ALWAYS_CREATE);
 	ScriptModule->baseModuleName = TCHAR_TO_ANSI(*Module->ModuleName);
+                                                                                            
+    ScriptModule->cuvissTypeScope = Module->CoreTypeScope;
+                                                                                          
 
+                                                                                                  
+    if (!FPreparedModuleCacheSet::IsApplying(Module->ModuleCacheContext))
+    {
+        Module->CoreCacheSetGuid.Invalidate();
+        Module->CoreCacheFileIdentity.Reset();
+        Module->CoreCacheRelativePath.Reset();
+    }
+    Module->ScriptModule = ScriptModule;
+                                                                                                
                                                                                                    
     Module->CoreGenerationId = AngelscriptCoreExtensionPoints::Private::GetModuleGeneration(ScriptModule);
                                                                                                  
+                                                                                                  
+    FString GenerationError;
+    if (!AngelscriptCoreExtensionPoints::Private::BindExecutionBudgetGeneration(Module, GenerationError))
+    {
+        Module->bCompileError = true;
+        ScriptCompileError(Module, 1, GenerationError.IsEmpty() ? TEXT("Execution budget generation binding rejected") : GenerationError, true);
+        return;
+    }
+                                                                                                
 
 	// Check if we have precompiled data for this module and use it if we can
 
+                                                                                                       
+	if (Module->ModuleCacheContext)
+	{
+		const auto* Cached = Module->ModuleCacheContext->Modules.Find(Module->ModuleName);
+		if (!Cached)
+		{
+			Module->ScriptModule = ScriptModule;
+			Module->bCompileError = true;
+			return;
+		}
+		Cached->ApplyToModule_Stage1(*Module->ModuleCacheContext, ScriptModule);
+		Module->PrecompiledData = Cached;
+		Module->bCompileError = false;
+		Module->ScriptModule = ScriptModule;
+		Module->bLoadedPrecompiledCode = true;
+		return;
+	}
+                                                                                                     
 
 	if (PrecompiledData != nullptr && bUsePrecompiledData)
 	{
@@ -3877,6 +4328,11 @@ void FAngelscriptManager::CompileModule_Functions_Stage2(ECompileType CompileTyp
 
 	if (Module->bLoadedPrecompiledCode)
 	{
+                                                                                                       
+		if (Module->ModuleCacheContext)
+			Module->PrecompiledData->ApplyToModule_Stage2(*Module->ModuleCacheContext, ScriptModule);
+		else
+                                                                                                     
                                                                                                                      
 				Module->PrecompiledData->ApplyToModule_Stage2(*PrecompiledData, ScriptModule);
                                                                                                                    
@@ -3914,12 +4370,20 @@ void FAngelscriptManager::CompileModule_Functions_Stage2(ECompileType CompileTyp
 
 void FAngelscriptManager::CompileModule_Code_Stage3(ECompileType CompileType, TSharedRef<struct FAngelscriptModuleDesc> Module)
 {
+                                                                                                       
+    if (Module->ModuleCacheContext && Module->bCompileError) return;
+                                                                                                     
 	auto* ScriptModule = (asCModule*)Module->ScriptModule;
 	if (ScriptModule == nullptr)
 		return;
 
 	if (Module->bLoadedPrecompiledCode)
 	{
+                                                                                                       
+		if (Module->ModuleCacheContext)
+			Module->PrecompiledData->ApplyToModule_Stage3(*Module->ModuleCacheContext, ScriptModule);
+		else
+                                                                                                     
                                                                                                                      
 				Module->PrecompiledData->ApplyToModule_Stage3(*PrecompiledData, ScriptModule);
                                                                                                                    
@@ -3936,6 +4400,10 @@ void FAngelscriptManager::CompileModule_Code_Stage3(ECompileType CompileType, TS
 	asDELETE(ScriptModule->builder, asCBuilder);
 	ScriptModule->builder = nullptr;
 
+                                                                                                  
+	// Admission publishes the candidate generation's policy before JIT queries it.
+	if (!AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_acquire))
+                                                                                                
 	ScriptModule->JITCompile();
 }
 
@@ -4052,6 +4520,54 @@ void FAngelscriptManager::EmitDiagnostics(FDiagnostics& Diag, class FSocket* Cli
 	if (DebugServer == nullptr)
 		return;
 
+                                                                                              
+    using namespace AngelscriptCoreExtensionPoints;
+    if (Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+    {
+        if (!IsInGameThread()) return;
+        for (FSocket* Target : DebugServer->GetDebugClients())
+        {
+            if (Client && Client != Target) continue;
+            FAngelscriptDiagnostics Message;
+            TOptional<Private::FDebugReadScope> Read;
+            for (const auto& Ms : Diag.Diagnostics)
+            {
+                auto View = DebugServer->DebugView(Target, EDebugMessageType::Diagnostics, EDebugAccessPhase::Read);
+                View.Scope = Ms.DebugGeneration ? EDebugAccessScope::Script : EDebugAccessScope::Unknown;
+                View.SourceIdentity = Diag.Filename;
+                if (Ms.DebugGeneration) View.ModuleGenerationId = *Ms.DebugGeneration;
+                if (!DebugServer->IsDebugIdentityLive(View) || !Private::DebugAccess().Allow(View)) continue;
+                if (!Read.IsSet()) Read.Emplace(View);
+                Read->Reads.Add(View);
+                if (Message.Filename.IsEmpty()) Message.Filename = Diag.Filename;
+                FAngelscriptDiagnostic New;
+                New.Message = Ms.Message;
+                New.Line = Ms.Row;
+                New.Character = Ms.Column;
+                New.bIsError = Ms.bIsError;
+                New.bIsInfo = Ms.bIsInfo;
+                Message.Diagnostics.Add(MoveTemp(New));
+            }
+            if (!Read.IsSet() && Diag.Diagnostics.IsEmpty())
+            {
+                auto Module = GetModuleByFilenameOrModuleName(Diag.Filename, TEXT(""));
+                auto View = DebugServer->DebugView(Target, EDebugMessageType::Diagnostics, EDebugAccessPhase::Read);
+                View.Scope = Module.IsValid() ? EDebugAccessScope::Script : EDebugAccessScope::Unknown;
+                View.SourceIdentity = Diag.Filename;
+                if (Module.IsValid()) View.ModuleGenerationId = { Module->ModuleName,
+                    Private::GetModuleGeneration(static_cast<asCModule*>(Module->ScriptModule)) };
+                if (DebugServer->IsDebugIdentityLive(View) && Private::DebugAccess().Allow(View))
+                {
+                    Read.Emplace(View);
+                    Read->Reads.Add(View);
+                    Message.Filename = Diag.Filename;
+                }
+            }
+            if (Read.IsSet()) DebugServer->SendMessageToClient(Target, EDebugMessageType::Diagnostics, Message);
+        }
+        return;
+    }
+                                                                                            
 	FAngelscriptDiagnostics Message;
 	Message.Filename = Diag.Filename;
 	for (auto& Ms : Diag.Diagnostics)
@@ -4246,7 +4762,7 @@ TSharedPtr<FAngelscriptClassDesc> FAngelscriptManager::GetClass(const FString& C
 		for (auto Class : Module->Classes)
 		{
                                                                                                                      
-			if ((Class->ScriptType != nullptr || Class->Class != nullptr || Class->Struct != nullptr) && Class->ClassName == ClassName)
+			if ((Class->ScriptType != nullptr || Class->Class != nullptr || Class->Struct != nullptr) && Class->GetTypeIdentity() == ClassName)
                                                                                                                    
 			{
 				if (FoundInModule != nullptr)
@@ -4287,7 +4803,7 @@ TSharedPtr<FAngelscriptEnumDesc> FAngelscriptManager::GetEnum(const FString& Enu
 		for (auto EnumDesc : Module->Enums)
 		{
                                                                                                                      
-			if (EnumDesc->EnumName == EnumName)
+			if (EnumDesc->GetTypeIdentity() == EnumName)
                                                                                                                    
 			{
 				if (FoundInModule != nullptr)
@@ -4328,7 +4844,7 @@ TSharedPtr<FAngelscriptDelegateDesc> FAngelscriptManager::GetDelegate(const FStr
 		for (auto DelegateDesc : Module->Delegates)
 		{
                                                                                                                      
-			if (DelegateDesc->DelegateName == DelegateName)
+			if (DelegateDesc->GetTypeIdentity() == DelegateName)
                                                                                                                    
 			{
 				if (FoundInModule != nullptr)
@@ -4405,6 +4921,11 @@ void FAngelscriptManager::ScriptCompileError(const FString& AbsoluteFilename, co
 	auto& FileDiagnostics = Diagnostics.FindOrAdd(AbsoluteFilename);
 	FileDiagnostics.Filename = AbsoluteFilename;
 	FileDiagnostics.Diagnostics.Add(Diagnostic);
+                                                                                              
+    if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire)
+        && !FileDiagnostics.Diagnostics.Last().DebugGeneration)
+        FileDiagnostics.Diagnostics.Last().DebugGeneration = DiagnosticGenerationForSource(AbsoluteFilename);
+                                                                                            
 
 
 	if (Diagnostic.bIsError)
@@ -4426,6 +4947,10 @@ void FAngelscriptManager::ScriptCompileError(TSharedPtr<FAngelscriptModuleDesc> 
 	Diagnostic.bIsError = bIsError;
 	Diagnostic.bIsInfo = false;
 
+                                                                                              
+    if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+        Diagnostic.DebugGeneration = DiagnosticGeneration(*Module);
+                                                                                            
 	if (Module->Code.Num() != 0)
 		ScriptCompileError(Module->Code[0].AbsoluteFilename, Diagnostic);
 	else
@@ -4553,6 +5078,10 @@ void LogAngelscriptError(asSMessageInfo* Message, void* DataPtr)
                                                                                                      
 		FileDiagnostics->Diagnostics.Add({ ANSI_TO_TCHAR(Message->message), Message->row, Message->col,
 			Message->type == asMSGTYPE_ERROR, Message->type == asMSGTYPE_INFORMATION });
+                                                                                              
+        if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+            FileDiagnostics->Diagnostics.Last().DebugGeneration = DiagnosticGenerationForSource(Section);
+                                                                                            
 		Manager.bDiagnosticsDirty = true;
 	}
 }
@@ -5126,6 +5655,15 @@ UObject* FAngelscriptManager::GetAngelscriptExecutionThisObject(int32 StackFrame
 
 bool FAngelscriptManager::TryBreakpointAngelscriptDebugging(const TCHAR* Message)
 {
+                                                                                              
+    if (!IsInGameThread() && AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+    {
+        AngelscriptCoreExtensionPoints::FDebugAccessView View;
+        if (auto* Read = AngelscriptCoreExtensionPoints::Private::CurrentDebugRead()) View = Read->View;
+        (void)AngelscriptCoreExtensionPoints::Private::DebugAccess().Allow(View);
+        return false;
+    }
+                                                                                            
 #if WITH_AS_DEBUGSERVER
 	auto& Manager = FAngelscriptManager::Get();
 	if (Manager.DebugServer == nullptr)
@@ -5139,6 +5677,9 @@ bool FAngelscriptManager::TryBreakpointAngelscriptDebugging(const TCHAR* Message
 	if (Context == nullptr)
 		return false;
 
+                                                                                              
+    if (!Manager.DebugServer->HasDebugStopReaders(Context->GetFunction(0))) return false;
+                                                                                            
 	FStoppedMessage StopMessage;
 	if (Message != nullptr)
 	{

@@ -1,5 +1,8 @@
 
 #include "AngelscriptType.h"
+                                                                                              
+#include "AngelscriptCoreAdmissionInternal.h"
+                                                                                            
 #include "AngelscriptManager.h"
 
 #include "ClassGenerator/ASClass.h"
@@ -760,6 +763,9 @@ FString FAngelscriptType::BuildFunctionDeclaration(const FAngelscriptTypeUsage& 
 
 bool FAngelscriptType::GetDebuggerValueFromFunction(asIScriptFunction* InScriptFunction, void* Object, FDebuggerValue& OutValue, class asITypeInfo* ContainerScriptType, UStruct* ContainerClass, const FString& PropertyAddrToSearchFor)
 {
+                                                                                              
+    if (!AngelscriptCoreExtensionPoints::Private::AllowDebugFunction(InScriptFunction, true)) return false;
+                                                                                            
 	asCScriptFunction* ScriptFunction = (asCScriptFunction*)InScriptFunction;
 
 	bool bHasWorldContext = false;
@@ -811,6 +817,9 @@ bool FAngelscriptType::GetDebuggerValueFromFunction(asIScriptFunction* InScriptF
 	}
 
 	FAngelscriptTypeUsage ReturnValue = FAngelscriptTypeUsage::FromReturn(ScriptFunction);
+                                                                                              
+    if (!AngelscriptCoreExtensionPoints::Private::AllowDebugUsage(ReturnValue)) return false;
+                                                                                            
 
 	if (ReturnValue.IsValid() && ReturnValue.CanCopy() && ReturnValue.CanBeReturned())
 	{
@@ -954,3 +963,27 @@ bool FAngelscriptType::GetDebuggerValueFromFunction(asIScriptFunction* InScriptF
 
 	return false;
 }
+
+                                                                                              
+bool FAngelscriptTypeUsage::GetDebuggerValue(void* Address, FDebuggerValue& Value) const
+{
+    return Type.IsValid() && AngelscriptCoreExtensionPoints::Private::AllowDebugUsage(*this)
+        && Type->GetDebuggerValue(*this, Address, Value);
+}
+bool FAngelscriptTypeUsage::GetDebuggerValue(void* Address, FDebuggerValue& Value, FProperty* NativeProperty) const
+{
+    return Type.IsValid() && AngelscriptCoreExtensionPoints::Private::AllowDebugUsage(*this)
+        && (!NativeProperty || AngelscriptCoreExtensionPoints::Private::AllowDebugOwner(NativeProperty->GetOwnerStruct()))
+        && Type->GetDebuggerValue(*this, Address, Value, NativeProperty);
+}
+bool FAngelscriptTypeUsage::GetDebuggerScope(void* Address, FDebuggerScope& Scope) const
+{
+    return Type.IsValid() && AngelscriptCoreExtensionPoints::Private::AllowDebugUsage(*this)
+        && Type->GetDebuggerScope(*this, Address, Scope);
+}
+bool FAngelscriptTypeUsage::GetDebuggerMember(void* Address, const FString& Member, FDebuggerValue& Value) const
+{
+    return Type.IsValid() && AngelscriptCoreExtensionPoints::Private::AllowDebugUsage(*this)
+        && Type->GetDebuggerMember(*this, Address, Member, Value);
+}
+                                                                                            

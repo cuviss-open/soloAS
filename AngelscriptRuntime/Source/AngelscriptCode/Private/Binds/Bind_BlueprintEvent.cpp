@@ -772,3 +772,13 @@ void BindDelegateEvent(FAngelscriptBinds& Delegate_, UFunction* Function, bool b
 		FAngelscriptBinds::SetPreviousBindUnsafeDuringConstruction(true);
 	}
 }
+                                                                                                  
+#include "AngelscriptCoreExtensionPoints.h"
+namespace AngelscriptCoreExtensionPoints
+{
+	UFunction* FindBlueprintEventByScriptName(UClass* Class, const FString& ScriptName)
+	{
+		return GetBlueprintEventByScriptName(Class, ScriptName);
+	}
+}
+                                                                                                

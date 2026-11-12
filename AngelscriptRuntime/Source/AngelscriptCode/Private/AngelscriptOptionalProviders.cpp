@@ -10,19 +10,79 @@ namespace AngelscriptCoreExtensionPoints
 {
 namespace
 {
+struct FMetadataRegistration
+{
+    FDelegateHandle Handle;
+    asIScriptEngine* Engine;
+    FApiMetadataQuery Query;
+};
 struct FNativeRegistration
 {
     FDelegateHandle Handle;
     asIScriptEngine* Engine;
     FNativeDelegateProvider Provider;
 };
+TArray<FMetadataRegistration> MetadataProviders;
 TArray<FNativeRegistration> NativeProviders;
 bool bInProvider = false;
 
+void NormalizeTags(TArray<FString>& Tags)
+{
+    Tags.Sort([](const FString& A, const FString& B) { return A.Compare(B, ESearchCase::CaseSensitive) < 0; });
+    for (int32 Index = Tags.Num() - 1; Index > 0; --Index)
+        if (Tags[Index].Equals(Tags[Index - 1], ESearchCase::CaseSensitive)) Tags.RemoveAt(Index);
+}
 const FNativeRegistration* FindNative(asIScriptEngine* Engine)
 {
     return NativeProviders.FindByPredicate([&](const FNativeRegistration& Row) { return Row.Engine == Engine; });
 }
+}
+
+FDelegateHandle RegisterApiMetadataProvider(asIScriptEngine* Engine, FApiMetadataQuery Query)
+{
+    if (!IsInGameThread() || bInProvider || !Engine || !Query) return {};
+    const FDelegateHandle Handle(FDelegateHandle::GenerateNewHandle);
+    MetadataProviders.Add({Handle, Engine, MoveTemp(Query)});
+    return Handle;
+}
+
+ERemoveResult UnregisterApiMetadataProvider(FDelegateHandle Handle)
+{
+    if (!IsInGameThread() || bInProvider) return ERemoveResult::Busy;
+    const int32 Index = MetadataProviders.IndexOfByPredicate([&](const FMetadataRegistration& Row) { return Row.Handle == Handle; });
+    if (Index == INDEX_NONE) return ERemoveResult::Unknown;
+    MetadataProviders.RemoveAt(Index);
+    return ERemoveResult::Removed;
+}
+
+EApiMetadataResult QueryApiMetadata(asIScriptEngine* Engine, FStringView Declaration, FApiMetadata& Out)
+{
+    Out = {};
+    if (!IsInGameThread() || bInProvider) return EApiMetadataResult::Conflict;
+    if (!Engine || Declaration.IsEmpty()) return EApiMetadataResult::Unknown;
+    TGuardValue<bool> Guard(bInProvider, true);
+    bool bClassified = false;
+    FApiMetadata Agreed;
+    for (const auto& Row : MetadataProviders)
+    {
+        if (Row.Engine != Engine) continue;
+        FApiMetadata Candidate;
+        const auto Result = Row.Query(Declaration, Candidate);
+        if (Result == EApiMetadataResult::Unknown) continue;
+        if (Result != EApiMetadataResult::Classified) return EApiMetadataResult::Conflict;
+        NormalizeTags(Candidate.Tags);
+        if (bClassified && (!Agreed.Tier.Equals(Candidate.Tier, ESearchCase::CaseSensitive)
+            || !Agreed.Module.Equals(Candidate.Module, ESearchCase::CaseSensitive)
+            || Agreed.Tags.Num() != Candidate.Tags.Num())) return EApiMetadataResult::Conflict;
+        if (bClassified)
+            for (int32 Index = 0; Index < Agreed.Tags.Num(); ++Index)
+                if (!Agreed.Tags[Index].Equals(Candidate.Tags[Index], ESearchCase::CaseSensitive)) return EApiMetadataResult::Conflict;
+        Agreed = MoveTemp(Candidate);
+        bClassified = true;
+    }
+    if (!bClassified) return EApiMetadataResult::Unknown;
+    Out = MoveTemp(Agreed);
+    return EApiMetadataResult::Classified;
 }
 
 FDelegateHandle RegisterNativeDelegateProvider(asIScriptEngine* Engine, FNativeDelegateProvider Provider)

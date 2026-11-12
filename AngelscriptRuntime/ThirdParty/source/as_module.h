@@ -48,6 +48,13 @@
 #include "as_scriptfunction.h"
 #include "as_property.h"
 
+                                                                                                  
+#include <atomic>
+                                                                                                
+                                                                                            
+namespace AngelscriptCoreExtensionPoints { struct FTypeScope; }
+                                                                                          
+
 BEGIN_AS_NAMESPACE
 
 // TODO: import: Remove this when the imported functions are removed
@@ -112,6 +119,12 @@ class ANGELSCRIPTCODE_API asCModule : public asIScriptModule
 // Public interface
 //--------------------------------------------
 public:
+                                                                                            
+	TSharedPtr<const AngelscriptCoreExtensionPoints::FTypeScope> cuvissTypeScope;
+                                                                                          
+                                                                                                  
+	std::atomic<bool> bExecutionBudgetTarget { false };
+                                                                                                
 	virtual asIScriptEngine *GetEngine() const;
 	virtual void             SetName(const char *name);
 	virtual const char      *GetName() const;

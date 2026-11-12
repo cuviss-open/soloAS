@@ -4,6 +4,30 @@
 
 extern FMemStackBase GScriptPreallocatedMemStack;
 
+                                                                                                       
+extern thread_local FMemStackBase* GScopedScriptPreallocatedMemStack;
+
+inline FMemStackBase& GetScriptPreallocatedMemStack()
+{
+	return GScopedScriptPreallocatedMemStack ? *GScopedScriptPreallocatedMemStack : GScriptPreallocatedMemStack;
+}
+
+class FScopedPrecompiledMemStack
+{
+public:
+	explicit FScopedPrecompiledMemStack(FMemStackBase& Stack)
+		: Previous(GScopedScriptPreallocatedMemStack)
+	{
+		GScopedScriptPreallocatedMemStack = &Stack;
+	}
+	~FScopedPrecompiledMemStack() { GScopedScriptPreallocatedMemStack = Previous; }
+	FScopedPrecompiledMemStack(const FScopedPrecompiledMemStack&) = delete;
+	FScopedPrecompiledMemStack& operator=(const FScopedPrecompiledMemStack&) = delete;
+
+private:
+	FMemStackBase* Previous;
+};
+                                                                                                     
 
 /** A container allocator that allocates from a mem-stack. */
 template<uint32 Alignment = DEFAULT_ALIGNMENT>
@@ -49,7 +73,9 @@ public:
 			if( NumElements )
 			{
 				// Allocate memory from the stack.
-				Data = (ElementType*)GScriptPreallocatedMemStack.PushBytes(
+                                                                                                       
+				Data = (ElementType*)GetScriptPreallocatedMemStack().PushBytes(
+                                                                                                     
 					NumElements * NumBytesPerElement,
 					FMath::Max(Alignment,(uint32)alignof(ElementType))
 					);

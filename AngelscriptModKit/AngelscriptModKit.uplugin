@@ -1,0 +1,39 @@
+{
+  "FileVersion": 3,
+  "Version": 2,
+  "VersionName": "0.3.0",
+  "FriendlyName": "Angelscript Mod Kit",
+  "Description": "Modding (GameFeature plugins writing Angelscript) and signed client script-update support for Angelscript.",
+  "Category": "Scripting",
+  "CreatedBy": "Cuviss Studio",
+  "EnabledByDefault": true,
+  "CanContainContent": false,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "AngelscriptModKit",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault"
+    },
+    {
+      "Name": "AngelscriptModKitEditor",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "GameFeatures",
+      "Enabled": true
+    },
+    {
+      "Name": "Angelscript",
+      "Enabled": true
+    },
+    {
+      "Name": "ModularGameplay",
+      "Enabled": true
+    }
+  ]
+}

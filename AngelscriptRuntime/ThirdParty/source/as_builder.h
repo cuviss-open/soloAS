@@ -207,6 +207,9 @@ public:
 	asCString          GetScopeFromNode(asCScriptNode *n, asCScriptCode *script, asCScriptNode **next = 0);
 
 	asCTypeInfo       *GetType(const char *type, asSNameSpace *ns, asCObjectType *parentType);
+                                                                                            
+    asCTypeInfo *GetTypeInScope(const char *type, asSNameSpace *ns, asCScriptNode *node, asCScriptCode *script, bool& ambiguous);
+                                                                                          
 	asCObjectType     *GetObjectType(const char *type, asSNameSpace *ns);
 	asCFuncdefType    *GetFuncDef(const char *type, asSNameSpace *ns, asCObjectType *parentType);
 	asCTypeInfo       *GetTypeFromTypesKnownByObject(const char *type, asCObjectType *currentType);

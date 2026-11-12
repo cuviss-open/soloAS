@@ -9,6 +9,24 @@ class asIScriptGeneric;
 
 namespace AngelscriptCoreExtensionPoints
 {
+enum class EApiMetadataResult : uint8 { Unknown, Classified, Conflict };
+struct FApiMetadata
+{
+    FString Tier;
+    FString Module;
+    TArray<FString> Tags;
+};
+using FApiMetadataQuery = TFunction<EApiMetadataResult(FStringView Declaration, FApiMetadata& Out)>;
+
+// All operations require the game thread. Engine identities must remain alive
+// until their providers are removed. Declarations are exact, case-sensitive
+// identities supplied by the consumer; the core never guesses or normalizes them.
+// Queries copy results. Tags compare as case-sensitive sets; Tier/Module exactly.
+// Unknown/Conflict clear Out. Nested queries fail closed as Conflict.
+ANGELSCRIPTCODE_API FDelegateHandle RegisterApiMetadataProvider(asIScriptEngine* Engine, FApiMetadataQuery Query);
+ANGELSCRIPTCODE_API EApiMetadataResult QueryApiMetadata(asIScriptEngine* Engine, FStringView Declaration, FApiMetadata& Out);
+ANGELSCRIPTCODE_API ERemoveResult UnregisterApiMetadataProvider(FDelegateHandle Handle);
+
 struct FNativeDelegateProvider
 {
     TFunction<bool(const asITypeInfo*)> IsNativeType;

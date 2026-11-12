@@ -40,8 +40,14 @@
 #include "ClassGenerator/AngelscriptTerminalDestructorAdmission.h"
 #endif
                                                                                                     
+                                                                                                          
+#include "AngelscriptBinds.h"
+                                                                                                        
 #include <math.h> // fmodf() pow()
 
+                                                                                          
+#include "AngelscriptStructLiveValues.h"
+                                                                                        
 #include "as_config.h"
 #include "as_context.h"
 #include "as_scriptengine.h"
@@ -418,6 +424,9 @@ int asCContext::Prepare(asIScriptFunction *func)
 	}
 
 	// Release the returned object (if any)
+                                                                                                  
+	AngelscriptCoreExtensionPoints::Private::ReleaseExecutionBudgetUnwind(this);
+                                                                                                
 	CleanReturnObject();
 
 	// Release the object if it is a script object
@@ -579,6 +588,9 @@ int asCContext::Unprepare()
 	// Release the returned object (if any)
 	CleanReturnObject();
 
+                                                                                                  
+	AngelscriptCoreExtensionPoints::Private::ReleaseExecutionBudgetUnwind(this);
+                                                                                                
 	// TODO: Unprepare is called during destruction, so nobody
 	//       must be allowed to keep an extra reference
 	asASSERT(m_refCount.get() == count);
@@ -952,10 +964,19 @@ int asCContext::Suspend()
 // interface
 int asCContext::Execute()
 {
+                                                                                                          
+    TOptional<AngelscriptCoreExtensionPoints::Private::FNativeCompileCallbackScope> CompileCallback;
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeActionEngine.load(std::memory_order_acquire))
+        CompileCallback.Emplace(m_engine);
+                                                                                                        
 
                                                                                                            
 	FAngelscriptExecutionReadScope ExecutionReadScope;
                                                                                                          
+                                                                                                  
+	AngelscriptCoreExtensionPoints::Private::FExecutionBudgetInterval BudgetInterval;
+	AngelscriptCoreExtensionPoints::Private::FExecutionBudgetContextExit BudgetExit(this, BudgetInterval.bAcquired);
+                                                                                                
                                                                                                               
 #if SOLOAS_LEGACY_TERMINAL_LIFECYCLE
 	if (!Cuviss::TerminalAdmission::ValidateContextExecution(this, Cuviss::TerminalAdmission::EContextFence::ExecuteEntry))
@@ -975,6 +996,11 @@ int asCContext::Execute()
 	m_status = asEXECUTION_ACTIVE;
 
 	FScopeSetActiveContext MakeActive(m_regs.tld, this);
+                                                                                                  
+	const bool bBudgetCleanupOnly = BudgetInterval.bAcquired
+		&& AngelscriptCoreExtensionPoints::Private::IsExecutionBudgetFailed()
+		&& AngelscriptCoreExtensionPoints::Private::IsExecutionBudgetCleanup(m_currentFunction);
+                                                                                                
 
 	// We don't allow recursion beyond the point of sanity.
 	// This lets scripters see better exceptions when they create infinite recursion.
@@ -1046,7 +1072,26 @@ int asCContext::Execute()
 
 		if( m_currentFunction->funcType == asFUNC_SCRIPT )
 		{
+                                                                                                  
+			if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed)
+				&& !AngelscriptCoreExtensionPoints::Private::EnterExecutionBudget(m_currentFunction))
+			{
+				SetInternalException(AngelscriptCoreExtensionPoints::Private::ExecutionBudgetError());
+				if (AngelscriptCoreExtensionPoints::Private::IsExecutionBudgetFailed())
+					AngelscriptCoreExtensionPoints::Private::RetainExecutionBudgetUnwind(this);
+				return asEXECUTION_EXCEPTION;
+			}
+                                                                                                
 			// Try to call the JIT function directly
+                                                                                                  
+			if (bBudgetCleanupOnly && !m_currentFunction->jitFunction
+				&& !AngelscriptCoreExtensionPoints::Private::BeginExecutionBudgetDestructorCleanup(
+				m_currentFunction, *(void**)m_regs.stackFramePointer))
+			{
+				m_status = asEXECUTION_FINISHED;
+				return m_status;
+			}
+                                                                                                
 			auto* jitFunction = m_currentFunction->jitFunction;
 			if (jitFunction != nullptr)
 			{
@@ -1083,6 +1128,10 @@ int asCContext::Execute()
 			else
 			{
 				m_regs.programPointer = m_currentFunction->scriptData->byteCode.AddressOf();
+                                                                                                  
+				if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed))
+					m_regs.programPointer += AngelscriptCoreExtensionPoints::Private::ExecutionBudgetEntryOffset(m_currentFunction);
+                                                                                                
 
 				// Set up the internal registers for executing the script function
 				PrepareScriptFunction();
@@ -1146,6 +1195,15 @@ int asCContext::Execute()
 
 	if( m_status == asEXECUTION_FINISHED )
 	{
+                                                                                                  
+		if (!bBudgetCleanupOnly && AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed)
+			&& AngelscriptCoreExtensionPoints::Private::IsExecutionBudgetFailed())
+		{
+			AngelscriptCoreExtensionPoints::Private::RetainExecutionBudgetUnwind(this);
+			SetInternalException(AngelscriptCoreExtensionPoints::Private::ExecutionBudgetError());
+			return asEXECUTION_EXCEPTION;
+		}
+                                                                                                
 		m_regs.objectType = m_initialFunction->returnType.GetTypeInfo();
 		return asEXECUTION_FINISHED;
 	}
@@ -1542,9 +1600,29 @@ bool asCContext::ReserveStackSpace(asUINT size)
 // internal
 void asCContext::CallScriptFunction(asCScriptFunction *func)
 {
+                                                                                                  
+	if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed)
+		&& !AngelscriptCoreExtensionPoints::Private::EnterExecutionBudget(func))
+	{
+		SetInternalException(AngelscriptCoreExtensionPoints::Private::ExecutionBudgetError());
+		if (AngelscriptCoreExtensionPoints::Private::IsExecutionBudgetFailed())
+			AngelscriptCoreExtensionPoints::Private::RetainExecutionBudgetUnwind(this);
+		return;
+	}
+                                                                                                
 
 	// Try to call the JIT function directly
 	auto* jitFunction = func->jitFunction;
+                                                                                                  
+	if (!jitFunction && AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed)
+		&& AngelscriptCoreExtensionPoints::Private::IsExecutionBudgetFailed()
+		&& AngelscriptCoreExtensionPoints::Private::IsExecutionBudgetCleanup(func)
+		&& !AngelscriptCoreExtensionPoints::Private::BeginExecutionBudgetDestructorCleanup(func, *(void**)m_regs.stackPointer))
+	{
+		m_regs.stackPointer += func->totalSpaceBeforeFunction;
+		return;
+	}
+                                                                                                
 	if (jitFunction != nullptr)
 	{
 		FScriptExecution Execution(this);
@@ -1594,6 +1672,10 @@ void asCContext::CallScriptFunction(asCScriptFunction *func)
 	// so the exception handler will know what to do if there is a stack overflow
 	m_currentFunction = func;
 	m_regs.programPointer = m_currentFunction->scriptData->byteCode.AddressOf();
+                                                                                                  
+	if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed))
+		m_regs.programPointer += AngelscriptCoreExtensionPoints::Private::ExecutionBudgetEntryOffset(m_currentFunction);
+                                                                                                
 
 	PrepareScriptFunction();
 }
@@ -1721,6 +1803,15 @@ void asCContext::ExecuteNext()
 
 	for(;;)
 	{
+                                                                                                  
+		if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed))
+		{
+			m_regs.programPointer = l_bc;
+			m_regs.stackPointer = l_sp;
+			m_regs.stackFramePointer = l_fp;
+			if (!AngelscriptCoreExtensionPoints::Private::PollExecutionBudgetVM(this)) return;
+		}
+                                                                                                
 
 #ifdef AS_DEBUG
 	// Gather statistics on executed bytecode
@@ -1867,6 +1958,16 @@ void asCContext::ExecuteNext()
 	// Return to the caller, and remove the arguments from the stack
 	case asBC_RET:
 		{
+                                                                                          
+			if (AngelscriptStructLiveValues::Enabled.load(std::memory_order_relaxed)
+				&& m_currentFunction->objectType != nullptr)
+			{
+				if (m_currentFunction->traits.GetTrait(asTRAIT_CONSTRUCTOR))
+					AngelscriptStructLiveValues::Completed(m_currentFunction->objectType, true);
+				else if (m_currentFunction->traits.GetTrait(asTRAIT_DESTRUCTOR))
+					AngelscriptStructLiveValues::Completed(m_currentFunction->objectType, false);
+			}
+                                                                                        
 
                                                                                                             
 #if SOLOAS_LEGACY_TERMINAL_LIFECYCLE
@@ -4656,6 +4757,10 @@ void asCContext::SetInternalException(const char *descr)
 
 	m_status                = asEXECUTION_EXCEPTION;
 
+                                                                                          
+	if (AngelscriptStructLiveValues::Enabled.load(std::memory_order_relaxed) && m_currentFunction != nullptr)
+		AngelscriptStructLiveValues::InvalidateModule(m_currentFunction->module);
+                                                                                        
 	m_exceptionString       = descr;
 	m_exceptionFunction     = m_currentFunction->id;
 
@@ -4707,6 +4812,11 @@ void asCContext::CleanReturnObject()
 
 void asCContext::CleanStack()
 {
+                                                                                                  
+	TOptional<FAngelscriptExecutionReadScope> BudgetRead;
+	if (bExecutionBudgetUnwind) BudgetRead.Emplace();
+	AngelscriptCoreExtensionPoints::Private::FExecutionBudgetCleanupScope BudgetCleanup(this);
+                                                                                                
 	m_inExceptionHandler = true;
 
 	// Run the clean up code for each of the functions called
@@ -5129,6 +5239,9 @@ void asCContext::CleanStackFrame()
 		m_isStackMemoryNotAllocated = false;
 
 	// Functions that do not own the object and parameters shouldn't do any clean up
+                                                                                                  
+	if (bExecutionBudgetUnwind) AngelscriptCoreExtensionPoints::Private::CompleteExecutionBudgetDestructor(this);
+                                                                                                
 	if( m_currentFunction->dontCleanUpOnException )
 		return;
 

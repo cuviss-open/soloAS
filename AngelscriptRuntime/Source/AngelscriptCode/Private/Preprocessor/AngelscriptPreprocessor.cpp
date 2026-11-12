@@ -1,10 +1,16 @@
 #include "Preprocessor/AngelscriptPreprocessor.h"
+                                                                                               
+#include "AngelscriptCoreAdmissionInternal.h"
+                                                                                             
 
 #include "GameFramework/Actor.h"
 #include "Misc/ScopedSlowTask.h"
 
 #include "Helper_CommentFormat.h"
 
+                                                                                            
+#include "AngelscriptCoreExtensionPoints.h"
+                                                                                          
 #include "AngelscriptSettings.h"
 #include "AngelscriptType.h"
 
@@ -114,6 +120,10 @@ void FAngelscriptPreprocessor::AddFile(const FString& RelativeFilename, const FS
 
 	TSharedRef<FAngelscriptModuleDesc> Module = MakeShared<FAngelscriptModuleDesc>();
 	Module->ModuleName = FilenameToModuleName(RelativeFilename);
+                                                                                            
+    Module->CoreTypeScope = bTreatAsDeleted ? nullptr
+        : AngelscriptCoreExtensionPoints::Private::ResolveTypeScope(AbsoluteFilename);
+                                                                                          
 
 	File.Module = Module;
 	File.AbsoluteFilename = AbsoluteFilename;
@@ -250,6 +260,41 @@ bool FAngelscriptPreprocessor::Preprocess()
 	// Do asynchronous loads if we queued them
 	if (bLoadingAnyFilesAsynchronous)
 		PerformAsynchronousLoads();
+
+                                                                                                         
+    if (AngelscriptCoreExtensionPoints::GHasPreprocessDependencyProvider)
+    {
+        using namespace AngelscriptCoreExtensionPoints;
+        TArray<FPreprocessSource> Sources;
+        for (const FFile& File : Files) Sources.Add({File.RelativeFilename, File.AbsoluteFilename, File.RawCode});
+        TArray<FPreprocessDependency> Dependencies;
+        CollectPreprocessDependencies(Sources, Dependencies);
+        FAngelscriptPreprocessor Additional;
+        for (const FPreprocessDependency& Dependency : Dependencies)
+        {
+            if (Files.ContainsByPredicate([&](const FFile& File) { return File.AbsoluteFilename == Dependency.AbsolutePath; })
+                || Additional.Files.ContainsByPredicate([&](const FFile& File) { return File.AbsoluteFilename == Dependency.AbsolutePath; })) continue;
+            Additional.AddFile(Dependency.RelativePath, Dependency.AbsolutePath);
+        }
+        Files.Append(MoveTemp(Additional.Files));
+    }
+                                                                                                       
+
+                                                                                               
+    if (AngelscriptCoreExtensionPoints::Private::HasLoadedSourceValidator())
+    {
+        for (FFile& File : Files)
+        {
+            FString Error;
+            if (!AngelscriptCoreExtensionPoints::Private::ValidateLoadedSource(
+                File.AbsoluteFilename, File.RelativeFilename, File.RawCode, File.bTreatAsDeleted, Error))
+            {
+                FileWideError(File, Error.IsEmpty() ? TEXT("Loaded source admission rejected.") : Error);
+                return false;
+            }
+        }
+    }
+                                                                                             
 
 
 
@@ -582,6 +627,13 @@ void FAngelscriptPreprocessor::ProcessDelegates(FFile& File)
 		auto Desc = MakeShared<FAngelscriptDelegateDesc>();
 		Desc->LineNumber = Delegate.FileLineNumber;
 		Desc->DelegateName = DelegateName;
+                                                                                            
+    if (File.Module->CoreTypeScope)
+    {
+        Desc->CoreTypeOwner = File.Module->CoreTypeScope->Namespace;
+        Desc->CoreTypeIdentity = Chunk.Namespace.Get(Desc->CoreTypeOwner) + TEXT("::") + Desc->DelegateName;
+    }
+                                                                                          
 		Desc->bIsMulticast = Delegate.bIsMulticast;
 		File.Module->Delegates.Add(Desc);
 
@@ -717,6 +769,21 @@ void FAngelscriptPreprocessor::ProcessDelegates(FFile& File)
 	}
 }
 
+                                                                                            
+static bool HasTrunkType(const FString& Name)
+{
+    auto* Engine = static_cast<asCScriptEngine*>(FAngelscriptManager::Get().GetScriptEngine());
+    bool Found = false;
+    auto Check = [&](asCTypeInfo* Type)
+    {
+        Found |= Type->nameSpace == Engine->nameSpaces[0];
+        return Found;
+    };
+    Engine->allRegisteredTypesByName.FindAllUntil(TCHAR_TO_UTF8(*Name), Check);
+    if (!Found) Engine->allScriptDeclaredTypes.FindAllUntil(TCHAR_TO_UTF8(*Name), Check);
+    return Found;
+}
+                                                                                          
 void FAngelscriptPreprocessor::DetectClasses(FFile& File)
 {
 	for (FChunk& Chunk : File.ChunkedCode)
@@ -756,6 +823,13 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 	ClassDesc->LineNumber = Chunk.FileLineNumber;
 	ClassDesc->ClassName = ClassName;
 	ClassDesc->Namespace = Chunk.Namespace;
+                                                                                            
+    if (File.Module->CoreTypeScope)
+    {
+        ClassDesc->CoreTypeOwner = File.Module->CoreTypeScope->Namespace;
+        ClassDesc->CoreTypeIdentity = Chunk.Namespace.Get(ClassDesc->CoreTypeOwner) + TEXT("::") + ClassDesc->ClassName;
+    }
+                                                                                          
 
 #if WITH_EDITOR
 	if (Chunk.Comment.Len() != 0)
@@ -783,7 +857,9 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 	TSharedPtr<FAngelscriptClassDesc> ExistingClass;
 	TSharedPtr<FAngelscriptModuleDesc> ExistingModule;
 
-	ExistingClass = FAngelscriptManager::Get().GetClass(ClassName, &ExistingModule);
+                                                                                            
+	ExistingClass = FAngelscriptManager::Get().GetClass(ClassDesc->GetTypeIdentity(), &ExistingModule);
+                                                                                          
 
 	if (ExistingClass.IsValid())
 	{
@@ -802,7 +878,9 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 				if (OtherFile.Module == File.Module)
 					continue;
 
-				if (OtherFile.Module->GetClass(ClassName).IsValid())
+                                                                                            
+				if (OtherFile.Module->GetClass(ClassDesc->GetTypeIdentity()).IsValid())
+                                                                                          
 				{
 					ChunkError(File, Chunk, FString::Printf(TEXT("Cannot declare class %s in module %s. A class with this name already exists in module %s."),
 						*ClassName, *File.Module->ModuleName, *OtherFile.Module->ModuleName));
@@ -812,7 +890,24 @@ void FAngelscriptPreprocessor::DetectClasses(FFile& File, FChunk& Chunk)
 		}
 	}
 
-	PreprocessingClasses.Add(ClassDesc->ClassName, ClassDesc);
+                                                                                            
+    if (File.Module->CoreTypeScope)
+    {
+        auto Trunk = FAngelscriptManager::Get().GetClass(ClassName);
+        bool bShadows = Trunk.IsValid() || HasTrunkType(ClassName);
+        for (const auto& OtherFile : Files)
+            if (!OtherFile.Module->CoreTypeScope)
+                bShadows |= OtherFile.Module->GetClass(ClassName).IsValid();
+        if (bShadows)
+        {
+            LineWarning(File, ClassDesc->LineNumber, FString::Printf(
+                TEXT("%s shadows a trunk/branch type; the local type takes priority"), *ClassName));
+        }
+    }
+                                                                                          
+                                                                                            
+	PreprocessingClasses.Add(ClassDesc->GetTypeIdentity(), ClassDesc);
+                                                                                          
 
 	// Genarate the script chunk containing the static class global variable that will be set
 	// to the correct class by AngelscriptClassGenerator later.
@@ -886,7 +981,9 @@ TSharedPtr<FAngelscriptClassDesc> FAngelscriptPreprocessor::GetOrCreateStaticsCl
 	ClassDesc->Meta.Add(TEXT("DisplayName"), FPaths::GetBaseFilename(File.RelativeFilename));
 
 	File.Module->Classes.Add(ClassDesc);
-	PreprocessingClasses.Add(ClassDesc->ClassName, ClassDesc);
+                                                                                            
+	PreprocessingClasses.Add(ClassDesc->GetTypeIdentity(), ClassDesc);
+                                                                                          
 
 	File.StaticsClass = ClassDesc;
 	return ClassDesc;
@@ -2757,6 +2854,16 @@ void FAngelscriptPreprocessor::DetectEnum(FFile& File, FChunk& Chunk)
 	TSharedRef<FAngelscriptEnumDesc> EnumDesc = MakeShared<FAngelscriptEnumDesc>();
 	EnumDesc->LineNumber = Chunk.FileLineNumber;
 	EnumDesc->EnumName = MatchEnum.GetCaptureGroup(2);
+                                                                                            
+    if (File.Module->CoreTypeScope)
+    {
+        EnumDesc->CoreTypeOwner = File.Module->CoreTypeScope->Namespace;
+        EnumDesc->CoreTypeIdentity = Chunk.Namespace.Get(EnumDesc->CoreTypeOwner) + TEXT("::") + EnumDesc->EnumName;
+        if (HasTrunkType(EnumDesc->EnumName))
+            LineWarning(File, EnumDesc->LineNumber, EnumDesc->EnumName
+                + TEXT(" shadows a trunk/branch type; the local type takes priority"));
+    }
+                                                                                          
 	EnumDesc->Documentation = FormatCommentForToolTip(Chunk.Comment);
 
 	for (FMacro& Macro : Chunk.Macros)
@@ -2861,6 +2968,40 @@ void FAngelscriptPreprocessor::ResolveSuperClass(TSharedPtr<FAngelscriptClassDes
 	if (ClassDesc->CodeSuperClass != nullptr)
 		return; // Already resolved earlier
 
+                                                                                            
+    if (!ClassDesc->CoreTypeOwner.IsEmpty() && !ClassDesc->SuperClass.Contains(TEXT("::")))
+    {
+        auto* File = GetFileForClass(ClassDesc);
+        const auto Scope = File ? File->Module->CoreTypeScope : nullptr;
+        if (Scope)
+        {
+            auto Exists = [&](const FString& Identity)
+            {
+                return PreprocessingClasses.Contains(Identity)
+                    || FAngelscriptManager::Get().GetClass(Identity).IsValid();
+            };
+            FString Local = ClassDesc->Namespace.Get(Scope->Namespace) + TEXT("::") + ClassDesc->SuperClass;
+            if (Exists(Local)) ClassDesc->SuperClass = Local;
+            else
+            {
+                FString Found;
+                for (const FString& Dependency : Scope->Dependencies)
+                {
+                    const FString Candidate = Dependency + TEXT("::") + ClassDesc->SuperClass;
+                    if (!Exists(Candidate)) continue;
+                    if (!Found.IsEmpty())
+                    {
+                        LineError(*File, ClassDesc->LineNumber, TEXT("Ambiguous dependency type: use Mod::Type to disambiguate"));
+                        bHasError = true;
+                        break;
+                    }
+                    Found = Candidate;
+                }
+                if (!Found.IsEmpty()) ClassDesc->SuperClass = Found;
+            }
+        }
+    }
+                                                                                          
 	ResolvingClasses.Add(ClassDesc);
 	ClassDesc->bSuperIsCodeClass = false;
 

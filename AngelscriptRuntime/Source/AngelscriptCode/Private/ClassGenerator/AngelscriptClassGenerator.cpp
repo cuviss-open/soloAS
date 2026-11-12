@@ -82,6 +82,33 @@ FOnAngelscriptPreFullReload FAngelscriptClassGenerator::OnPreFullReload;
                                                                                                                       
 FOnAngelscriptLiteralAssetReload FAngelscriptClassGenerator::OnLiteralAssetReload;
 
+                                                                                            
+static FString TypeScopeUnrealName(const FString& Name, const FString& Owner)
+{
+    return Owner.IsEmpty() ? Name : Name + TEXT("_") + Owner;
+}
+static FString TypeScopeDisplayName(asITypeInfo* Type, const FString& Original, const FString& Owner)
+{
+    if (!Type || Owner.IsEmpty()) return Original;
+    auto* Engine = static_cast<asCScriptEngine*>(Type->GetEngine());
+    bool bDuplicate = false;
+    auto Check = [&](asCTypeInfo* Other)
+    {
+        bDuplicate |= Other->nameSpace != static_cast<asCTypeInfo*>(Type)->nameSpace;
+        return bDuplicate;
+    };
+    Engine->allRegisteredTypesByName.FindAllUntil(Type->GetName(), Check);
+    if (!bDuplicate) Engine->allScriptDeclaredTypes.FindAllUntil(Type->GetName(), Check);
+    return bDuplicate ? Original + TEXT(" (") + Owner + TEXT(")") : Original;
+}
+static FString TypeScopeIdentity(asITypeInfo* Type)
+{
+    const FString Name = ANSI_TO_TCHAR(Type->GetName());
+    if (auto* Module = static_cast<asCModule*>(Type->GetModule()))
+        if (Module->cuvissTypeScope) return FString(ANSI_TO_TCHAR(Type->GetNamespace())) + TEXT("::") + Name;
+    return Name;
+}
+                                                                                          
 static int32 UniqueGeneratedCounter = 1;
 static FORCEINLINE int32 UniqueCounter()
 {
@@ -411,7 +438,9 @@ void FAngelscriptClassGenerator::Analyze(FModuleData& ModuleData, FClassData& Cl
 	}
 
 	// Make sure the previous class is actually replacable
-	FString UnrealName = GetUnrealName(ClassData.NewClass->bIsStruct, ClassData.NewClass->ClassName);
+                                                                                            
+	FString UnrealName = TypeScopeUnrealName(GetUnrealName(ClassData.NewClass->bIsStruct, ClassData.NewClass->ClassName), ClassData.NewClass->CoreTypeOwner);
+                                                                                          
 	UObject* ReplacedObj = FindObject<UObject>(FAngelscriptManager::GetPackage(), *UnrealName);
 	if (ReplacedObj != nullptr)
 	{
@@ -1565,7 +1594,9 @@ void FAngelscriptClassGenerator::Analyze(FModuleData& ModuleData, FClassData& Cl
 			if (Property->PropertyType.Type != FAngelscriptType::GetScriptStruct())
 				continue;
 
-			auto StructData = GetClassDesc(ANSI_TO_TCHAR(Property->PropertyType.ScriptClass->GetName()));
+                                                                                            
+			auto StructData = GetClassDesc(TypeScopeIdentity(Property->PropertyType.ScriptClass));
+                                                                                          
 			if (!StructData.IsValid())
 				continue;
 
@@ -1637,7 +1668,9 @@ void FAngelscriptClassGenerator::Analyze(FModuleData& ModuleData, FDelegateData&
 
 	// Check already compiled modules for conflicting delegates
 	TSharedPtr<FAngelscriptModuleDesc> FoundInModule;
-	auto ExistingDelegate = FAngelscriptManager::Get().GetDelegate(DelegateDesc->DelegateName, &FoundInModule);
+                                                                                            
+	auto ExistingDelegate = FAngelscriptManager::Get().GetDelegate(DelegateDesc->GetTypeIdentity(), &FoundInModule);
+                                                                                          
 	if (ExistingDelegate.IsValid() && FoundInModule.IsValid())
 	{
 		// Only allow this if the module it was in is being reloaded
@@ -1655,7 +1688,9 @@ void FAngelscriptClassGenerator::Analyze(FModuleData& ModuleData, FDelegateData&
 	{
 		for (auto& OtherDelegate : OtherModule.Delegates)
 		{
-			if (OtherDelegate.NewDelegate->DelegateName == DelegateDesc->DelegateName
+                                                                                            
+			if (OtherDelegate.NewDelegate->GetTypeIdentity() == DelegateDesc->GetTypeIdentity()
+                                                                                          
 				&& DelegateDesc != OtherDelegate.NewDelegate)
 			{
 				FAngelscriptManager::Get().ScriptCompileError(ModuleData.NewModule, 1, FString::Printf(
@@ -1825,7 +1860,21 @@ void FAngelscriptClassGenerator::InitEnums(FModuleData& ModuleData)
 #endif
 		}
 
+                                                                                            
+        if (ModuleDesc->CoreTypeScope)
+        {
+            EnumDesc->CoreTypeOwner = ModuleDesc->CoreTypeScope->Namespace;
+            EnumDesc->CoreTypeIdentity = FString(ANSI_TO_TCHAR(EnumType->GetNamespace())) + TEXT("::") + EnumDesc->EnumName;
+        }
+                                                                                          
 		EnumDesc->ScriptType = EnumType;
+                                                                                            
+#if WITH_METADATA
+        if (!EnumDesc->CoreTypeOwner.IsEmpty() && !EnumDesc->Meta.Contains({TEXT("DisplayName"), INDEX_NONE}))
+            EnumDesc->Meta.Add({TEXT("DisplayName"), INDEX_NONE},
+                TypeScopeDisplayName(EnumType, EnumDesc->EnumName, EnumDesc->CoreTypeOwner));
+#endif
+                                                                                          
 
 		FEnumData EnumData;
 		EnumData.NewEnum = EnumDesc;
@@ -1856,7 +1905,9 @@ void FAngelscriptClassGenerator::InitEnums(FModuleData& ModuleData)
 		check(!DataRefByNewScriptType.Contains(EnumType));
 
 		DataRefByNewScriptType.Add(EnumType, FDataRef(ModuleData, EnumData));
-		DataRefByName.Add(EnumDesc->EnumName, FDataRef(ModuleData, EnumData));
+                                                                                            
+		DataRefByName.Add(EnumDesc->GetTypeIdentity(), FDataRef(ModuleData, EnumData));
+                                                                                          
 	}
 }
 
@@ -1882,7 +1933,7 @@ void FAngelscriptClassGenerator::AnalyzeEnums(FModuleData& ModuleData)
 		// Check already compiled modules
 		TSharedPtr<FAngelscriptModuleDesc> FoundInModule;
                                                                                                                              
-	auto ExistingEnum = FAngelscriptManager::Get().GetEnum(EnumDesc->EnumName, &FoundInModule);
+	auto ExistingEnum = FAngelscriptManager::Get().GetEnum(EnumDesc->GetTypeIdentity(), &FoundInModule);
                                                                                                                            
 		if (ExistingEnum.IsValid() && FoundInModule.IsValid())
 		{
@@ -1898,7 +1949,9 @@ void FAngelscriptClassGenerator::AnalyzeEnums(FModuleData& ModuleData)
 
 		// Make sure the unreal name is not being used
 		// NB: Enums here actually _do_ have the `E` prefix in their unreal name!
-		FString UnrealName = EnumDesc->EnumName;
+                                                                                            
+		FString UnrealName = TypeScopeUnrealName(EnumDesc->EnumName, EnumDesc->CoreTypeOwner);
+                                                                                          
 		if (UsedUnrealNames.Contains(UnrealName))
 		{
 			FAngelscriptManager::Get().ScriptCompileError(ModuleData.NewModule, EnumDesc->LineNumber, FString::Printf(
@@ -1980,7 +2033,9 @@ void FAngelscriptClassGenerator::SetupModule(FModuleData& ModuleData)
 		{
 			for (auto OldClassDesc : ModuleData.OldModule->Classes)
 			{
-				if (OldClassDesc->ClassName == ClassDesc->ClassName
+                                                                                            
+				if (OldClassDesc->GetTypeIdentity() == ClassDesc->GetTypeIdentity()
+                                                                                          
 					&& OldClassDesc->bIsStruct == ClassDesc->bIsStruct)
 				{
 					ClassData.OldClass = OldClassDesc;
@@ -2000,7 +2055,9 @@ void FAngelscriptClassGenerator::SetupModule(FModuleData& ModuleData)
 			check(!DataRefByNewScriptType.Contains(ScriptType));
 
 			DataRefByNewScriptType.Add(ClassData.NewClass->ScriptType, FDataRef(ModuleData, ClassData));
-			DataRefByName.Add(ClassData.NewClass->ClassName, FDataRef(ModuleData, ClassData));
+                                                                                            
+			DataRefByName.Add(ClassData.NewClass->GetTypeIdentity(), FDataRef(ModuleData, ClassData));
+                                                                                          
 		}
 	}
 
@@ -2016,7 +2073,9 @@ void FAngelscriptClassGenerator::SetupModule(FModuleData& ModuleData)
 		{
 			for (auto OldDelegateDesc : ModuleData.OldModule->Delegates)
 			{
-				if (OldDelegateDesc->DelegateName == DelegateDesc->DelegateName)
+                                                                                            
+				if (OldDelegateDesc->GetTypeIdentity() == DelegateDesc->GetTypeIdentity())
+                                                                                          
 				{
 					DelegateData.OldDelegate = OldDelegateDesc;
 					break;
@@ -2027,7 +2086,11 @@ void FAngelscriptClassGenerator::SetupModule(FModuleData& ModuleData)
 		ModuleData.Delegates.Add(DelegateData);
 
 		// Store lookup for this delegate
-		auto* ScriptType = ModuleData.NewModule->ScriptModule->GetTypeInfoByName(TCHAR_TO_ANSI(*DelegateDesc->DelegateName));
+                                                                                            
+		auto* ScriptType = DelegateDesc->CoreTypeOwner.IsEmpty()
+            ? ModuleData.NewModule->ScriptModule->GetTypeInfoByName(TCHAR_TO_ANSI(*DelegateDesc->DelegateName))
+            : ModuleData.NewModule->ScriptModule->GetTypeInfoByDecl(TCHAR_TO_ANSI(*DelegateDesc->GetTypeIdentity()));
+                                                                                          
 		DelegateData.NewDelegate->ScriptType = ScriptType;
 
 		// Tag the script type as a delegate so we can classify it before the
@@ -2040,7 +2103,9 @@ void FAngelscriptClassGenerator::SetupModule(FModuleData& ModuleData)
 		check(!DataRefByNewScriptType.Contains(ScriptType));
 
 		DataRefByNewScriptType.Add(DelegateData.NewDelegate->ScriptType, FDataRef(ModuleData, DelegateData));
-		DataRefByName.Add(DelegateData.NewDelegate->DelegateName, FDataRef(ModuleData, DelegateData));
+                                                                                            
+		DataRefByName.Add(DelegateData.NewDelegate->GetTypeIdentity(), FDataRef(ModuleData, DelegateData));
+                                                                                          
 	}
 }
 
@@ -2922,7 +2987,9 @@ void FAngelscriptClassGenerator::CreateFullReloadClass(FModuleData& ModuleData, 
 	auto ModuleDesc = ModuleData.NewModule;
 
 	FString ClassName = ClassDesc->ClassName;
-	FString UnrealName = GetUnrealName(false, ClassName);
+                                                                                            
+	FString UnrealName = TypeScopeUnrealName(GetUnrealName(false, ClassName), ClassDesc->CoreTypeOwner);
+                                                                                          
 
 	// Check if we're replacing a class
 	UASClass* ReplacedClass = FindObject<UASClass>(FAngelscriptManager::GetPackage(), *UnrealName);
@@ -2944,6 +3011,12 @@ void FAngelscriptClassGenerator::CreateFullReloadClass(FModuleData& ModuleData, 
 	if (ScriptType != nullptr)
 		ScriptType->SetUserData(NewClass);
 
+                                                                                            
+#if WITH_METADATA
+    if (!ClassDesc->CoreTypeOwner.IsEmpty() && !ClassDesc->Meta.Contains(TEXT("DisplayName")))
+        ClassDesc->Meta.Add(TEXT("DisplayName"), TypeScopeDisplayName(ClassDesc->ScriptType, ClassName, ClassDesc->CoreTypeOwner));
+#endif
+                                                                                          
 	NewClass->bIsEditorOnlyClass = ClassDesc->Meta.Contains(NAME_Meta_EditorOnly);
 
 #if WITH_EDITOR
@@ -2980,7 +3053,9 @@ void FAngelscriptClassGenerator::CreateFullReloadStruct(FModuleData& ModuleData,
 	auto ModuleDesc = ModuleData.NewModule;
 
 	FString ClassName = ClassDesc->ClassName;
-	FString UnrealName = GetUnrealName(true, ClassName);
+                                                                                            
+	FString UnrealName = TypeScopeUnrealName(GetUnrealName(true, ClassName), ClassDesc->CoreTypeOwner);
+                                                                                          
 
 	// Check if we're replacing a struct
 	UASStruct* ReplacedStruct = FindObject<UASStruct>(FAngelscriptManager::GetPackage(), *UnrealName);
@@ -3029,6 +3104,12 @@ void FAngelscriptClassGenerator::CreateFullReloadStruct(FModuleData& ModuleData,
 	ScriptType->SetUserData(NewStruct);
 	NewStruct->SetPropertiesSize(ScriptType->GetSize());
 
+                                                                                            
+#if WITH_METADATA
+    if (!ClassDesc->CoreTypeOwner.IsEmpty() && !ClassDesc->Meta.Contains(TEXT("DisplayName")))
+        NewStruct->SetMetaData(TEXT("DisplayName"), *TypeScopeDisplayName(ClassDesc->ScriptType, ClassName, ClassDesc->CoreTypeOwner));
+#endif
+                                                                                          
 	NewStruct->bIsEditorOnlyStruct = ClassDesc->Meta.Contains(NAME_Meta_EditorOnly);
 
 	// Tell the loading system the struct exists
@@ -3045,7 +3126,9 @@ void FAngelscriptClassGenerator::CreateFullReloadDelegate(FModuleData& Module, F
 	auto DelegateDesc = Delegate.NewDelegate;
 
 	FName FunctionName = *(FString::Printf(TEXT("%s"),
-			*DelegateDesc->DelegateName
+                                                                                            
+			*TypeScopeUnrealName(DelegateDesc->DelegateName, DelegateDesc->CoreTypeOwner)
+                                                                                          
 		) + HEADER_GENERATED_DELEGATE_SIGNATURE_SUFFIX);
 
 	UDelegateFunction* ReplacedFunction = FindObject<UDelegateFunction>(FAngelscriptManager::GetPackage(), *FunctionName.ToString());
@@ -3523,6 +3606,13 @@ void FAngelscriptClassGenerator::DoFullReloadStruct(FModuleData& ModuleData, FCl
 	if (ReplacedStruct != nullptr)
 	{
 		bReinstancingAny = true;
+                                                                                          
+		if (AngelscriptStructLiveValues::Enabled.load(std::memory_order_relaxed))
+		{
+			AngelscriptStructLiveValues::Invalidate(ReplacedStruct->ScriptType);
+			AngelscriptStructLiveValues::Invalidate(NewStruct->ScriptType);
+		}
+                                                                                        
 		ReplacedStruct->NewerVersion = NewStruct;
 	}
 }
@@ -4200,7 +4290,7 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& ModuleData, FEnumData
 
 	auto EnumDesc = EnumData.NewEnum;
                                                                                                                        
-	FString UnrealName = EnumDesc->EnumName;
+	FString UnrealName = TypeScopeUnrealName(EnumDesc->EnumName, EnumDesc->CoreTypeOwner);
                                                                                                                      
 
 	UUserDefinedEnum* Enum = nullptr;
@@ -4265,7 +4355,9 @@ void FAngelscriptClassGenerator::DoFullReload(FModuleData& ModuleData, FEnumData
 #endif
 
 		// Tell the loading system the enum exists
-		NotifyRegistrationEvent(TEXT("/Script/Angelscript"), *EnumDesc->EnumName, ENotifyRegistrationType::NRT_Enum,
+                                                                                            
+		NotifyRegistrationEvent(TEXT("/Script/Angelscript"), *UnrealName, ENotifyRegistrationType::NRT_Enum,
+                                                                                          
 			ENotifyRegistrationPhase::NRP_Finished, nullptr, false, Enum);
 	}
 

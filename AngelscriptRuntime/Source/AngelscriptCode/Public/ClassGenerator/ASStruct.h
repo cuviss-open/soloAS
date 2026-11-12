@@ -4,6 +4,9 @@
 
 #include "AngelscriptManager.h"
 
+                                                                                          
+#include "AngelscriptStructLiveValues.h"
+                                                                                        
 
 #include "ASStruct.generated.h"
 

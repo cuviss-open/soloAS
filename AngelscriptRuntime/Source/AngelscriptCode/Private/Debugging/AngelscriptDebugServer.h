@@ -10,6 +10,9 @@
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/MemoryReader.h"
 
+                                                                                              
+#include "AngelscriptCoreAdmissionInternal.h"
+                                                                                            
 
 #define DEBUG_SERVER_VERSION 2
 
@@ -567,6 +570,12 @@ public:
 
 public:
 	FAngelscriptDebugServer(int Port);
+                                                                                              
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+	struct FTestWithoutListener {};
+	explicit FAngelscriptDebugServer(FTestWithoutListener);
+#endif
+                                                                                            
 	~FAngelscriptDebugServer();
 
 	void Tick();
@@ -577,6 +586,13 @@ public:
 	template<typename T>
 	void SendMessageToAll(EDebugMessageType MessageType, T& Message)
 	{
+                                                                                              
+        if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+        {
+            for (auto* Client : Clients) SendMessageToClient(Client, MessageType, Message);
+            return;
+        }
+                                                                                            
 		TArray<uint8> Body;
 		FMemoryWriter BodyWriter(Body);
 		BodyWriter << Message;
@@ -602,6 +618,10 @@ public:
 	template<typename T>
 	void SendMessageToClient(FSocket* Client, EDebugMessageType MessageType, T& Message)
 	{
+                                                                                              
+        TArray<AngelscriptCoreExtensionPoints::FDebugAccessView> AccessReads;
+        if (!AuthorizePublish(Client, MessageType, AccessReads)) return;
+                                                                                            
 		TArray<uint8> Body;
 		FMemoryWriter BodyWriter(Body);
 		BodyWriter << Message;
@@ -617,6 +637,15 @@ public:
 		Writer << MessageTypeByte;
 		Buffer.Append(Body);
 
+                                                                                              
+        if (!AccessReads.IsEmpty())
+        {
+            Msg.Access = MakeUnique<FQueuedAccess>();
+            Msg.Access->Session = DebugSessions.FindRef(Client);
+            Msg.Access->Epoch = AngelscriptCoreExtensionPoints::Private::DebugAccess().Epoch;
+            Msg.Access->Reads = MoveTemp(AccessReads);
+        }
+                                                                                            
 		TrySendingMessages(Client);
 	}
 
@@ -640,10 +669,51 @@ public:
 
 	FString CanonizeFilename(const FString& Filename);
 
+                                                                                              
+    struct FQueuedAccess
+    {
+        uint64 Session = 0;
+        uint64 Epoch = 0;
+        TArray<AngelscriptCoreExtensionPoints::FDebugAccessView> Reads;
+    };
+    struct FDebugFrame
+    {
+        int Frame = -1;
+        const void* Context = nullptr;
+        const void* Function = nullptr;
+        AngelscriptCoreExtensionPoints::FDebugAccessView View;
+    };
+    TMap<FSocket*, uint64> DebugSessions;
+    TMap<uint64, TArray<FDebugFrame>> DebugFrames;
+    FDelegateHandle AssetAddedHandle, AssetRemovedHandle, AssetRenamedHandle, AssetsLoadedHandle;
+    bool bDrainingDebugAccess = false;
+    bool AuthorizePublish(FSocket* Client, EDebugMessageType MessageType,
+        TArray<AngelscriptCoreExtensionPoints::FDebugAccessView>& Reads);
+    bool IsDebugIdentityLive(const AngelscriptCoreExtensionPoints::FDebugAccessView& View) const;
+    AngelscriptCoreExtensionPoints::FDebugAccessView DebugView(FSocket* Client,
+        EDebugMessageType MessageType, AngelscriptCoreExtensionPoints::EDebugAccessPhase Phase) const;
+    bool AuthorizeFrame(FSocket* Client, EDebugMessageType MessageType, int Frame);
+    const TArray<FSocket*>& GetDebugClients() const { return Clients; }
+    void DrainDebugAccess();
+    bool HasDebugStopReaders(class asIScriptFunction* Function);
+    bool HasDebugAssetReaders();
+    TSet<uint64> DebugPauseSessions;
+    TMap<uint64, TMap<FString, TSet<int32>>> DebugSessionBreakpoints;
+    TMap<uint64, TMap<FString, AngelscriptCoreExtensionPoints::FDebugAccessView>> DebugBreakpointViews;
+    class asIScriptFunction* DebugStopFunction = nullptr;
+    TMap<FSocket*, TArray<uint8>> DebugInputs;
+    enum class EDebugInputResult : uint8 { Pending, Ready, Invalid };
+    static EDebugInputResult ConsumeDebugInput(TArray<uint8>& Input, FArrayReaderPtr& Datagram);
+    bool ProcessDebugInput(FSocket* Client);
+    void ClearDebugSessionBreakpoints(FSocket* Client, const FString* Key = nullptr);
+                                                                                            
 	struct FQueuedMessage
 	{
 		TArray<uint8> Buffer;
 		double FirstTry = -1.0;
+                                                                                              
+        TUniquePtr<FQueuedAccess> Access;
+                                                                                            
 	};
 
 	TMap<FSocket*, TArray<FQueuedMessage>> QueuedSends;

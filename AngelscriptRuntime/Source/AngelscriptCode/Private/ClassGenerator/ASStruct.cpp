@@ -964,6 +964,13 @@ void UASStruct::PrepareCppStructOps()
 void UASStruct::UpdateScriptType()
 {
 	FASStructOps* Ops = ((FASStructOps*)GetCppStructOps());
+                                                                                          
+	if (AngelscriptStructLiveValues::Enabled.load(std::memory_order_relaxed) && Ops->ScriptType != ScriptType)
+	{
+		AngelscriptStructLiveValues::Invalidate(Ops->ScriptType);
+		AngelscriptStructLiveValues::Invalidate(ScriptType);
+	}
+                                                                                        
 	Ops->SetFromStruct(this);
 
 	// Update struct flags that may have changed in the new script type

@@ -34,8 +34,8 @@ namespace SoloASToolchain
 {
 namespace
 {
-FCandidate Own, Managed;
-ESelection Selection = ESelection::Missing;
+FCandidate ToolchainModuleOwn, ToolchainModuleManaged;
+ESelection ToolchainModuleSelection = ESelection::Missing;
 bool bComplete = false;
 const FName Owner(TEXT("SoloAS.CppToolchain"));
 
@@ -108,9 +108,9 @@ bool PromptMissing(bool bPackaging = true)
 }
 
 bool IsDetectionComplete() { return bComplete; }
-ESelection ActiveSelection() { return Selection; }
-FCandidate DetectedOwn() { return Own; }
-FCandidate DetectedManaged() { return Managed; }
+ESelection ActiveSelection() { return ToolchainModuleSelection; }
+FCandidate DetectedOwn() { return ToolchainModuleOwn; }
+FCandidate DetectedManaged() { return ToolchainModuleManaged; }
 }
 
 class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
@@ -168,7 +168,7 @@ class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
         FString Arguments = TEXT("-Mode=Query -Query=TargetDetails -Platform=Win64 -Configuration=Development -NoUBA -WaitMutex");
         IDesktopPlatform* Desktop = FDesktopPlatformModule::Get();
         FString Project, Xml;
-        if (!PrepareProbe(Project, Xml, (bManaged ? Managed : Own).Error)) return false;
+        if (!PrepareProbe(Project, Xml, (bManaged ? ToolchainModuleManaged : ToolchainModuleOwn).Error)) return false;
         QueryJson = FPaths::ProjectIntermediateDir() / TEXT("SoloAS/Toolchain") / (bManaged ? TEXT("managed.json") : TEXT("own.json"));
         IFileManager::Get().MakeDirectory(*FPaths::GetPath(QueryJson), true);
         Arguments += FString::Printf(TEXT(" -Target=SoloASToolchainProbeEditor -Project=\"%s\" -OutputPath=\"%s\""),
@@ -182,7 +182,7 @@ class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
                 for (const TCHAR C : Value)
                     if (!FChar::IsAlnum(C) && C != TEXT('.'))
                     {
-                        Own.Error = TEXT("Invalid Windows compiler/SDK version setting.");
+                        ToolchainModuleOwn.Error = TEXT("Invalid Windows compiler/SDK version setting.");
                         return false;
                     }
                 Arguments += FString::Printf(TEXT(" -%s=%s"), Setting, *Value);
@@ -203,7 +203,7 @@ class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
                 if (IFileManager::Get().FileExists(*(Base / TEXT("Windows Kits/10/Lib") / Sdks[I] / TEXT("um/x64/kernel32.lib")))) Sdk = Sdks[I];
             if (Version.IsEmpty() || Sdk.IsEmpty())
             {
-                Managed.Error = TEXT("Managed MSVC / Windows SDK layout is absent or incomplete.");
+                ToolchainModuleManaged.Error = TEXT("Managed MSVC / Windows SDK layout is absent or incomplete.");
                 return false;
             }
             Arguments += FString::Printf(TEXT(" -Compiler=VisualStudio2022 -CompilerVersion=%s -WindowsSDKVersion=%s"), *Version, *Sdk);
@@ -224,7 +224,7 @@ class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
                 Cached.CompilerVersion = CompilerVersion(Cached.Compiler);
                 if (CachedKey == QueryKey + TEXT("\n") + Cached.CompilerVersion)
                 {
-                    (bManaged ? Managed : Own) = MoveTemp(Cached);
+                    (bManaged ? ToolchainModuleManaged : ToolchainModuleOwn) = MoveTemp(Cached);
                     UE_LOG(LogSoloASToolchain, Display, TEXT("Reused validated %s toolchain discovery cache."), bManaged ? TEXT("managed") : TEXT("own"));
                     return false;
                 }
@@ -233,7 +233,7 @@ class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
         IFileManager::Get().Delete(*QueryJson);
         if (!FPlatformProcess::CreatePipe(ReadPipe, WritePipe))
         {
-            (bManaged ? Managed : Own).Error = TEXT("Unable to create the UnrealBuildTool output pipe.");
+            (bManaged ? ToolchainModuleManaged : ToolchainModuleOwn).Error = TEXT("Unable to create the UnrealBuildTool output pipe.");
             return false;
         }
         FPlatformMisc::SetEnvironmentVar(TEXT("UE_SDKS_ROOT"), *ProbeRoot);
@@ -243,7 +243,7 @@ class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
         QueryStarted = FPlatformTime::Seconds();
         if (!Query.IsValid())
         {
-            (bManaged ? Managed : Own).Error = TEXT("Unable to start this engine's UnrealBuildTool query.");
+            (bManaged ? ToolchainModuleManaged : ToolchainModuleOwn).Error = TEXT("Unable to start this engine's UnrealBuildTool query.");
             FPlatformProcess::ClosePipe(ReadPipe, WritePipe);
             ReadPipe = WritePipe = nullptr;
         }
@@ -253,17 +253,17 @@ class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
     void FinishDetection()
     {
         using namespace SoloASToolchain;
-        Selection = Select(StartupPreference, Own.bUsable, Managed.bUsable);
-        if (Selection == ESelection::Managed && !bPrecheckOnly)
+        ToolchainModuleSelection = Select(StartupPreference, ToolchainModuleOwn.bUsable, ToolchainModuleManaged.bUsable);
+        if (ToolchainModuleSelection == ESelection::Managed && !bPrecheckOnly)
         {
             XmlPath = FPaths::ProjectSavedDir() / TEXT("UnrealBuildTool/BuildConfiguration.xml");
-            if (WriteManagedConfig(XmlPath, Managed, Managed.Error))
+            if (WriteManagedConfig(XmlPath, ToolchainModuleManaged, ToolchainModuleManaged.Error))
             {
                 bAppliedManaged = true;
             }
-            if (!Managed.Error.IsEmpty()) Selection = ESelection::Missing;
+            if (!ToolchainModuleManaged.Error.IsEmpty()) ToolchainModuleSelection = ESelection::Missing;
         }
-        AppliedRoot = RootForSelection(Selection, OriginalRoot, ManagedRoot());
+        AppliedRoot = RootForSelection(ToolchainModuleSelection, OriginalRoot, ManagedRoot());
         if (!bPrecheckOnly && AppliedRoot != OriginalRoot)
         {
             FPlatformMisc::SetEnvironmentVar(TEXT("UE_SDKS_ROOT"), *AppliedRoot);
@@ -271,8 +271,8 @@ class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
         }
         bComplete = true;
         UE_LOG(LogSoloASToolchain, Display, TEXT("Detection complete: own=%d managed=%d selected=%d. %s %s"),
-            Own.bUsable, Managed.bUsable, int32(Selection), *Own.Error, *Managed.Error);
-        if (Selection == ESelection::Missing && !IsRunningCommandlet() && !FApp::IsUnattended()) PromptMissing(false);
+            ToolchainModuleOwn.bUsable, ToolchainModuleManaged.bUsable, int32(ToolchainModuleSelection), *ToolchainModuleOwn.Error, *ToolchainModuleManaged.Error);
+        if (ToolchainModuleSelection == ESelection::Missing && !IsRunningCommandlet() && !FApp::IsUnattended()) PromptMissing(false);
     }
 
     bool Poll(float)
@@ -295,7 +295,7 @@ class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
         FFileHelper::LoadFileToString(Json, *QueryJson);
         FFileHelper::SaveStringToFile(FString::Printf(TEXT("ExitCode: %d\n"), Code) + QueryOutput,
             *FPaths::ChangeExtension(QueryJson, TEXT("log")), FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
-        FCandidate& Candidate = bManagedQuery ? Managed : Own;
+        FCandidate& Candidate = bManagedQuery ? ToolchainModuleManaged : ToolchainModuleOwn;
         Candidate = ReadQuery(Json, Code, bManagedQuery ? ManagedRoot() : FString(),
             bManagedQuery ? FString() : ManagedRoot(), [](const FString& File) { return IFileManager::Get().FileExists(*File); });
         if (Candidate.bUsable)
@@ -318,10 +318,10 @@ class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
             FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("SoloAS is checking the C++ toolchain with UnrealBuildTool. Try packaging again when the SoloAS toolchain status is ready.")));
             return false;
         }
-        if (Selection != ESelection::Missing)
+        if (ToolchainModuleSelection != ESelection::Missing)
         {
             FString Error;
-            const FCandidate& Candidate = Selection == ESelection::Own ? Own : Managed;
+            const FCandidate& Candidate = ToolchainModuleSelection == ESelection::Own ? ToolchainModuleOwn : ToolchainModuleManaged;
             bool bValid = CheckFiles(Candidate, [](const FString& File) { return IFileManager::Get().FileExists(*File); }, Error);
             if (bAppliedManaged)
             {
@@ -347,7 +347,7 @@ class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
             return;
         }
         bAppliedManaged = false;
-        Own = FCandidate(); Managed = FCandidate(); bComplete = false;
+        ToolchainModuleOwn = FCandidate(); ToolchainModuleManaged = FCandidate(); bComplete = false;
         for (const TCHAR* Cache : {TEXT("own.cache-id"), TEXT("managed.cache-id")})
             IFileManager::Get().Delete(*(FPaths::ProjectIntermediateDir() / TEXT("SoloAS/Toolchain") / Cache));
         if (StartQuery(false) || StartQuery(true))
@@ -370,10 +370,10 @@ class FSoloASDeveloperToolsToolchainEditorModule : public IModuleInterface
     {
         using namespace SoloASToolchain;
         if (!bComplete) return FText::FromString(TEXT("C++ toolchain: checking with UBT..."));
-        const FCandidate& Candidate = Selection == ESelection::Managed ? Managed : Own;
-        return FText::FromString(Selection == ESelection::Missing ? TEXT("C++ toolchain: missing / unavailable")
+        const FCandidate& Candidate = ToolchainModuleSelection == ESelection::Managed ? ToolchainModuleManaged : ToolchainModuleOwn;
+        return FText::FromString(ToolchainModuleSelection == ESelection::Missing ? TEXT("C++ toolchain: missing / unavailable")
             : FString::Printf(TEXT("C++ toolchain: %s (MSVC %s, SDK %s)"),
-                Selection == ESelection::Own ? TEXT("own") : TEXT("managed"), *Candidate.CompilerVersion, *Candidate.SdkVersion));
+                ToolchainModuleSelection == ESelection::Own ? TEXT("own") : TEXT("managed"), *Candidate.CompilerVersion, *Candidate.SdkVersion));
     }
 
     void RegisterMenus()
@@ -444,7 +444,7 @@ public:
             while (Poll(0.0f)) FPlatformProcess::Sleep(0.05f);
         }
         else FinishDetection();
-        return Selection != ESelection::Missing;
+        return ToolchainModuleSelection != ESelection::Missing;
     }
 
     virtual void StartupModule() override
@@ -467,7 +467,7 @@ public:
         }
         else if (!bRecovered)
         {
-            Own.Error = RecoveryError;
+            ToolchainModuleOwn.Error = RecoveryError;
             bComplete = true;
             UE_LOG(LogSoloASToolchain, Error, TEXT("%s"), *RecoveryError);
         }

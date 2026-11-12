@@ -1,4 +1,7 @@
 #include "AngelscriptStaticJIT.h"
+                                                                                                  
+#include "AngelscriptExecutionBudget.h"
+                                                                                                
 #include "HAL/FileManager.h"
                                                                                                                           
 #include "HAL/PlatformProcess.h"
@@ -395,6 +398,10 @@ void FStaticJITContext::GenerateNewFunction(asIScriptFunction* InScriptFunction)
 			: TEXT("SCRIPT_DEBUG_CALLSTACK_FRAME"),
 		ANSI_TO_TCHAR(ScriptFunction->GetDeclarationStr(true, true, false, true, false).AddressOf()),
 		(ScriptFunction->GetLineNumber(0, nullptr) & 0xFFFFF));
+                                                                                                  
+	bExecutionBudget = AngelscriptCoreExtensionPoints::Private::ShouldInstrumentExecutionBudget(ScriptFunction);
+	if (!bExecutionBudget)
+                                                                                                
 	FunctionHead += TEXT("SCRIPT_ASSUME_NO_EXCEPTION()\n");
 
 	// Create the local stack space
@@ -1214,6 +1221,15 @@ void FStaticJITContext::GenerateNewFunction(asIScriptFunction* InScriptFunction)
 		RepresentStackVariable(Offset, DataType, asCString());
 	}
 
+                                                                                                  
+	if (bExecutionBudget)
+	{
+		FunctionHead = FString::Printf(TEXT("FExecutionBudgetJITFrame BudgetFrame(Execution, %s, %s, %s);\nif (!BudgetFrame.Enter()) { %s }\n"),
+			*ReferenceFunction(ScriptFunction), BudgetCleanupLabel.IsEmpty() ? TEXT("false") : TEXT("true"),
+			BudgetCleanupLabel.IsEmpty() ? TEXT("nullptr") : TEXT("(void*)l_This"),
+			bReturnValueDirectly ? TEXT("return {};") : TEXT("return;")) + FunctionHead;
+	}
+                                                                                                
 	FunctionHead = FString::Printf(TEXT("%s %s(FScriptExecution& Execution%s)\n{\n"), *FunctionReturnType, *FunctionName, *CppEntryInArgs) + FunctionHead;
 	FunctionDecl = FString::Printf(TEXT("%s %s(FScriptExecution& Execution%s)"), *FunctionReturnType, *FunctionName, *CppEntryInArgs);
 
@@ -1283,6 +1299,10 @@ void FStaticJITContext::GenerateNewFunction(asIScriptFunction* InScriptFunction)
 		bShouldRegisterFunction = true;
                                                                                                 
 
+                                                                                                  
+		// Budgeted helper entries also need same-source function/version identity.
+	bShouldRegisterFunction |= bExecutionBudget;
+                                                                                                
 	if (bShouldRegisterFunction)
 	{
 		FString VMEntryKey = VMEntryAssignment + TEXT("@@") + VMEntryOutArgs + TEXT("@@") + VMEntryFooter;
@@ -1321,12 +1341,24 @@ void FStaticJITContext::GenerateNewFunction(asIScriptFunction* InScriptFunction)
 		}
 
 		// Make sure we're registering the function to the JIT
+                                                                                                  
+		if (bExecutionBudget)
+			File->StaticInitializationCode += FString::Printf(
+				TEXT("FStaticJITFunction::RegisterExecutionBudget( 1u, 0x%xu, &%s, %s (asJITFunction_Raw)(void*)&%s );\n"),
+				FunctionId, *VMEntryFunctionName, *ParmsFunc, *FunctionName);
+		else
+                                                                                                
 		File->StaticInitializationCode += FString::Printf(
 			TEXT("FStaticJITFunction::Register( 0x%xu, &%s, %s (asJITFunction_Raw)(void*)&%s );\n"),
 			FunctionId,
 			*VMEntryFunctionName,
 			*ParmsFunc,
 			*FunctionName);
+                                                                                                  
+		if (bExecutionBudget && !BudgetCleanupLabel.IsEmpty())
+			File->StaticInitializationCode += FString::Printf(TEXT("FStaticJITFunction::RegisterExecutionBudgetCleanup(0x%xu, %d, %d);\n"),
+				FunctionId, ScriptFunction->ExecutionBudgetNormalTailOffset, ScriptFunction->ExecutionBudgetCleanupOffset);
+                                                                                                
 	}
 }
 
@@ -1461,6 +1493,10 @@ void FStaticJITContext::Jump(FInstruction& TargetInstruction)
 
 void FStaticJITContext::ReturnEmptyValue()
 {
+                                                                                                  
+	if (bExecutionBudget && !BudgetCleanupLabel.IsEmpty())
+		Line("if (Execution.bExceptionThrown && !BudgetFrame.IsInTail()) { {0}(Execution, l_This); }", FunctionName);
+                                                                                                
 	if (bReturnValueDirectly)
 		Line("return {};");
 	else
@@ -1635,6 +1671,10 @@ void FStaticJITContext::WriteOutFunction()
 
 	if (ParmStructSize != 0 || bParmIsExecuted)
 		File->Content.Add(FString::Printf(TEXT("alignas(16) asBYTE l_ParmStruct[%d];\n"), FMath::Max(ParmStructSize, 1)));
+                                                                                                  
+	if (bExecutionBudget && !BudgetCleanupLabel.IsEmpty())
+		File->Content.Add(FString::Printf(TEXT("if (BudgetFrame.IsCleanup()) goto %s;\n"), *BudgetCleanupLabel));
+                                                                                                
 
 	TArray<FEntryContent> ActualContent = MoveTemp(FunctionContent);
 	FunctionContent.Empty();
@@ -3499,6 +3539,11 @@ TSharedPtr<FAngelscriptStaticJIT::FComputedTypeOffsets> FAngelscriptStaticJIT::G
 
 void FAngelscriptStaticJIT::GenerateCppCode(asIScriptFunction* ScriptFunction, FGenerateFunction& Generate)
 {
+                                                                                                  
+	checkf(!AngelscriptCoreExtensionPoints::Private::ShouldInstrumentExecutionBudget(static_cast<asCScriptFunction*>(ScriptFunction))
+		|| AngelscriptCoreExtensionPoints::Private::ValidateExecutionBudgetFunction(static_cast<asCScriptFunction*>(ScriptFunction), true),
+		TEXT("Execution budget JIT generation requires an admitted lifecycle dependency closure."));
+                                                                                                
 	if (PrecompiledData == nullptr)
 	{
 		ensure(false);
@@ -3535,6 +3580,20 @@ void FAngelscriptStaticJIT::GenerateCppCode(asIScriptFunction* ScriptFunction, F
 		Context.AdvanceBC();
 	}
 
+                                                                                                  
+	int32 BudgetCleanupIndex = INDEX_NONE;
+	if (AngelscriptCoreExtensionPoints::Private::ShouldInstrumentExecutionBudget(Context.ScriptFunction))
+	{
+		AngelscriptCoreExtensionPoints::Private::RestoreExecutionBudgetCleanup(Context.ScriptFunction);
+		for (int32 I = 0; I < Context.Instructions.Num(); ++I)
+			if (Context.Instructions[I].BC - Context.BC_FunctionStart == Context.ScriptFunction->ExecutionBudgetCleanupOffset)
+			{
+				BudgetCleanupIndex = I;
+				Context.BudgetCleanupLabel = GetUniqueLabelName(File, Context.ScriptFunction, TEXT("BUDGET_CLEANUP"));
+				Context.Instructions[I].Label = Context.BudgetCleanupLabel;
+			}
+	}
+                                                                                                
 
 	// Run the pre-pass to add labels where needed
 	for (int32 i = 0, Count = Context.Instructions.Num(); i < Count; ++i)
@@ -3552,6 +3611,14 @@ void FAngelscriptStaticJIT::GenerateCppCode(asIScriptFunction* ScriptFunction, F
 	{
 		TArray<int32> PathsToCheck;
 		PathsToCheck.Add(0);
+                                                                                                  
+		if (BudgetCleanupIndex != INDEX_NONE)
+		{
+			PathsToCheck.Add(BudgetCleanupIndex);
+			Context.Instructions[BudgetCleanupIndex].StackOffsetBeforeInstr = Context.LocalStackSize;
+			Context.Instructions[BudgetCleanupIndex].bMarked = true;
+		}
+                                                                                                
 		Context.Instructions[0].StackOffsetBeforeInstr = Context.LocalStackSize;
 		Context.Instructions[0].bMarked = true;
 
@@ -3627,6 +3694,23 @@ void FAngelscriptStaticJIT::GenerateCppCode(asIScriptFunction* ScriptFunction, F
 		FAngelscriptBytecode& Bytecode = FAngelscriptBytecode::GetBytecode(Instr);
 		Context.NewInstruction();
 
+                                                                                                  
+		if (Context.bExecutionBudget && !Context.Instructions[i].bJumpPartOfSwitch)
+		{
+			const int32 Offset = Context.BC - Context.BC_FunctionStart;
+			Context.bBudgetExceptionCleanup = !Context.BudgetCleanupLabel.IsEmpty()
+				&& (Offset >= Context.ScriptFunction->ExecutionBudgetCleanupOffset
+					|| (Context.ScriptFunction->ExecutionBudgetNormalTailOffset >= 0 && Offset >= Context.ScriptFunction->ExecutionBudgetNormalTailOffset));
+			if (Offset == Context.ScriptFunction->ExecutionBudgetNormalTailOffset || Offset == Context.ScriptFunction->ExecutionBudgetCleanupOffset)
+				Context.Line("BudgetFrame.EnterTail();");
+			// Every control-flow destination is covered, including computed jumps.
+			// Entry checks also bound recursion before allocating the next frame.
+			Context.MaterializeWholeStack();
+			Context.Line("if (!BudgetFrame.Poll()) [[unlikely]] {");
+			Context.ExceptionCleanupAndReturn(false, false);
+			Context.Line("}");
+		}
+                                                                                                
 
 		Bytecode.WriteDebugComment(Context);
 		bool bImplemented = Bytecode.Implement(Context);
@@ -3634,6 +3718,9 @@ void FAngelscriptStaticJIT::GenerateCppCode(asIScriptFunction* ScriptFunction, F
 	}
 
 	// Add blocks for any exception cleanup we need to do
+                                                                                                  
+	Context.bBudgetExceptionCleanup = Context.bExecutionBudget;
+                                                                                                
 	if (Context.ExceptionCleanupLabels.Num() != 0)
 	{
 		Context.Line("SCRIPT_ASSUME(false);\n");

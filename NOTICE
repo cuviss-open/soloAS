@@ -17,49 +17,56 @@ Source identities and retained standalone license hashes:
   "products": [
     {
       "category": "UE-AS fork bindings",
-      "commit": "8e06de694ea44f2bc4d9a866dc28dd0b0358c53d",
+      "commit": "43380d6f260ba0959796d6ebb17a1c6da2d008fc",
       "license_scope": "Plugin source and Cuviss contributions: MIT.",
       "name": "AngelscriptEnhancedInput",
       "path": "AngelscriptManualBindPlugins/AngelscriptEnhancedInput",
-      "tree": "654b0a05c7a1b37dd5204fba5772c6f497d7d722"
+      "tree": "0667302858870e61ceff2947e18aaa0fec91a940"
     },
     {
       "category": "UE-AS fork bindings",
-      "commit": "bd71575b5941f0a964edd687f6a82d1ffda9fdbc",
+      "commit": "067729db469044827ac04218cb72738a8091b3af",
       "license_scope": "Plugin source and Cuviss contributions: Apache-2.0 OR MIT.",
       "name": "AngelscriptGAS",
       "path": "AngelscriptManualBindPlugins/AngelscriptGAS",
-      "tree": "13ff2f367542c3f70ff0995a5dc6340cb1bb3f54"
+      "tree": "797334ca2acd7f0216124485020a2a931aba9ac6"
+    },
+    {
+      "category": "extension",
+      "commit": "48be6d20568df1a1b3a7fae31da6070ab5a3885f",
+      "name": "AngelscriptModKit",
+      "path": "AngelscriptModKit",
+      "tree": "3749f6f71c15be1c92cffba96bb2b8785476d9ed"
     },
     {
       "category": "core",
-      "commit": "058a17e70cdceaa5aeb094a833d36f1d7b93e39c",
+      "commit": "fab279c08fb4339bb521d28a100c16874e32c7a3",
       "license_scope": "Plugin source and Cuviss contributions: MIT. Embedded AngelScript library and its modifications: zlib.",
       "name": "AngelscriptRuntime",
       "path": "AngelscriptRuntime",
-      "tree": "dbee9ca6f730752404be41c1475e92e7e7d97018"
+      "tree": "e6ec93e6cd7c4122be6d560acd9ad3bd0accc6d0"
     },
     {
       "category": "core",
-      "commit": "c9b2aafd66069c31b1ae23da80b30971dfff6dd8",
+      "commit": "f128caeaa57b600c907e94a0a9b435847cfe7f62",
       "license_scope": "Cuviss original code and modifications are under MPL-2.0.",
       "name": "SoloASBridge",
       "path": "SoloASBridge",
-      "tree": "46aa0250cc1c73cac53805ac3a11c7f31a534eb6"
+      "tree": "8223028633e075fda3f8c5d56afa5a74fd3ae4a8"
     },
     {
       "category": "extension",
-      "commit": "6a72a94c79a2dd30bbdad913987bf6b4eb4f9787",
+      "commit": "387d95f9ce762d2d7940fbe545ab0398c8be5c84",
       "name": "SoloASCoreExtensions",
       "path": "SoloASCoreExtensions",
-      "tree": "c6c388e1d38ace1f4a6db17c33d26f894591c59c"
+      "tree": "cc73222c85ac0452bc95842d817bf0997a7d08fe"
     },
     {
       "category": "extension",
-      "commit": "542ed54e6fb00ce3705598c8823e0497a777a62f",
+      "commit": "3091e3b242c5f78591deee04fbc12086915b7cd4",
       "name": "SoloASDeveloperTools",
       "path": "SoloASDeveloperTools",
-      "tree": "58cefd39791156c988b20a94a6005fcc512816de"
+      "tree": "eed07a45aebf6b227173f746cecc3ca0cc3b81ac"
     }
   ],
   "retained_license_files": [
@@ -82,6 +89,14 @@ Source identities and retained standalone license hashes:
     {
       "path": "AngelscriptManualBindPlugins/AngelscriptGAS/NOTICE",
       "sha256": "94767048b316e326254a5b7b714613cfed1ec92fbce3356bcc80dd4650bb4f59"
+    },
+    {
+      "path": "AngelscriptModKit/LICENSE",
+      "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+    },
+    {
+      "path": "AngelscriptModKit/NOTICE",
+      "sha256": "0922b5a44289dc69ab544226df8400365251eda570a6136d1f460e607a1e4b01"
     },
     {
       "path": "AngelscriptRuntime/LICENSE-MIT",

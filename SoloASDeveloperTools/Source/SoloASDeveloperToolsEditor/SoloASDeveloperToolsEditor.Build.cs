@@ -7,6 +7,7 @@ public class SoloASDeveloperToolsEditor : ModuleRules
     public SoloASDeveloperToolsEditor(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        bUsePrecompiled = UnrealBuildTool.Rules.SoloASBridgeBuildPath.ShouldUsePrecompiled(this, Target, bUsePrecompiled);
         PublicDependencyModuleNames.Add("Core");
         PrivateDependencyModuleNames.AddRange(new[] {
             "CoreUObject", "Engine", "UnrealEd", "ApplicationCore", "ToolMenus", "Slate", "SlateCore", "InputCore",

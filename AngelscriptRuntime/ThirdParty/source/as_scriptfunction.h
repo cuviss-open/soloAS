@@ -413,6 +413,11 @@ public:
 	asCString deprecationMessage;
 #endif
 
+                                                                                                  
+	uint32 ExecutionBudgetVersion = 0;
+	int32 ExecutionBudgetCleanupOffset = -1;
+	int32 ExecutionBudgetNormalTailOffset = -1;
+                                                                                                
 };
 
 const char * const DELEGATE_FACTORY = "$dlgte";

@@ -7,6 +7,7 @@ public sealed class SoloASCoreExtensionsToolsProvider : ModuleRules
     public SoloASCoreExtensionsToolsProvider(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        bUsePrecompiled = UnrealBuildTool.Rules.SoloASBridgeBuildPath.ShouldUsePrecompiled(this, Target, bUsePrecompiled);
         PrivateDependencyModuleNames.AddRange(new[] {
             "Core", "CoreUObject", "Engine", "AngelscriptCode", "SoloASBridge", "SoloASCoreExtensions", "Json"
         });

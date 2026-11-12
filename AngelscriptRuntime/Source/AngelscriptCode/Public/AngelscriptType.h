@@ -569,6 +569,8 @@ struct ANGELSCRIPTCODE_API FAngelscriptTypeUsage
 	FORCEINLINE bool IsPrimitive() const { return Type.IsValid() && Type->IsPrimitive(); }
 
 	// Get the debugger value for a variable of this type
+                                                                                              
+#if 0
 	FORCEINLINE bool GetDebuggerValue(void* Address, struct FDebuggerValue& Value) const { return Type.IsValid() && Type->GetDebuggerValue(*this, Address, Value); }
 	FORCEINLINE bool GetDebuggerValue(void* Address, struct FDebuggerValue& Value, FProperty* NativeProperty) const { return Type.IsValid() && Type->GetDebuggerValue(*this, Address, Value, NativeProperty); }
 
@@ -577,6 +579,12 @@ struct ANGELSCRIPTCODE_API FAngelscriptTypeUsage
 
 	// Find the debugger value for a particular member of this scope
 	FORCEINLINE bool GetDebuggerMember(void* Address, const FString& Member, struct FDebuggerValue& Value) const { return Type.IsValid() && Type->GetDebuggerMember(*this, Address, Member, Value); }
+#endif
+    bool GetDebuggerValue(void* Address, struct FDebuggerValue& Value) const;
+    bool GetDebuggerValue(void* Address, struct FDebuggerValue& Value, FProperty* NativeProperty) const;
+    bool GetDebuggerScope(void* Address, struct FDebuggerScope& Scope) const;
+    bool GetDebuggerMember(void* Address, const FString& Member, struct FDebuggerValue& Value) const;
+                                                                                            
 
 	// Convert to a identifier string, mainly used for debugging purposes
 	FORCEINLINE bool GetStringIdentifier(void* Address, FString& OutString) const { return Type.IsValid() && Type->GetStringIdentifier(*this, Address, OutString); }

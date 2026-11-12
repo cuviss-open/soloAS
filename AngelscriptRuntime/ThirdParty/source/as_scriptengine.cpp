@@ -38,6 +38,9 @@
 
 #include <stdlib.h>
 
+                                                                                          
+#include "AngelscriptStructLiveValues.h"
+                                                                                        
 #include "as_config.h"
 #include "as_scriptengine.h"
 #include "as_builder.h"
@@ -52,6 +55,9 @@
 #include "as_compiler.h"
 #include "as_bytecode.h"
 #include "as_debug.h"
+                                                                                                          
+#include "AngelscriptBinds.h"
+                                                                                                        
 
 
 
@@ -907,6 +913,11 @@ int asCScriptEngine::SetContextCallbacks(asREQUESTCONTEXTFUNC_t requestCtx, asRE
 // interface
 asIScriptContext *asCScriptEngine::RequestContext()
 {
+                                                                                                          
+    TOptional<AngelscriptCoreExtensionPoints::Private::FNativeCompileCallbackScope> CompileCallback;
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeActionEngine.load(std::memory_order_acquire))
+        CompileCallback.Emplace(this);
+                                                                                                        
 
 	if( requestCtxFunc )
 	{
@@ -984,6 +995,11 @@ asCModule *asCScriptEngine::FindNewOwnerForSharedFunc(asCScriptFunction *in_func
 // interface
 void asCScriptEngine::ReturnContext(asIScriptContext *ctx)
 {
+                                                                                                          
+    TOptional<AngelscriptCoreExtensionPoints::Private::FNativeCompileCallbackScope> CompileCallback;
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeActionEngine.load(std::memory_order_acquire))
+        CompileCallback.Emplace(this);
+                                                                                                        
 
 	if( returnCtxFunc )
 	{
@@ -1218,6 +1234,11 @@ int asCScriptEngine::ClearMessageCallback()
 // interface
 int asCScriptEngine::WriteMessage(const char *section, int row, int col, asEMsgType type, const char *message)
 {
+                                                                                                          
+    TOptional<AngelscriptCoreExtensionPoints::Private::FNativeCompileCallbackScope> CompileCallback;
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeActionEngine.load(std::memory_order_acquire))
+        CompileCallback.Emplace(this);
+                                                                                                        
 
 	// Validate input parameters
 	if( section == 0 ||
@@ -1460,6 +1481,10 @@ int asCScriptEngine::CreateContext(asIScriptContext **context, bool isInternal)
 // interface
 int asCScriptEngine::RegisterObjectProperty(const char *obj, const char *declaration, int byteOffset, int compositeOffset, bool isCompositeIndirect, const asUINT accessorType, bool isProtected)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::AdmitNativeRegistryMutation(this)) return asNOT_SUPPORTED;
+                                                                                                        
 
 	int r;
 	asCDataType dt;
@@ -1518,6 +1543,10 @@ int asCScriptEngine::RegisterObjectProperty(const char *obj, const char *declara
 // interface
 int asCScriptEngine::RegisterInterface(const char *name)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::AdmitNativeRegistryMutation(this)) return asNOT_SUPPORTED;
+                                                                                                        
 
 	if( name == 0 ) return ConfigError(asINVALID_NAME, "RegisterInterface", 0, 0);
 
@@ -1580,6 +1609,10 @@ int asCScriptEngine::RegisterInterface(const char *name)
 // interface
 int asCScriptEngine::RegisterInterfaceMethod(const char *intf, const char *declaration)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::AdmitNativeRegistryMutation(this)) return asNOT_SUPPORTED;
+                                                                                                        
 
 	asCDataType dt;
 	asCBuilder bld(this, 0);
@@ -1628,6 +1661,10 @@ int asCScriptEngine::RegisterInterfaceMethod(const char *intf, const char *decla
 
 int asCScriptEngine::RegisterObjectType(const char *name, int byteSize, asDWORD flags)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::AdmitNativeRegistryMutation(this)) return asNOT_SUPPORTED;
+                                                                                                        
 
 	int r;
 
@@ -1882,6 +1919,10 @@ int asCScriptEngine::RegisterObjectType(const char *name, int byteSize, asDWORD 
 // interface
 int asCScriptEngine::RegisterObjectBehaviour(const char *datatype, asEBehaviours behaviour, const char *decl, const asSFuncPtr &funcPointer, asDWORD callConv, asFunctionCaller caller, void *auxiliary, int compositeOffset, bool isCompositeIndirect)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::AdmitNativeRegistryMutation(this)) return asNOT_SUPPORTED;
+                                                                                                        
 
 	if( datatype == 0 ) return ConfigError(asINVALID_ARG, "RegisterObjectBehaviour", datatype, decl);
 
@@ -2414,6 +2455,10 @@ int asCScriptEngine::AddBehaviourFunction(asCScriptFunction &func, asSSystemFunc
 // interface
 int asCScriptEngine::RegisterGlobalProperty(const char *declaration, void *pointer)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::AdmitNativeRegistryMutation(this)) return asNOT_SUPPORTED;
+                                                                                                        
 
 	// Don't accept a null pointer
 	if( pointer == 0 )
@@ -2527,6 +2572,10 @@ int asCScriptEngine::GetGlobalPropertyByIndex(asUINT index, const char **name, c
 // interface
 int asCScriptEngine::RegisterObjectMethod(const char *obj, const char *declaration, const asSFuncPtr &funcPointer, asDWORD callConv, asFunctionCaller caller, void *auxiliary, int compositeOffset, bool isCompositeIndirect, const asUINT accessorType)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::AdmitNativeRegistryMutation(this)) return asNOT_SUPPORTED;
+                                                                                                        
 
 	if( obj == 0 )
 		return ConfigError(asINVALID_ARG, "RegisterObjectMethod", obj, declaration);
@@ -2691,6 +2740,10 @@ int asCScriptEngine::RegisterMethodToObjectType(asCObjectType *objectType, const
 // interface
 int asCScriptEngine::RegisterGlobalFunction(const char *declaration, const asSFuncPtr &funcPointer, asDWORD callConv, asFunctionCaller caller, void *auxiliary)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::AdmitNativeRegistryMutation(this)) return asNOT_SUPPORTED;
+                                                                                                        
 
 #ifdef AS_MAX_PORTABILITY
 	if( callConv != asCALL_GENERIC )
@@ -3105,6 +3158,14 @@ asCModule *asCScriptEngine::GetModuleFromFuncId(int id)
 // internal
 int asCScriptEngine::RequestBuild()
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeActionEngine.load(std::memory_order_acquire) == this
+        && !AngelscriptCoreExtensionPoints::Private::HasNativeCompileCorePermit(this))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("H6 rejected provider/callback VM compilation at asCScriptEngine::RequestBuild (Module::Build/CompileFunction): outside admitted core call"));
+        return asBUILD_IN_PROGRESS;
+    }
+                                                                                                        
 	if( isBuilding )
 	{
 		return asBUILD_IN_PROGRESS;
@@ -3200,6 +3261,16 @@ asCObjectType *asCScriptEngine::GetTemplateInstanceType(asCObjectType *templateT
 	}
 
 	// No previous template instance exists
+                                                                                                          
+    auto* const NativeCompileAction = AngelscriptCoreExtensionPoints::Private::GTransientNativeActionEngine.load(std::memory_order_acquire);
+    if (NativeCompileAction == this
+        && !AngelscriptCoreExtensionPoints::Private::HasNativeCompileCorePermit(this))
+    {
+        if (outErrorMessage) *outErrorMessage = "H6 rejected provider/callback template creation at asCScriptEngine::GetTemplateInstanceType: outside admitted core call";
+        UE_LOG(LogTemp, Warning, TEXT("H6 rejected provider/callback template creation at asCScriptEngine::GetTemplateInstanceType: outside admitted core call"));
+        return nullptr;
+    }
+                                                                                                        
 
 	// Make sure this template supports the subtype
 	for( n = 0; n < subTypes.GetLength(); n++ )
@@ -3281,7 +3352,23 @@ asCObjectType *asCScriptEngine::GetTemplateInstanceType(asCObjectType *templateT
 			asCScriptFunction *callback = scriptFunctions[templateType->beh.templateCallback];
 
 			asCString ErrorString;
-			if( !CallGlobalFunctionRetBool(ot, &ErrorString, callback->sysFuncIntf, callback) )
+                                                                                                          
+            bool bTemplateAccepted;
+            if (NativeCompileAction)
+            {
+                AngelscriptCoreExtensionPoints::Private::FNativeCompileCallbackScope CallbackScope(this);
+                bTemplateAccepted = CallGlobalFunctionRetBool(ot, &ErrorString, callback->sysFuncIntf, callback);
+            }
+            else bTemplateAccepted = CallGlobalFunctionRetBool(ot, &ErrorString, callback->sysFuncIntf, callback);
+            const bool bActionInvalidated = NativeCompileAction == this
+                && !AngelscriptCoreExtensionPoints::Private::IsNativeCompileActionUsable(this);
+            if (bActionInvalidated)
+            {
+                ErrorString = "H6 compile action stopped during native template validation";
+                UE_LOG(LogTemp, Warning, TEXT("H6 rejected template result at asCScriptEngine::GetTemplateInstanceType: native provider lifetime ended during callback"));
+            }
+            if (!bTemplateAccepted || bActionInvalidated)
+                                                                                                        
 			{
 				ot->templateSubTypes.SetLength(0);
 
@@ -5175,6 +5262,10 @@ void *asCScriptEngine::CreateUninitializedScriptObject(const asITypeInfo *type)
 
 	// Pre-initialize the memory so there are no invalid pointers
 	ScriptObject_ConstructUnitialized(objType, obj);
+                                                                                          
+	if (AngelscriptStructLiveValues::Enabled.load(std::memory_order_relaxed))
+		AngelscriptStructLiveValues::Invalidate(objType);
+                                                                                        
 
 	return obj;
 }
@@ -5409,6 +5500,10 @@ int asCScriptEngine::GetNextScriptFunctionId()
 
 void asCScriptEngine::AddScriptFunction(asCScriptFunction *func)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire))
+        AngelscriptCoreExtensionPoints::Private::NativeFunctionAdded(func);
+                                                                                                        
 
 	// Update the internal arrays with the function id that is now used
 	if( freeScriptFunctionIds.GetLength() && freeScriptFunctionIds[freeScriptFunctionIds.GetLength()-1] == func->id )
@@ -5466,6 +5561,10 @@ void asCScriptEngine::RemoveScriptFunction(asCScriptFunction *func)
 		}
 	}
 
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire))
+        AngelscriptCoreExtensionPoints::Private::NativeFunctionRemoved(func);
+                                                                                                        
 }
 
 // internal
@@ -5477,6 +5576,10 @@ void asCScriptEngine::RemoveFuncdef(asCFuncdefType *funcdef)
 // interface
 int asCScriptEngine::RegisterFuncdef(const char *decl)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::AdmitNativeRegistryMutation(this)) return asNOT_SUPPORTED;
+                                                                                                        
 
 	if( decl == 0 ) return ConfigError(asINVALID_ARG, "RegisterFuncdef", decl, 0);
 
@@ -5625,6 +5728,10 @@ asCFuncdefType *asCScriptEngine::FindMatchingFuncdef(asCScriptFunction *func, as
 // TODO: typedef: Accept complex types for the typedefs
 int asCScriptEngine::RegisterTypedef(const char *type, const char *decl)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::AdmitNativeRegistryMutation(this)) return asNOT_SUPPORTED;
+                                                                                                        
 
 	if( type == 0 ) return ConfigError(asINVALID_NAME, "RegisterTypedef", type, decl);
 
@@ -5715,6 +5822,10 @@ asITypeInfo *asCScriptEngine::GetTypedefByIndex(asUINT index) const
 // interface
 int asCScriptEngine::RegisterEnum(const char *name)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::AdmitNativeRegistryMutation(this)) return asNOT_SUPPORTED;
+                                                                                                        
 
 	//	Check the name
 	if( NULL == name )
@@ -5773,6 +5884,10 @@ int asCScriptEngine::RegisterEnum(const char *name)
 // interface
 int asCScriptEngine::RegisterEnumValue(const char *typeName, const char *valueName, int value)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::AdmitNativeRegistryMutation(this)) return asNOT_SUPPORTED;
+                                                                                                        
 
 	asCDataType dt;
 	int r;

@@ -42,6 +42,12 @@
 #include "as_context.h"
 #include "as_texts.h"
 #include "as_debug.h"
+                                                                                                  
+#include "AngelscriptExecutionBudget.h"
+                                                                                                
+                                                                                              
+#include "ClassGenerator/AngelscriptRetiredModules.h"
+                                                                                            
 
 
                                                                                                    
@@ -77,6 +83,9 @@ asCModule::asCModule(const char *name, asCScriptEngine *engine)
 // internal
 asCModule::~asCModule()
 {
+                                                                                                  
+	AngelscriptCoreExtensionPoints::Private::ForgetExecutionBudgetModule(this);
+                                                                                                
 	InternalReset();
 	ClearImports();
 
@@ -448,6 +457,10 @@ int asCModule::CallInit(asIScriptContext *myCtx)
 
 	if( ctx && !myCtx )
 	{
+		                                                                                              
+		if (AngelscriptCoreExtensionPoints::Private::ModuleCacheClientCount.load(std::memory_order_acquire) != 0)
+			ctx->Unprepare();
+		                                                                                            
 		engine->ReturnContext(ctx);
 		ctx = 0;
 	}

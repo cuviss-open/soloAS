@@ -54,6 +54,12 @@
 #include "as_scriptcode.h"
 
 #include <cstdlib> // qsort
+                                                                                                  
+#include "AngelscriptExecutionBudget.h"
+                                                                                                
+                                                                                                          
+#include "AngelscriptBinds.h"
+                                                                                                        
 
 
 BEGIN_AS_NAMESPACE
@@ -415,6 +421,13 @@ void asCScriptFunction::DeallocateScriptFunctionData()
 // internal
 asCScriptFunction::~asCScriptFunction()
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire))
+        AngelscriptCoreExtensionPoints::Private::NativeFunctionRemoved(this);
+                                                                                                        
+                                                                                                  
+	AngelscriptCoreExtensionPoints::Private::ForgetExecutionBudgetFunction(this);
+                                                                                                
 
 	// Remove the script function from the engine's scriptFunctions array here
 	// Don't remove it before, because there may still be functions referring to it
@@ -1542,6 +1555,10 @@ asDWORD *asCScriptFunction::GetByteCode(asUINT *length)
 // interface
 void *asCScriptFunction::SetUserData(void *data, asPWORD type)
 {
+                                                                                                          
+    if (AngelscriptCoreExtensionPoints::Private::GTransientNativeTracking.load(std::memory_order_acquire) &&
+        !AngelscriptCoreExtensionPoints::Private::NativeFunctionUserDataChanging(this)) return 0;
+                                                                                                        
 
 	userData = data;
 	return 0;

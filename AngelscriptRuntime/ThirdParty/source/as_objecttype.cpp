@@ -38,6 +38,9 @@
 
 #include <stdio.h>
 
+                                                                                          
+#include "AngelscriptStructLiveValues.h"
+                                                                                        
 #include "as_config.h"
 #include "as_objecttype.h"
 #include "as_configgroup.h"
@@ -47,6 +50,10 @@ BEGIN_AS_NAMESPACE
 
 asCObjectType::asCObjectType() : asCTypeInfo()
 {
+                                                                                          
+	if (AngelscriptStructLiveValues::Enabled.load(std::memory_order_relaxed))
+		AngelscriptStructLiveValues::TypeCreated(this);
+                                                                                        
 
 	derivedFrom = 0;
 	alignment = 8;
@@ -57,6 +64,10 @@ asCObjectType::asCObjectType() : asCTypeInfo()
 
 asCObjectType::asCObjectType(asCScriptEngine *in_engine) : asCTypeInfo(in_engine)
 {
+                                                                                          
+	if (AngelscriptStructLiveValues::Enabled.load(std::memory_order_relaxed))
+		AngelscriptStructLiveValues::TypeCreated(this);
+                                                                                        
 
 	derivedFrom  = 0;
 	alignment = 8;
@@ -172,6 +183,10 @@ void asCObjectType::CopySystemType(asITypeInfo* SystemType)
 
 asCObjectType::~asCObjectType()
 {
+                                                                                          
+	if (AngelscriptStructLiveValues::Enabled.load(std::memory_order_relaxed))
+		AngelscriptStructLiveValues::TypeDestroyed(this);
+                                                                                        
 
 	DestroyInternal();
 }

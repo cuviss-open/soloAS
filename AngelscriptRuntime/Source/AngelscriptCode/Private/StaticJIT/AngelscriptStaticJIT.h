@@ -19,6 +19,11 @@ struct FJITDatabase
 		asJITFunction VMEntry;
 		asJITFunction_ParmsEntry ParmsEntry;
 		asJITFunction_Raw RawFunction;
+                                                                                                  
+		uint32 ExecutionBudgetVersion = 0;
+		int32 ExecutionBudgetCleanupOffset = -1;
+		int32 ExecutionBudgetNormalTailOffset = -1;
+                                                                                                
 	};
 
 	TMap<uint32, FJITFunctions> Functions;
@@ -59,6 +64,11 @@ struct FStaticJITContext
 	FString FunctionName;
 	FString FunctionDecl;
 	asCScriptFunction* ScriptFunction = nullptr;
+                                                                                                  
+	bool bExecutionBudget = false;
+	bool bBudgetExceptionCleanup = false;
+	FString BudgetCleanupLabel;
+                                                                                                
 	asDWORD* BC_FunctionStart = nullptr;
 	asDWORD* BC_EntryStart = nullptr;
 	asDWORD* BC_End = nullptr;
