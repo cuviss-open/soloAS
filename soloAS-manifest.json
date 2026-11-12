@@ -10,7 +10,7 @@
     },
     {
       "path": ".github/soloas-manifest.json",
-      "sha256": "92dec55d7f309e5f3c33de837577cdfe720f67830f951330d75515bb05f9e057"
+      "sha256": "c35c7216493343a36e69b2f7220a7ffb297c4e13a8ab1eb24d02600ec8de7ed7"
     },
     {
       "path": ".github/upstream.json",
@@ -2006,7 +2006,7 @@
     },
     {
       "path": "NOTICE",
-      "sha256": "1da4da2639e104ce3ec1c6c3d4c76bda12b3f4f3464a2301d05570a286c9ee1b"
+      "sha256": "1ee2d79092489e82488a9b522d14ca82e2119e81c400c28f11392bad81048fb8"
     },
     {
       "path": "README.md",
@@ -2334,7 +2334,7 @@
     },
     {
       "path": "SoloASBridge/Source/SoloASBridgeCallers/Private/SoloASBridgeCallersModule.cpp",
-      "sha256": "70738682875505a0d308269ed733c7b08410b88a7dd0435a812559850754cb76"
+      "sha256": "31b5b81cb80b8d3c6278d96863d31180f6e46c80ce46b888e97c79451c9bb2c4"
     },
     {
       "path": "SoloASBridge/Source/SoloASBridgeCallers/Private/SoloASBridgeCallersUhtAnchor.h",
