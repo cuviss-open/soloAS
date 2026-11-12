@@ -347,6 +347,12 @@ public:
 	asIStringFactory                 *stringFactory;
 	asCDataType                       stringType;
 	bool configFailed;
+                                                                                                          
+    // Initialization-only H6 registration keeps the VM's own declarations alive.
+    // Revoke does not clear them while published bytecode may still refer to them.
+    bool bRetainTransientCompileSurface = false;
+    uint64 RetainedCompileSurfaceBytes = 0;
+                                                                                                        
 
 	// Stores all registered types
 	asCSymbolMap<asCTypeInfo*> allRegisteredTypes; // increases ref count

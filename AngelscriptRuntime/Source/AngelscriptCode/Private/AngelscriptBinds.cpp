@@ -610,3 +610,148 @@ bool FAngelscriptBinds::HasSetter(const FString& PropertyName, bool bEvenIfNotPr
 		return false;
 	return Type->GetMethodByName(&FuncName[0]) != nullptr;
 }
+
+                                                                                                          
+#include "HAL/CriticalSection.h"
+#include "Misc/ScopeLock.h"
+namespace AngelscriptCoreExtensionPoints::Private
+{
+std::atomic<bool> GTransientNativeTracking { false };
+constinit std::atomic<asCScriptEngine*> GTransientNativeActionEngine { nullptr };
+namespace
+{
+struct FNativeFunctionWitness
+{
+    asCScriptEngine* Engine = nullptr;
+    bool bRestored = false;
+};
+FCriticalSection NativeEpochMutex;
+TMap<const asCScriptEngine*, uint64> NativeEpochs;
+TMap<const asCScriptFunction*, FNativeFunctionWitness> NativeFunctionWitnesses;
+uint32 NativeClientCount = 0;
+constinit std::atomic<bool> NativeActionInvalidated { false };
+thread_local asCScriptEngine* NativeCoreCallEngine = nullptr;
+bool NativeMutationPermitted(asCScriptEngine* Engine)
+{
+    return IsInGameThread() &&
+        (GTransientNativeActionEngine.load(std::memory_order_acquire) != Engine || HasNativeCompileCorePermit(Engine));
+}
+}
+bool SetTransientNativeClientCount(uint32 Count)
+{
+    if (!IsInGameThread() || GTransientNativeActionEngine.load(std::memory_order_acquire)) return false;
+    FScopeLock Lock(&NativeEpochMutex);
+    NativeClientCount = Count;
+    if (Count == 0)
+    {
+        GTransientNativeTracking.store(false, std::memory_order_release);
+        NativeFunctionWitnesses.Empty(); NativeEpochs.Empty();
+    }
+    else GTransientNativeTracking.store(true, std::memory_order_release);
+    return true;
+}
+bool AdmitNativeRegistryMutation(asCScriptEngine* Engine)
+{
+    if (!NativeMutationPermitted(Engine)) return false;
+    if (NativeCoreCallEngine != Engine)
+    {
+        FScopeLock Lock(&NativeEpochMutex);
+        ++NativeEpochs.FindOrAdd(Engine);
+    }
+    return true;
+}
+void NativeFunctionAdded(asCScriptFunction* Function)
+{
+    if (!Function || Function->funcType != asFUNC_SYSTEM) return;
+    FScopeLock Lock(&NativeEpochMutex);
+    if (NativeFunctionWitnesses.Contains(Function)) return;
+    const bool bRestored = GTransientNativeActionEngine.load(std::memory_order_acquire) == Function->engine;
+    NativeFunctionWitnesses.Add(Function, {Function->engine, bRestored});
+    if (!bRestored) ++NativeEpochs.FindOrAdd(Function->engine);
+}
+void NativeFunctionRemoved(asCScriptFunction* Function)
+{
+    {
+        FScopeLock Lock(&NativeEpochMutex);
+        auto* Witness = NativeFunctionWitnesses.Find(Function);
+        if (!Witness) return;
+        if (!Witness->bRestored) ++NativeEpochs.FindOrAdd(Witness->Engine);
+        NativeFunctionWitnesses.Remove(Function);
+        if (!NativeClientCount)
+        {
+            GTransientNativeTracking.store(false, std::memory_order_release);
+            NativeFunctionWitnesses.Empty(); NativeEpochs.Empty();
+        }
+    }
+}
+bool NativeFunctionUserDataChanging(asCScriptFunction* Function)
+{
+    asCScriptEngine* Engine = nullptr;
+    {
+        FScopeLock Lock(&NativeEpochMutex);
+        const auto* Witness = NativeFunctionWitnesses.Find(Function);
+        if (!Witness) return true;
+        Engine = Witness->Engine;
+    }
+    return AdmitNativeRegistryMutation(Engine);
+}
+uint64 GetNativeCompileTrackingBytes()
+{
+    FScopeLock Lock(&NativeEpochMutex);
+    return NativeEpochs.GetAllocatedSize() + NativeFunctionWitnesses.GetAllocatedSize();
+}
+uint64 GetNativeRegistryEpoch(const asCScriptEngine* Engine)
+{
+    FScopeLock Lock(&NativeEpochMutex);
+    const auto* Epoch = NativeEpochs.Find(Engine);
+    return Epoch ? *Epoch : 0;
+}
+bool IsNativeCompileActionActive() { return GTransientNativeActionEngine.load(std::memory_order_acquire) != nullptr; }
+bool HasNativeCompileCorePermit(const asCScriptEngine* Engine)
+{
+    return NativeCoreCallEngine == Engine && !NativeActionInvalidated.load(std::memory_order_acquire);
+}
+bool IsNativeCompileActionUsable(const asCScriptEngine* Engine)
+{
+    return GTransientNativeActionEngine.load(std::memory_order_acquire) == Engine
+        && !NativeActionInvalidated.load(std::memory_order_acquire);
+}
+void InvalidateNativeCompileAction(const asCScriptEngine* Engine)
+{
+    if (GTransientNativeActionEngine.load(std::memory_order_acquire) == Engine)
+        NativeActionInvalidated.store(true, std::memory_order_release);
+}
+FNativeCompileActionGuard::FNativeCompileActionGuard(asCScriptEngine* InEngine) : Engine(InEngine)
+{
+    check(IsInGameThread() && Engine && !GTransientNativeActionEngine.load(std::memory_order_acquire));
+    NativeActionInvalidated.store(false, std::memory_order_release);
+    GTransientNativeActionEngine.store(Engine, std::memory_order_release);
+}
+FNativeCompileActionGuard::~FNativeCompileActionGuard()
+{
+    check(GTransientNativeActionEngine.load(std::memory_order_acquire) == Engine && !NativeCoreCallEngine);
+    GTransientNativeActionEngine.store(nullptr, std::memory_order_release);
+    NativeActionInvalidated.store(false, std::memory_order_release);
+}
+FNativeCompileCoreCallGuard::FNativeCompileCoreCallGuard(asCScriptEngine* InEngine) : Engine(InEngine)
+{
+    check(IsInGameThread() && GTransientNativeActionEngine.load(std::memory_order_acquire) == Engine && !NativeCoreCallEngine);
+    NativeCoreCallEngine = Engine;
+}
+FNativeCompileCoreCallGuard::~FNativeCompileCoreCallGuard()
+{
+    check(NativeCoreCallEngine == Engine);
+    NativeCoreCallEngine = nullptr;
+}
+FNativeCompileCallbackScope::FNativeCompileCallbackScope(asCScriptEngine*)
+    : Previous(NativeCoreCallEngine)
+{
+    NativeCoreCallEngine = nullptr;
+}
+FNativeCompileCallbackScope::~FNativeCompileCallbackScope()
+{
+    check(!NativeCoreCallEngine);
+    NativeCoreCallEngine = Previous;
+}
+}
+                                                                                                        

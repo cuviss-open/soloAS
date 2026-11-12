@@ -1,7 +1,7 @@
 {
   "FileVersion": 3,
-  "Version": 3,
-  "VersionName": "0.2.1",
+  "Version": 4,
+  "VersionName": "0.3.0",
   "FriendlyName": "SoloAS Developer Tools",
   "Description": "Editor tools and packaging provider contracts for SoloAS.",
   "Category": "Scripting",

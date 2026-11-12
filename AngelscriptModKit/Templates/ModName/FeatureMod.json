@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "dependencies": {
+    "trunkModules": [],
+    "branches": [],
+    "featureMods": []
+  },
+  "BlueprintBindings": {},
+  "BlueprintDependencies": [],
+  "version": "1.0.0",
+  "requiredWhitelistCapabilities": []
+}

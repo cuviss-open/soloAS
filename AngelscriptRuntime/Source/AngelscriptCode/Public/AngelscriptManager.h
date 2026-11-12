@@ -134,6 +134,11 @@ struct ANGELSCRIPTCODE_API FAngelscriptManager : FTickableGameObject
 	 * Modules should already be pre-processed.
 	 * Modules array should already be sorted in dependency order. */
 	ECompileResult CompileModules(ECompileType CompileType, const TArray<TSharedRef<struct FAngelscriptModuleDesc>>& Modules, TArray<TSharedRef<struct FAngelscriptModuleDesc>>& OutCompiledModules);
+                                                                                                       
+    bool RemoveModuleCacheModules(const TArray<TSharedRef<FAngelscriptModuleDesc>>& Modules, FString& Error);
+    bool RemoveModuleCacheModules(const TArray<TSharedRef<FAngelscriptModuleDesc>>& Modules, FString& Error, bool& bBusy);
+    void ReleaseModuleCacheIdleContexts(const TArray<TSharedRef<FAngelscriptModuleDesc>>& Modules);
+                                                                                                     
 	void CompileModule_Types_Stage1(ECompileType CompileType, TSharedRef<struct FAngelscriptModuleDesc> Module);
 	void CompileModule_Functions_Stage2(ECompileType CompileType, TSharedRef<struct FAngelscriptModuleDesc> Module);
 	void CompileModule_Code_Stage3(ECompileType CompileType, TSharedRef<struct FAngelscriptModuleDesc> Module);
@@ -303,6 +308,9 @@ public:
 		int32 Column;
 		bool bIsError;
 		bool bIsInfo;
+                                                                                              
+        TSharedPtr<const AngelscriptCoreExtensionPoints::FModuleGenerationId, ESPMode::ThreadSafe> DebugGeneration = nullptr;
+                                                                                            
 
 	};
 
@@ -409,6 +417,16 @@ public:
 	TArray<FFilenamePair> FileDeletionsDetectedForReload;
 	double LastFileChangeDetectedTime = -1.0;
 
+                                                                                              
+private:
+    void StopExtensionDebugAccess();
+public:
+                                                                                            
+                                                                                                   
+private:
+    void StopExtensionDebugPolicy();
+public:
+                                                                                                 
 	bool bDidInitialCompileSucceed = true;
 	static bool bIsInitialCompileFinished;
 	
@@ -465,6 +483,10 @@ public:
 	bool HasAnyDebugServerClients();
 	void ReplaceScriptAssetContent(FString AssetName, TArray<FString> AssetContent);
 
+                                                                                                          
+    friend class FCompileSurfaceLease;
+    friend class FCompileSurfaceRecipe;
+                                                                                                        
 	friend struct FAngelscriptPrecompiledData;
 	struct FAngelscriptPrecompiledData* PrecompiledData = nullptr;
                                                                                                             
@@ -976,6 +998,11 @@ struct FAngelscriptClassDesc
 {
 	/* Name of the class that was compiled. */
 	FString ClassName;
+                                                                                            
+    FString CoreTypeIdentity;
+    FString CoreTypeOwner;
+    const FString& GetTypeIdentity() const { return CoreTypeIdentity.IsEmpty() ? ClassName : CoreTypeIdentity; }
+                                                                                          
 
 	/* Angelscript name of the class that should be the super for this angelscript class. */
 	FString SuperClass;
@@ -1136,6 +1163,11 @@ struct FAngelscriptEnumDesc
 {
 	/* Name of the enum that was compiled. */
 	FString EnumName;
+                                                                                            
+    FString CoreTypeIdentity;
+    FString CoreTypeOwner;
+    const FString& GetTypeIdentity() const { return CoreTypeIdentity.IsEmpty() ? EnumName : CoreTypeIdentity; }
+                                                                                          
 	FString Documentation;
 
 	/* Enum values to add to the enum. */
@@ -1165,6 +1197,11 @@ struct FAngelscriptDelegateDesc
 {
 	/* Name of the delegate that was compiled. */
 	FString DelegateName;
+                                                                                            
+    FString CoreTypeIdentity;
+    FString CoreTypeOwner;
+    const FString& GetTypeIdentity() const { return CoreTypeIdentity.IsEmpty() ? DelegateName : CoreTypeIdentity; }
+                                                                                          
 
 	/* Whether this is a multicast delegate. */
 	bool bIsMulticast = false;
@@ -1202,8 +1239,14 @@ struct FAngelscriptTestDesc
 /**
  * Description of a script module during preprocessing.
  */
+                                                                                            
+namespace AngelscriptCoreExtensionPoints { struct FTypeScope; }
+                                                                                          
 struct FAngelscriptModuleDesc
 {
+                                                                                            
+    TSharedPtr<const AngelscriptCoreExtensionPoints::FTypeScope> CoreTypeScope;
+                                                                                          
 	/* Name of the module in angelscript. Usually Dir.SubDir.ModuleName */
 	FString ModuleName;
 
@@ -1253,6 +1296,12 @@ struct FAngelscriptModuleDesc
 	/* Internal angelscript data that get set during compilation. */
 	class asCModule* ScriptModule = nullptr;
 	const struct FAngelscriptPrecompiledModule* PrecompiledData = nullptr;
+                                                                                                       
+	struct FAngelscriptPrecompiledData* ModuleCacheContext = nullptr;
+    FGuid CoreCacheSetGuid;
+    FString CoreCacheFileIdentity;
+    FString CoreCacheRelativePath;
+                                                                                                     
                                                                                                             
 		bool bCompileError = false;
                                                                                                           
@@ -1273,7 +1322,9 @@ struct FAngelscriptModuleDesc
 	{
 		for (auto ClassDesc : Classes)
 		{
-			if (ClassName == ClassDesc->ClassName)
+                                                                                            
+			if (ClassName == ClassDesc->ClassName || ClassName == ClassDesc->GetTypeIdentity())
+                                                                                          
 			{
 				return ClassDesc;
 			}

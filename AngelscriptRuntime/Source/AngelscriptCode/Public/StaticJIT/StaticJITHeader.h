@@ -85,6 +85,13 @@ struct ANGELSCRIPTCODE_API FStaticJITCompiledInfo
 
 struct ANGELSCRIPTCODE_API FStaticJITFunction
 {
+                                                                                                  
+	static void RegisterExecutionBudget(uint32 Version, uint32 FunctionId,
+		asJITFunction VMEntry, asJITFunction_ParmsEntry ParmsEntry, asJITFunction_Raw RawFunction);
+	static void RegisterExecutionBudget(uint32 Version, uint32 FunctionId,
+		asJITFunction VMEntry, asJITFunction_Raw RawFunction);
+	static void RegisterExecutionBudgetCleanup(uint32 FunctionId, int32 NormalTail, int32 Cleanup);
+                                                                                                
 	FORCENOINLINE static void Register(uint32 FunctionId,
 		asJITFunction VMEntry,
 		asJITFunction_ParmsEntry ParmsEntry,
@@ -109,6 +116,28 @@ struct ANGELSCRIPTCODE_API FStaticJITFunction
 	FORCENOINLINE static void SetUnknownException(FScriptExecution& Execution);
 };
 
+                                                                                                  
+// Only emitted for budgeted functions. Existing unregistered JIT source stays identical.
+struct ANGELSCRIPTCODE_API FExecutionBudgetJITFrame
+{
+	FScriptExecution& Execution;
+	asCScriptFunction* Function;
+	bool bEntered = false;
+	bool bHasCleanup = false;
+	bool bCleanupOnly = false;
+	bool bInTail = false;
+	void* Object = nullptr;
+	FExecutionBudgetJITFrame(FScriptExecution& InExecution, asCScriptFunction* InFunction, bool bInHasCleanup = false, void* InObject = nullptr)
+		: Execution(InExecution), Function(InFunction), bHasCleanup(bInHasCleanup), Object(InObject) {}
+	bool Enter();
+	~FExecutionBudgetJITFrame();
+	bool Poll();
+	bool AllowCall(asCScriptFunction* Callee);
+	bool IsCleanup() const { return bCleanupOnly; }
+	bool IsInTail() const { return bInTail; }
+	void EnterTail();
+};
+                                                                                                
 
 struct FJitRef_Function
 {

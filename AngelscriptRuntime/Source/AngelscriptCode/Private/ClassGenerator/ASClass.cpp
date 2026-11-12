@@ -388,6 +388,10 @@ static FORCEINLINE_DEBUGGABLE void AngelscriptCallFromBPVM(UASFunction* ASFuncti
 
 		asQWORD OutValue = 0;
 		FAngelscriptGameThreadScopeWorldContext WorldContext(NewWorldContext);
+                                                                                                  
+		if (!AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed)
+			|| AngelscriptCoreExtensionPoints::Private::CheckExecutionBudgetJIT(Execution, ScriptFunction))
+                                                                                                
                                                                                                              
 		        (JitFunction)(Execution, VMArgStart, &OutValue);
                                                                                                            
@@ -609,6 +613,10 @@ static FORCEINLINE_DEBUGGABLE void AngelscriptCallFromParms(UASFunction* ASFunct
 		FAngelscriptGameThreadScopeWorldContext WorldContext(NewWorldContext);
 		FScriptExecution Execution(FAngelscriptManager::GameThreadTLD);
 
+                                                                                                  
+		if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed)
+			&& !AngelscriptCoreExtensionPoints::Private::CheckExecutionBudgetJIT(Execution, ScriptFunction)) return;
+                                                                                                
                                                                                                              
 		        (JitFunction)(Execution, Object, Parms);
                                                                                                            
@@ -776,6 +784,10 @@ FORCEINLINE void MakeRawJITCall_NoParam(UObject* Object, asJITFunction_Raw InFun
 
 	FAngelscriptGameThreadScopeWorldContext WorldContext(Object);
 	FScriptExecution Execution(FAngelscriptManager::GameThreadTLD);
+                                                                                                  
+	if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed)
+		&& !AngelscriptCoreExtensionPoints::Private::CheckExecutionBudgetRaw(Execution, (void*)InFunction)) return;
+                                                                                                
 
 	using TFuncPtr = void(*)(FScriptExecution&, void*);
 	((TFuncPtr)InFunction)(
@@ -792,6 +804,10 @@ FORCEINLINE void MakeRawJITCall_Arg(UObject* Object, asJITFunction_Raw InFunctio
 
 	FAngelscriptGameThreadScopeWorldContext WorldContext(Object);
 	FScriptExecution Execution(FAngelscriptManager::GameThreadTLD);
+                                                                                                  
+	if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed)
+		&& !AngelscriptCoreExtensionPoints::Private::CheckExecutionBudgetRaw(Execution, (void*)InFunction)) return;
+                                                                                                
 
 	using TFuncPtr = void(*)(FScriptExecution&, void*, TArgument Arg);
 	((TFuncPtr)InFunction)(
@@ -808,6 +824,10 @@ FORCEINLINE void MakeRawJITCall_2Arg(UObject* Object, asJITFunction_Raw InFuncti
 
 	FAngelscriptGameThreadScopeWorldContext WorldContext(Object);
 	FScriptExecution Execution(FAngelscriptManager::GameThreadTLD);
+                                                                                                  
+	if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed)
+		&& !AngelscriptCoreExtensionPoints::Private::CheckExecutionBudgetRaw(Execution, (void*)InFunction)) return;
+                                                                                                
 
 	using TFuncPtr = void(*)(FScriptExecution&, void*, TArgument Arg, TArgument2 Arg2);
 	((TFuncPtr)InFunction)(
@@ -824,6 +844,10 @@ FORCEINLINE TReturnValue MakeRawJITCall_ReturnValue(UObject* Object, asJITFuncti
 
 	FAngelscriptGameThreadScopeWorldContext WorldContext(Object);
 	FScriptExecution Execution(FAngelscriptManager::GameThreadTLD);
+                                                                                                  
+	if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed)
+		&& !AngelscriptCoreExtensionPoints::Private::CheckExecutionBudgetRaw(Execution, (void*)InFunction)) return {};
+                                                                                                
 
 	using TFuncPtr = TReturnValue(*)(FScriptExecution&, void*);
 	return ((TFuncPtr)InFunction)(
@@ -840,6 +864,10 @@ FORCEINLINE TReturnValue MakeRawJITCall_Arg_ReturnValue(UObject* Object, asJITFu
 
 	FAngelscriptGameThreadScopeWorldContext WorldContext(Object);
 	FScriptExecution Execution(FAngelscriptManager::GameThreadTLD);
+                                                                                                  
+	if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed)
+		&& !AngelscriptCoreExtensionPoints::Private::CheckExecutionBudgetRaw(Execution, (void*)InFunction)) return {};
+                                                                                                
 
 	using TFuncPtr = TReturnValue(*)(FScriptExecution&, void*, TArgument Arg);
 	return ((TFuncPtr)InFunction)(

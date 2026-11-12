@@ -107,7 +107,14 @@ void ReleaseCaptureModule(asIScriptModule* ScriptModule)
     // A reader or destructor may be releasing its last hold. Collection belongs
     // to the next writer/GC safe point, never to this call.
 }
+bool HasModuleHolds(asIScriptModule* Module)
+{
+    check(IsInGameThread());
+    return LiveTypesByModule.Contains(static_cast<asCModule*>(Module));
+}
                                                                                                      
+                                                                                                          
+                                                                                                        
 
 bool DeferDiscard(const TSharedRef<FAngelscriptModuleDesc>& Module)
 {

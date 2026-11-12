@@ -1465,8 +1465,15 @@ struct FCallScriptFunction
 
 		if (RealFunction != nullptr && GenerateData != nullptr)
 		{
+                                                                                                  
+			if (Context.bExecutionBudget)
+				Context.Line("if (BudgetFrame.AllowCall({0})) {", Context.ReferenceFunction(RealFunction));
+                                                                                                
 			Context.File->ExternFunctions.Add(RealFunction);
 			Context.Line("{2} {0}(Execution{1});{3}", GenerateData->FunctionSymbolName, ArgumentString, HeadCode, FootCode);
+                                                                                                  
+			if (Context.bExecutionBudget) Context.Line("}");
+                                                                                                
 		}
 		else
 		{
@@ -1481,12 +1488,21 @@ struct FCallScriptFunction
 				"GetAngelscriptClassScriptType(((UObject*)CallObject)->GetClass());");
                                                                                                                                    
 			Context.Line("asCScriptFunction* CallRealFunction = CallObjectType->virtualFunctionTable[{0}];", ScriptFunction->vfTableIdx);
+                                                                                                  
+			if (Context.bExecutionBudget)
+				Context.Line("if (BudgetFrame.AllowCall(CallRealFunction)) {");
+                                                                                                
 			Context.Line("auto CastedCallFunction = ({0}(*)(FScriptExecution&{1}))CallRealFunction->jitFunction_Raw;", ReturnTypeString, ArgumentTypeString);
 			Context.Line("{1} CastedCallFunction(Execution{0});{2}", ArgumentString, HeadCode, FootCode);
+                                                                                                  
+			if (Context.bExecutionBudget) Context.Line("}");
+                                                                                                
 		}
 
 		// Check for thrown angelscript exceptions
-		if (bIgnoreExceptions)
+                                                                                                  
+		if (bIgnoreExceptions || (Context.bExecutionBudget && Context.bBudgetExceptionCleanup))
+                                                                                                
 		{
 			if (bCheckedObject)
 			{
@@ -1589,7 +1605,9 @@ struct FCallScriptFunction
 
 		Context.Line("  CallContext->Execute();");
 
-		if (!bIgnoreExceptions)
+                                                                                                  
+		if (!bIgnoreExceptions && !(Context.bExecutionBudget && Context.bBudgetExceptionCleanup))
+                                                                                                
 		{
 			Context.Line("  if (CallContext->m_status != asEXECUTION_FINISHED)");
 			Context.Line("  {");
@@ -4018,6 +4036,17 @@ IMPL_BYTECODE_BEGIN(asBC_SUSPEND)
 };
 IMPL_BYTECODE_END(asBC_SUSPEND)
 
+                                                                                                  
+IMPL_BYTECODE_BEGIN(asBC_JitEntry)
+{
+	bool Implement(FStaticJITContext& Context) const override
+	{
+		return Context.bExecutionBudget
+			&& (uint64(asBC_PTRARG(Context.BC)) & 0xffffffff00000000ull) == 0x4353424700000000ull;
+	}
+};
+IMPL_BYTECODE_END(asBC_JitEntry)
+                                                                                                
 
 IMPL_BYTECODE_BEGIN(asBC_FinConstruct)
 {

@@ -688,3 +688,61 @@ private:
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
+
+                                                                                                          
+#include <atomic>
+class asCScriptFunction;
+class asCScriptEngine;
+class FCompileSurfaceLease;
+namespace AngelscriptCoreExtensionPoints::Private
+{
+extern std::atomic<bool> GTransientNativeTracking;
+extern std::atomic<asCScriptEngine*> GTransientNativeActionEngine;
+bool HasNativeCompileCorePermit(const asCScriptEngine* Engine);
+bool IsNativeCompileActionUsable(const asCScriptEngine* Engine);
+void InvalidateNativeCompileAction(const asCScriptEngine* Engine);
+bool SetTransientNativeClientCount(uint32 Count);
+bool AdmitNativeRegistryMutation(asCScriptEngine* Engine);
+void NativeFunctionAdded(asCScriptFunction* Function);
+void NativeFunctionRemoved(asCScriptFunction* Function);
+bool NativeFunctionUserDataChanging(asCScriptFunction* Function);
+uint64 GetNativeRegistryEpoch(const asCScriptEngine* Engine);
+uint64 GetNativeCompileTrackingBytes();
+bool IsNativeCompileActionActive();
+
+class FNativeCompileActionGuard
+{
+public:
+    ~FNativeCompileActionGuard();
+    FNativeCompileActionGuard(const FNativeCompileActionGuard&) = delete;
+    FNativeCompileActionGuard& operator=(const FNativeCompileActionGuard&) = delete;
+private:
+    explicit FNativeCompileActionGuard(asCScriptEngine* Engine);
+    asCScriptEngine* Engine;
+    friend class ::FCompileSurfaceLease;
+};
+class FNativeCompileCoreCallGuard
+{
+public:
+    ~FNativeCompileCoreCallGuard();
+    FNativeCompileCoreCallGuard(const FNativeCompileCoreCallGuard&) = delete;
+    FNativeCompileCoreCallGuard& operator=(const FNativeCompileCoreCallGuard&) = delete;
+private:
+    explicit FNativeCompileCoreCallGuard(asCScriptEngine* Engine);
+    asCScriptEngine* Engine;
+    friend class ::FCompileSurfaceLease;
+};
+class FNativeCompileCallbackScope
+{
+public:
+    // Dropping authority is safe in every core callback dispatcher.
+    explicit FNativeCompileCallbackScope(asCScriptEngine* Engine);
+    ~FNativeCompileCallbackScope();
+    FNativeCompileCallbackScope(const FNativeCompileCallbackScope&) = delete;
+    FNativeCompileCallbackScope& operator=(const FNativeCompileCallbackScope&) = delete;
+private:
+    asCScriptEngine* Previous = nullptr;
+    friend class ::asCScriptEngine;
+};
+}
+                                                                                                        

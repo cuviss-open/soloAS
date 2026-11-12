@@ -4,6 +4,9 @@
                                                                                                 
 
 #include "AngelscriptManager.h"
+                                                                                                  
+#include "AngelscriptExecutionBudget.h"
+                                                                                                
                                                                                                  
 #include "AngelscriptCallableDispatchAdapter.h"
                                                                                                
@@ -59,8 +62,19 @@ void FAngelscriptCodeModule::ShutdownModule()
 	}
 	FAngelscriptExecutionWriteScope ExecutionWriteScope;
                                                                                                         
+                                                                                              
+    if (FAngelscriptManager::IsInitialized())
+        FAngelscriptManager::Get().StopExtensionDebugAccess();
+                                                                                            
+                                                                                                   
+    if (FAngelscriptManager::IsInitialized())
+        FAngelscriptManager::Get().StopExtensionDebugPolicy();
+                                                                                                 
                                                                                                   
 	AngelscriptCoreExtensionPoints::Private::ShutdownClassInterfaceProviders();
+                                                                                                
+                                                                                                  
+	AngelscriptCoreExtensionPoints::Private::ShutdownExecutionBudget();
                                                                                                 
                                                                                              
     AngelscriptReplicationShadow::Shutdown();

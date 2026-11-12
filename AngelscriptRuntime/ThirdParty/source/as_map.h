@@ -187,6 +187,9 @@ public:
 		InnerMap.AddUnique(Key, value);
 	}
 
+                                                                                                          
+    uint64 GetAllocatedSize() const { return InnerMap.GetAllocatedSize(); }
+                                                                                                        
 
 	inline void Reserve(int Size)
 	{
@@ -441,6 +444,9 @@ public:
 		InnerMap.AddUnique(Key, value);
 	}
 
+                                                                                                          
+    uint64 GetAllocatedSize() const { return InnerMap.GetAllocatedSize(); }
+                                                                                                        
 
 	inline void Reserve(int Size)
 	{

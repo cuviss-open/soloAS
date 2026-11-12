@@ -1,5 +1,8 @@
 #include "StaticJIT/StaticJITHeader.h"
 #include "AngelscriptStaticJIT.h"
+                                                                                                  
+#include "AngelscriptExecutionBudget.h"
+                                                                                                
 
 #include "StartAngelscriptHeaders.h"
 #include "as_context.h"
@@ -52,6 +55,76 @@ void FStaticJITFunction::Register(uint32 FunctionId, asJITFunction InVMEntry, as
 	JITDatabase.Functions.Add(FunctionId, Funcs);
 }
 
+                                                                                                  
+void FStaticJITFunction::RegisterExecutionBudget(uint32 Version, uint32 Id, asJITFunction VM,
+	asJITFunction_ParmsEntry Parms, asJITFunction_Raw Raw)
+{
+	Register(Id, VM, Parms, Raw);
+	FJITDatabase::Get().Functions.FindChecked(Id).ExecutionBudgetVersion = Version;
+}
+
+void FStaticJITFunction::RegisterExecutionBudget(uint32 Version, uint32 Id, asJITFunction VM, asJITFunction_Raw Raw)
+{
+	RegisterExecutionBudget(Version, Id, VM, nullptr, Raw);
+}
+
+bool FExecutionBudgetJITFrame::Enter()
+{
+	bCleanupOnly = bHasCleanup && AngelscriptCoreExtensionPoints::Private::IsExecutionBudgetFailed();
+	if (bCleanupOnly && !AngelscriptCoreExtensionPoints::Private::BeginExecutionBudgetDestructorCleanup(Function, Object)) return false;
+	bEntered = AngelscriptCoreExtensionPoints::Private::EnterExecutionBudgetJITFrame(Execution, Function);
+	return bEntered;
+}
+
+FExecutionBudgetJITFrame::~FExecutionBudgetJITFrame()
+{
+	if (bEntered) AngelscriptCoreExtensionPoints::Private::LeaveExecutionBudgetJITFrame();
+}
+
+bool FExecutionBudgetJITFrame::Poll()
+{
+	if (bCleanupOnly) return true;
+	if (bHasCleanup && bInTail && AngelscriptCoreExtensionPoints::Private::IsExecutionBudgetFailed())
+	{
+		bCleanupOnly = true;
+		AngelscriptCoreExtensionPoints::Private::BeginExecutionBudgetDestructorCleanup(Function, Object);
+		return true;
+	}
+	if (Execution.bExceptionThrown) return false;
+	if (AngelscriptCoreExtensionPoints::Private::PollExecutionBudget()) return true;
+	Execution.bExceptionThrown = true;
+	FAngelscriptManager::HandleExceptionFromJIT(AngelscriptCoreExtensionPoints::Private::ExecutionBudgetError());
+	if (bHasCleanup && bInTail)
+	{
+		bCleanupOnly = true;
+		AngelscriptCoreExtensionPoints::Private::BeginExecutionBudgetDestructorCleanup(Function, Object);
+		return true;
+	}
+	return false;
+}
+
+void FExecutionBudgetJITFrame::EnterTail()
+{
+	bInTail = true;
+	if (AngelscriptCoreExtensionPoints::Private::IsExecutionBudgetFailed())
+	{
+		bCleanupOnly = true;
+		AngelscriptCoreExtensionPoints::Private::BeginExecutionBudgetDestructorCleanup(Function, Object);
+	}
+}
+
+void FStaticJITFunction::RegisterExecutionBudgetCleanup(uint32 Id, int32 NormalTail, int32 Cleanup)
+{
+	auto& Function = FJITDatabase::Get().Functions.FindChecked(Id);
+	Function.ExecutionBudgetNormalTailOffset = NormalTail;
+	Function.ExecutionBudgetCleanupOffset = Cleanup;
+}
+
+bool FExecutionBudgetJITFrame::AllowCall(asCScriptFunction* Callee)
+{
+	return AngelscriptCoreExtensionPoints::Private::CheckExecutionBudgetJIT(Execution, Callee);
+}
+                                                                                                
 
 void FJitRef_Function::Register(FJitRef_Function* FunctionRef)
 {

@@ -1,0 +1,16 @@
+{
+  "FileVersion": 3,
+  "VersionName": "1.0.0",
+  "FriendlyName": "ModName",
+  "FeatureMod": true,
+  "BuiltInInitialFeatureState": "Installed",
+  "CanContainContent": false,
+  "ExplicitlyLoaded": true,
+  "Modules": [],
+  "Plugins": [
+    {
+      "Name": "GameFeatures",
+      "Enabled": true
+    }
+  ]
+}

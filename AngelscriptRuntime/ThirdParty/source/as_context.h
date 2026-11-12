@@ -48,6 +48,9 @@
 #include "as_callfunc.h"
 #include "AngelscriptManager.h"
                                                                                                   
+#include "AngelscriptExecutionBudget.h"
+                                                                                                
+                                                                                                  
 #include "AngelscriptExecutionQuiescence.h" // E: standalone JIT TUs do not inherit module force-includes.
                                                                                                 
 
@@ -247,6 +250,10 @@ public:
 
 	// Registers available to JIT compiler functions
 	asSVMRegisters m_regs;
+                                                                                                  
+	bool bExecutionBudgetUnwind = false;
+	AngelscriptCoreExtensionPoints::Private::FExecutionBudgetCleanupSet ExecutionBudgetCleanups;
+                                                                                                
 
 #if AS_REFERENCE_DEBUGGING
 	TArray<void**> TrackedReferences;
@@ -274,6 +281,10 @@ struct FScriptExecution
 		: tld(ctx->m_regs.tld)
 		, bExceptionThrown(false)
 	{
+                                                                                                  
+		if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed))
+			AngelscriptCoreExtensionPoints::Private::BeginExecutionBudgetInterval();
+                                                                                                
                                                                                                             
 #if SOLOAS_LEGACY_TERMINAL_LIFECYCLE
 		Cuviss::TerminalAdmission::RequireNonTerminalScriptExecution();
@@ -289,6 +300,10 @@ struct FScriptExecution
 		: tld(tld)
 		, bExceptionThrown(false)
 	{
+                                                                                                  
+		if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed))
+			AngelscriptCoreExtensionPoints::Private::BeginExecutionBudgetInterval();
+                                                                                                
                                                                                                            
 #if SOLOAS_LEGACY_TERMINAL_LIFECYCLE
 		Cuviss::TerminalAdmission::RequireNonTerminalScriptExecution();
@@ -302,6 +317,19 @@ struct FScriptExecution
 
 	~FScriptExecution()
 	{
+                                                                                                  
+		if (AngelscriptCoreExtensionPoints::Private::GExecutionBudgetRegistered.load(std::memory_order_relaxed))
+		{
+			if (!AngelscriptCoreExtensionPoints::Private::PollExecutionBudget())
+			{
+				bExceptionThrown = true;
+				if (prevExecution) prevExecution->bExceptionThrown = true;
+				if (prevContext) prevContext->SetException(AngelscriptCoreExtensionPoints::Private::ExecutionBudgetError());
+				if (prevContext) AngelscriptCoreExtensionPoints::Private::RetainExecutionBudgetUnwind(prevContext);
+			}
+			AngelscriptCoreExtensionPoints::Private::EndExecutionBudgetInterval();
+		}
+                                                                                                
 		tld->activeExecution = prevExecution;
 		tld->activeContext = prevContext;
 	}

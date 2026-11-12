@@ -4,6 +4,7 @@
 
 #include "Containers/Array.h"
 #include "Templates/SharedPointer.h"
+#include <atomic>
 
 class asITypeInfo;
 class asIScriptModule;
@@ -13,10 +14,13 @@ struct FAngelscriptModuleDesc;
 namespace AngelscriptRetiredModules
 {
 asIScriptModule* RetainType(asITypeInfo* Type);
+                                                                                                          
+                                                                                                        
                                                                                                        
 // GT counters only: callers may already be executing inside a read scope.
 asIScriptModule* RetainCaptureModule(asIScriptModule* Module);
 void ReleaseCaptureModule(asIScriptModule* Module);
+bool HasModuleHolds(asIScriptModule* Module);
                                                                                                      
 void ReleaseModule(asIScriptModule* Module);
 bool DeferDiscard(const TSharedRef<FAngelscriptModuleDesc>& Module);
@@ -30,7 +34,9 @@ void Shutdown();
                                                                                                        
 namespace AngelscriptCoreExtensionPoints::Private
 {
+extern std::atomic<unsigned int> ModuleCacheClientCount;
 void CloseModuleCacheClients();
 bool HasModuleGenerationLeases();
+bool IsModuleCacheOwned(asIScriptModule* Module);
 }
                                                                                                      

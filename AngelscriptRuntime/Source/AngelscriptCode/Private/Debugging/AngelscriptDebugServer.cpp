@@ -325,6 +325,13 @@ bool FAngelscriptDebugServer::HandleConnectionAccepted(class FSocket* ClientSock
 
 FAngelscriptDebugServer::FAngelscriptDebugServer(int Port)
 {
+                                                                                              
+    {
+        auto& Access = AngelscriptCoreExtensionPoints::Private::DebugAccess();
+        FScopeLock Lock(&Access.Mutex);
+        ++Access.Servers;
+    }
+                                                                                            
 	Listener = new FTcpListener(FIPv4Endpoint(FIPv4Address::Any, Port));
 	Listener->OnConnectionAccepted().BindRaw(this, &FAngelscriptDebugServer::HandleConnectionAccepted);
 
@@ -338,14 +345,40 @@ FAngelscriptDebugServer::FAngelscriptDebugServer(int Port)
 #endif
 }
 
+                                                                                              
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+FAngelscriptDebugServer::FAngelscriptDebugServer(FTestWithoutListener)
+    : Listener(nullptr)
+{
+    auto& Access = AngelscriptCoreExtensionPoints::Private::DebugAccess();
+    FScopeLock Lock(&Access.Mutex);
+    ++Access.Servers;
+}
+#endif
+                                                                                            
 
 FAngelscriptDebugServer::~FAngelscriptDebugServer()
 {
-
+                                                                                              
+    if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+        DrainDebugAccess();
+    {
+        auto& Access = AngelscriptCoreExtensionPoints::Private::DebugAccess();
+        FScopeLock Lock(&Access.Mutex);
+        --Access.Servers;
+    }
+                                                                                            
+                                                                                              
 #if PLATFORM_WINDOWS && WITH_AS_DEBUGSERVER
-	::RemoveVectoredExceptionHandler(DataBreakpoint_Windows::DegbugRegisterExceptionHandlerHandle);
-	DataBreakpoint_Windows::DegbugRegisterExceptionHandlerHandle = nullptr;
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+	if (Listener)
 #endif
+	{
+		::RemoveVectoredExceptionHandler(DataBreakpoint_Windows::DegbugRegisterExceptionHandlerHandle);
+		DataBreakpoint_Windows::DegbugRegisterExceptionHandlerHandle = nullptr;
+	}
+#endif
+                                                                                            
 
 	if (Listener)
 	{
@@ -362,6 +395,11 @@ void FAngelscriptDebugServer::Tick()
 
 void FAngelscriptDebugServer::ProcessException(class asIScriptContext* Context)
 {
+                                                                                              
+    TGuardValue<asIScriptFunction*> ExceptionScope(DebugStopFunction,
+        AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire)
+            && Context ? Context->GetExceptionFunction() : nullptr);
+                                                                                            
 	if (bIsPaused)
 	{
 		// Maybe we need to do something if an exception occurs while paused?
@@ -375,6 +413,9 @@ void FAngelscriptDebugServer::ProcessException(class asIScriptContext* Context)
 		return;
 	}
 
+                                                                                              
+    if (!HasDebugStopReaders(Context ? Context->GetFunction(0) : nullptr)) return;
+                                                                                            
 	FStoppedMessage StopMsg;
 	StopMsg.Reason = TEXT("exception");
 
@@ -399,6 +440,9 @@ void FAngelscriptDebugServer::ProcessScriptLine(class asCContext* Context)
 	// Don't break if we're stopping the engine
 	if (IsEngineExitRequested())
 		return;
+                                                                                              
+    if (!HasDebugStopReaders(Context ? Context->GetFunction(0) : nullptr)) return;
+                                                                                            
 
 
 	if (DataBreakpoints.Num() > 0 && bBreakNextScriptLine)
@@ -611,6 +655,17 @@ bool FAngelscriptDebugServer::ShouldBreakOnActiveSide()
 	auto& Delegate = FAngelscriptCodeModule::GetDebugCheckBreakOptions();
 	if (Delegate.IsBound())
 	{
+                                                                                              
+        if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+        {
+            bool bAllowed = false;
+            for (const auto& Client : DebugSessions)
+                if (DebugPauseSessions.Contains(Client.Value) && AngelscriptCoreExtensionPoints::Private::DebugAccess().Allow(
+                    DebugView(Client.Key, EDebugMessageType::BreakOptions, AngelscriptCoreExtensionPoints::EDebugAccessPhase::Read)))
+                    { bAllowed = true; break; }
+            if (!bAllowed) return false;
+        }
+                                                                                            
 		return Delegate.Execute(BreakOptions, WorldContext);
 	}
 
@@ -619,6 +674,10 @@ bool FAngelscriptDebugServer::ShouldBreakOnActiveSide()
 
 void FAngelscriptDebugServer::PauseExecution(FStoppedMessage* StopMessage)
 {
+                                                                                              
+    auto* StopContext = asGetActiveContext();
+    if (!HasDebugStopReaders(StopContext ? StopContext->GetFunction(0) : nullptr)) return;
+                                                                                            
 
 	bIsPaused = true;
 
@@ -645,6 +704,9 @@ void FAngelscriptDebugServer::PauseExecution(FStoppedMessage* StopMessage)
 		FPlatformProcess::Sleep(0);
 	}
 
+                                                                                              
+    DebugFrames.Empty();
+                                                                                            
 	FEmptyMessage ContinueMsg;
 	SendMessageToAll(EDebugMessageType::HasContinued, ContinueMsg);
 
@@ -663,6 +725,10 @@ void FAngelscriptDebugServer::SleepForCommunicate(float Duration)
 
 void FAngelscriptDebugServer::ProcessMessages()
 {
+                                                                                              
+    if (bDrainingDebugAccess) return;
+    if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire) && !IsInGameThread()) return;
+                                                                                            
 	if (!PendingClients.IsEmpty())
 	{
 		FSocket* Client = NULL;
@@ -670,6 +736,13 @@ void FAngelscriptDebugServer::ProcessMessages()
 		{
 			UE_LOG(Angelscript, Log, TEXT("Added angelscript debug client from %s"), *Client->GetDescription());
 			Clients.Add(Client);
+                                                                                              
+            if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+            {
+                static uint64 NextSession = 0;
+                DebugSessions.Add(Client, ++NextSession);
+            }
+                                                                                            
 
 		}
 	}
@@ -696,6 +769,17 @@ void FAngelscriptDebugServer::ProcessMessages()
 			}
 
 			ClientsThatWantDebugDatabase.RemoveSwap(Clients[ClientIndex]);
+                                                                                              
+            ClearDebugSessionBreakpoints(Clients[ClientIndex]);
+            if (uint64* Session = DebugSessions.Find(Clients[ClientIndex]))
+            {
+                DebugFrames.Remove(*Session);
+                DebugPauseSessions.Remove(*Session);
+                if (DebugPauseSessions.IsEmpty()) { bIsPaused = false; DebugFrames.Empty(); }
+                DebugSessions.Remove(Clients[ClientIndex]);
+                DebugInputs.Remove(Clients[ClientIndex]);
+            }
+                                                                                            
 			QueuedSends.Remove(Clients[ClientIndex]);
 			Clients.RemoveAtSwap(ClientIndex);
 		}
@@ -704,6 +788,13 @@ void FAngelscriptDebugServer::ProcessMessages()
 	for (TArray<class FSocket*>::TIterator ClientIt(Clients); ClientIt; ++ClientIt)
 	{
 		FSocket* Client = *ClientIt;
+                                                                                              
+        if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+        {
+            if (ProcessDebugInput(Client)) TrySendingMessages(Client);
+            continue;
+        }
+                                                                                            
 		uint32 DataSize = 0;
 
 		while (Client->HasPendingData(DataSize))
@@ -772,6 +863,55 @@ void FAngelscriptDebugServer::ProcessMessages()
 
 void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArrayReaderPtr Datagram, class FSocket* Client)
 {
+                                                                                              
+    using namespace AngelscriptCoreExtensionPoints;
+    Private::FDebugReadScope AccessRead(DebugView(Client, MessageType, EDebugAccessPhase::Control));
+    if (Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+    {
+        if (!IsInGameThread() || bDrainingDebugAccess || !AccessRead.View.SessionId) return;
+        switch (MessageType)
+        {
+        case EDebugMessageType::RequestVariables:
+        case EDebugMessageType::RequestEvaluate:
+        case EDebugMessageType::SetBreakpoint:
+        case EDebugMessageType::ClearBreakpoints:
+            break;
+        case EDebugMessageType::Disconnect:
+        case EDebugMessageType::StopDebugging:
+            if (!ClientsThatAreDebugging.Contains(Client)) return;
+            break;
+        case EDebugMessageType::Continue:
+            if (!(bIsPaused && DebugPauseSessions.Contains(AccessRead.View.SessionId))
+                && !Private::AllowDebugRead(AccessRead.View)) return;
+            break;
+        case EDebugMessageType::SetDataBreakpoints:
+        case EDebugMessageType::ClearDataBreakpoints:
+            return;
+        case EDebugMessageType::RequestDebugDatabase:
+        case EDebugMessageType::StartDebugging:
+        case EDebugMessageType::Pause:
+        case EDebugMessageType::StepIn:
+        case EDebugMessageType::StepOut:
+        case EDebugMessageType::StepOver:
+        case EDebugMessageType::EngineBreak:
+        case EDebugMessageType::RequestCallStack:
+        case EDebugMessageType::GoToDefinition:
+        case EDebugMessageType::BreakOptions:
+        case EDebugMessageType::RequestBreakFilters:
+        case EDebugMessageType::StopPIE:
+        case EDebugMessageType::FindAssets:
+        case EDebugMessageType::CreateBlueprint:
+            if (!Private::AllowDebugRead(AccessRead.View)) return;
+            break;
+        default:
+            return;
+        }
+        if (MessageType == EDebugMessageType::Continue || MessageType == EDebugMessageType::StepIn
+            || MessageType == EDebugMessageType::StepOut || MessageType == EDebugMessageType::StepOver
+            || MessageType == EDebugMessageType::StopDebugging)
+            DebugFrames.Empty();
+    }
+                                                                                            
 	if (MessageType == EDebugMessageType::RequestDebugDatabase)
 	{
 		ClientsThatWantDebugDatabase.Add(Client);
@@ -860,6 +1000,10 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 		SendMessageToClient(Client, EDebugMessageType::DebugServerVersion, DebugServerVersionMessage);
 		
 		BreakOptions.Empty();
+                                                                                              
+        if (Private::CurrentDebugRead()) ClearDebugSessionBreakpoints(Client);
+        else
+                                                                                            
 		ClearAllBreakpoints();
 
 		ClientsThatAreDebugging.Add(Client);
@@ -868,10 +1012,20 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 	else if (MessageType == EDebugMessageType::StopDebugging)
 	{
 		bIsDebugging = false;
+                                                                                              
+        if (!Private::CurrentDebugRead() || DebugPauseSessions.Contains(AccessRead.View.SessionId))
+                                                                                            
 		bIsPaused = false;
+                                                                                              
+        if (Private::CurrentDebugRead()) ClearDebugSessionBreakpoints(Client);
+        else
+                                                                                            
 		ClearAllBreakpoints();
 
 		ClientsThatAreDebugging.Remove(Client);
+                                                                                              
+        if (Private::CurrentDebugRead()) bIsDebugging = !ClientsThatAreDebugging.IsEmpty();
+                                                                                            
 
 		FAngelscriptManager::Get().UpdateLineCallbackState();
 	}
@@ -888,9 +1042,28 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 		
 		auto& Manager = FAngelscriptManager::Get();
 		auto ModuleDesc = Manager.GetModuleByFilenameOrModuleName(BP.Filename, BP.ModuleName);
+                                                                                              
+        if (Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+        {
+            auto View = AccessRead.View;
+            View.Scope = ModuleDesc.IsValid() ? EDebugAccessScope::Script : EDebugAccessScope::Unknown;
+            if (ModuleDesc.IsValid()) View.ModuleGenerationId = { ModuleDesc->ModuleName,
+                Private::GetModuleGeneration(static_cast<asCModule*>(ModuleDesc->ScriptModule)) };
+            View.SourceIdentity.Reset();
+            if (ModuleDesc.IsValid())
+                for (const auto& Section : ModuleDesc->Code)
+                    if (FPaths::IsSamePath(BP.Filename, Section.AbsoluteFilename))
+                        { View.SourceIdentity = Section.AbsoluteFilename; break; }
+            if (!Private::AllowDebugRead(View) || !Private::AllowDebugModule(ModuleDesc->ScriptModule)) return;
+            AccessRead.View = View;
+        }
+                                                                                            
 
 
 		const FString& Key = ModuleDesc.IsValid() ? ModuleDesc->ModuleName : BP.Filename;
+                                                                                              
+        if (Private::CurrentDebugRead()) { ClearDebugSessionBreakpoints(Client, &Key); return; }
+                                                                                            
 		TSharedPtr<FFileBreakpoints>& Active = Breakpoints.FindOrAdd(Key);
 		if (!Active.IsValid())
 		{
@@ -917,6 +1090,22 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 		
 		auto& Manager = FAngelscriptManager::Get();
 		auto ModuleDesc = Manager.GetModuleByFilenameOrModuleName(BP.Filename, BP.ModuleName);
+                                                                                              
+        if (Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+        {
+            auto View = AccessRead.View;
+            View.Scope = ModuleDesc.IsValid() ? EDebugAccessScope::Script : EDebugAccessScope::Unknown;
+            if (ModuleDesc.IsValid()) View.ModuleGenerationId = { ModuleDesc->ModuleName,
+                Private::GetModuleGeneration(static_cast<asCModule*>(ModuleDesc->ScriptModule)) };
+            View.SourceIdentity.Reset();
+            if (ModuleDesc.IsValid())
+                for (const auto& Section : ModuleDesc->Code)
+                    if (FPaths::IsSamePath(BP.Filename, Section.AbsoluteFilename))
+                        { View.SourceIdentity = Section.AbsoluteFilename; break; }
+            if (!Private::AllowDebugRead(View) || !Private::AllowDebugModule(ModuleDesc->ScriptModule)) return;
+            AccessRead.View = View;
+        }
+                                                                                            
 
 
 		// If the module wasn't found, use the filename as a fallback so the rest of the
@@ -985,6 +1174,13 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 		// Add the breakpoint
 		if (CodeLine != -1)
 		{
+                                                                                              
+            if (Private::CurrentDebugRead())
+            {
+                DebugSessionBreakpoints.FindOrAdd(AccessRead.View.SessionId).FindOrAdd(Key).Add(CodeLine);
+                DebugBreakpointViews.FindOrAdd(AccessRead.View.SessionId).Add(Key, AccessRead.View);
+            }
+                                                                                            
 
 			if (!Active->Lines.Contains(CodeLine))
 			{
@@ -1030,6 +1226,14 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 	}
 	else if (MessageType == EDebugMessageType::EngineBreak)
 	{
+                                                                                              
+        if (Private::CurrentDebugRead())
+        {
+            auto View = AccessRead.View;
+            View.Scope = EDebugAccessScope::Native;
+            if (!Private::AllowDebugRead(View)) return;
+        }
+                                                                                            
 
 		if (bIsPaused)
 		{
@@ -1105,6 +1309,15 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 	}
 	else if (MessageType == EDebugMessageType::RequestBreakFilters)
 	{
+                                                                                              
+        if (Private::CurrentDebugRead())
+        {
+            auto View = AccessRead.View;
+            View.Phase = EDebugAccessPhase::Read;
+            if (!Private::AllowDebugRead(View)) return;
+            AccessRead.View = View;
+        }
+                                                                                            
 
 		TMap<FName, FString> FilterList;
 		FAngelscriptCodeModule::GetDebugBreakFilters().ExecuteIfBound(FilterList);
@@ -1141,6 +1354,9 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 		auto ClassDesc = FAngelscriptManager::Get().GetClass(AssetList.ClassName);
 		if (ClassDesc.IsValid() && Cast<UASClass>(ClassDesc->Class) != nullptr)
 			BaseClass = Cast<UASClass>(ClassDesc->Class);
+                                                                                              
+        if (!Private::AllowDebugOwner(BaseClass)) return;
+                                                                                            
 		FAngelscriptCodeModule::GetDebugListAssets().Broadcast(AssetList.Assets, BaseClass);
 	}
 	else if (MessageType == EDebugMessageType::CreateBlueprint)
@@ -1151,6 +1367,9 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 		auto ClassDesc = FAngelscriptManager::Get().GetClass(CreateBlueprint.ClassName);
 		if (ClassDesc.IsValid() && Cast<UASClass>(ClassDesc->Class) != nullptr)
 		{
+                                                                                              
+            if (!Private::AllowDebugOwner(ClassDesc->Class)) return;
+                                                                                            
 			FAngelscriptCodeModule::GetEditorCreateBlueprint().Broadcast(Cast<UASClass>(ClassDesc->Class));
 		}
 		else
@@ -1170,6 +1389,17 @@ void FAngelscriptDebugServer::HandleMessage(EDebugMessageType MessageType, FArra
 
 void FAngelscriptDebugServer::ReapplyBreakpoints()
 {
+                                                                                              
+    if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire))
+    {
+        TArray<TPair<FSocket*, FString>> Stale;
+        for (const auto& Session : DebugSessions)
+            if (const auto* Views = DebugBreakpointViews.Find(Session.Value))
+                for (const auto& Item : *Views)
+                    if (!IsDebugIdentityLive(Item.Value)) Stale.Emplace(Session.Key, Item.Key);
+        for (const auto& Item : Stale) ClearDebugSessionBreakpoints(Item.Key, &Item.Value);
+    }
+                                                                                            
 	auto& Manager = FAngelscriptManager::Get();
 	for (auto& BreakpointElem : Breakpoints)
 	{
@@ -1195,6 +1425,10 @@ void FAngelscriptDebugServer::ReapplyBreakpoints()
 
 void FAngelscriptDebugServer::ClearAllBreakpoints()
 {
+                                                                                              
+    DebugSessionBreakpoints.Empty();
+    DebugBreakpointViews.Empty();
+                                                                                            
 	for (auto& Elem : Breakpoints)
 	{
 		if (Elem.Value->Module.IsValid())
@@ -1278,6 +1512,9 @@ void FAngelscriptDebugServer::GoToDefinition(const FAngelscriptGoToDefinition Go
 
 	if (ScriptFunction != nullptr)
 	{
+                                                                                              
+        if (!AngelscriptCoreExtensionPoints::Private::AllowDebugFunction(ScriptFunction)) return;
+                                                                                            
 		UFunction* UnrealFunction = FAngelscriptDocs::LookupAngelscriptFunction(ScriptFunction->GetId());
 		if (UnrealFunction != nullptr)
 		{
@@ -1293,6 +1530,9 @@ void FAngelscriptDebugServer::GoToDefinition(const FAngelscriptGoToDefinition Go
 		UClass* AssociatedClass = Type->GetClass(FAngelscriptTypeUsage::DefaultUsage);
 		if (AssociatedClass != nullptr)
 		{
+                                                                                              
+            if (!AngelscriptCoreExtensionPoints::Private::AllowDebugOwner(AssociatedClass)) return;
+                                                                                            
 
 			FProperty* Property = AssociatedClass->FindPropertyByName(*GoTo.SymbolName);
 			if (Property != nullptr)
@@ -1326,6 +1566,16 @@ FString FAngelscriptDebugServer::CanonizeFilename(const FString& Filename)
 
 void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 {
+                                                                                              
+    using namespace AngelscriptCoreExtensionPoints;
+    Private::FDebugReadScope AccessRead(DebugView(Client, EDebugMessageType::CallStack, EDebugAccessPhase::Read));
+    TArray<FDebugFrame>* Frames = nullptr;
+    if (Private::CurrentDebugRead())
+    {
+        Frames = &DebugFrames.FindOrAdd(AccessRead.View.SessionId);
+        Frames->Reset();
+    }
+                                                                                            
 
 	FAngelscriptCallStack Stack;
 
@@ -1358,6 +1608,11 @@ void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 					continue;
 
 				UFunction* Function = StackView[BPStackIndex]->Node;
+                                                                                              
+                auto FrameAccess = AccessRead.View;
+                FrameAccess.Scope = EDebugAccessScope::Native;
+                if (Frames && !Private::AllowDebugRead(FrameAccess)) continue;
+                                                                                            
 
                                                                                                                              
 #if 0
@@ -1390,6 +1645,9 @@ void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 				if (AngelscriptDebugServer::DebugAdapterVersion >= 1)
 					Frame.ModuleName = TEXT("");
 				Stack.Frames.Insert(Frame, 0);
+                                                                                              
+                if (Frames) Frames->Insert({ 0x10000000 | BPStackIndex, Context, Function, FrameAccess }, 0);
+                                                                                            
 
 			}
 #endif
@@ -1397,6 +1655,11 @@ void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 			// Append the script stack frame
 			if (ScriptFunction != nullptr)
 			{
+                                                                                              
+                auto FrameAccess = Private::DebugFunctionView(ScriptFunction, AccessRead.View);
+                if (Frames && (!IsDebugIdentityLive(FrameAccess) || !Private::AllowDebugRead(FrameAccess))) continue;
+                if (Frames && ScriptFunction->GetObjectType() && !Private::AllowDebugType(ScriptFunction->GetObjectType())) continue;
+                                                                                            
 
 
                                                                                                      
@@ -1420,6 +1683,9 @@ void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 							Frame.ModuleName = TEXT("");
 
 						Stack.Frames.Insert(Frame, 0);
+                                                                                              
+                    if (Frames) Frames->Insert({ i, Context, ScriptFunction, FrameAccess }, 0);
+                                                                                            
 
 
 					}
@@ -1436,6 +1702,9 @@ void FAngelscriptDebugServer::SendCallStack(FSocket* Client)
 						Frame.ModuleName = ScriptFunction->GetModuleName() ? ANSI_TO_TCHAR(ScriptFunction->GetModuleName()) : TEXT("");
 
 					Stack.Frames.Insert(Frame, 0);
+                                                                                              
+                    if (Frames) Frames->Insert({ i, Context, ScriptFunction, FrameAccess }, 0);
+                                                                                            
 				}
 			}
 		}
@@ -1455,8 +1724,16 @@ void FAngelscriptDebugServer::BroadcastDebugDatabase()
 void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
 {
                                                                                               
+    using namespace AngelscriptCoreExtensionPoints;
+    Private::FDebugReadScope AccessRead(DebugView(Client, EDebugMessageType::DebugDatabase, EDebugAccessPhase::Read));
+    if (Private::CurrentDebugRead() && (!ClientsThatWantDebugDatabase.Contains(Client)
+        || !Private::AllowDebugRead(AccessRead.View))) return;
+                                                                                            
+                                                                                              
     GenerateDebugDatabase([&](EDebugMessageType Type, TArray<uint8>& Body)
     {
+        TArray<AngelscriptCoreExtensionPoints::FDebugAccessView> AccessReads;
+        if (!AuthorizePublish(Client, Type, AccessReads)) return;
         FQueuedMessage& Msg = QueuedSends.FindOrAdd(Client).Emplace_GetRef();
         FMemoryWriter Writer(Msg.Buffer);
         int32 Length = Body.Num();
@@ -1464,6 +1741,13 @@ void FAngelscriptDebugServer::SendDebugDatabase(FSocket* Client)
         Writer << Length;
         Writer << TypeByte;
         Msg.Buffer.Append(Body);
+        if (!AccessReads.IsEmpty())
+        {
+            Msg.Access = MakeUnique<FQueuedAccess>();
+            Msg.Access->Session = DebugSessions.FindRef(Client);
+            Msg.Access->Epoch = AngelscriptCoreExtensionPoints::Private::DebugAccess().Epoch;
+            Msg.Access->Reads = MoveTemp(AccessReads);
+        }
         TrySendingMessages(Client);
     });
     SendAssetDatabase(Client);
@@ -1596,6 +1880,10 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 		if (TypeId == -1)
 			return TEXT("?");
 
+                                                                                              
+        if (auto* Info = ScriptEngine->GetTypeInfoById(TypeId))
+            if (!Private::AllowDebugType(Info)) return TEXT("?");
+                                                                                            
 		const char* DeclRaw = ScriptEngine->GetTypeDeclaration(TypeId);
 		FString Decl = ANSI_TO_TCHAR(DeclRaw);
 		if (Flags != nullptr)
@@ -1621,6 +1909,11 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 
 	auto MakeFuncDesc = [&](asCScriptFunction* ScriptFunction) -> TSharedPtr<FJsonObject>
 	{
+                                                                                              
+        if (Private::CurrentDebugRead() && !Private::AllowDebugRead(
+            Private::DebugFunctionView(ScriptFunction, Private::CurrentDebugRead()->View))) return nullptr;
+        if (ScriptFunction->GetObjectType() && !Private::AllowDebugType(ScriptFunction->GetObjectType())) return nullptr;
+                                                                                            
 		auto FuncDesc = MakeShared<FJsonObject>();
 
 		int32 ArgCount = ScriptFunction->GetParamCount();
@@ -1797,6 +2090,9 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 	for (int32 TypeIndex = 0; TypeIndex < TypeCount; ++TypeIndex)
 	{
 		auto* ScriptType = ScriptEngine->GetObjectTypeByIndex(TypeIndex);
+                                                                                              
+        if (!Private::AllowDebugType(ScriptType)) continue;
+                                                                                            
 
 		FString TypeName = ANSI_TO_TCHAR(ScriptType->GetName());
 		int32 ClassTypeId = ScriptType->GetTypeId();
@@ -1820,6 +2116,9 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 			int Offset;
 			ScriptType->GetProperty(PropertyIndex, &Name, &TypeId, nullptr, nullptr, &Offset);
 			asCObjectProperty* ObjProp = ((asCObjectType*)ScriptType)->properties[PropertyIndex];
+                                                                                              
+            if (!Private::AllowDebugProperty(ScriptType, PropertyIndex)) continue;
+                                                                                            
 
 
 #if WITH_EDITOR
@@ -1859,6 +2158,10 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 		for (int32 MethodIndex = 0; MethodIndex < MethodCount; ++MethodIndex)
 		{
 			auto* ScriptFunction = (asCScriptFunction*)ScriptType->GetMethodByIndex(MethodIndex);
+                                                                                              
+            if (Private::CurrentDebugRead() && !Private::AllowDebugRead(
+                Private::DebugFunctionView(ScriptFunction, Private::CurrentDebugRead()->View))) continue;
+                                                                                            
 
 			if (ScriptFunction == nullptr)
 				continue;
@@ -1951,6 +2254,9 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 			for (int32 i = 0, Count = ScriptType->GetSubTypeCount(); i < Count; ++i)
 			{
 				asITypeInfo* SubType = ScriptType->GetSubType(i);
+                                                                                              
+                if (!Private::AllowDebugType(SubType)) continue;
+                                                                                            
 
 				SubTypes.Add(MakeShared<FJsonValueString>(ANSI_TO_TCHAR(SubType->GetName())));
 			}
@@ -1970,6 +2276,9 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 					auto SuperType = FAngelscriptType::GetByClass(SuperPtr);
 					if (SuperType.IsValid())
 					{
+                                                                                              
+                        if (!Private::AllowDebugOwner(SuperPtr)) break;
+                                                                                            
 						                                                                                                   
 						TypeDesc->SetStringField(TEXT("inherits"), TranslateAliasNames(SuperType->GetAngelscriptTypeName()));
 						                                                                                                 
@@ -2047,6 +2356,10 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 	for (int32 GlobalFuncIndex = 0; GlobalFuncIndex < GlobalFuncCount; ++GlobalFuncIndex)
 	{
 		asCScriptFunction* Func = (asCScriptFunction*)ScriptEngine->GetGlobalFunctionByIndex(GlobalFuncIndex);
+                                                                                              
+        if (Private::CurrentDebugRead() && !Private::AllowDebugRead(
+            Private::DebugFunctionView(Func, Private::CurrentDebugRead()->View))) continue;
+                                                                                            
 
 		if (Func->traits.GetTrait(asTRAIT_DEPRECATED))
 			continue;
@@ -2057,6 +2370,9 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 	for (int32 GlobalVarIndex = 0; GlobalVarIndex < GlobalVarCount; ++GlobalVarIndex)
 	{
 		asCGlobalProperty* Prop = ScriptEngine->registeredGlobalProps[GlobalVarIndex];
+                                                                                              
+        if (!Private::AllowDebugModule(Prop->module)) continue;
+                                                                                            
 
 		NSFunctions.FindOrAdd(ANSI_TO_TCHAR(Prop->nameSpace->GetName())).Variables.Add(Prop);
 	}
@@ -2065,6 +2381,9 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 	for (int32 EnumIndex = 0; EnumIndex < EnumCount; ++EnumIndex)
 	{
 		auto* EnumType = (asCTypeInfo*)ScriptEngine->GetEnumByIndex(EnumIndex);
+                                                                                              
+        if (!Private::AllowDebugType(EnumType)) continue;
+                                                                                            
 
 		auto& NS = NSFunctions.FindOrAdd(ANSI_TO_TCHAR(EnumType->GetName()));
 		UEnum* UnrealEnum = (UEnum*)EnumType->GetUserData();
@@ -2173,6 +2492,9 @@ void FAngelscriptDebugServer::GenerateDebugDatabase(TFunctionRef<void(EDebugMess
 	for (auto& TemplateSpecializationElem : ScriptEngine->registeredTemplateSpecializationFunctions)
 	{
 		asCObjectType* ScriptType = TemplateSpecializationElem.Key;
+                                                                                              
+        if (!Private::AllowDebugType(ScriptType)) continue;
+                                                                                            
 
 		auto TypeDesc = MakeShared<FJsonObject>();
 		auto Properties = MakeShared<FJsonObject>();
@@ -2256,8 +2578,16 @@ void FAngelscriptDebugServer::BindAssetRegistry()
 		IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
 
 		// Sign up to sending newly changed assets to the clients
+                                                                                              
+#if 0
 		AssetRegistry.OnAssetAdded().AddLambda([this](const FAssetData& AssetData)
+#endif
+        AssetAddedHandle = AssetRegistry.OnAssetAdded().AddLambda([this](const FAssetData& AssetData)
+                                                                                            
 		{
+                                                                                              
+            if (!HasDebugAssetReaders()) return;
+                                                                                            
 
 			if (ClientsThatWantDebugDatabase.Num() == 0)
 				return;
@@ -2270,8 +2600,16 @@ void FAngelscriptDebugServer::BindAssetRegistry()
 			for (auto* ConnectedClient : ClientsThatWantDebugDatabase)
 				SendMessageToClient(ConnectedClient, EDebugMessageType::AssetDatabase, UpdateMessage);
 		});
+                                                                                              
+#if 0
 		AssetRegistry.OnAssetRemoved().AddLambda([this](const FAssetData& AssetData)
+#endif
+        AssetRemovedHandle = AssetRegistry.OnAssetRemoved().AddLambda([this](const FAssetData& AssetData)
+                                                                                            
 		{
+                                                                                              
+            if (!HasDebugAssetReaders()) return;
+                                                                                            
 
 			if (ClientsThatWantDebugDatabase.Num() == 0)
 				return;
@@ -2285,8 +2623,16 @@ void FAngelscriptDebugServer::BindAssetRegistry()
 			for (auto* ConnectedClient : ClientsThatWantDebugDatabase)
 				SendMessageToClient(ConnectedClient, EDebugMessageType::AssetDatabase, UpdateMessage);
 		});
+                                                                                              
+#if 0
 		AssetRegistry.OnAssetRenamed().AddLambda([this](const FAssetData& AssetData, const FString& OldObjectPath)
+#endif
+        AssetRenamedHandle = AssetRegistry.OnAssetRenamed().AddLambda([this](const FAssetData& AssetData, const FString& OldObjectPath)
+                                                                                            
 		{
+                                                                                              
+            if (!HasDebugAssetReaders()) return;
+                                                                                            
 
 			if (ClientsThatWantDebugDatabase.Num() == 0)
 				return;
@@ -2306,7 +2652,12 @@ void FAngelscriptDebugServer::BindAssetRegistry()
 	if (AssetRegistry.IsLoadingAssets())
 	{
 		//  Send the registry as soon as it becomes available
+                                                                                              
+#if 0
 		AssetRegistry.OnFilesLoaded().AddLambda([this, BindAssetRegistryChanges]()
+#endif
+        AssetsLoadedHandle = AssetRegistry.OnFilesLoaded().AddLambda([this, BindAssetRegistryChanges]()
+                                                                                            
 		{
 			FAssetRegistryModule& AssetRegistryModule = FModuleManager::Get().LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 			IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
@@ -2327,6 +2678,18 @@ void FAngelscriptDebugServer::BindAssetRegistry()
 
 void FAngelscriptDebugServer::SendAssetDatabase(FSocket* Client)
 {
+                                                                                              
+    if (!HasDebugAssetReaders()) return;
+    AngelscriptCoreExtensionPoints::Private::FDebugReadScope AccessRead(
+        DebugView(Client, EDebugMessageType::AssetDatabase, AngelscriptCoreExtensionPoints::EDebugAccessPhase::Read));
+    if (AngelscriptCoreExtensionPoints::Private::CurrentDebugRead())
+    {
+        if (!AngelscriptCoreExtensionPoints::Private::AllowDebugRead(AccessRead.View)) return;
+        auto Native = AccessRead.View;
+        Native.Scope = AngelscriptCoreExtensionPoints::EDebugAccessScope::Native;
+        if (!AngelscriptCoreExtensionPoints::Private::AllowDebugRead(Native)) return;
+    }
+                                                                                            
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::Get().LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
 
@@ -2458,6 +2821,31 @@ static void ParseExpression(TArray<FExprElem>& Arr, const FString& Expr)
 static const int FLAG_BlueprintFrame = 0x10000000;
 int FAngelscriptDebugServer::ResolveDebuggerFrame(int DebuggerFrame)
 {
+                                                                                              
+    if (auto* Read = AngelscriptCoreExtensionPoints::Private::CurrentDebugRead())
+    {
+        const auto* Frames = DebugFrames.Find(Read->View.SessionId);
+        if (!Frames || !Frames->IsValidIndex(DebuggerFrame)) return -1;
+        const auto& Frame = (*Frames)[DebuggerFrame];
+        if (!IsDebugIdentityLive(Frame.View)) return -1;
+        auto* Context = asGetActiveContext();
+        if (Context != Frame.Context) return -1;
+        if ((Frame.Frame & 0x10000000) == 0 && (!Context || Frame.Frame >= int(Context->GetCallstackSize())
+            || Context->GetFunction(Frame.Frame) != Frame.Function)) return -1;
+#if DO_BLUEPRINT_GUARD
+        if ((Frame.Frame & 0x10000000) != 0)
+        {
+            auto* BPStack = FBlueprintContextTracker::TryGet();
+            const int Index = Frame.Frame & ~0x10000000;
+            if (!BPStack || !BPStack->GetCurrentScriptStack().IsValidIndex(Index)
+                || BPStack->GetCurrentScriptStack()[Index]->Node != Frame.Function) return -1;
+        }
+#else
+        if ((Frame.Frame & 0x10000000) != 0) return -1;
+#endif
+        return Frame.Frame;
+    }
+                                                                                            
 	// Resolve the debugger frame number to either a script frame number or a blueprint frame number
 	TArray<int, TInlineAllocator<32>> ResolvedFrames;
 
@@ -2553,7 +2941,19 @@ bool FAngelscriptDebugServer::GetDebuggerValue(const FString& Path, FDebuggerVal
 		}
 	}
 
+                                                                                              
+    const int RequestedDebuggerFrame = Frame;
+                                                                                            
 	Frame = ResolveDebuggerFrame(Frame);
+                                                                                              
+    if (auto* Read = AngelscriptCoreExtensionPoints::Private::CurrentDebugRead())
+    {
+        FSocket* Client = nullptr;
+        for (const auto& Session : DebugSessions)
+            if (Session.Value == Read->View.SessionId) { Client = Session.Key; break; }
+        if (!AuthorizeFrame(Client, static_cast<EDebugMessageType>(Read->View.Operation), Frame)) return false;
+    }
+                                                                                            
 
 
 	TArray<FExprElem> Expr;
@@ -2725,6 +3125,16 @@ bool FAngelscriptDebugServer::GetDebuggerValue(const FString& Path, FDebuggerVal
 	// * Global Scope
 	if (!bValidValue && Context != nullptr)
 	{
+                                                                                              
+        if (auto* Read = AngelscriptCoreExtensionPoints::Private::CurrentDebugRead())
+        {
+            auto View = Read->View;
+            View.Scope = AngelscriptCoreExtensionPoints::EDebugAccessScope::Global;
+            View.ModuleGenerationId = {};
+            View.SourceIdentity.Reset();
+            if (!AngelscriptCoreExtensionPoints::Private::AllowDebugRead(View)) return false;
+        }
+                                                                                            
 
 		auto* Engine = Context->m_engine;
 		asSNameSpace* ns = Engine->defaultNamespace;
@@ -2759,6 +3169,9 @@ bool FAngelscriptDebugServer::GetDebuggerValue(const FString& Path, FDebuggerVal
 
 			if (GlobalProperty != nullptr)
 			{
+                                                                                              
+                if (!AngelscriptCoreExtensionPoints::Private::AllowDebugModule(GlobalProperty->module)) return false;
+                                                                                            
 
 				auto Usage = FAngelscriptTypeUsage::FromDataType(GlobalProperty->type);
 
@@ -2806,6 +3219,9 @@ bool FAngelscriptDebugServer::GetDebuggerValue(const FString& Path, FDebuggerVal
 				auto* EnumType = CastToEnumType((asCTypeInfo*)Engine->GetTypeInfoByName(TCHAR_TO_ANSI(*NamespaceName)));
 				if (EnumType != nullptr)
 				{
+                                                                                              
+                    if (!AngelscriptCoreExtensionPoints::Private::AllowDebugType(EnumType)) return false;
+                                                                                            
 
 					for (int i = 0, Count = EnumType->enumValues.GetLength(); i < Count; ++i)
 					{
@@ -2846,6 +3262,9 @@ bool FAngelscriptDebugServer::GetDebuggerValue(const FString& Path, FDebuggerVal
 			// Subscripts should resolve as values to become members if possible
 			FDebuggerValue InnerValue;
 			int32 InnerFrame = Frame;
+                                                                                              
+            if (AngelscriptCoreExtensionPoints::Private::CurrentDebugRead()) InnerFrame = RequestedDebuggerFrame;
+                                                                                            
 
 			if (GetDebuggerValue(MemberName, InnerValue, &InnerFrame))
 				MemberName = InnerValue.Value;
@@ -3040,6 +3459,18 @@ void FAngelscriptDebugServer::TrySendingMessages(FSocket* Client)
 	while (Queue.Num() != 0)
 	{
 		FQueuedMessage& Msg = Queue[0];
+                                                                                              
+        if (Msg.Access)
+        {
+            auto& Access = AngelscriptCoreExtensionPoints::Private::DebugAccess();
+            bool bValid = !bDrainingDebugAccess && Msg.Access->Session == DebugSessions.FindRef(Client)
+                && Msg.Access->Epoch == Access.Epoch;
+            if (bValid)
+                for (const auto& Read : Msg.Access->Reads)
+                    if (!IsDebugIdentityLive(Read) || !Access.Allow(Read)) { bValid = false; break; }
+            if (!bValid) { Client->Close(); Queue.Empty(); return; }
+        }
+                                                                                            
 
 		if (Msg.FirstTry < 0)
 			Msg.FirstTry = FPlatformTime::Seconds();
@@ -3048,6 +3479,314 @@ void FAngelscriptDebugServer::TrySendingMessages(FSocket* Client)
 		if (!Client->Send(Msg.Buffer.GetData(), Msg.Buffer.Num(), BytesSent))
 			break;
 
+                                                                                              
+        if (Msg.Access && BytesSent < Msg.Buffer.Num())
+        {
+            if (BytesSent > 0) Msg.Buffer.RemoveAt(0, BytesSent);
+            break;
+        }
+                                                                                            
 		Queue.RemoveAt(0);
 	}
 }
+
+                                                                                              
+using namespace AngelscriptCoreExtensionPoints;
+namespace
+{
+static_assert(static_cast<uint8>(EDebugMessageType::Diagnostics) == static_cast<uint8>(EDebugAccessOperation::Diagnostics));
+static_assert(static_cast<uint8>(EDebugMessageType::RequestDebugDatabase) == static_cast<uint8>(EDebugAccessOperation::RequestDebugDatabase));
+static_assert(static_cast<uint8>(EDebugMessageType::DebugDatabase) == static_cast<uint8>(EDebugAccessOperation::DebugDatabase));
+static_assert(static_cast<uint8>(EDebugMessageType::StartDebugging) == static_cast<uint8>(EDebugAccessOperation::StartDebugging));
+static_assert(static_cast<uint8>(EDebugMessageType::StopDebugging) == static_cast<uint8>(EDebugAccessOperation::StopDebugging));
+static_assert(static_cast<uint8>(EDebugMessageType::Pause) == static_cast<uint8>(EDebugAccessOperation::Pause));
+static_assert(static_cast<uint8>(EDebugMessageType::Continue) == static_cast<uint8>(EDebugAccessOperation::Continue));
+static_assert(static_cast<uint8>(EDebugMessageType::RequestCallStack) == static_cast<uint8>(EDebugAccessOperation::RequestCallStack));
+static_assert(static_cast<uint8>(EDebugMessageType::CallStack) == static_cast<uint8>(EDebugAccessOperation::CallStack));
+static_assert(static_cast<uint8>(EDebugMessageType::ClearBreakpoints) == static_cast<uint8>(EDebugAccessOperation::ClearBreakpoints));
+static_assert(static_cast<uint8>(EDebugMessageType::SetBreakpoint) == static_cast<uint8>(EDebugAccessOperation::SetBreakpoint));
+static_assert(static_cast<uint8>(EDebugMessageType::HasStopped) == static_cast<uint8>(EDebugAccessOperation::HasStopped));
+static_assert(static_cast<uint8>(EDebugMessageType::HasContinued) == static_cast<uint8>(EDebugAccessOperation::HasContinued));
+static_assert(static_cast<uint8>(EDebugMessageType::StepOver) == static_cast<uint8>(EDebugAccessOperation::StepOver));
+static_assert(static_cast<uint8>(EDebugMessageType::StepIn) == static_cast<uint8>(EDebugAccessOperation::StepIn));
+static_assert(static_cast<uint8>(EDebugMessageType::StepOut) == static_cast<uint8>(EDebugAccessOperation::StepOut));
+static_assert(static_cast<uint8>(EDebugMessageType::EngineBreak) == static_cast<uint8>(EDebugAccessOperation::EngineBreak));
+static_assert(static_cast<uint8>(EDebugMessageType::RequestVariables) == static_cast<uint8>(EDebugAccessOperation::RequestVariables));
+static_assert(static_cast<uint8>(EDebugMessageType::Variables) == static_cast<uint8>(EDebugAccessOperation::Variables));
+static_assert(static_cast<uint8>(EDebugMessageType::RequestEvaluate) == static_cast<uint8>(EDebugAccessOperation::RequestEvaluate));
+static_assert(static_cast<uint8>(EDebugMessageType::Evaluate) == static_cast<uint8>(EDebugAccessOperation::Evaluate));
+static_assert(static_cast<uint8>(EDebugMessageType::GoToDefinition) == static_cast<uint8>(EDebugAccessOperation::GoToDefinition));
+static_assert(static_cast<uint8>(EDebugMessageType::BreakOptions) == static_cast<uint8>(EDebugAccessOperation::BreakOptions));
+static_assert(static_cast<uint8>(EDebugMessageType::RequestBreakFilters) == static_cast<uint8>(EDebugAccessOperation::RequestBreakFilters));
+static_assert(static_cast<uint8>(EDebugMessageType::BreakFilters) == static_cast<uint8>(EDebugAccessOperation::BreakFilters));
+static_assert(static_cast<uint8>(EDebugMessageType::Disconnect) == static_cast<uint8>(EDebugAccessOperation::Disconnect));
+static_assert(static_cast<uint8>(EDebugMessageType::DebugDatabaseFinished) == static_cast<uint8>(EDebugAccessOperation::DebugDatabaseFinished));
+static_assert(static_cast<uint8>(EDebugMessageType::AssetDatabaseInit) == static_cast<uint8>(EDebugAccessOperation::AssetDatabaseInit));
+static_assert(static_cast<uint8>(EDebugMessageType::AssetDatabase) == static_cast<uint8>(EDebugAccessOperation::AssetDatabase));
+static_assert(static_cast<uint8>(EDebugMessageType::AssetDatabaseFinished) == static_cast<uint8>(EDebugAccessOperation::AssetDatabaseFinished));
+static_assert(static_cast<uint8>(EDebugMessageType::FindAssets) == static_cast<uint8>(EDebugAccessOperation::FindAssets));
+static_assert(static_cast<uint8>(EDebugMessageType::DebugDatabaseSettings) == static_cast<uint8>(EDebugAccessOperation::DebugDatabaseSettings));
+static_assert(static_cast<uint8>(EDebugMessageType::PingAlive) == static_cast<uint8>(EDebugAccessOperation::PingAlive));
+static_assert(static_cast<uint8>(EDebugMessageType::DebugServerVersion) == static_cast<uint8>(EDebugAccessOperation::DebugServerVersion));
+static_assert(static_cast<uint8>(EDebugMessageType::CreateBlueprint) == static_cast<uint8>(EDebugAccessOperation::CreateBlueprint));
+static_assert(static_cast<uint8>(EDebugMessageType::ReplaceAssetDefinition) == static_cast<uint8>(EDebugAccessOperation::ReplaceAssetDefinition));
+static_assert(static_cast<uint8>(EDebugMessageType::SetDataBreakpoints) == static_cast<uint8>(EDebugAccessOperation::SetDataBreakpoints));
+static_assert(static_cast<uint8>(EDebugMessageType::ClearDataBreakpoints) == static_cast<uint8>(EDebugAccessOperation::ClearDataBreakpoints));
+static_assert(static_cast<uint8>(EDebugMessageType::StopPIE) == static_cast<uint8>(EDebugAccessOperation::StopPIE));
+EDebugAccessOperation DebugOperation(EDebugMessageType Message)
+{
+    return static_cast<uint8>(Message) <= static_cast<uint8>(EDebugMessageType::StopPIE)
+        ? static_cast<EDebugAccessOperation>(Message) : EDebugAccessOperation::Count;
+}
+}
+FDebugAccessView FAngelscriptDebugServer::DebugView(FSocket* Client,
+    EDebugMessageType MessageType, EDebugAccessPhase Phase) const
+{
+    FDebugAccessView View;
+    View.Operation = DebugOperation(MessageType);
+    View.Phase = Phase;
+    View.SessionId = DebugSessions.FindRef(Client);
+    View.Scope = EDebugAccessScope::Global;
+    return View;
+}
+bool FAngelscriptDebugServer::IsDebugIdentityLive(const FDebugAccessView& View) const
+{
+    if (View.Scope == EDebugAccessScope::Unknown) return false;
+    if (View.Scope != EDebugAccessScope::Script) return true;
+    if (!IsInGameThread()) return false;
+    auto Module = FAngelscriptManager::Get().GetModule(View.ModuleGenerationId.ModuleName);
+    return Module.IsValid() && Private::GetModuleGeneration(static_cast<asCModule*>(Module->ScriptModule))
+        == View.ModuleGenerationId.Generation;
+}
+bool FAngelscriptDebugServer::AuthorizePublish(FSocket* Client, EDebugMessageType MessageType,
+    TArray<FDebugAccessView>& Reads)
+{
+    if (!Private::DebugAccess().Enabled.load(std::memory_order_acquire)) return true;
+    if (!IsInGameThread() || bDrainingDebugAccess) return false;
+    FDebugAccessView View = DebugView(Client, MessageType, EDebugAccessPhase::Publish);
+    if (auto* Read = Private::CurrentDebugRead())
+    {
+        if (Read->View.SessionId != View.SessionId) return false;
+        View.Scope = Read->View.Scope;
+        View.ModuleGenerationId = Read->View.ModuleGenerationId;
+        View.SourceIdentity = Read->View.SourceIdentity;
+        Reads = Read->Reads;
+    }
+    else if (MessageType == EDebugMessageType::HasStopped || MessageType == EDebugMessageType::HasContinued)
+    {
+        auto* Context = asGetActiveContext();
+        View = Private::DebugFunctionView(Context ? Context->GetFunction(0) : nullptr, View);
+        if (DebugStopFunction)
+        {
+            auto Exception = Private::DebugFunctionView(DebugStopFunction, View);
+            if (!IsDebugIdentityLive(Exception) || !Private::DebugAccess().Allow(Exception)) return false;
+            Reads.Add(Exception);
+        }
+    }
+    else if (MessageType == EDebugMessageType::AssetDatabase || MessageType == EDebugMessageType::AssetDatabaseInit
+        || MessageType == EDebugMessageType::AssetDatabaseFinished)
+    {
+        auto Native = View;
+        Native.Scope = EDebugAccessScope::Native;
+        if (!Private::DebugAccess().Allow(Native)) return false;
+        Reads.Add(Native);
+    }
+    else if (MessageType != EDebugMessageType::PingAlive && MessageType != EDebugMessageType::DebugServerVersion)
+        View.Scope = EDebugAccessScope::Unknown;
+    TArray<FDebugAccessView> Proofs;
+    auto Require = [&](const FDebugAccessView& Check)
+    {
+        if (Check.SessionId != View.SessionId) return false;
+        if (Proofs.ContainsByPredicate([&](const FDebugAccessView& Existing)
+            { return Existing.Operation == Check.Operation && Existing.Phase == Check.Phase && Existing.SessionId == Check.SessionId
+                && Existing.Scope == Check.Scope && Existing.ModuleGenerationId.Generation == Check.ModuleGenerationId.Generation
+                && Existing.ModuleGenerationId.ModuleName == Check.ModuleGenerationId.ModuleName && Existing.SourceIdentity == Check.SourceIdentity; })) return true;
+        if (!IsDebugIdentityLive(Check) || !Private::DebugAccess().Allow(Check)) return false;
+        Proofs.Add(Check);
+        return true;
+    };
+    for (const auto& Dependency : Reads)
+    {
+        if (!Require(Dependency)) return false;
+        auto Read = Dependency;
+        Read.Operation = View.Operation;
+        Read.Phase = EDebugAccessPhase::Read;
+        if (!Require(Read)) return false;
+        Read.Phase = EDebugAccessPhase::Publish;
+        if (!Require(Read)) return false;
+    }
+    auto Read = View;
+    Read.Phase = EDebugAccessPhase::Read;
+    if (!Require(Read) || !Require(View)) return false;
+    Reads = MoveTemp(Proofs);
+    return true;
+}
+bool FAngelscriptDebugServer::AuthorizeFrame(FSocket* Client, EDebugMessageType MessageType, int Frame)
+{
+    if (!Private::DebugAccess().Enabled.load(std::memory_order_acquire)) return true;
+    auto* Context = asGetActiveContext();
+    auto View = DebugView(Client, MessageType, EDebugAccessPhase::Read);
+    if (Frame < 0) return false;
+    if ((Frame & FLAG_BlueprintFrame) != 0) View.Scope = EDebugAccessScope::Native;
+    else View = Private::DebugFunctionView(Context && Frame < int(Context->GetCallstackSize())
+        ? Context->GetFunction(Frame) : nullptr, View);
+    if (!IsDebugIdentityLive(View) || !Private::AllowDebugRead(View)) return false;
+    if (auto* Read = Private::CurrentDebugRead()) Read->View = View;
+    return true;
+}
+void FAngelscriptDebugServer::DrainDebugAccess()
+{
+    bDrainingDebugAccess = true;
+    if (Listener) Listener->Stop();
+    auto& Access = Private::DebugAccess();
+    {
+        FScopeLock Lock(&Access.Mutex);
+        Access.bClosing = true;
+    }
+    for (;;)
+    {
+        { FScopeLock Lock(&Access.Mutex); if (!Access.Calls && !Access.Readers) break; }
+        FPlatformProcess::Sleep(0);
+    }
+    bIsPaused = false;
+    bIsDebugging = false;
+    ClearAllBreakpoints();
+    ClearAllDataBreakpoints();
+    FSocket* Pending = nullptr;
+    while (PendingClients.Dequeue(Pending)) { Pending->Close(); }
+    for (FSocket* Client : Clients) Client->Close();
+    QueuedSends.Empty();
+    DebugFrames.Empty();
+    DebugSessions.Empty();
+    DebugInputs.Empty();
+    CallstackRequests.Empty();
+    ClientsThatAreDebugging.Empty();
+    ClientsThatWantDebugDatabase.Empty();
+    Clients.Empty();
+    if (bAssetRegistryBound && FModuleManager::Get().IsModuleLoaded(TEXT("AssetRegistry")))
+    {
+        auto& Registry = FModuleManager::GetModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+        Registry.OnAssetAdded().Remove(AssetAddedHandle);
+        Registry.OnAssetRemoved().Remove(AssetRemovedHandle);
+        Registry.OnAssetRenamed().Remove(AssetRenamedHandle);
+        Registry.OnFilesLoaded().Remove(AssetsLoadedHandle);
+    }
+}
+                                                                                            
+
+                                                                                              
+bool FAngelscriptDebugServer::HasDebugStopReaders(asIScriptFunction* Function)
+{
+    if (!AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire)) return true;
+    if (!IsInGameThread() || bDrainingDebugAccess) return false;
+    DebugPauseSessions.Reset();
+    for (FSocket* Client : ClientsThatAreDebugging)
+    {
+        auto View = AngelscriptCoreExtensionPoints::Private::DebugFunctionView(Function,
+            DebugView(Client, EDebugMessageType::HasStopped, AngelscriptCoreExtensionPoints::EDebugAccessPhase::Read));
+        if (!IsDebugIdentityLive(View) || !AngelscriptCoreExtensionPoints::Private::DebugAccess().Allow(View)) continue;
+        if (DebugStopFunction)
+        {
+            auto Exception = AngelscriptCoreExtensionPoints::Private::DebugFunctionView(DebugStopFunction, View);
+            if (!IsDebugIdentityLive(Exception) || !AngelscriptCoreExtensionPoints::Private::DebugAccess().Allow(Exception)) continue;
+        }
+        DebugPauseSessions.Add(View.SessionId);
+    }
+    return !DebugPauseSessions.IsEmpty();
+}
+bool FAngelscriptDebugServer::HasDebugAssetReaders()
+{
+    if (!AngelscriptCoreExtensionPoints::Private::DebugAccess().Enabled.load(std::memory_order_acquire)) return true;
+    if (!IsInGameThread() || bDrainingDebugAccess) return false;
+    for (FSocket* Client : ClientsThatWantDebugDatabase)
+    {
+        auto View = DebugView(Client, EDebugMessageType::AssetDatabase, AngelscriptCoreExtensionPoints::EDebugAccessPhase::Read);
+        if (!AngelscriptCoreExtensionPoints::Private::DebugAccess().Allow(View)) continue;
+        View.Scope = AngelscriptCoreExtensionPoints::EDebugAccessScope::Native;
+        if (AngelscriptCoreExtensionPoints::Private::DebugAccess().Allow(View)) return true;
+    }
+    return false;
+}
+                                                                                            
+
+                                                                                              
+void FAngelscriptDebugServer::ClearDebugSessionBreakpoints(FSocket* Client, const FString* OnlyKey)
+{
+    const uint64 Session = DebugSessions.FindRef(Client);
+    auto* Owned = DebugSessionBreakpoints.Find(Session);
+    if (!Owned) return;
+    for (auto It = Owned->CreateIterator(); It; ++It)
+    {
+        if (OnlyKey && It.Key() != *OnlyKey) continue;
+        auto* Active = Breakpoints.Find(It.Key());
+        if (Active && Active->IsValid())
+        {
+            for (int32 Line : It.Value())
+            {
+                bool bOtherOwner = false;
+                for (const auto& Other : DebugSessionBreakpoints)
+                    if (Other.Key != Session)
+                        if (const auto* Lines = Other.Value.Find(It.Key()))
+                            if (Lines->Contains(Line)) { bOtherOwner = true; break; }
+                if (!bOtherOwner) BreakpointCount -= (*Active)->Lines.Remove(Line);
+            }
+            if ((*Active)->Lines.IsEmpty() && (*Active)->Module.IsValid())
+                if (auto* Module = static_cast<asCModule*>((*Active)->Module->ScriptModule)) Module->hasBreakPoints = false;
+        }
+        if (auto* Views = DebugBreakpointViews.Find(Session)) Views->Remove(It.Key());
+        It.RemoveCurrent();
+    }
+    if (Owned->IsEmpty())
+    {
+        DebugSessionBreakpoints.Remove(Session);
+        DebugBreakpointViews.Remove(Session);
+    }
+}
+                                                                                            
+
+                                                                                              
+FAngelscriptDebugServer::EDebugInputResult FAngelscriptDebugServer::ConsumeDebugInput(TArray<uint8>& Input, FArrayReaderPtr& Datagram)
+{
+    Datagram.Reset();
+    if (Input.Num() < int(sizeof(int32))) return EDebugInputResult::Pending;
+    int32 PacketSize = 0;
+    FMemory::Memcpy(&PacketSize, Input.GetData(), sizeof(PacketSize));
+    if (PacketSize <= 0 || PacketSize > 1024 * 1024) return EDebugInputResult::Invalid;
+    const int32 Total = int32(sizeof(PacketSize)) + PacketSize;
+    if (Input.Num() < Total) return EDebugInputResult::Pending;
+    Datagram = MakeShareable(new FArrayReader(true));
+    Datagram->Append(Input.GetData() + sizeof(PacketSize), PacketSize);
+    Input.RemoveAt(0, Total);
+    return EDebugInputResult::Ready;
+}
+bool FAngelscriptDebugServer::ProcessDebugInput(FSocket* Client)
+{
+    TArray<uint8>& Input = DebugInputs.FindOrAdd(Client);
+    uint32 Available = 0;
+    if (Client->HasPendingData(Available))
+    {
+        const int32 Capacity = 1024 * 1024 + int32(sizeof(int32)) - Input.Num();
+        const int32 ReadSize = FMath::Min<int32>(int32(FMath::Min<uint32>(Available, 1024 * 1024)), Capacity);
+        if (ReadSize > 0)
+        {
+            TArray<uint8> Bytes;
+            Bytes.SetNumUninitialized(ReadSize);
+            int32 Received = 0;
+            if (!Client->Recv(Bytes.GetData(), ReadSize, Received) || Received <= 0)
+            { Client->Close(); Input.Reset(); return false; }
+            Input.Append(Bytes.GetData(), Received);
+        }
+    }
+    for (;;)
+    {
+        FArrayReaderPtr Datagram;
+        const auto Result = ConsumeDebugInput(Input, Datagram);
+        if (Result == EDebugInputResult::Pending) return true;
+        if (Result == EDebugInputResult::Invalid) { Client->Close(); Input.Reset(); return false; }
+        EDebugMessageType MessageType;
+        *Datagram << MessageType;
+        HandleMessage(MessageType, Datagram, Client);
+        if (Client->GetConnectionState() != SCS_Connected) { Input.Reset(); return false; }
+    }
+}
+                                                                                            

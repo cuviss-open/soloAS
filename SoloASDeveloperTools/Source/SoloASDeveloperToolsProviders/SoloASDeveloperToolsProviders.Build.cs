@@ -7,6 +7,7 @@ public class SoloASDeveloperToolsProviders : ModuleRules
     public SoloASDeveloperToolsProviders(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        bUsePrecompiled = UnrealBuildTool.Rules.SoloASBridgeBuildPath.ShouldUsePrecompiled(this, Target, bUsePrecompiled);
         PublicDependencyModuleNames.Add("Core");
         PrivateDependencyModuleNames.Add("Json");
     }

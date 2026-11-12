@@ -48,6 +48,9 @@
 #ifndef AS_NO_COMPILER
 
 #include "as_compiler.h"
+                                                                                                  
+#include "AngelscriptExecutionBudget.h"
+                                                                                                
 #include "as_tokendef.h"
 #include "as_tokenizer.h"
 #include "as_string_util.h"
@@ -132,6 +135,10 @@ void asCCompiler::Reset(asCBuilder *in_builder, asCScriptCode *in_script, asCScr
 	m_globalVar           = 0;
 
 	nextLabel = 0;
+                                                                                                  
+	BudgetCleanupLabel = -1;
+	BudgetCleanupBoundary = nullptr;
+                                                                                                
 	breakLabels.SetLength(0);
 	continueLabels.SetLength(0);
 
@@ -213,6 +220,16 @@ int asCCompiler::CompileDefaultConstructor(asCBuilder *in_builder, asCScriptCode
 	return 0;
 }
 
+                                                                                                  
+void asCCompiler::MarkBudgetDestructorTail()
+{
+	if (!AngelscriptCoreExtensionPoints::Private::ShouldInstrumentExecutionBudget(outFunc)) return;
+	if (nextLabel == 0) ++nextLabel;
+	BudgetCleanupLabel = short(nextLabel++);
+	byteCode.Label(BudgetCleanupLabel);
+	BudgetCleanupBoundary = byteCode.Last();
+}
+                                                                                                
 
 int asCCompiler::CompileDefaultDestructor(asCBuilder *in_builder, asCScriptCode *in_script, asCScriptNode *in_node, asCScriptFunction *in_outFunc, sClassDeclaration *in_classDecl)
 {
@@ -222,6 +239,9 @@ int asCCompiler::CompileDefaultDestructor(asCBuilder *in_builder, asCScriptCode 
 
 	// Insert a JitEntry at the start of the function for JIT compilers
 	byteCode.InstrPTR(asBC_JitEntry, 0);
+                                                                                                  
+	MarkBudgetDestructorTail();
+                                                                                                
 
 	AddVariableScope();
 
@@ -387,6 +407,19 @@ void asCCompiler::FinalizeFunction()
 
 	asASSERT( outFunc->scriptData );
 	asUINT n;
+                                                                                                  
+	asCArray<asDWORD> BudgetCleanupCode;
+	int BudgetCleanupStack = 0;
+	if (BudgetCleanupLabel >= 0)
+	{
+		FBudgetByteCode Cleanup(builder);
+		byteCode.CopyAfter(BudgetCleanupBoundary, Cleanup);
+		Cleanup.Finalize(tempVariableOffsets);
+		BudgetCleanupStack = Cleanup.largestStackUsed;
+		BudgetCleanupCode.SetLength(Cleanup.GetSize());
+		Cleanup.Output(BudgetCleanupCode.AddressOf());
+	}
+                                                                                                
 
 	// Finalize the bytecode
 	byteCode.Finalize(tempVariableOffsets);
@@ -449,8 +482,20 @@ void asCCompiler::FinalizeFunction()
 	asASSERT( outFunc->scriptData->byteCode.GetLength() == 0 );
 	outFunc->scriptData->byteCode.SetLength(byteCode.GetSize());
 	byteCode.Output(outFunc->scriptData->byteCode.AddressOf());
+                                                                                                  
+	if (BudgetCleanupLabel >= 0)
+	{
+		AngelscriptCoreExtensionPoints::Private::AppendExecutionBudgetCleanup(outFunc,
+			byteCode.LabelOffset(BudgetCleanupLabel), BudgetCleanupCode.AddressOf(), BudgetCleanupCode.GetLength());
+	}
+                                                                                                
 	outFunc->AddReferences();
 	outFunc->scriptData->stackNeeded = byteCode.largestStackUsed + outFunc->scriptData->variableSpace;
+                                                                                                  
+	if (BudgetCleanupLabel >= 0)
+		outFunc->scriptData->stackNeeded = FMath::Max<int>(outFunc->scriptData->stackNeeded,
+			BudgetCleanupStack + outFunc->scriptData->variableSpace);
+                                                                                                
 	outFunc->scriptData->lineNumbers = byteCode.lineNumbers;
 
 	// Extract the script section indexes too if there are any entries that are different from the function's script section
@@ -1288,6 +1333,9 @@ int asCCompiler::CompileFunction(asCBuilder *in_builder, asCScriptCode *in_scrip
 	// Call destructors for members at the end of a destructor
 	if (m_isDestructor)
 	{
+                                                                                                  
+		MarkBudgetDestructorTail();
+                                                                                                
 		// Initialize each member in the order they were declared
 		int ParentOffset = 0;
 		if (outFunc->objectType->derivedFrom != nullptr)
@@ -11680,12 +11728,23 @@ int asCCompiler::CompileVariableAccess(const asCString &name, const asCString &s
 				// use the property that contains that class' reflection data
 				if (!prop && !noFunction)
 				{
+                                                                                            
+                    if (builder->module && builder->module->cuvissTypeScope && scope.GetLength() == 0)
+                    {
+                        bool ambiguous = false;
+                        ReferencedStaticType = builder->GetTypeInScope(name.AddressOf(), ns, errNode, script, ambiguous);
+                        if (ambiguous) { ctx->type.SetDummy(); return -1; }
+                    }
+                    else
+                                                                                          
 					ReferencedStaticType = builder->GetType(name.AddressOf(), ns, nullptr);
 					if (ReferencedStaticType != nullptr)
 					{
 						asCString StaticTypeName = "__StaticType_";
 						StaticTypeName += name;
-						prop = builder->GetGlobalProperty(StaticTypeName.AddressOf(), ns, &isCompiled, &isPureConstant, &constantValue, &isAppProp, true);
+                                                                                            
+						prop = builder->GetGlobalProperty(StaticTypeName.AddressOf(), builder->module && builder->module->cuvissTypeScope ? ReferencedStaticType->nameSpace : ns, &isCompiled, &isPureConstant, &constantValue, &isAppProp, true);
+                                                                                          
 					}
 				}
 

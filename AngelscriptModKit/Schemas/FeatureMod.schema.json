@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cuviss.studio/schemas/featuremod-v1.schema.json",
+  "title": "FeatureMod manifest",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "dependencies",
+    "BlueprintBindings",
+    "BlueprintDependencies",
+    "version",
+    "requiredWhitelistCapabilities"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "dependencies": {
+      "type": "object",
+      "required": ["trunkModules", "branches", "featureMods"],
+      "properties": {
+        "trunkModules": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "branches": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "featureMods": { "$ref": "#/$defs/nonEmptyStringArray" }
+      },
+      "additionalProperties": true
+    },
+    "BlueprintBindings": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "BlueprintDependencies": { "$ref": "#/$defs/nonEmptyStringArray" },
+    "version": { "type": "string", "minLength": 1 },
+    "signature": {
+      "description": "Legacy embedded metadata. Does not sign a FeatureMod package; official packages require a separate <name>.manifest.json.",
+      "deprecated": true,
+      "type": "object",
+      "required": ["algorithm", "keyId", "payloadSha256", "value"],
+      "properties": {
+        "algorithm": { "type": "string", "minLength": 1 },
+        "keyId": { "type": "string", "minLength": 1 },
+        "payloadSha256": { "type": "string", "minLength": 1 },
+        "value": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "requiredWhitelistCapabilities": { "$ref": "#/$defs/nonEmptyStringArray" }
+  },
+  "$defs": {
+    "nonEmptyStringArray": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": true
+}

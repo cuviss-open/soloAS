@@ -1,6 +1,9 @@
 #include "AngelscriptBinds/Bind_FGameplayTag.h"
 #include "AngelscriptBinds.h"
 #include "AngelscriptManager.h"
+                                                                                                          
+#include "../StaticJIT/PrecompiledData.h"
+                                                                                                        
 #include "../Debugging/AngelscriptDebugServer.h"
 
 #include "../Private/Binds/Helper_StructType.h"
@@ -55,7 +58,14 @@ void Bind_AddNewGameplayTag(int32 GameplayTagIndex)
 	}
 
 	const FString Declaration = TEXT("const FGameplayTag ") + TagAsString;
+                                                                                                          
+    auto* Engine = FAngelscriptManager::Get().GetScriptEngine();
+    const uint64 PreviousEpoch = AngelscriptCoreExtensionPoints::Private::BeginGameplayTagRegistration(Engine);
+                                                                                                        
 	FAngelscriptBinds::BindGlobalVariable(TCHAR_TO_ANSI(*Declaration), &GameplayTag);
+                                                                                                          
+    AngelscriptCoreExtensionPoints::Private::FinishGameplayTagRegistration(Engine, PreviousEpoch, FAngelscriptBinds::GetPreviousGlobalVariableId());
+                                                                                                        
 }
 
 bool Bind_ProcessGameplayTag(FGameplayTag Tag)

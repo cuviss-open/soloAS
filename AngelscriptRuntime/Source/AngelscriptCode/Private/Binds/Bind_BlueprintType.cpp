@@ -1,3 +1,6 @@
+                                                                                              
+#include "AngelscriptCoreAdmissionInternal.h"
+                                                                                            
 #include "AngelscriptBinds.h"
                                                                                                                  
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 6
@@ -360,6 +363,10 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 
 	static void FillObjectDebuggerValue(UObject* Object, FDebuggerValue& Value)
 	{
+                                                                                              
+        if (Object && !AngelscriptCoreExtensionPoints::Private::AllowDebugOwner(Object->GetClass()))
+        { Value.Value.Reset(); Value.bHasMembers = false; return; }
+                                                                                            
 
 		if (Object == nullptr || Object->GetClass() == nullptr)
 		{
@@ -372,6 +379,18 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 			auto& Delegate = FAngelscriptCodeModule::GetDebugObjectSuffix();
 			if (Delegate.IsBound())
 			{
+                                                                                              
+                bool bAllowSuffix = true;
+                if (auto* Read = AngelscriptCoreExtensionPoints::Private::CurrentDebugRead())
+                {
+                    auto Native = Read->View;
+                    Native.Scope = AngelscriptCoreExtensionPoints::EDebugAccessScope::Native;
+                    Native.ModuleGenerationId = {};
+                    Native.SourceIdentity.Reset();
+                    bAllowSuffix = AngelscriptCoreExtensionPoints::Private::AllowDebugRead(Native);
+                }
+                if (bAllowSuffix)
+                                                                                            
 				Delegate.Execute(Object, Suffix);
 			}
 
@@ -448,6 +467,10 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 
 	static void FillObjectDebuggerScope(UObject* Object, FDebuggerScope& Scope)
 	{
+                                                                                              
+        if (Object && !AngelscriptCoreExtensionPoints::Private::AllowDebugOwner(Object->GetClass()))
+        { return; }
+                                                                                            
 
 		FDebuggerValue NameValue;
 		NameValue.Name = TEXT("Name");
@@ -470,6 +493,10 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 		auto* ScriptType = ObjScriptType;
 		while (ScriptType != nullptr)
 		{
+                                                                                              
+            if (AngelscriptCoreExtensionPoints::Private::AllowDebugType(ScriptType))
+            {
+                                                                                            
 
 			int32 PropCount = ScriptType->GetPropertyCount();
 			for (int32 i = 0; i < PropCount; ++i)
@@ -527,6 +554,9 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 				}
 			}
 
+                                                                                              
+            }
+                                                                                            
 			if (((asCObjectType*)ScriptType)->derivedFrom != nullptr)
 				ScriptType = ((asCObjectType*)ScriptType)->derivedFrom;
 			else if (((asCObjectType*)ScriptType)->shadowType != nullptr)
@@ -538,6 +568,9 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 		for (TFieldIterator<FProperty> It(ObjClass); It; ++It)
 		{
 			FProperty* Property = *It;
+                                                                                              
+            if (!AngelscriptCoreExtensionPoints::Private::AllowDebugOwner(Property->GetOwnerStruct())) continue;
+                                                                                            
 
 			if (!Property->HasAnyPropertyFlags(CPF_BlueprintVisible) && (!Property->HasAnyPropertyFlags(CPF_Edit)
 			 || Property->HasAllPropertyFlags(CPF_DisableEditOnInstance | CPF_DisableEditOnTemplate)))
@@ -577,6 +610,10 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 
 	static bool FillObjectDebuggerMember(UObject* Object, const FString& Member, FDebuggerValue& Value)
 	{
+                                                                                              
+        if (Object && !AngelscriptCoreExtensionPoints::Private::AllowDebugOwner(Object->GetClass()))
+        { return false; }
+                                                                                            
 
 		if (Member == TEXT("Name"))
 		{
@@ -630,6 +667,10 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 		auto* ScriptType = ObjScriptType;
 		while (ScriptType != nullptr)
 		{
+                                                                                              
+            if (AngelscriptCoreExtensionPoints::Private::AllowDebugType(ScriptType))
+            {
+                                                                                            
 
 			int32 PropCount = ScriptType->GetPropertyCount();
 			for (int32 i = 0; i < PropCount; ++i)
@@ -642,6 +683,9 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 				if (Name != Member)
 					continue;
 
+                                                                                              
+                if (!AngelscriptCoreExtensionPoints::Private::AllowDebugProperty(ScriptType, i)) continue;
+                                                                                            
 				FAngelscriptTypeUsage PropUsage = FAngelscriptTypeUsage::FromProperty(ScriptType, i);
 				if (PropUsage.GetDebuggerValue((void*)((SIZE_T)Object + (SIZE_T)Offset), Value))
 				{
@@ -660,6 +704,9 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 				}
 			}
 
+                                                                                              
+            }
+                                                                                            
 			if (((asCObjectType*)ScriptType)->derivedFrom != nullptr)
 				ScriptType = ((asCObjectType*)ScriptType)->derivedFrom;
 			else if (((asCObjectType*)ScriptType)->shadowType != nullptr)
@@ -671,6 +718,9 @@ struct FUObjectType : TAngelscriptPODType<UObject*>
 		for (TFieldIterator<FProperty> It(ObjClass); It; ++It)
 		{
 			FProperty* Property = *It;
+                                                                                              
+            if (!AngelscriptCoreExtensionPoints::Private::AllowDebugOwner(Property->GetOwnerStruct())) continue;
+                                                                                            
 
 			if (!Property->HasAnyPropertyFlags(CPF_BlueprintVisible | CPF_Edit))
 				continue;

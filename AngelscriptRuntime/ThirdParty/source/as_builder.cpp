@@ -36,6 +36,9 @@
 //
 
 
+                                                                                          
+#include "AngelscriptStructLiveValues.h"
+                                                                                        
 #include "as_config.h"
 #include "as_builder.h"
 #include "as_parser.h"
@@ -48,6 +51,9 @@
 #include "as_debug.h"
 #include <functional>
 #include "AngelscriptManager.h"
+                                                                                            
+#include "AngelscriptCoreExtensionPoints.h"
+                                                                                          
 #include "AngelscriptSettings.h"
 
 
@@ -960,6 +966,16 @@ void asCBuilder::CreateDefaultDestructors()
 			if (objType->beh.copy != 0 && objType->beh.copy != objType->engine->scriptTypeBehaviours.beh.copy)
 				bIsPOD = false;
 
+                                                                                          
+			const bool bObserveValue = AngelscriptStructLiveValues::Enabled.load(std::memory_order_relaxed)
+				&& (objType->flags & asOBJ_VALUE) && objType->module && objType->module->cuvissTypeScope;
+			if (bObserveValue)
+			{
+				bIsPOD = false;
+				objType->flags &= ~asOBJ_POD;
+				bNeedDestruct = true;
+			}
+                                                                                        
 			if (bNeedDestruct)
 			{
 				if (objType->beh.destruct == 0)
@@ -969,6 +985,10 @@ void asCBuilder::CreateDefaultDestructors()
 			{
 				objType->flags |= asOBJ_POD;
 			}
+                                                                                          
+			if (bObserveValue)
+				AngelscriptStructLiveValues::TypeCompiled(objType);
+                                                                                        
 
 		}
 	};
@@ -5968,6 +5988,20 @@ asSNameSpace *asCBuilder::GetNameSpaceByString(const asCString &nsName, asSNameS
 			while( !ti && nsTmp )
 			{
 				// Check if the typeName is an existing type in the namespace
+                                                                                            
+                if (module && module->cuvissTypeScope && recursive)
+                {
+                    bool ambiguous = false;
+                    ti = GetTypeInScope(typeName.AddressOf(), nsTmp, errNode, script, ambiguous);
+                    if (ambiguous) return nullptr;
+                    if (ti)
+                    {
+                        asCString staticScope = ti->nameSpace->name + "::" + typeName;
+                        if (auto* staticNs = engine->FindNameSpace(staticScope.AddressOf())) return staticNs;
+                    }
+                }
+                else
+                                                                                          
 				ti = GetType(typeName.AddressOf(), nsTmp, 0);
 				if (ti)
 				{
@@ -6015,6 +6049,9 @@ asCDataType asCBuilder::CreateDataTypeFromNode(asCScriptNode *node, asCScriptCod
 	}
 
 	// Determine namespace (or parent type) to search for the data type in
+                                                                                            
+    const bool cuvissUnqualified = n->nodeType != snScope;
+                                                                                          
 	asCObjectType *parentType = 0;
 	asSNameSpace *ns = GetNameSpaceFromNode(n, file, implicitNamespace, &n, &parentType);
 	if( ns == 0 && parentType == 0 )
@@ -6070,6 +6107,21 @@ asCDataType asCBuilder::CreateDataTypeFromNode(asCScriptNode *node, asCScriptCod
 				}
 			}
 
+                                                                                            
+            if (ti == 0 && module && module->cuvissTypeScope && cuvissUnqualified && ns && !parentType)
+            {
+                bool ambiguous = false;
+                ti = GetTypeInScope(str.AddressOf(), ns, reportError ? n : nullptr, file, ambiguous);
+                if (ambiguous)
+                {
+                    if (isValid) *isValid = false;
+                    auto dummy = asCDataType::CreatePrimitive(ttInt, false);
+                    dummy.SetIsErrorDataType(true);
+                    return dummy;
+                }
+            }
+            else
+                                                                                          
 			if( ti == 0 )
 				ti = GetType(str.AddressOf(), ns, parentType);
 			if( ti == 0 && !module && currentType )
@@ -6489,6 +6541,36 @@ asCDataType asCBuilder::ModifyDataTypeFromNode(const asCDataType &type, asCScrip
 
 	return dt;
 }
+
+                                                                                            
+asCTypeInfo *asCBuilder::GetTypeInScope(const char *type, asSNameSpace *ns, asCScriptNode *node, asCScriptCode *script, bool& ambiguous)
+{
+    ambiguous = false;
+    auto* found = GetType(type, ns, 0);
+    const auto& scope = *module->cuvissTypeScope;
+    if (found || !ns || ns->name != TCHAR_TO_UTF8(*scope.Namespace)) return found;
+    for (const FString& dependency : scope.Dependencies)
+    {
+        auto* dependencyNs = engine->FindNameSpace(TCHAR_TO_UTF8(*dependency));
+        auto* candidate = dependencyNs ? GetType(type, dependencyNs, 0) : nullptr;
+        if (!candidate) continue;
+        if (found && found != candidate)
+        {
+            ambiguous = true;
+            if (node && script)
+            {
+                asCString message;
+                message.Format("Ambiguous dependency type '%s' in '%s' and '%s'; use Mod::Type to disambiguate",
+                    type, found->nameSpace->name.AddressOf(), candidate->nameSpace->name.AddressOf());
+                WriteError(message, script, node);
+            }
+            return nullptr;
+        }
+        found = candidate;
+    }
+    return found;
+}
+                                                                                          
 
 asCTypeInfo *asCBuilder::GetType(const char *type, asSNameSpace *ns, asCObjectType *parentType)
 {

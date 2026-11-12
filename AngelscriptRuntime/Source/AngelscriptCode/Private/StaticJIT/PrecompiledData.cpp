@@ -9,6 +9,17 @@
                                                                                                                  
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/MemoryReader.h"
+                                                                                                       
+#include "AngelscriptCoreExtensionPoints.h"
+#include "AngelscriptExecutionQuiescence.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
+#include "Hash/Blake3.h"
+#include "AngelscriptStructLiveValues.h"
+#include "Misc/EngineVersion.h"
+#include "Misc/Paths.h"
+                                                                                                     
 
 #include "AngelscriptManager.h"
 #include "StaticJIT/StaticJITConfig.h"
@@ -20,6 +31,9 @@
 #include "as_module.h"
 #include "as_scriptengine.h"
 #include "as_callfunc.h"
+                                                                                                       
+#include "as_bytecode.h"
+                                                                                                     
 #include "EndAngelscriptHeaders.h"
 
 
@@ -53,6 +67,901 @@ double TIMER_PropertyLookup = 0.0;
 double TIMER_GetModulesToCompile = 0.0;
 
 FMemStackBase GScriptPreallocatedMemStack;
+                                                                                                       
+thread_local FMemStackBase* GScopedScriptPreallocatedMemStack = nullptr;
+
+TUniquePtr<FPreparedModuleCacheSet> FPreparedModuleCacheSet::Decode(asIScriptEngine* Engine,
+	TConstArrayView<uint8> Bytes, const FGuid& ExpectedGuid, FString& Error)
+{
+	Error.Reset();
+	if (!IsInGameThread() || Bytes.IsEmpty() || !ExpectedGuid.IsValid())
+	{
+		Error = TEXT("Module cache preparation requires GT, nonempty bytes and an exact DataGuid");
+		return nullptr;
+	}
+	auto Prepared = MakeUnique<FPreparedModuleCacheSet>();
+	FScopedPrecompiledMemStack AllocationScope(Prepared->Arena);
+	Prepared->Reader = MakeUnique<FAngelscriptPrecompiledData>(Engine);
+	auto& Data = *Prepared->Reader;
+	Data.LoadedData.Append(Bytes.GetData(), Bytes.Num());
+	FMemoryReaderWithPtr Archive(Data.LoadedData);
+	Archive.SetIsPersistent(true);
+	Archive.SetWantBinaryPropertySerialization(true);
+	Archive << Data;
+	if (Archive.IsError() || Archive.Tell() != Archive.TotalSize() ||
+		!Data.IsValidForCurrentBuild() || Data.DataGuid != ExpectedGuid)
+	{
+		Error = TEXT("Module cache bytes, build or DataGuid do not match the verified input");
+		return nullptr;
+	}
+	if (!ValidateStructure(Data, Error)) return nullptr;
+	return Prepared;
+}
+
+bool FPreparedModuleCacheSet::ValidateStructure(const FAngelscriptPrecompiledData& Data, FString& Error)
+{
+	Error.Reset();
+	auto Fail = [&]() { Error = TEXT("Module cache declaration arrays or bytecode reference tables are incomplete"); return false; };
+	auto Type = [&](const FAngelscriptPrecompiledReference& Ref)
+	{ return Ref.OldReference == 0 || Data.TypeReferences.Contains(Ref.OldReference); };
+	auto Usage = [&](const FAngelscriptPrecompiledDataType& Value) { return Type(Value.TypeInfo); };
+	auto TypeId = [&](int32 Id)
+	{
+		if (Id >= 0 && Id <= asTYPEID_LAST_PRIMITIVE) return true;
+		const auto* Pointer = Data.TypeIdReferenceToPointer.Find(Id & (asTYPEID_MASK_SEQNBR | asTYPEID_MASK_OBJECT));
+		return Pointer && Data.TypeReferences.Contains(*Pointer);
+	};
+	auto FunctionId = [&](int32 Id)
+	{
+		const auto* Pointer = Data.FunctionIdReferenceToPointer.Find(Id);
+		return Pointer && Data.FunctionReferences.Contains(*Pointer);
+	};
+	for (const auto& Entry : Data.TypeIdReferenceToPointer)
+		if (!Data.TypeReferences.Contains(Entry.Value)) return Fail();
+	for (const auto& Entry : Data.FunctionIdReferenceToPointer)
+		if (!Data.FunctionReferences.Contains(Entry.Value)) return Fail();
+	for (const auto& Entry : Data.TypeReferences)
+		for (const auto& SubType : Entry.Value.SubTypes)
+			if (!Usage(SubType)) return Fail();
+	for (const auto& Entry : Data.FunctionReferences)
+	{
+		if (!Type(Entry.Value.ObjectType) || !Usage(Entry.Value.ReturnType)
+			|| (Entry.Value.bIsMethod && Entry.Value.ObjectType.OldReference == 0)) return Fail();
+		for (const auto& Parameter : Entry.Value.ParameterTypes) if (!Usage(Parameter)) return Fail();
+	}
+	for (const auto& Entry : Data.PropertyReferences) if (!TypeId(Entry.Value.OldTypeId)) return Fail();
+	auto Function = [&](const FAngelscriptPrecompiledFunction& Value)
+	{
+		const int32 Params = Value.ParameterTypes.Num();
+		if (!Usage(Value.ReturnType) || Value.ParameterNames.Num() != Params || Value.ParameterFlags.Num() != Params
+			|| Value.ParameterDefaultArgs.Num() != Params || Value.MetaSpec.Num() != Value.MetaValues.Num()
+			|| Value.ObjVariableTypes.Num() != Value.ObjVariablePos.Num()
+			|| Value.ObjVariablesOnHeap < 0 || Value.ObjVariablesOnHeap > Value.ObjVariableTypes.Num()
+			|| Value.VariableInfoProgramPos.Num() != Value.VariableInfoOffset.Num()
+			|| Value.VariableInfoOffset.Num() != Value.VariableInfoOption.Num()) return false;
+		for (const auto& Parameter : Value.ParameterTypes) if (!Usage(Parameter)) return false;
+		for (const auto& Variable : Value.ObjVariableTypes) if (!Type(Variable)) return false;
+		for (int32 Offset = 0; Offset < Value.ByteCode.Num();)
+		{
+			const auto* Code = Value.ByteCode.GetData() + Offset;
+			const auto Op = asEBCInstr(*reinterpret_cast<const asBYTE*>(Code));
+            if (Op >= asBC_MAXBYTECODE) return false;
+			const int32 Size = asBCTypeSize[asBCInfo[Op].type];
+			if (Size <= 0 || Size > Value.ByteCode.Num() - Offset) return false;
+			switch (Op)
+			{
+			case asBC_PshGPtr: case asBC_PshG4: case asBC_LdGRdR4: case asBC_CpyVtoG4:
+			case asBC_CpyGtoV4: case asBC_LDG: case asBC_PGA: case asBC_SetG4:
+				if (asBC_PTRARG(Code) && !Data.GlobalReferences.Contains(int64(asBC_PTRARG(Code)))) return false;
+				break;
+			case asBC_CALL: case asBC_CALLBND: case asBC_CALLINTF:
+				if (!FunctionId(asBC_INTARG(Code))) return false;
+				break;
+			case asBC_CopyScript: case asBC_FinConstruct: case asBC_FREE: case asBC_DestructScript: case asBC_OBJTYPE:
+				if (!Type({int64(asBC_PTRARG(Code))})) return false;
+				break;
+			case asBC_CALLSYS: case asBC_FuncPtr: case asBC_Thiscall1:
+				if (asBC_PTRARG(Code) && !Data.FunctionReferences.Contains(int64(asBC_PTRARG(Code)))) return false;
+				break;
+			case asBC_ALLOC:
+				if (!Type({int64(asBC_PTRARG(Code))}) || (asBC_INTARG(Code + AS_PTR_SIZE) && !FunctionId(asBC_INTARG(Code + AS_PTR_SIZE)))) return false;
+				break;
+			case asBC_COPY: case asBC_TYPEID: case asBC_Cast:
+				if (!TypeId(asBC_INTARG(Code))) return false;
+				break;
+			case asBC_SetListType:
+				if (!TypeId(asBC_INTARG(Code + 1))) return false;
+				break;
+			case asBC_STR: return false;
+			default: break;
+			}
+			Offset += Size;
+		}
+		return true;
+	};
+	for (const auto& Entry : Data.Modules)
+	{
+		const auto& Module = Entry.Value;
+		if (Entry.Key != Module.ModuleName.UnrealString()) return Fail();
+		for (const auto& Value : Module.Functions) if (!Function(Value)) return Fail();
+		for (const auto& Value : Module.GlobalVariables)
+			if (!Usage(Value.Type) || (!Value.bIsDefaultInit && !Value.bIsPureConstant && Value.bHasInitFunction && !Function(Value.InitFunc))) return Fail();
+		for (const auto& Value : Module.Enums) if (Value.EnumNames.Num() != Value.EnumValues.Num()) return Fail();
+		for (const auto& Class : Module.Classes)
+		{
+			if (!Type(Class.DerivedFrom) || !Type(Class.ShadowType) || Class.MetaSpec.Num() != Class.MetaValues.Num()
+				|| Class.BehaviorFunctions.Num() != Class.BehaviorFunctionTypes.Num()) return Fail();
+			for (int32 Index : Class.MethodTable) if (Index != -1 && !Class.Methods.IsValidIndex(Index)) return Fail();
+			for (const auto& Ref : Class.FactoryRefs) if (Ref.OldReference && !FunctionId(int32(Ref.OldReference))) return Fail();
+			for (const auto& Ref : Class.BehaviorRefs) if (Ref.OldReference && !FunctionId(int32(Ref.OldReference))) return Fail();
+			for (const auto& Property : Class.Properties)
+				if (!Usage(Property.Type) || Property.MetaSpec.Num() != Property.MetaValues.Num()) return Fail();
+			for (const auto& Value : Class.Methods) if (!Function(Value)) return Fail();
+			for (const auto& Value : Class.Constructors) if (!Function(Value)) return Fail();
+			for (const auto& Value : Class.BehaviorFunctions) if (!Function(Value)) return Fail();
+		}
+	}
+	return true;
+}
+
+bool FPreparedModuleCacheSet::DecodeVerified(asIScriptEngine* Engine,
+	const AngelscriptCoreExtensionPoints::FVerifiedCacheSetView& Set,
+	TArray<TUniquePtr<FPreparedModuleCacheSet>>& OutMembers, FString& Error)
+{
+	Error.Reset();
+	auto Fail = [&](const TCHAR* Reason) { Error = Reason; return false; };
+	if (!IsInGameThread() || !IsAngelscriptExecutionWriterHeldByCurrentThread())
+		return Fail(TEXT("Verified cache preparation requires the game-thread writer"));
+	if (Set.Format != TEXT("soloas-module-cache-set-v1") || Set.Manifest.IsEmpty() || Set.Files.IsEmpty()
+		|| !Set.DataGuid.IsValid())
+		return Fail(TEXT("Verified cache format, manifest, members or set GUID is invalid"));
+	for (uint8 Byte : Set.Manifest) if (Byte == 0) return Fail(TEXT("Verified cache manifest contains a NUL byte"));
+	TArray<uint8> ManifestBytes;
+	ManifestBytes.Append(Set.Manifest.GetData(), Set.Manifest.Num());
+	FUTF8ToTCHAR Text(reinterpret_cast<const ANSICHAR*>(ManifestBytes.GetData()), ManifestBytes.Num());
+	TSharedPtr<FJsonObject> Manifest;
+	if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(FString(Text.Length(), Text.Get())), Manifest) || !Manifest)
+		return Fail(TEXT("Verified cache manifest is not a JSON object"));
+	double Version = 0;
+	FString Format, Build, Configuration, GuidText;
+	FGuid SetGuid;
+	const TArray<TSharedPtr<FJsonValue>>* Entries = nullptr;
+	if (!Manifest->TryGetNumberField(TEXT("schemaVersion"), Version) || Version != 1
+		|| !Manifest->TryGetStringField(TEXT("format"), Format) || Format != Set.Format
+		|| !Manifest->TryGetStringField(TEXT("buildIdentity"), Build) || Build != Set.BuildIdentity || Build != FEngineVersion::Current().ToString()
+		|| !Manifest->TryGetStringField(TEXT("configurationIdentity"), Configuration) || Configuration != Set.ConfigurationIdentity
+		|| !Manifest->TryGetStringField(TEXT("setGuid"), GuidText) || !FGuid::ParseExact(GuidText, EGuidFormats::Digits, SetGuid) || SetGuid != Set.DataGuid
+		|| !Manifest->TryGetArrayField(TEXT("modules"), Entries) || !Entries || Entries->Num() != Set.Files.Num())
+		return Fail(TEXT("Verified cache manifest identity or member count does not match the signed snapshot"));
+    TSharedPtr<const TMap<FString, FCacheNativeLayout>> SignedLayouts;
+    if (Manifest->HasField(TEXT("nativeTypeLayouts")))
+    {
+        const TArray<TSharedPtr<FJsonValue>>* Rows = nullptr;
+        if (!Manifest->TryGetArrayField(TEXT("nativeTypeLayouts"), Rows) || !Rows)
+            return Fail(TEXT("nativeTypeLayouts must be a signed array"));
+        auto Layouts = MakeShared<TMap<FString, FCacheNativeLayout>>();
+        for (const auto& Value : *Rows)
+        {
+            if (!Value || Value->Type != EJson::Object) return Fail(TEXT("Native layout witness is not an object"));
+            const auto& Row = Value->AsObject();
+            FCacheNativeLayout Layout;
+            double Size = 0, Alignment = 0;
+            FString Flags;
+            if (!Row->TryGetStringField(TEXT("declaration"), Layout.Declaration) || Layout.Declaration.IsEmpty()
+                || Layouts->Contains(Layout.Declaration)
+                || !Row->TryGetNumberField(TEXT("size"), Size) || Size < 0 || Size > MAX_int32 || Size != FMath::FloorToDouble(Size)
+                || !Row->TryGetNumberField(TEXT("alignment"), Alignment) || Alignment < 1 || Alignment > MAX_int32 || Alignment != FMath::FloorToDouble(Alignment)
+                || !Row->TryGetStringField(TEXT("flags"), Flags) || Flags.Len() != 18 || !Flags.StartsWith(TEXT("0x")))
+                return Fail(TEXT("Native layout witness has an invalid or repeated declaration, size, alignment or flags"));
+            for (int32 I = 2; I < Flags.Len(); ++I)
+                if (!FChar::IsHexDigit(Flags[I])) return Fail(TEXT("Native layout flags are not exact hexadecimal"));
+            Layout.Size = int32(Size);
+            Layout.Alignment = int32(Alignment);
+            if (!FMath::IsPowerOfTwo(Layout.Alignment)) return Fail(TEXT("Native layout alignment is not a power of two"));
+            Layout.Flags = FCString::Strtoui64(*Flags + 2, nullptr, 16);
+            const FString Key = Layout.Declaration;
+            Layouts->Add(Key, MoveTemp(Layout));
+        }
+        SignedLayouts = Layouts;
+    }
+	struct FMember
+	{
+		FString Name, Path, Identity;
+		FGuid Guid;
+		TArray<FString> Dependencies;
+	};
+	TArray<FMember> Members;
+	TSet<FString> Names, Paths;
+	TSet<FGuid> Guids;
+	for (const auto& Value : *Entries)
+	{
+		if (!Value || Value->Type != EJson::Object) return Fail(TEXT("Verified cache member is not an object"));
+		const auto& Object = Value->AsObject();
+		FMember Member;
+		const TArray<TSharedPtr<FJsonValue>>* Dependencies = nullptr;
+		if (!Object->TryGetStringField(TEXT("module"), Member.Name) || Member.Name.IsEmpty()
+			|| !Object->TryGetStringField(TEXT("file"), Member.Path) || Member.Path.IsEmpty()
+			|| Member.Path.Contains(TEXT("..")) || Member.Path.Contains(TEXT("\\")) || Member.Path.Contains(TEXT(":"))
+			|| !FPaths::IsRelative(Member.Path) || !Member.Path.EndsWith(TEXT(".Cache"), ESearchCase::CaseSensitive)
+			|| !Object->TryGetStringField(TEXT("dataGuid"), GuidText) || !FGuid::ParseExact(GuidText, EGuidFormats::Digits, Member.Guid) || !Member.Guid.IsValid()
+			|| !Object->TryGetStringField(TEXT("contentIdentity"), Member.Identity) || Member.Identity.IsEmpty()
+			|| !Object->TryGetArrayField(TEXT("dependencies"), Dependencies) || !Dependencies
+			|| Names.Contains(Member.Name) || Paths.Contains(Member.Path) || Guids.Contains(Member.Guid))
+			return Fail(TEXT("Verified cache member identity or path is invalid or repeated"));
+		TSet<FString> SeenDependencies;
+		for (const auto& Dependency : *Dependencies)
+		{
+			FString Name;
+			if (!Dependency || !Dependency->TryGetString(Name) || Name.IsEmpty() || Name == Member.Name || SeenDependencies.Contains(Name))
+				return Fail(TEXT("Verified cache dependencies are invalid or repeated"));
+			SeenDependencies.Add(Name);
+			Member.Dependencies.Add(MoveTemp(Name));
+		}
+		Names.Add(Member.Name); Paths.Add(Member.Path); Guids.Add(Member.Guid);
+		Members.Add(MoveTemp(Member));
+	}
+	TMap<FString, const AngelscriptCoreExtensionPoints::FVerifiedCacheFileView*> Files;
+	for (const auto& File : Set.Files)
+	{
+		FString Path(File.RelativePath);
+		if (!Paths.Contains(Path) || Files.Contains(Path)) return Fail(TEXT("Verified cache snapshot has an extra or repeated file"));
+		Files.Add(MoveTemp(Path), &File);
+	}
+	TArray<TUniquePtr<FPreparedModuleCacheSet>> Prepared;
+	for (const auto& Member : Members)
+	{
+		const auto* const* File = Files.Find(Member.Path);
+		if (!File || (*File)->Bytes.IsEmpty() || (*File)->ContentIdentity != Member.Identity)
+			return Fail(TEXT("Verified cache snapshot is missing a signed member"));
+		TArray<uint8> Bytes;
+		Bytes.Append((*File)->Bytes.GetData(), (*File)->Bytes.Num());
+		const FString Identity = TEXT("blake3:") + LexToString(FBlake3::HashBuffer(Bytes.GetData(), Bytes.Num()));
+		if (Identity != Member.Identity) return Fail(TEXT("Verified cache member bytes do not match the signed content identity"));
+		auto Data = Decode(Engine, Bytes, Member.Guid, Error);
+		if (!Data) return false;
+		if (Configuration != LexToString(Data->Reader->BuildIdentifier) || Data->Reader->Modules.Num() != 1
+			|| !Data->Reader->Modules.Contains(Member.Name))
+			return Fail(TEXT("Verified cache member does not contain its exact declared module and configuration"));
+		for (const auto& Dependency : Member.Dependencies)
+			if (!Names.Contains(Dependency) && (!Engine || !Engine->GetModule(TCHAR_TO_ANSI(*Dependency), asGM_ONLY_IF_EXISTS)))
+				return Fail(TEXT("Verified cache set is missing a declared dependency"));
+		Data->Reader->Modules.FindChecked(Member.Name).Dependencies = Member.Dependencies;
+        Data->VerifiedRelativePath = Member.Path;
+        Data->VerifiedContentIdentity = Member.Identity;
+        Data->SignedNativeLayouts = SignedLayouts;
+		Prepared.Add(MoveTemp(Data));
+	}
+	OutMembers = MoveTemp(Prepared);
+	return true;
+}
+
+namespace
+{
+bool IsCacheNativeLayoutType(const asCTypeInfo* Type)
+{
+    return Type && !(Type->flags & (asOBJ_SCRIPT_OBJECT | asOBJ_TEMPLATE_SUBTYPE))
+        && Type != &Type->engine->scriptTypeBehaviours && Type != &Type->engine->functionBehaviours;
+}
+
+FString CacheTypeDeclaration(const FAngelscriptPrecompiledData& Data, int64 Id, TSet<int64>& Visiting)
+{
+    const auto* Ref = Data.TypeReferences.Find(Id);
+    if (!Ref || Visiting.Contains(Id)) return {};
+    Visiting.Add(Id);
+    ON_SCOPE_EXIT { Visiting.Remove(Id); };
+    FString Key = Ref->SubTypes.Num() || Ref->Module.Len() == 0
+        ? TEXT("native::") : TEXT("script(") + Ref->Module.UnrealString() + TEXT(")::");
+    if (Ref->Namespace.Len()) Key += Ref->Namespace.UnrealString() + TEXT("::");
+    Key += Ref->Name.UnrealString();
+    if (Ref->SubTypes.Num())
+    {
+        Key += TEXT("<");
+        for (int32 I = 0; I < Ref->SubTypes.Num(); ++I)
+        {
+            const auto& Sub = Ref->SubTypes[I];
+            FString Name;
+            if (Sub.TypeInfo.OldReference)
+            {
+                Name = CacheTypeDeclaration(Data, Sub.TypeInfo.OldReference, Visiting);
+                if (Name.IsEmpty()) return {};
+            }
+            else
+            {
+                switch (eTokenType(Sub.TokenType))
+                {
+                case ttVoid: Name = TEXT("void"); break;
+                case ttBool: Name = TEXT("bool"); break;
+                case ttInt8: Name = TEXT("int8"); break;
+                case ttInt16: Name = TEXT("int16"); break;
+                case ttInt: Name = TEXT("int"); break;
+                case ttInt64: Name = TEXT("int64"); break;
+                case ttUInt8: Name = TEXT("uint8"); break;
+                case ttUInt16: Name = TEXT("uint16"); break;
+                case ttUInt: Name = TEXT("uint"); break;
+                case ttUInt64: Name = TEXT("uint64"); break;
+                case ttFloat: Name = TEXT("float"); break;
+                case ttFloat32: Name = TEXT("float32"); break;
+                case ttFloat64: Name = TEXT("float64"); break;
+                case ttDouble: Name = TEXT("double"); break;
+                case ttQuestion: Name = TEXT("?"); break;
+                default: return {};
+                }
+            }
+            if (Sub.bIsObjectConst) Name = TEXT("const ") + Name;
+            if (Sub.bIsObjectHandle) Name += Sub.bIsConstHandle ? TEXT("@const") : TEXT("@");
+            if (Sub.bIsReference) Name += TEXT("&");
+            if (I) Key += TEXT(",");
+            Key += Name;
+        }
+        Key += TEXT(">");
+    }
+    return Key;
+}
+
+bool ResolveProducerCacheType(FAngelscriptPrecompiledData& Data, int64 Id, TSet<int64>& Visiting, FString& Error)
+{
+    if (!Id || Data.CachedPointerReferences.Contains(Id)) return true;
+    const auto* Ref = Data.TypeReferences.Find(Id);
+    if (!Ref || Visiting.Contains(Id)) { Error = TEXT("Producer cache has a cyclic or missing type reference"); return false; }
+    Visiting.Add(Id);
+    ON_SCOPE_EXIT { Visiting.Remove(Id); };
+    for (const auto& Sub : Ref->SubTypes)
+        if (!ResolveProducerCacheType(Data, Sub.TypeInfo.OldReference, Visiting, Error)) return false;
+    auto* Namespace = Data.Engine->FindNameSpace(*Ref->Namespace);
+    asCTypeInfo* Type = nullptr;
+    if (FCStringAnsi::Strcmp(*Ref->Module, "$__T__") == 0)
+    {
+        auto* Base = CastToObjectType(static_cast<asCTypeInfo*>(Data.Engine->GetTypeInfo(*Ref->Namespace, Data.Engine->defaultNamespace)));
+        if (Base) for (asUINT I = 0; I < Base->templateSubTypes.GetLength(); ++I)
+        {
+            auto* Sub = Base->templateSubTypes[I].GetTypeInfo();
+            if (Sub && Sub->name == *Ref->Name) { Type = Sub; break; }
+        }
+    }
+    else if (Ref->Module.Len() && Ref->SubTypes.IsEmpty())
+    {
+        auto* Module = static_cast<asCModule*>(Data.Engine->GetModule(*Ref->Module, asGM_ONLY_IF_EXISTS));
+        if (Module && Namespace) Type = Module->GetType(*Ref->Name, Namespace);
+    }
+    else if (Namespace) Type = static_cast<asCTypeInfo*>(Data.Engine->GetTypeInfo(*Ref->Name, Namespace));
+    if (!Type && FCStringAnsi::Strcmp(*Ref->Name, "$obj") == 0) Type = &Data.Engine->scriptTypeBehaviours;
+    if (!Type && FCStringAnsi::Strcmp(*Ref->Name, "$func") == 0) Type = &Data.Engine->functionBehaviours;
+    if (Type && Ref->SubTypes.Num())
+    {
+        auto* Base = CastToObjectType(Type);
+        Type = nullptr;
+        asCArray<asCDataType> SubTypes;
+        SubTypes.SetLength(Ref->SubTypes.Num());
+        for (int32 I = 0; I < Ref->SubTypes.Num(); ++I) Ref->SubTypes[I].Create(Data, SubTypes[I]);
+        // A producer query never invokes template callbacks or creates bindings.
+        for (const auto& Bucket : Data.Engine->templateInstanceBuckets)
+            for (auto* Candidate : Bucket.Value)
+            {
+                if (Candidate->templateBaseType != Base || Candidate->templateSubTypes.GetLength() != SubTypes.GetLength()) continue;
+                bool bSame = true;
+                for (asUINT I = 0; I < SubTypes.GetLength(); ++I) bSame &= Candidate->templateSubTypes[I] == SubTypes[I];
+                if (bSame) { Type = Candidate; break; }
+            }
+    }
+    if (!Type || reinterpret_cast<UPTRINT>(Type) != UPTRINT(Id))
+    { Error = TEXT("Native layout sealing requires the original unmodified producer VM and exact cache type identities"); return false; }
+    Data.CachedPointerReferences.Add(Id, Type);
+    return true;
+}
+
+bool AddCacheNativeLayouts(FAngelscriptPrecompiledData& Data, TMap<FString, FCacheNativeLayout>& Layouts, FString& Error, bool bAllowIncomplete = false)
+{
+    for (const auto& Entry : Data.TypeReferences)
+    {
+        auto* const* Pointer = Data.CachedPointerReferences.Find(Entry.Key);
+        auto* Type = Pointer ? static_cast<asCTypeInfo*>(*Pointer) : nullptr;
+        if (!IsCacheNativeLayoutType(Type)) continue;
+        TSet<int64> Visiting;
+        const FString Key = CacheTypeDeclaration(Data, Entry.Key, Visiting);
+        if (Key.IsEmpty() || (!bAllowIncomplete && Type->size < 0) || Type->alignment <= 0)
+        { Error = TEXT("Native cache declaration or finalized layout is unavailable"); return false; }
+        FCacheNativeLayout Layout {Key, Type->size, Type->alignment, uint64(Type->flags), Entry.Value.SubTypes.Num() != 0};
+        if (const auto* Old = Layouts.Find(Key))
+            if (Old->Size != Layout.Size || Old->Alignment != Layout.Alignment || Old->Flags != Layout.Flags)
+            { Error = TEXT("Native cache declaration has conflicting layouts"); return false; }
+        Layouts.Add(Key, MoveTemp(Layout));
+    }
+    return true;
+}
+}
+
+bool FPreparedModuleCacheSet::Produce(asIScriptEngine* Engine,
+    TConstArrayView<TSharedRef<FAngelscriptModuleDesc>> Modules,
+    TSharedPtr<const AngelscriptCoreExtensionPoints::FProducedModuleCacheSet>& Output, FString& Error)
+{
+    using namespace AngelscriptCoreExtensionPoints;
+    check(IsInGameThread() && IsAngelscriptExecutionWriterHeldByCurrentThread());
+    TSet<FString> Names;
+    for (const auto& Desc : Modules)
+    {
+        if (Desc->ModuleName.IsEmpty() || Names.Contains(Desc->ModuleName) || !Desc->ScriptModule
+            || Desc->bCompileError || Desc->ScriptModule->discarded
+            || Engine->GetModule(TCHAR_TO_UTF8(*Desc->ModuleName), asGM_ONLY_IF_EXISTS) != Desc->ScriptModule
+            || Desc->ModuleName != UTF8_TO_TCHAR(Desc->ScriptModule->GetName()))
+        { Error = TEXT("Cache producer requires unique exact live module descriptors in the supplied VM"); return false; }
+        for (asUINT I = 0; I < Desc->ScriptModule->scriptFunctions.GetLength(); ++I)
+        {
+            auto* Function = Desc->ScriptModule->scriptFunctions[I];
+            if (!Function || Function->funcType != asFUNC_SCRIPT) continue;
+            const auto Count = Function->parameterTypes.GetLength();
+            if (!Function->scriptData || Function->parameterNames.GetLength() < Count
+                || Function->defaultArgs.GetLength() < Count || Function->inOutFlags.GetLength() < Count)
+            { Error = TEXT("Cache producer requires retained bytecode and complete parameter metadata"); return false; }
+        }
+        Names.Add(Desc->ModuleName);
+    }
+    auto Produced = MakeShared<FProducedModuleCacheSet>();
+    Produced->SetGuid = FGuid::NewGuid();
+    Produced->BuildIdentity = FEngineVersion::Current().ToString();
+    TArray<TSharedPtr<FJsonValue>> Entries;
+    // Serialization shares the private arena; each file must finish before the
+    // next serializer releases its allocation mark. The VM remains unchanged.
+    for (const auto& Desc : Modules)
+    {
+        FAngelscriptPrecompiledData Data(Engine);
+        Data.ModuleDesc = Desc;
+        Data.BuildIdentifier = Data.GetCurrentBuildIdentifier();
+        if (Data.BuildIdentifier == -1)
+        { Error = TEXT("Cache producer build configuration is unsupported"); return false; }
+        Produced->ConfigurationIdentity = LexToString(Data.BuildIdentifier);
+        auto& Module = Data.Modules.Add(Desc->ModuleName);
+        Module.InitFrom(Data, Desc->ScriptModule);
+        for (const auto& Name : FAngelscriptManager::StaticNames) Data.StaticNames.Add(Name.ToString());
+        if (!ValidateStructure(Data, Error)) return false;
+        auto& File = Produced->Files.AddDefaulted_GetRef();
+        File.ModuleName = Desc->ModuleName;
+        File.RelativePath = FString::Printf(TEXT("modules/%d.Cache"), Produced->Files.Num() - 1);
+        File.DataGuid = Data.DataGuid;
+        File.Dependencies = Module.Dependencies;
+        File.Dependencies.Sort();
+        FMemoryWriter Archive(File.Bytes, true);
+        Archive.SetWantBinaryPropertySerialization(true);
+        Archive << Data;
+        if (Archive.IsError()) { Error = TEXT("Module cache serialization failed"); return false; }
+        File.ContentIdentity = TEXT("blake3:") + LexToString(FBlake3::HashBuffer(File.Bytes.GetData(), File.Bytes.Num()));
+        auto Entry = MakeShared<FJsonObject>();
+        Entry->SetStringField(TEXT("module"), File.ModuleName);
+        Entry->SetStringField(TEXT("file"), File.RelativePath);
+        Entry->SetStringField(TEXT("dataGuid"), File.DataGuid.ToString(EGuidFormats::Digits));
+        Entry->SetStringField(TEXT("contentIdentity"), File.ContentIdentity);
+        TArray<TSharedPtr<FJsonValue>> Dependencies;
+        for (const auto& Dependency : File.Dependencies) Dependencies.Add(MakeShared<FJsonValueString>(Dependency));
+        Entry->SetArrayField(TEXT("dependencies"), Dependencies);
+        Entries.Add(MakeShared<FJsonValueObject>(Entry));
+    }
+    TArray<FVerifiedCacheFileView> Files;
+    for (const auto& File : Produced->Files) Files.Add({File.RelativePath, File.ContentIdentity, File.Bytes});
+    if (!SealNativeLayouts(Engine, Files, Produced->NativeTypeLayoutsJson, Error)) return false;
+    TArray<TSharedPtr<FJsonValue>> Layouts;
+    if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Produced->NativeTypeLayoutsJson), Layouts)) return false;
+    auto Manifest = MakeShared<FJsonObject>();
+    Manifest->SetNumberField(TEXT("schemaVersion"), 1);
+    Manifest->SetStringField(TEXT("format"), TEXT("soloas-module-cache-set-v1"));
+    Manifest->SetStringField(TEXT("buildIdentity"), Produced->BuildIdentity);
+    Manifest->SetStringField(TEXT("configurationIdentity"), Produced->ConfigurationIdentity);
+    Manifest->SetStringField(TEXT("setGuid"), Produced->SetGuid.ToString(EGuidFormats::Digits));
+    Manifest->SetArrayField(TEXT("modules"), Entries);
+    Manifest->SetArrayField(TEXT("nativeTypeLayouts"), Layouts);
+    FString Text;
+    if (!FJsonSerializer::Serialize(Manifest, TJsonWriterFactory<>::Create(&Text)))
+    { Error = TEXT("Cache producer manifest serialization failed"); return false; }
+    FTCHARToUTF8 Encoded(*Text);
+    Produced->Manifest.Append(reinterpret_cast<const uint8*>(Encoded.Get()), Encoded.Length());
+    Output = MoveTemp(Produced);
+    return true;
+}
+
+bool FPreparedModuleCacheSet::SealNativeLayouts(asIScriptEngine* Engine,
+    TConstArrayView<AngelscriptCoreExtensionPoints::FVerifiedCacheFileView> Files, FString& Json, FString& Error)
+{
+    Error.Reset();
+    TMap<FString, FCacheNativeLayout> Layouts;
+    if (!Engine || Files.IsEmpty()) { Error = TEXT("Native layout sealing needs a producer VM and cache files"); return false; }
+    for (const auto& File : Files)
+    {
+        TArray<uint8> Bytes;
+        Bytes.Append(File.Bytes.GetData(), File.Bytes.Num());
+        const FString Identity = TEXT("blake3:") + LexToString(FBlake3::HashBuffer(Bytes.GetData(), Bytes.Num()));
+        if (Identity != File.ContentIdentity) { Error = TEXT("Producer cache content identity does not match"); return false; }
+        FGuid Guid;
+        FMemoryReader Header(Bytes, true);
+        Header << Guid;
+        if (Header.IsError() || !Guid.IsValid()) { Error = TEXT("Producer cache GUID is invalid"); return false; }
+        auto Data = Decode(Engine, Bytes, Guid, Error);
+        if (!Data) return false;
+        TSet<int64> Visiting;
+        for (const auto& Ref : Data->Reader->TypeReferences)
+            if (!ResolveProducerCacheType(*Data->Reader, Ref.Key, Visiting, Error)) return false;
+        if (!AddCacheNativeLayouts(*Data->Reader, Layouts, Error)) return false;
+    }
+    TArray<FString> Keys;
+    Layouts.GetKeys(Keys);
+    Keys.Sort();
+    TArray<TSharedPtr<FJsonValue>> Rows;
+    for (const auto& Key : Keys)
+    {
+        const auto& Layout = Layouts.FindChecked(Key);
+        auto Row = MakeShared<FJsonObject>();
+        Row->SetStringField(TEXT("declaration"), Key);
+        Row->SetNumberField(TEXT("size"), Layout.Size);
+        Row->SetNumberField(TEXT("alignment"), Layout.Alignment);
+        Row->SetStringField(TEXT("flags"), FString::Printf(TEXT("0x%016llx"), Layout.Flags));
+        Rows.Add(MakeShared<FJsonValueObject>(Row));
+    }
+    FString Output;
+    if (!FJsonSerializer::Serialize(Rows, TJsonWriterFactory<>::Create(&Output)))
+    { Error = TEXT("Native layout manifest serialization failed"); return false; }
+    Json = MoveTemp(Output);
+    return true;
+}
+
+namespace
+{
+TArray<TUniquePtr<FPreparedModuleCacheSet>>* ApplyingCacheMembers = nullptr;
+TMap<asCModule*, FAngelscriptPrecompiledData*> ApplyingCacheReaders;
+
+asCModule* CacheReferenceModule(FAngelscriptPrecompiledData& Data, const FStringInArchive& Name)
+{
+    for (const auto& Entry : ApplyingCacheReaders)
+        if (Entry.Key->baseModuleName == *Name) return Entry.Key;
+    return static_cast<asCModule*>(Data.Engine->GetModule(*Name, asGM_ONLY_IF_EXISTS));
+}
+
+bool CacheDependency(const FAngelscriptPrecompiledData& Data, const FStringInArchive& Name, FString& Error)
+{
+    if (Name.Len() == 0 || FCStringAnsi::Strcmp(*Name, "$__T__") == 0) return true;
+    const auto& Module = Data.Modules.CreateConstIterator().Value();
+    if (FCStringAnsi::Strcmp(*Name, *Module.ModuleName) == 0 || Module.Dependencies.Contains(Name.UnrealString())) return true;
+    Error = TEXT("Cache references an undeclared module dependency: ") + Name.UnrealString();
+    return false;
+}
+
+bool ResolveCacheType(FPreparedModuleCacheSet& Member, int64 Id, TSet<int64>& Visiting, FString& Error)
+{
+    auto& Data = *Member.Reader;
+    if (!Id || Data.CachedPointerReferences.Contains(Id)) return true;
+    const auto* Ref = Data.TypeReferences.Find(Id);
+    if (!Ref || Visiting.Contains(Id)) { Error = TEXT("Cyclic or missing cache type reference"); return false; }
+    if (!CacheDependency(Data, Ref->Module, Error)) return false;
+    Visiting.Add(Id);
+    ON_SCOPE_EXIT { Visiting.Remove(Id); };
+    for (const auto& Sub : Ref->SubTypes)
+        if (!ResolveCacheType(Member, Sub.TypeInfo.OldReference, Visiting, Error)) return false;
+    auto* Namespace = Data.GetNamespace(Ref->Namespace);
+    asCTypeInfo* Type = nullptr;
+    if (FCStringAnsi::Strcmp(*Ref->Module, "$__T__") == 0)
+    {
+        auto* Base = CastToObjectType(static_cast<asCTypeInfo*>(Data.Engine->GetTypeInfo(*Ref->Namespace, Data.Engine->defaultNamespace)));
+        if (Base) for (asUINT I = 0; I < Base->templateSubTypes.GetLength(); ++I)
+        {
+            auto* Candidate = Base->templateSubTypes[I].GetTypeInfo();
+            if (Candidate && Candidate->name == *Ref->Name) { Type = Candidate; break; }
+        }
+    }
+    else if (Ref->Module.Len() && Ref->SubTypes.IsEmpty())
+    {
+        auto* Module = CacheReferenceModule(Data, Ref->Module);
+        if (Module) Type = Module->GetType(*Ref->Name, Namespace);
+    }
+    else
+    {
+        Type = static_cast<asCTypeInfo*>(Data.Engine->GetTypeInfo(*Ref->Name, Namespace));
+        if (!Type && FCStringAnsi::Strcmp(*Ref->Name, "$obj") == 0) Type = &Data.Engine->scriptTypeBehaviours;
+        if (!Type && FCStringAnsi::Strcmp(*Ref->Name, "$func") == 0) Type = &Data.Engine->functionBehaviours;
+    }
+    if (!Type) { Error = TEXT("Cache type does not exist: ") + Ref->Name.UnrealString(); return false; }
+    if (!Ref->SubTypes.IsEmpty())
+    {
+        auto* Base = CastToObjectType(Type);
+        if (!Base || !(Base->flags & asOBJ_TEMPLATE) || int(Base->templateSubTypes.GetLength()) != Ref->SubTypes.Num())
+        { Error = TEXT("Cache template arity does not match the native declaration"); return false; }
+        asCArray<asCDataType> SubTypes;
+        SubTypes.SetLength(Ref->SubTypes.Num());
+        for (int32 I = 0; I < Ref->SubTypes.Num(); ++I) Ref->SubTypes[I].Create(Data, SubTypes[I]);
+        asCString Reason;
+        Type = Data.Engine->GetTemplateInstanceType(Base, SubTypes, nullptr, &Reason);
+        if (!Type) { Error = TEXT("Cache template creation rejected: ") + FString(UTF8_TO_TCHAR(Reason.AddressOf())); return false; }
+        // Unlike the fork's startup loader, a removable set owns this borrow.
+        Type->AddRef();
+        Member.TemplateHolds.Add(Type);
+    }
+    Data.CachedPointerReferences.Add(Id, Type);
+    Type->GetTypeId();
+    return true;
+}
+}
+
+bool FPreparedModuleCacheSet::IsApplying(const FAngelscriptPrecompiledData* Reader)
+{
+    if (!ApplyingCacheMembers) return false;
+    if (!Reader) return true;
+    for (const auto& Member : *ApplyingCacheMembers) if (Member->Reader.Get() == Reader) return true;
+    return false;
+}
+void FPreparedModuleCacheSet::BeginApplication(TArray<TUniquePtr<FPreparedModuleCacheSet>>& Members)
+{
+    check(!ApplyingCacheMembers && ApplyingCacheReaders.IsEmpty());
+    ApplyingCacheMembers = &Members;
+}
+void FPreparedModuleCacheSet::EndApplication()
+{
+    ApplyingCacheReaders.Empty();
+    ApplyingCacheMembers = nullptr;
+}
+FAngelscriptPrecompiledData& FPreparedModuleCacheSet::ContextForType(FAngelscriptPrecompiledData& Fallback, const asITypeInfo* Type)
+{
+    if (!ApplyingCacheMembers || !Type) return Fallback;
+    auto* const* Owner = ApplyingCacheReaders.Find(static_cast<asCModule*>(Type->GetModule()));
+    return Owner ? **Owner : Fallback;
+}
+
+bool FPreparedModuleCacheSet::ValidateCollection(const TArray<TUniquePtr<FPreparedModuleCacheSet>>& Members, FString& Error)
+{
+    TSet<FString> Names, Symbols;
+    auto& Manager = FAngelscriptManager::Get();
+    for (const auto& Member : Members)
+    {
+        auto& Data = *Member->Reader;
+        const auto& Module = Data.Modules.CreateConstIterator().Value();
+        const FString Name = Module.ModuleName.UnrealString();
+        if (Manager.GetModuleByModuleName(Name) || Data.Engine->GetModule(*Module.ModuleName, asGM_ONLY_IF_EXISTS))
+        { Error = TEXT("Cache loading cannot replace an existing module: ") + Name; return false; }
+        for (TCHAR C : Name) if (!C) { Error = TEXT("Cache module name contains NUL"); return false; }
+        if (Names.Contains(Name)) { Error = TEXT("Cache module name is repeated"); return false; }
+        Names.Add(Name);
+        for (int32 I = 0; I < FMath::Min(Data.StaticNames.Num(), Manager.StaticNames.Num()); ++I)
+            if (FName(*Data.StaticNames[I].UnrealString()) != Manager.StaticNames[I])
+            { Error = TEXT("Cache static-name dictionary is incompatible with the live VM prefix"); return false; }
+        for (const auto& Peer : Members)
+            for (int32 I = 0; I < FMath::Min(Data.StaticNames.Num(), Peer->Reader->StaticNames.Num()); ++I)
+                if (Data.StaticNames[I] != *Peer->Reader->StaticNames[I])
+                { Error = TEXT("Cache members have conflicting static-name dictionaries"); return false; }
+        auto Symbol = [&](const FStringInArchive& Namespace, const FStringInArchive& Local)
+        {
+            const FString Key = Namespace.UnrealString() + TEXT("::") + Local.UnrealString();
+            if (Local.Len() == 0 || Symbols.Contains(Key) || Manager.GetClass(Local.UnrealString())
+                || (Data.Engine->FindNameSpace(*Namespace) && Data.Engine->GetTypeInfo(*Local, Data.Engine->FindNameSpace(*Namespace)))) return false;
+            Symbols.Add(Key);
+            return true;
+        };
+        TSet<uint32> FunctionIds;
+        auto Function = [&](const FAngelscriptPrecompiledFunction& F)
+        {
+            if (FunctionIds.Contains(F.Id) || F.ByteCode.IsEmpty() || F.StackNeeded < 0 || F.VariableSpace < 0) return false;
+            FunctionIds.Add(F.Id);
+            if (F.bIsUFunction && Module.StaticsClassName.Len() == 0) return false;
+            return true;
+        };
+        for (const auto& F : Module.Functions) if (!Function(F))
+        { Error = TEXT("Cache global function identity, bytecode or statics carrier is invalid"); return false; }
+        for (const auto& C : Module.Classes)
+        {
+            if (!Symbol(C.Namespace, C.ClassName) || C.BehaviorRefs.Num() != 7
+                || !(C.Flags & asOBJ_SCRIPT_OBJECT)
+                || (C.CodeSuperClass.Len() && !FindObject<UClass>(nullptr, UTF8_TO_TCHAR(*C.CodeSuperClass))))
+            { Error = TEXT("Cache class name, native carrier or behavior table is invalid"); return false; }
+            for (const auto& F : C.Methods)
+            {
+                if (FunctionIds.Contains(F.Id) || F.ByteCode.IsEmpty())
+                { Error = TEXT("Cache method identity or bytecode is invalid"); return false; }
+                FunctionIds.Add(F.Id);
+            }
+            for (const auto& F : C.Constructors)
+            {
+                if (FunctionIds.Contains(F.Id) || F.ByteCode.IsEmpty())
+                { Error = TEXT("Cache constructor identity or bytecode is invalid"); return false; }
+                FunctionIds.Add(F.Id);
+            }
+            for (int32 I = 0; I < C.BehaviorFunctions.Num(); ++I)
+            {
+                const auto& F = C.BehaviorFunctions[I];
+                if (C.BehaviorFunctionTypes[I] != asBEHAVE_DESTRUCT || FunctionIds.Contains(F.Id) || F.ByteCode.IsEmpty())
+                { Error = TEXT("Cache behavior identity or bytecode is invalid"); return false; }
+                FunctionIds.Add(F.Id);
+            }
+        }
+        for (const auto& E : Module.Enums) if (!Symbol(E.Namespace, E.Name))
+        { Error = TEXT("Cache enum conflicts with an existing symbol"); return false; }
+        for (const auto& Ref : Data.TypeReferences)
+        {
+            if (!CacheDependency(Data, Ref.Value.Module, Error)) return false;
+            const auto& Type = Ref.Value;
+            const bool bExternal = Type.SubTypes.Num() != 0 || (Type.Module.Len() == 0
+                && FCStringAnsi::Strcmp(*Type.Name, "$obj") != 0 && FCStringAnsi::Strcmp(*Type.Name, "$func") != 0);
+            if (bExternal && !Member->SignedNativeLayouts)
+            { Error = TEXT("Cache native type references require a signed nativeTypeLayouts witness"); return false; }
+        }
+        for (const auto& Ref : Data.FunctionReferences) if (!CacheDependency(Data, Ref.Value.Module, Error)) return false;
+        for (const auto& Ref : Data.GlobalReferences) if (!CacheDependency(Data, Ref.Value.Module, Error)) return false;
+    }
+    return true;
+}
+
+bool FPreparedModuleCacheSet::LinkTypes(FString& Error)
+{
+    if (!ApplyingCacheMembers) return true;
+    auto SharedClasses = MakeShared<TMap<void*, const FAngelscriptPrecompiledClass*>>();
+    for (const auto& Member : *ApplyingCacheMembers)
+    {
+        auto& Data = *Member->Reader;
+        const auto& Cached = Data.Modules.CreateConstIterator().Value();
+        auto* Module = Data.ModuleDesc.IsValid() ? Data.ModuleDesc->ScriptModule : nullptr;
+        if (!Module || Module->baseModuleName != *Cached.ModuleName)
+        { Error = TEXT("Staged cache module is missing"); return false; }
+        ApplyingCacheReaders.Add(Module, &Data);
+        for (const auto& Entry : *Data.ClassesLoadedFromPrecompiledData) SharedClasses->Add(Entry.Key, Entry.Value);
+    }
+    for (const auto& Member : *ApplyingCacheMembers) Member->Reader->ClassesLoadedFromPrecompiledData = SharedClasses;
+    for (const auto& Member : *ApplyingCacheMembers)
+    {
+        TSet<int64> Visiting;
+        for (const auto& Ref : Member->Reader->TypeReferences)
+            if (!ResolveCacheType(*Member, Ref.Key, Visiting, Error)) return false;
+    }
+    // Class layout recursively visits parents and by-value members. Refuse a
+    // recursive layout before the fork loader can enter its assertion paths.
+    TSet<asCTypeInfo*> Complete, Visiting;
+    auto Layout = [&](auto&& Self, asCTypeInfo* Info) -> bool
+    {
+        if (!Info || Complete.Contains(Info)) return true;
+        if (Visiting.Contains(Info)) { Error = TEXT("Cache contains a cyclic value layout"); return false; }
+        auto* Type = CastToObjectType(Info);
+        if (!Type) return true;
+        Visiting.Add(Info);
+        ON_SCOPE_EXIT { Visiting.Remove(Info); };
+        if (const auto* Cached = SharedClasses->Find(Info))
+        {
+            auto& Data = ContextForType(*(*ApplyingCacheMembers)[0]->Reader, Info);
+            auto* Parent = Data.GetTypeInfo((*Cached)->DerivedFrom);
+            auto* Shadow = Data.GetTypeInfo((*Cached)->ShadowType);
+            if ((Parent && !CastToObjectType(Parent)) || (Shadow && !CastToObjectType(Shadow))
+                || (Shadow && !(Info->flags & asOBJ_VALUE) && !Shadow->GetUserData())
+                || !Self(Self, Parent)) { Error = TEXT("Cache inheritance or native class carrier is invalid"); return false; }
+            if (!(Info->flags & asOBJ_VALUE))
+                for (int32 I = 0; I < (*Cached)->MethodTable.Num(); ++I)
+                    if ((*Cached)->MethodTable[I] == -1)
+                    {
+                        const auto* ParentCache = SharedClasses->Find(Parent);
+                        const bool bInherited = ParentCache ? (*ParentCache)->MethodTable.IsValidIndex(I)
+                            : Parent && CastToObjectType(Parent)->virtualFunctionTable.GetLength() > asUINT(I)
+                                && CastToObjectType(Parent)->virtualFunctionTable[I];
+                        if (!bInherited) { Error = TEXT("Cache virtual slot has no parent implementation"); return false; }
+                    }
+            for (const auto& Property : (*Cached)->Properties)
+                if (!Property.Type.bIsObjectHandle && !Property.Type.bIsReference
+                    && !Self(Self, Data.GetTypeInfo(Property.Type.TypeInfo))) return false;
+        }
+        else if (Type->flags & asOBJ_TEMPLATE_SUBTYPE_DETERMINES_SIZE)
+            for (asUINT I = 0; I < Type->templateSubTypes.GetLength(); ++I)
+                if (!Self(Self, Type->templateSubTypes[I].GetTypeInfo())) return false;
+        Complete.Add(Info);
+        return true;
+    };
+    for (const auto& Entry : *SharedClasses) if (!Layout(Layout, static_cast<asCTypeInfo*>(Entry.Key))) return false;
+    for (const auto& Entry : ApplyingCacheReaders)
+    {
+        const auto& Cached = Entry.Value->Modules.CreateConstIterator().Value();
+        for (const auto& Name : Cached.Dependencies)
+        {
+            asCModule* Dependency = CacheReferenceModule(*Entry.Value, FStringInArchive(Name));
+            if (!Dependency || Dependency == Entry.Key) { Error = TEXT("Cache module dependency is missing or self-referential"); return false; }
+            Entry.Key->moduleDependencies.Add(Dependency, {0, 0, true, true});
+        }
+    }
+    return ValidateNativeLayouts(false, Error);
+}
+
+bool FPreparedModuleCacheSet::ValidateNativeLayouts(bool bFinal, FString& Error)
+{
+    if (!ApplyingCacheMembers) return true;
+    TMap<FString, FCacheNativeLayout> Actual;
+    for (const auto& Member : *ApplyingCacheMembers)
+        if (!AddCacheNativeLayouts(*Member->Reader, Actual, Error, !bFinal)) return false;
+    const auto& Expected = (*ApplyingCacheMembers)[0]->SignedNativeLayouts;
+    if (Actual.IsEmpty() && !Expected) return true;
+    if (!Expected || Expected->Num() != Actual.Num())
+    { Error = TEXT("Cache native layout witness does not match its complete reference closure"); return false; }
+    for (const auto& Entry : Actual)
+    {
+        const auto* Signed = Expected->Find(Entry.Key);
+        if (!Signed || ((bFinal || !Entry.Value.bTemplateInstance)
+            && (Signed->Size != Entry.Value.Size || Signed->Alignment != Entry.Value.Alignment || Signed->Flags != Entry.Value.Flags)))
+        { Error = TEXT("Cache native size/alignment/flags differ: ") + Entry.Key; return false; }
+    }
+    return true;
+}
+
+bool FPreparedModuleCacheSet::LinkFunctions(FString& Error)
+{
+    if (!ApplyingCacheMembers) return true;
+    for (const auto& Member : *ApplyingCacheMembers)
+    {
+        auto& Data = *Member->Reader;
+        for (const auto& Entry : Data.FunctionReferences)
+        {
+            const auto& Ref = Entry.Value;
+            auto* Module = Ref.Module.Len() ? CacheReferenceModule(Data, Ref.Module) : nullptr;
+            auto* Type = Ref.bIsMethod ? CastToObjectType(Data.GetTypeInfo(Ref.ObjectType)) : nullptr;
+            if ((Ref.Module.Len() && !Module) || (Ref.bIsMethod && !Type))
+            { Error = TEXT("Cache function owner is missing"); return false; }
+            asCScriptFunction* Found = nullptr;
+            for (asUINT I = 0; I < Data.Engine->scriptFunctions.GetLength(); ++I)
+            {
+                auto* F = Data.Engine->scriptFunctions[I];
+                if (!F || F->name != *Ref.Name || F->module != Module || F->nameSpace != Data.GetNamespace(Ref.Namespace)) continue;
+                if (Ref.bIsMethod && F->objectType != Type
+                    && !(F->objectType == nullptr && F->returnType.GetTypeInfo() == Type)) continue;
+                if (!Ref.bIsMethod && F->objectType) continue;
+                if (!Ref.MatchesSignature(Data, F)) continue;
+                if (Found && Found != F) { Error = TEXT("Cache function reference is ambiguous"); return false; }
+                Found = F;
+            }
+            if (!Found && Type && (Type->flags & asOBJ_TEMPLATE))
+            {
+                Type->FindMethodUntil(*Ref.Name, [&](asCScriptFunction* F)
+                {
+                    if (F->traits.GetTrait(asTRAIT_GENERIC_TEMPLATE_FUNCTION)) F = Data.Engine->GenerateTemplateFunction(Type, F);
+                    if (F && Ref.MatchesSignature(Data, F)) { Found = F; return true; }
+                    return false;
+                });
+            }
+            if (!Found) { Error = TEXT("Cache function signature is missing: ") + Ref.Name.UnrealString(); return false; }
+            Data.CachedPointerReferences.Add(Entry.Key, Found);
+        }
+        for (const auto& Entry : Data.GlobalReferences)
+        {
+            const auto& Ref = Entry.Value;
+            if (Ref.bIsString) continue;
+            auto* Module = Ref.Module.Len() ? CacheReferenceModule(Data, Ref.Module) : nullptr;
+            auto* Property = Ref.Module.Len() ? (Module ? Module->scriptGlobals.FindFirst(*Ref.Name, Data.GetNamespace(Ref.Namespace)) : nullptr)
+                : Data.Engine->registeredGlobalPropTable.FindFirst(*Ref.Name, Data.GetNamespace(Ref.Namespace));
+            if (!Property || !Property->memory) { Error = TEXT("Cache global reference is missing: ") + Ref.Name.UnrealString(); return false; }
+            Data.CachedPointerReferences.Add(Entry.Key, Property);
+        }
+        for (const auto& Entry : Data.PropertyReferences)
+        {
+            const auto& Ref = Entry.Value;
+            auto* Type = CastToObjectType(static_cast<asCTypeInfo*>(Data.Engine->GetTypeInfoById(Data.GetTypeId({Ref.OldTypeId}))));
+            auto* Property = Type ? Type->GetFirstProperty(*Ref.Name) : nullptr;
+            if (!Property || Property->byteOffset < 0 || Property->byteOffset > MAX_int16)
+            { Error = TEXT("Cache property reference is missing or its offset is not representable"); return false; }
+            Data.CachedPointerReferences.Add(Entry.Key, reinterpret_cast<void*>(SIZE_T(Property->byteOffset)));
+        }
+    }
+    // Factories are linked only after all peers' functions exist and every
+    // function reference has been checked. No loader assertion performs admission.
+    for (const auto& Member : *ApplyingCacheMembers)
+    {
+        auto& Data = *Member->Reader;
+        const auto& Module = Data.Modules.CreateConstIterator().Value();
+        for (int32 I = 0; I < Module.Classes.Num(); ++I)
+            for (const auto& Ref : Module.Classes[I].FactoryRefs)
+                Module.ClassTypes[I]->beh.factories.PushLast(Data.GetFunctionId(Ref, true, true));
+    }
+    return true;
+}
+
+FPreparedModuleCacheSet::~FPreparedModuleCacheSet()
+{
+    for (auto* Type : TemplateHolds) Type->Release();
+	if (Reader)
+	{
+		// Archive strings borrow LoadedData. Destroy their containers first.
+		Reader->Modules.Empty();
+		Reader->TypeReferences.Empty();
+		Reader->FunctionReferences.Empty();
+		Reader->GlobalReferences.Empty();
+		Reader->PropertyReferences.Empty();
+		Reader->StaticNames.Empty();
+		Reader.Reset();
+	}
+}
+                                                                                                     
 
 struct FAppliedFunctionSignature
 {
@@ -539,20 +1448,30 @@ asCScriptFunction* FAngelscriptPrecompiledFunction::Create(FAngelscriptPrecompil
 	bool bHasJITFunctions = false;
 	auto& JITDatabase = FJITDatabase::Get();
 	auto* JITFunctions = JITDatabase.Functions.Find(Id);
-	if (JITFunctions != nullptr && !FAngelscriptManager::bScriptDevelopmentMode)
+                                                                                                       
+    if (JITFunctions != nullptr && !FAngelscriptManager::bScriptDevelopmentMode
+        && !FPreparedModuleCacheSet::IsApplying(&Context))
+                                                                                                     
 	{
 		Function->jitFunction = JITFunctions->VMEntry;
 		Function->jitFunction_ParmsEntry = JITFunctions->ParmsEntry;
 		Function->jitFunction_Raw= JITFunctions->RawFunction;
+                                                                                                  
+		Function->ExecutionBudgetVersion = JITFunctions->ExecutionBudgetVersion;
+		Function->ExecutionBudgetCleanupOffset = JITFunctions->ExecutionBudgetCleanupOffset;
+		Function->ExecutionBudgetNormalTailOffset = JITFunctions->ExecutionBudgetNormalTailOffset;
+		AngelscriptCoreExtensionPoints::Private::BindExecutionBudgetJIT(Function);
+                                                                                                
 		bHasJITFunctions = true;
 	}
 
 	// If valid JIT data exists, generated functions don't load script data,
 	// this is needed because generated functions don't have their JIT functions
 	// registered themselves.
-	if (!bHasJITFunctions
-		&& Function->traits.GetTrait(asTRAIT_GENERATED_FUNCTION)
-		&& !JITDatabase.Functions.IsEmpty())
+                                                                                                       
+    if (!bHasJITFunctions && Function->traits.GetTrait(asTRAIT_GENERATED_FUNCTION)
+        && !JITDatabase.Functions.IsEmpty() && !FPreparedModuleCacheSet::IsApplying(&Context))
+                                                                                                     
 	{
 		bHasJITFunctions = true;
 	}
@@ -1101,6 +2020,9 @@ void FAngelscriptPrecompiledClass::CreateFunctions(FAngelscriptPrecompiledData& 
 
 	// Create factories
 	int32 FactoryCount = FactoryRefs.Num();
+                                                                                                       
+    if (!FPreparedModuleCacheSet::IsApplying(&Context))
+                                                                                                     
 	for (int32 i = 0; i < FactoryCount; ++i)
 		Type->beh.factories.PushLast(Context.GetFunctionId(FactoryRefs[i], true, true));
 
@@ -1149,7 +2071,9 @@ void FAngelscriptPrecompiledClass::PreProcessFunctions(FAngelscriptPrecompiledDa
 				const FAngelscriptPrecompiledClass* const* DerivedData = Context.ClassesLoadedFromPrecompiledData->Find(Type->derivedFrom);
                                                                                                                      
 		if (DerivedData != nullptr && !(*DerivedData)->bFunctionsPreProcessed)
-			(*DerivedData)->PreProcessFunctions(Context, Type->derivedFrom);
+			                                                                                                       
+            (*DerivedData)->PreProcessFunctions(FPreparedModuleCacheSet::ContextForType(Context, Type->derivedFrom), Type->derivedFrom);
+                                                                                                     
 	}
 
 	Type->properties.AllocateNoConstruct(PotentialProperties, true);
@@ -1225,6 +2149,15 @@ void FAngelscriptPrecompiledClass::ProcessFunctions(FAngelscriptPrecompiledData&
 	beh.copyconstruct = Context.GetFunctionId(BehaviorRefs[BehIndex++]);
 	beh.destruct = Context.GetFunctionId(BehaviorRefs[BehIndex++]);
 	beh.copy = Context.GetFunctionId(BehaviorRefs[BehIndex++]);
+                                                                                                       
+    if (FPreparedModuleCacheSet::IsApplying(&Context))
+    {
+        // These slots own refs independently of the factory/constructor arrays.
+        // DestroyInternal releases them even when the target is a VM builtin.
+        if (beh.copy) Context.Engine->scriptFunctions[beh.copy]->AddRefInternal();
+        if (beh.listFactory) Context.Engine->scriptFunctions[beh.listFactory]->AddRefInternal();
+    }
+                                                                                                     
 
 	// Process functions
 	bool bIsStruct = (Type->flags & asOBJ_VALUE) != 0;
@@ -1543,8 +2476,10 @@ void FAngelscriptPrecompiledData::ProcessProperties(asITypeInfo* TypeInfo)
 
                                                                                                                 
 		const FAngelscriptPrecompiledClass& PrecompiledClass = *ClassesLoadedFromPrecompiledData->FindChecked(TypeInfo);
-	PrecompiledClass.ProcessProperties(*this, ObjectType);
                                                                                                               
+                                                                                                       
+    PrecompiledClass.ProcessProperties(FPreparedModuleCacheSet::ContextForType(*this, TypeInfo), ObjectType);
+                                                                                                     
 
 	// If it's not in our current module's list of classes to process, that
 	// means our dependency ordering has already processed it for us.
@@ -1649,6 +2584,10 @@ void FAngelscriptPrecompiledModule::ApplyToModule_Stage3(FAngelscriptPrecompiled
 
 	// Trigger steps normally performed by a call to Build()
 	Module->JITCompile();
+                                                                                                       
+    if (FPreparedModuleCacheSet::IsApplying(&Context))
+        for (auto* Type : ClassTypes) AngelscriptStructLiveValues::TypeCompiled(Type);
+                                                                                                     
                                                                                                                    
 	}
                                                                                                                  
@@ -1656,6 +2595,9 @@ void FAngelscriptPrecompiledModule::ApplyToModule_Stage3(FAngelscriptPrecompiled
 asSNameSpace* FAngelscriptPrecompiledData::GetNamespace(const FStringInArchive& Namespace)
 {
 	FAngelscriptScopeTotalTimer Timer(TIMER_GetNamespace);
+                                                                                                       
+    if (Namespace.Len() == 0 && FPreparedModuleCacheSet::IsApplying(this)) return Engine->nameSpaces[0];
+                                                                                                     
 	if (Namespace.Len() != 0)
 		return Engine->AddNameSpace(*Namespace);
 	else
@@ -2041,7 +2983,9 @@ asCScriptFunction* FAngelscriptPrecompiledData::GetFunction(const FAngelscriptPr
 				const FAngelscriptPrecompiledClass* const* DerivedData = ClassesLoadedFromPrecompiledData->Find(Type->derivedFrom);
                                                                                                                       
 			if (DerivedData != nullptr && !(*DerivedData)->bFunctionsPreProcessed)
-				(*DerivedData)->PreProcessFunctions(*this, Type->derivedFrom);
+				                                                                                                       
+            (*DerivedData)->PreProcessFunctions(FPreparedModuleCacheSet::ContextForType(*this, Type->derivedFrom), Type->derivedFrom);
+                                                                                                     
 		}
 
 		// We might need to instantiate the template method
@@ -2518,9 +3462,14 @@ void FAngelscriptPrecompiledData::PrepareToFinalizePrecompiledModules()
 #endif
 }
 
-void FAngelscriptPrecompiledData::ClearUnneededRuntimeData()
+                                                                                                          
+void FAngelscriptPrecompiledData::ClearUnneededRuntimeData(bool bClearManager)
+                                                                                                        
 {
 	FAngelscriptScopeTimer Timer(TEXT("ClearUnneededRuntimeData"));
+                                                                                                          
+    if (FCompileSurfaceRecipe::BeforeClear(Engine)) return;
+                                                                                                        
 
 	auto ClearObjectType = [&](asCObjectType* objType)
 	{
@@ -2642,7 +3591,12 @@ void FAngelscriptPrecompiledData::ClearUnneededRuntimeData()
 	Engine->registeredObjTypes.AllocateNoConstruct(0, false);
 	Engine->nameSpaces.AllocateNoConstruct(1, false);
 	Engine->varAddressMap.Empty();
+                                                                                                          
+                                                                                                        
 
+                                                                                                          
+	if (!bClearManager) return;
+                                                                                                        
 	auto& Manager = FAngelscriptManager::Get();
 	Manager.ActiveModules.Empty();
 	Manager.BoundBlueprintEventArgumentSpecializations.Empty();
@@ -2659,7 +3613,9 @@ void FAngelscriptPrecompiledData::ClearUnneededRuntimeData()
 }
 
 FAngelscriptPrecompiledData::FAngelscriptPrecompiledData(asIScriptEngine* InEngine)
-	: AllocMark(GScriptPreallocatedMemStack)
+                                                                                                       
+	: AllocMark(GetScriptPreallocatedMemStack())
+                                                                                                     
 	, Engine((asCScriptEngine*)InEngine)
 {
 	DataGuid = FGuid::NewGuid();

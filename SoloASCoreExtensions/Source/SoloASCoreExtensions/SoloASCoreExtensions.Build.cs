@@ -12,7 +12,7 @@ public sealed class SoloASCoreExtensions : ModuleRules
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PrecompileForTargets = PrecompileTargetsType.Any;
-        bUsePrecompiled = Directory.GetFiles(ModuleDirectory, "*.cpp", SearchOption.AllDirectories).Length == 0;
+        bUsePrecompiled = UnrealBuildTool.Rules.SoloASBridgeBuildPath.ShouldUsePrecompiled(this, Target, bUsePrecompiled);
 
         using (var SourceBytes = new MemoryStream())
         {

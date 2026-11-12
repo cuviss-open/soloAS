@@ -25,6 +25,7 @@ soloAS 是一个为设计而生的 Unreal 脚本系统。它以原版引擎插�
 | `SoloASBridge/` | `SoloASBridge` | 原版引擎适配；由依赖启用 |
 | `AngelscriptManualBindPlugins/AngelscriptGAS/` | `AngelscriptGAS` | 可选 Gameplay Ability System 绑定；默认关闭 |
 | `AngelscriptManualBindPlugins/AngelscriptEnhancedInput/` | `AngelscriptEnhancedInput` | 可选 Enhanced Input 绑定；默认关闭 |
+| `AngelscriptModKit/` | `AngelscriptModKit` | FeatureMod 装卸与脚本更新；默认启用 |
 | `SoloASCoreExtensions/` | `SoloASCoreExtensions` | 可选高层脚本扩展；默认启用 |
 | `SoloASDeveloperTools/` | `SoloASDeveloperTools` | 编辑器与项目开发工具；默认启用 |
 <!-- soloas-plugins:end -->

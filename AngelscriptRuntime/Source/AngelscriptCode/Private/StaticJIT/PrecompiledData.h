@@ -697,7 +697,9 @@ struct FAngelscriptPrecompiledData
 	void AddRefTo(const class asCDataType& DataType);
 
 	void PrepareToFinalizePrecompiledModules();
-	void ClearUnneededRuntimeData();
+                                                                                                          
+	void ClearUnneededRuntimeData(bool bClearManager = true);
+                                                                                                        
 
 	// Serve loaded data that would normally come from preprocessor
 	TArray<TSharedRef<FAngelscriptModuleDesc>> GetModulesToCompile();
@@ -755,3 +757,113 @@ struct FAngelscriptPrecompiledData
 	short GetPropertyOffset(int OldOffset, int OldTypeId);
 	short GetTypeSize(int NewTypeId, short OldSize);
 };
+
+                                                                                                       
+struct FCacheNativeLayout
+{
+    FString Declaration;
+    int32 Size = 0;
+    int32 Alignment = 0;
+    uint64 Flags = 0;
+    bool bTemplateInstance = false;
+};
+struct FPreparedModuleCacheSet
+{
+	static TUniquePtr<FPreparedModuleCacheSet> Decode(asIScriptEngine* Engine,
+		TConstArrayView<uint8> Bytes, const FGuid& ExpectedGuid, FString& Error);
+	static bool ValidateStructure(const FAngelscriptPrecompiledData& Data, FString& Error);
+	static bool DecodeVerified(asIScriptEngine* Engine,
+		const AngelscriptCoreExtensionPoints::FVerifiedCacheSetView& Set,
+		TArray<TUniquePtr<FPreparedModuleCacheSet>>& OutMembers, FString& Error);
+	static bool ValidateCollection(const TArray<TUniquePtr<FPreparedModuleCacheSet>>& Members, FString& Error);
+    static bool Produce(asIScriptEngine* Engine, TConstArrayView<TSharedRef<FAngelscriptModuleDesc>> Modules,
+        TSharedPtr<const AngelscriptCoreExtensionPoints::FProducedModuleCacheSet>& Output, FString& Error);
+    static bool SealNativeLayouts(asIScriptEngine* Engine, TConstArrayView<AngelscriptCoreExtensionPoints::FVerifiedCacheFileView> Files,
+        FString& Json, FString& Error);
+    static bool ValidateNativeLayouts(bool bFinal, FString& Error);
+	static void BeginApplication(TArray<TUniquePtr<FPreparedModuleCacheSet>>& Members);
+	static void EndApplication();
+	static bool IsApplying(const FAngelscriptPrecompiledData* Reader = nullptr);
+	static bool LinkTypes(FString& Error);
+	static bool LinkFunctions(FString& Error);
+	static FAngelscriptPrecompiledData& ContextForType(FAngelscriptPrecompiledData& Fallback, const asITypeInfo* Type);
+	~FPreparedModuleCacheSet();
+
+	// Every reader mutation uses this arena in a short synchronous scope.
+	// No consumer callbacks may execute while the scope is installed.
+	FMemStackBase Arena;
+	TUniquePtr<FAngelscriptPrecompiledData> Reader;
+	TArray<asITypeInfo*> TemplateHolds;
+    FString VerifiedRelativePath;
+    FString VerifiedContentIdentity;
+    TSharedPtr<const TMap<FString, FCacheNativeLayout>> SignedNativeLayouts;
+};
+                                                                                                     
+
+                                                                                                          
+#include "UObject/GCObject.h"
+namespace AngelscriptCoreExtensionPoints::Private
+{
+class FNativeCompileCoreCallGuard;
+void BeginTransientCompileCapture(asIScriptEngine* Engine);
+void SealTransientCompileBindings();
+void SealTransientCompileRuntime(FAngelscriptManager* Manager);
+void FinishTransientCompileCapture();
+uint64 BeginGameplayTagRegistration(asIScriptEngine* Engine);
+void FinishGameplayTagRegistration(asIScriptEngine* Engine, uint64 PreviousEpoch, int32 PropertyId);
+bool FinishTransientManagerCompile();
+bool ValidateTransientManagerModules(const TArray<TSharedRef<FAngelscriptModuleDesc>>& Modules, bool bRequireOwnedExisting);
+TUniquePtr<FNativeCompileCoreCallGuard> EnterTransientManagerCompileCall(asCScriptEngine* Engine);
+#if WITH_DEV_AUTOMATION_TESTS
+void GetTransientCompileCapacity(uint64& RecipeBytes, uint64& ActionBytes);
+int32 GetOwnedSourceGenerationCountForTests(FDelegateHandle Client);
+#endif
+void CloseModuleCacheClients();
+void ForgetSourceGeneration(uint64 Generation);
+bool HasModuleGenerationLeases();
+}
+
+class FCompileSurfaceRecipe final : public FGCObject
+{
+public:
+    static TUniquePtr<FCompileSurfaceRecipe> Begin(asIScriptEngine* Engine,
+        uint64 RegistrationEpoch, FString& Error);
+    ~FCompileSurfaceRecipe();
+    bool CaptureBindings(FString& Error);
+    bool CaptureRuntime(FAngelscriptManager* Manager, FString& Error);
+    bool IsReady(FString& Error) const;
+    void AcceptGameplayTagRegistration(asIScriptEngine* Engine, uint64 PreviousEpoch, int32 PropertyId);
+    bool IsCapturingOrStopping() const;
+    void FinishCapture();
+    void Stop();
+    uint64 GetAllocatedBytes() const;
+    void AddReferencedObjects(FReferenceCollector& Collector) override;
+    FString GetReferencerName() const override { return TEXT("Transient compile declaration recipe"); }
+
+    static bool BeforeClear(class asCScriptEngine* Engine);
+
+private:
+    FCompileSurfaceRecipe();
+    static uint64 MeasureRetainedCompileSurface(class asCScriptEngine* Engine, int32& RetainedFunctions);
+    struct FImpl;
+    TUniquePtr<FImpl> Impl;
+    friend class FCompileSurfaceLease;
+};
+
+class FCompileSurfaceLease
+{
+public:
+    static TUniquePtr<FCompileSurfaceLease> AcquireForRemoval(asIScriptEngine* Engine, FString& Error);
+    static TUniquePtr<FCompileSurfaceLease> Acquire(FCompileSurfaceRecipe& Recipe, FString& Error);
+    AngelscriptCoreExtensionPoints::Private::FNativeCompileCoreCallGuard EnterCoreCall();
+    ~FCompileSurfaceLease();
+    TUniquePtr<AngelscriptCoreExtensionPoints::Private::FNativeCompileCoreCallGuard> EnterManagerCall();
+    uint64 GetReservedBytes() const;
+    bool ReserveInput(uint64 Bytes, FString& Error, bool bRecord = true);
+
+private:
+    explicit FCompileSurfaceLease(class asCScriptEngine* Engine);
+    struct FImpl;
+    TUniquePtr<FImpl> Impl;
+};
+                                                                                                        
