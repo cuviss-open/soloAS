@@ -10,6 +10,9 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Runtime/Launch/Resources/Version.h"
+#if WITH_DEV_AUTOMATION_TESTS
+#include "Misc/AutomationTest.h"
+#endif
 #if PLATFORM_WINDOWS && !IS_MONOLITHIC
 #include "Windows/WindowsHWrapper.h"
 #elif PLATFORM_MAC && !IS_MONOLITHIC
@@ -51,6 +54,9 @@ public:
     bool SupportsDynamicReloading() override { return false; }
 
 private:
+#if WITH_DEV_AUTOMATION_TESTS
+    friend class FSoloASCallerLoadFailureTest;
+#endif
     FDelegateHandle ModulesChanged;
     TArray<TArray<ANSICHAR>> Strings;
 
@@ -93,8 +99,11 @@ private:
         const bool Started = FModuleManager::Get().IsModuleLoaded(Entry.NativeModule);
         EModuleLoadResult Failure;
         if (!FModuleManager::Get().LoadModuleWithFailureReason(Entry.CallerModule, Failure))
-            UE_LOG(LogTemp, Fatal, TEXT("SB-CALLER-FAILED native=%s caller=%s reason=%d"),
+        {
+            UE_LOG(LogTemp, Error, TEXT("SB-CALLER-FAILED native=%s caller=%s reason=%d"),
                 Entry.NativeModule, Entry.CallerModule, static_cast<int32>(Failure));
+            return;
+        }
         UE_LOG(LogTemp, Verbose, TEXT("SB-CALLER-READY native=%s caller=%s started=%d"),
             Entry.NativeModule, Entry.CallerModule, Started);
     }
@@ -178,5 +187,19 @@ private:
         return true;
     }
 };
+
+#if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSoloASCallerLoadFailureTest, "SoloAS.NativeCaller.LoadFailure",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSoloASCallerLoadFailureTest::RunTest(const FString& Parameters)
+{
+    AddExpectedError(TEXT("SB-CALLER-FAILED native=Core caller=SoloASMissingCallerForTest"),
+        EAutomationExpectedErrorFlags::Contains, 1);
+    FSoloASBridgeCallersModule Module;
+    Module.LoadCaller({ TEXT("Core"), TEXT(""), TEXT("SoloASMissingCallerForTest") });
+    return true;
+}
+#endif
 
 IMPLEMENT_MODULE(FSoloASBridgeCallersModule, SoloASBridgeCallers)

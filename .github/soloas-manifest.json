@@ -2502,7 +2502,7 @@
     },
     "NOTICE": {
       "mode": "0o644",
-      "sha256": "1da4da2639e104ce3ec1c6c3d4c76bda12b3f4f3464a2301d05570a286c9ee1b",
+      "sha256": "1ee2d79092489e82488a9b522d14ca82e2119e81c400c28f11392bad81048fb8",
       "size": 3717
     },
     "README.md": {
@@ -2912,8 +2912,8 @@
     },
     "SoloASBridge/Source/SoloASBridgeCallers/Private/SoloASBridgeCallersModule.cpp": {
       "mode": "0o644",
-      "sha256": "70738682875505a0d308269ed733c7b08410b88a7dd0435a812559850754cb76",
-      "size": 7858
+      "sha256": "31b5b81cb80b8d3c6278d96863d31180f6e46c80ce46b888e97c79451c9bb2c4",
+      "size": 8630
     },
     "SoloASBridge/Source/SoloASBridgeCallers/Private/SoloASBridgeCallersUhtAnchor.h": {
       "mode": "0o644",
@@ -4847,5 +4847,5 @@
     }
   },
   "schema": 1,
-  "super_commit": "ea764d154b708aef7e39529333f237aaaa192aa6"
+  "super_commit": "40639f4566f6ffe64ec77aba27ccf398f0e294f4"
 }
